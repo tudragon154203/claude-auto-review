@@ -1,0 +1,25 @@
+{
+  "name": "claude-auto-review",
+  "version": "1.0.0",
+  "description": "Post-edit review loop for Claude Code: automatically reviews changed files before Claude stops.",
+  "author": "claude-auto-review",
+  "license": "MIT",
+  "commands": ["claude-auto-review"],
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "script": "hooks/post-tool-use.js",
+        "timeout": 2
+      }
+    ],
+    "Stop": [
+      {
+        "script": "hooks/stop-hook.js",
+        "timeout": 5
+      }
+    ]
+  },
+  "agents": ["agents/reviewer.md"],
+  "rules": ["rules/default-rules.md"]
+}
