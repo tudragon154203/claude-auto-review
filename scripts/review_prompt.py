@@ -6,10 +6,10 @@ from state import (
     ensure_runtime,
     get_project_root,
     get_unreviewed_files,
+    append_review_started,
     log_event,
     load_settings,
     load_state,
-    mark_files_reviewed,
     utc_now_iso,
 )
 
@@ -183,7 +183,7 @@ Pending.
             newline="\n",
         )
 
-        mark_files_reviewed(unreviewed, review_id, project_root)
+        append_review_started(unreviewed, review_id, review_path, project_root)
         log_event(
             project_root,
             "review_prompt_created",

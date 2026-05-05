@@ -29,6 +29,14 @@ class HookTests(unittest.TestCase):
             env=env,
         )
 
+    def complete_latest_review(self, project_root, verdict="Clean - no issues found. Claude may stop."):
+        review_path = sorted((project_root / ".claude" / "claude-auto-review" / "reviews").glob("review-*.md"))[-1]
+        content = review_path.read_text(encoding="utf-8")
+        content = content.replace("Pending. Claude must complete this review from", "Completed review from")
+        content = content.replace("Pending.", verdict)
+        review_path.write_text(content, encoding="utf-8", newline="\n")
+        return review_path
+
     def test_post_tool_use_logs_changed_files_and_stop_hook_blocks(self):
         project_root = self.temp_project()
         (project_root / "src" / "app.ts").write_text("export const value = 1;\n", encoding="utf-8")
@@ -68,6 +76,10 @@ class HookTests(unittest.TestCase):
         self.assertEqual(review.returncode, 0)
         self.assertEqual(len(list((project_root / ".claude" / "claude-auto-review" / "run").iterdir())), 1)
         self.assertEqual(len(list((project_root / ".claude" / "claude-auto-review" / "reviews").iterdir())), 1)
+        pending_stop = self.run_python("hooks/stop_hook.py", project_root)
+        self.assertEqual(pending_stop.returncode, 2)
+        self.assertIn("still pending", json.loads(pending_stop.stdout)["message"])
+        self.complete_latest_review(project_root)
         self.assertEqual(self.run_python("hooks/stop_hook.py", project_root).returncode, 0)
 
     def test_fails_open_for_invalid_hook_input(self):
@@ -133,6 +145,8 @@ class HookTests(unittest.TestCase):
         (project_root / "src" / "app.ts").write_text("export const value = 1;\n", encoding="utf-8")
         self.run_python("hooks/post_tool_use.py", project_root, json.dumps({"file_path": "src/app.ts"}))
         self.run_python("scripts/review_prompt.py", project_root)
+        self.complete_latest_review(project_root)
+        self.assertEqual(self.run_python("hooks/stop_hook.py", project_root).returncode, 0)
         post_again = self.run_python("hooks/post_tool_use.py", project_root, json.dumps({"file_path": "src/app.ts"}))
         self.assertEqual(post_again.returncode, 0)
         self.assertTrue(load_state(project_root)[-1]["reviewed"])
@@ -144,6 +158,8 @@ class HookTests(unittest.TestCase):
         target.write_text("export const value = 1;\n", encoding="utf-8")
         self.run_python("hooks/post_tool_use.py", project_root, json.dumps({"file_path": "src/app.ts"}))
         self.run_python("scripts/review_prompt.py", project_root)
+        self.complete_latest_review(project_root)
+        self.assertEqual(self.run_python("hooks/stop_hook.py", project_root).returncode, 0)
         target.write_text("export const value = 2;\n", encoding="utf-8")
         self.run_python("hooks/post_tool_use.py", project_root, json.dumps({"file_path": "src/app.ts"}))
         stop = self.run_python("hooks/stop_hook.py", project_root)
@@ -252,6 +268,8 @@ class HookTests(unittest.TestCase):
         self.assertEqual(lines.count(".claude/claude-auto-review/state.jsonl"), 1)
         self.assertEqual(lines.count(".claude/claude-auto-review/run/"), 1)
         self.assertEqual(lines.count(".claude/claude-auto-review/reviews/"), 1)
+        self.assertEqual(lines.count(".claude/claude-auto-review/scripts/"), 1)
+        self.assertEqual(lines.count(".claude/claude-auto-review/agents/"), 1)
         self.assertEqual(lines.count(".claude/claude-auto-review/claude-auto-review.log"), 1)
 
     def test_project_local_shim_runs_review_prompt(self):
@@ -269,6 +287,7 @@ class HookTests(unittest.TestCase):
             env={**os.environ, "CLAUDE_PROJECT_DIR": str(project_root)},
         )
         self.assertEqual(result.returncode, 0)
+        self.complete_latest_review(project_root)
         self.assertEqual(self.run_python("hooks/stop_hook.py", project_root).returncode, 0)
 
     def test_cancel_script_clears_state_run_and_review_artifacts(self):

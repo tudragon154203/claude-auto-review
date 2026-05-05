@@ -257,8 +257,8 @@ claude-auto-review/
 3. Run `git diff` for unreviewed files.
 4. Generate a prompt file for the reviewer agent.
 5. Execute the review via Claude Code's Bash tool (or spawn subagent if supported).
-6. Write review output to `.claude/claude-auto-review/reviews/review-{id}.md`.
-7. Mark files as `reviewed: true` in state.
+6. Write pending review output to `.claude/claude-auto-review/reviews/review-{id}.md`.
+7. Record a pending review event in state. The Stop hook marks files as `reviewed: true` only after the review file has a real verdict.
 
 **Subagent invocation (Claude Code native):**
 

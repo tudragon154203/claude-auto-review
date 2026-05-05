@@ -166,6 +166,55 @@ def get_unreviewed_files(state):
     return [entry for entry in latest_entries_by_file(state).values() if not entry.get("reviewed")]
 
 
+def append_review_started(entries, review_id, review_path, project_root=None):
+    append_state(
+        {
+            "type": "review",
+            "reviewId": review_id,
+            "reviewPath": str(review_path),
+            "timestamp": utc_now_iso(),
+            "status": "pending",
+            "files": [
+                {
+                    "file": entry["file"],
+                    "hash": entry["hash"],
+                }
+                for entry in entries
+            ],
+        },
+        project_root,
+    )
+
+
+def pending_reviews_for_entries(state, entries):
+    needed = {(entry["file"], entry["hash"]) for entry in entries}
+    matches = []
+    for entry in state:
+        if not isinstance(entry, dict) or entry.get("type") != "review" or entry.get("status") != "pending":
+            continue
+        covered = {
+            (item.get("file"), item.get("hash"))
+            for item in entry.get("files", [])
+            if isinstance(item, dict)
+        }
+        if needed and needed.issubset(covered):
+            matches.append(entry)
+    return sorted(matches, key=_timestamp_value, reverse=True)
+
+
+def is_review_complete(review_path):
+    path = Path(review_path)
+    if not path.is_file():
+        return False
+    content = path.read_text(encoding="utf-8", errors="replace")
+    if "## Verdict" not in content:
+        return False
+    verdict = content.split("## Verdict", 1)[1].strip()
+    if not verdict:
+        return False
+    return "Pending" not in verdict
+
+
 def mark_files_reviewed(entries, review_id, project_root=None):
     timestamp = utc_now_iso()
     for entry in entries:

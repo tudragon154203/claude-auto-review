@@ -53,6 +53,8 @@ def main():
         ".claude/claude-auto-review/state.jsonl",
         ".claude/claude-auto-review/run/",
         ".claude/claude-auto-review/reviews/",
+        ".claude/claude-auto-review/scripts/",
+        ".claude/claude-auto-review/agents/",
         ".claude/claude-auto-review/claude-auto-review.log",
     ]
     existing = gitignore_path.read_text(encoding="utf-8") if gitignore_path.exists() else ""

@@ -7,7 +7,8 @@ It is intentionally diff-focused:
 - `PostToolUse` records changed file hashes in `.claude/claude-auto-review/state.jsonl`.
 - `Stop` checks the latest hash for each edited file.
 - If any latest hash is unreviewed, the stop hook blocks and tells Claude to run the review prompt script.
-- The prompt script writes a review request under `.claude/claude-auto-review/run/`, initializes a review file under `.claude/claude-auto-review/reviews/`, and marks the reviewed snapshot.
+- The prompt script writes a review request under `.claude/claude-auto-review/run/` and initializes a pending review file under `.claude/claude-auto-review/reviews/`.
+- The Stop hook keeps blocking until the review file has a real verdict, then marks the covered file hashes reviewed.
 - Any fixes create new hashes and trigger another review cycle.
 - Runtime events are logged to `.claude/claude-auto-review/claude-auto-review.log`.
 
@@ -34,6 +35,8 @@ Local runtime files should stay ignored:
 .claude/claude-auto-review/state.jsonl
 .claude/claude-auto-review/run/
 .claude/claude-auto-review/reviews/
+.claude/claude-auto-review/scripts/
+.claude/claude-auto-review/agents/
 .claude/claude-auto-review/claude-auto-review.log
 ```
 
