@@ -195,7 +195,7 @@ claude-auto-review/
 3. Append entry to `state.jsonl` with `reviewed: false`.
 4. If file was previously reviewed with same hash, mark `reviewed: true` immediately (no-op edit).
 
-**Timeout:** 2 seconds (fast, non-blocking).
+**Timeout:** 10 seconds (fast, but tolerant of Python startup and slower disks).
 
 **Exit code:** Always 0 (never block edits).
 
@@ -232,7 +232,7 @@ claude-auto-review/
 }
 ```
 
-**Timeout:** 5 seconds.
+**Timeout:** 30 seconds.
 
 **Implementation:** `hooks/stop_hook.py`
 
@@ -421,11 +421,11 @@ python scripts/setup_claude_auto_review.py
     "PostToolUse": [{
       "matcher": "Write|Edit|MultiEdit",
       "script": "hooks/post_tool_use.py",
-      "timeout": 2
+      "timeout": 10
     }],
     "Stop": [{
       "script": "hooks/stop_hook.py",
-      "timeout": 5
+      "timeout": 30
     }]
   },
   "agents": ["agents/reviewer.md"],
