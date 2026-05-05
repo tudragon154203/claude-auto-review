@@ -28,6 +28,15 @@ class StateTests(unittest.TestCase):
         self.assertEqual(normalize_relative_path(project_root / "src" / "app.ts", project_root), "src/app.ts")
         self.assertIsNone(normalize_relative_path(project_root.parent / "outside.ts", project_root))
 
+    def test_normalizes_file_url_paths_inside_project_root(self):
+        project_root = self.temp_project()
+        target = project_root / "src" / "app.ts"
+        self.assertEqual(normalize_relative_path(f"file://{target}", project_root), "src/app.ts")
+
+    def test_rejects_relative_path_traversal_outside_project_root(self):
+        project_root = self.temp_project()
+        self.assertIsNone(normalize_relative_path("../outside.ts", project_root))
+
     def test_hashes_existing_file_content(self):
         project_root = self.temp_project()
         target = project_root / "src" / "app.ts"
@@ -59,6 +68,10 @@ class StateTests(unittest.TestCase):
             extract_file_paths_from_hook_input({"tool_input": {"edits": [{"file_path": "c.ts"}, {"path": "d.ts"}]}}),
             ["c.ts", "d.ts"],
         )
+
+    def test_extracts_unique_paths_only(self):
+        payload = {"tool_input": {"file_path": "a.ts", "edits": [{"file_path": "a.ts"}, {"file_path": "b.ts"}]}}
+        self.assertEqual(extract_file_paths_from_hook_input(payload), ["a.ts", "b.ts"])
 
     def test_ignores_corrupt_state_lines(self):
         project_root = self.temp_project()

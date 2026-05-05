@@ -25,6 +25,16 @@ class RulesTests(unittest.TestCase):
         self.assertTrue(should_skip_file("README.md", settings))
         self.assertFalse(should_skip_file("src/app.ts", settings))
 
+    def test_malformed_settings_fall_back_to_defaults(self):
+        project_root = Path(tempfile.mkdtemp(prefix="claude-auto-review-settings-"))
+        settings_dir = project_root / ".claude"
+        settings_dir.mkdir()
+        (settings_dir / "settings.json").write_text("{not-json", encoding="utf-8")
+
+        settings = load_settings(project_root)
+        self.assertTrue(settings["enabled"])
+        self.assertEqual(settings["skipExtensions"], [])
+
 
 if __name__ == "__main__":
     unittest.main()

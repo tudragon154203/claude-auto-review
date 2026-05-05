@@ -6,7 +6,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from scripts.state import load_state
+from scripts.state import append_state, load_state
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
@@ -40,6 +40,24 @@ class HookTests(unittest.TestCase):
         stop = self.run_python("hooks/stop_hook.py", project_root)
         self.assertEqual(stop.returncode, 2)
         self.assertTrue(json.loads(stop.stdout)["block"])
+
+    def test_post_tool_use_accepts_absolute_file_paths(self):
+        project_root = self.temp_project()
+        target = project_root / "src" / "app.ts"
+        target.write_text("export const value = 1;\n", encoding="utf-8")
+
+        post = self.run_python("hooks/post_tool_use.py", project_root, json.dumps({"file_path": str(target)}))
+        self.assertEqual(post.returncode, 0)
+        self.assertEqual(load_state(project_root)[0]["file"], "src/app.ts")
+
+    def test_post_tool_use_ignores_paths_outside_project(self):
+        project_root = self.temp_project()
+        outside = Path(tempfile.mkdtemp(prefix="claude-auto-review-outside-")) / "outside.ts"
+        outside.write_text("export const outside = true;\n", encoding="utf-8")
+
+        post = self.run_python("hooks/post_tool_use.py", project_root, json.dumps({"file_path": str(outside)}))
+        self.assertEqual(post.returncode, 0)
+        self.assertEqual(load_state(project_root), [])
 
     def test_review_prompt_creates_prompt_and_allows_later_stop(self):
         project_root = self.temp_project()
@@ -146,6 +164,38 @@ class HookTests(unittest.TestCase):
         self.assertIn("## Current File Snapshots", prompt)
         self.assertIn("export const created = true;", prompt)
 
+    def test_review_prompt_includes_custom_project_rules(self):
+        project_root = self.temp_project()
+        target = project_root / "src" / "app.ts"
+        target.write_text("export const value = 1;\n", encoding="utf-8")
+        self.run_python("hooks/post_tool_use.py", project_root, json.dumps({"file_path": "src/app.ts"}))
+        rules_path = project_root / ".claude" / "claude-auto-review" / "rules.md"
+        rules_path.write_text("# Custom Rules\n\n- Custom auth rule must appear.\n", encoding="utf-8")
+
+        review = self.run_python("scripts/review_prompt.py", project_root)
+        self.assertEqual(review.returncode, 0)
+        prompt = next((project_root / ".claude" / "claude-auto-review" / "run").glob("*prompt.md")).read_text(encoding="utf-8")
+        self.assertIn("Custom auth rule must appear.", prompt)
+
+    def test_review_prompt_describes_deleted_tracked_file(self):
+        project_root = self.temp_project()
+        append_state(
+            {
+                "type": "edit",
+                "file": "src/deleted.ts",
+                "hash": "deadbeef",
+                "timestamp": "2026-05-05T01:00:00Z",
+                "reviewed": False,
+            },
+            project_root,
+        )
+
+        review = self.run_python("scripts/review_prompt.py", project_root)
+        self.assertEqual(review.returncode, 0)
+        prompt = next((project_root / ".claude" / "claude-auto-review" / "run").glob("*prompt.md")).read_text(encoding="utf-8")
+        self.assertIn("## src/deleted.ts", prompt)
+        self.assertIn("File does not currently exist.", prompt)
+
     def test_setup_script_creates_runtime_shims_agents_rules_and_gitignore_entries(self):
         project_root = self.temp_project()
         setup = self.run_python("scripts/setup_claude_auto_review.py", project_root)
@@ -154,6 +204,15 @@ class HookTests(unittest.TestCase):
         self.assertTrue((project_root / ".claude" / "claude-auto-review" / "agents" / "reviewer.md").exists())
         self.assertTrue((project_root / ".claude" / "claude-auto-review" / "rules.md").exists())
         self.assertIn(".claude/claude-auto-review/state.jsonl", (project_root / ".gitignore").read_text(encoding="utf-8"))
+
+    def test_setup_script_is_idempotent_for_gitignore_entries(self):
+        project_root = self.temp_project()
+        self.run_python("scripts/setup_claude_auto_review.py", project_root)
+        self.run_python("scripts/setup_claude_auto_review.py", project_root)
+        lines = (project_root / ".gitignore").read_text(encoding="utf-8").splitlines()
+        self.assertEqual(lines.count(".claude/claude-auto-review/state.jsonl"), 1)
+        self.assertEqual(lines.count(".claude/claude-auto-review/run/"), 1)
+        self.assertEqual(lines.count(".claude/claude-auto-review/reviews/"), 1)
 
     def test_project_local_shim_runs_review_prompt(self):
         project_root = self.temp_project()
