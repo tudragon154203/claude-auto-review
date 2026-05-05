@@ -8,6 +8,7 @@ from pathlib import Path
 STATE_RELATIVE_PATH = Path(".claude") / "claude-auto-review" / "state.jsonl"
 RUNTIME_DIR = Path(".claude") / "claude-auto-review"
 LOG_RELATIVE_PATH = RUNTIME_DIR / "claude-auto-review.log"
+DELETED_FILE_HASH = "__deleted__"
 DEFAULT_SETTINGS = {
     "enabled": True,
     "rulesFile": str(Path(".claude") / "claude-auto-review" / "rules.md"),

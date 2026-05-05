@@ -6,6 +6,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
 
 from state import (  # noqa: E402
+    DELETED_FILE_HASH,
     append_state,
     ensure_runtime,
     extract_file_paths_from_hook_input,
@@ -45,7 +46,18 @@ def main():
                 continue
             file_hash = get_file_hash(file_path, project_root)
             if not file_hash:
-                log_event(project_root, "post_tool_use_missing_file", file=file_path)
+                append_state(
+                    {
+                        "type": "edit",
+                        "file": file_path,
+                        "hash": DELETED_FILE_HASH,
+                        "timestamp": timestamp,
+                        "reviewed": False,
+                        "deleted": True,
+                    },
+                    project_root,
+                )
+                log_event(project_root, "file_deletion_tracked", file=file_path, hash=DELETED_FILE_HASH, reviewed=False)
                 continue
             reviewed = was_hash_reviewed(state, file_path, file_hash)
             append_state(

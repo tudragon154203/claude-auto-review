@@ -58,6 +58,19 @@ class HookTests(unittest.TestCase):
         self.assertEqual(post.returncode, 0)
         self.assertEqual(load_state(project_root)[0]["file"], "src/app.ts")
 
+    def test_post_tool_use_tracks_removed_file_and_stop_hook_blocks(self):
+        project_root = self.temp_project()
+        payload = {"tool_name": "Remove", "tool_input": {"file_path": "src/deleted.ts"}}
+
+        post = self.run_python("hooks/post_tool_use.py", project_root, json.dumps(payload))
+        self.assertEqual(post.returncode, 0)
+        state = load_state(project_root)
+        self.assertEqual(state[0]["file"], "src/deleted.ts")
+        self.assertEqual(state[0]["hash"], "__deleted__")
+        self.assertFalse(state[0]["reviewed"])
+        self.assertTrue(state[0]["deleted"])
+        self.assertEqual(self.run_python("hooks/stop_hook.py", project_root).returncode, 2)
+
     def test_post_tool_use_ignores_paths_outside_project(self):
         project_root = self.temp_project()
         outside = Path(tempfile.mkdtemp(prefix="claude-auto-review-outside-")) / "outside.ts"
@@ -328,6 +341,16 @@ class HookTests(unittest.TestCase):
         )
         self.assertEqual(result.returncode, 0)
         self.assertFalse((project_root / ".claude" / "claude-auto-review" / "state.jsonl").exists())
+
+    def test_hook_configs_match_delete_and_remove_tools(self):
+        plugin_config = json.loads((REPO_ROOT / ".claude-plugin" / "plugin.json").read_text(encoding="utf-8"))
+        hooks_config = json.loads((REPO_ROOT / "hooks" / "hooks.json").read_text(encoding="utf-8"))
+
+        plugin_matcher = plugin_config["hooks"]["PostToolUse"][0]["matcher"]
+        hooks_matcher = hooks_config["hooks"]["PostToolUse"][0]["matcher"]
+        for tool_name in ("Write", "Edit", "MultiEdit", "Delete", "Remove"):
+            self.assertIn(tool_name, plugin_matcher)
+            self.assertIn(tool_name, hooks_matcher)
 
 
 if __name__ == "__main__":
