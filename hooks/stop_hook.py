@@ -5,7 +5,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
 
-from state import ensure_runtime, get_project_root, get_unreviewed_files, load_settings, load_state  # noqa: E402
+from state import ensure_runtime, get_project_root, get_unreviewed_files, load_settings, load_state, log_event  # noqa: E402
 
 
 def main():
@@ -14,10 +14,12 @@ def main():
         ensure_runtime(project_root)
         settings = load_settings(project_root)
         if not settings.get("enabled", True):
+            log_event(project_root, "stop_disabled")
             return 0
 
         unreviewed = get_unreviewed_files(load_state(project_root))
         if not unreviewed:
+            log_event(project_root, "stop_approved", reason="no_unreviewed_files")
             return 0
 
         files = ", ".join(entry["file"] for entry in unreviewed)
@@ -39,8 +41,13 @@ def main():
                 separators=(",", ":"),
             )
         )
+        log_event(project_root, "stop_blocked", files=[entry["file"] for entry in unreviewed])
         return 2
-    except Exception:
+    except Exception as error:
+        try:
+            log_event(get_project_root(), "stop_error", error=str(error))
+        except Exception:
+            pass
         return 0
 
 

@@ -9,6 +9,7 @@ It is intentionally diff-focused:
 - If any latest hash is unreviewed, the stop hook blocks and tells Claude to run the review prompt script.
 - The prompt script writes a review request under `.claude/claude-auto-review/run/`, initializes a review file under `.claude/claude-auto-review/reviews/`, and marks the reviewed snapshot.
 - Any fixes create new hashes and trigger another review cycle.
+- Runtime events are logged to `.claude/claude-auto-review/claude-auto-review.log`.
 
 ## Quick Start
 
@@ -33,6 +34,7 @@ Local runtime files should stay ignored:
 .claude/claude-auto-review/state.jsonl
 .claude/claude-auto-review/run/
 .claude/claude-auto-review/reviews/
+.claude/claude-auto-review/claude-auto-review.log
 ```
 
 ## Configuration
@@ -44,6 +46,7 @@ Project overrides can be added to `.claude/settings.json`:
   "claude-auto-review": {
     "enabled": true,
     "rulesFile": ".claude/claude-auto-review/rules.md",
+    "includeExtensions": ["py", "ts", "tsx"],
     "skipExtensions": ["md", "json", "yaml", "yml", "css", "scss"],
     "minSeverity": "MEDIUM",
     "autoFix": true
@@ -51,4 +54,16 @@ Project overrides can be added to `.claude/settings.json`:
 }
 ```
 
-`enabled` and `skipExtensions` are enforced by the current hooks. `minSeverity` and `autoFix` are documented for reviewer behavior and future native agent dispatch.
+`enabled`, `includeExtensions`, and `skipExtensions` are enforced by the current hooks. If `includeExtensions` is non-empty, only matching extensions are tracked. `skipExtensions` always excludes matching files. `minSeverity` and `autoFix` are documented for reviewer behavior and future native agent dispatch.
+
+## Cancel Runtime State
+
+```bash
+python scripts/cancel_claude_auto_review.py
+```
+
+In an initialized project, use:
+
+```bash
+python .claude/claude-auto-review/scripts/cancel_claude_auto_review.py
+```

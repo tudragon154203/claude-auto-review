@@ -7,9 +7,11 @@ from pathlib import Path
 
 STATE_RELATIVE_PATH = Path(".claude") / "claude-auto-review" / "state.jsonl"
 RUNTIME_DIR = Path(".claude") / "claude-auto-review"
+LOG_RELATIVE_PATH = RUNTIME_DIR / "claude-auto-review.log"
 DEFAULT_SETTINGS = {
     "enabled": True,
     "rulesFile": str(Path(".claude") / "claude-auto-review" / "rules.md"),
+    "includeExtensions": [],
     "skipExtensions": [],
     "minSeverity": "MEDIUM",
     "autoFix": True,
@@ -49,6 +51,21 @@ def get_state_path(project_root=None):
     return Path(project_root or get_project_root()) / STATE_RELATIVE_PATH
 
 
+def get_log_path(project_root=None):
+    return Path(project_root or get_project_root()) / LOG_RELATIVE_PATH
+
+
+def log_event(project_root, event, **fields):
+    try:
+        entry = {"timestamp": utc_now_iso(), "event": event, **fields}
+        log_path = get_log_path(project_root)
+        log_path.parent.mkdir(parents=True, exist_ok=True)
+        with log_path.open("a", encoding="utf-8", newline="\n") as handle:
+            handle.write(json.dumps(entry, separators=(",", ":")) + "\n")
+    except OSError:
+        pass
+
+
 def load_settings(project_root=None):
     project_root = Path(project_root or get_project_root())
     settings_path = project_root / ".claude" / "settings.json"
@@ -63,10 +80,16 @@ def load_settings(project_root=None):
 def should_skip_file(file_path, settings=None):
     settings = settings or DEFAULT_SETTINGS
     ext = Path(file_path).suffix.lstrip(".").lower()
+    include_extensions = [
+        str(value).lstrip(".").lower()
+        for value in settings.get("includeExtensions", [])
+    ]
     skip_extensions = [
         str(value).lstrip(".").lower()
         for value in settings.get("skipExtensions", [])
     ]
+    if include_extensions and ext not in include_extensions:
+        return True
     return bool(ext and ext in skip_extensions)
 
 
@@ -218,4 +241,43 @@ def ensure_runtime(project_root=None, plugin_root=None):
         "rules_path": rules_path,
         "reviews_dir": reviews_dir,
         "run_dir": run_dir,
+        "log_path": project_root / LOG_RELATIVE_PATH,
     }
+
+
+def ensure_project_settings(project_root=None):
+    project_root = Path(project_root or get_project_root())
+    settings_path = project_root / ".claude" / "settings.json"
+    settings_path.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        settings = json.loads(settings_path.read_text(encoding="utf-8")) if settings_path.exists() else {}
+        if not isinstance(settings, dict):
+            settings = {}
+    except (OSError, json.JSONDecodeError):
+        settings = {}
+
+    if "claude-auto-review" not in settings:
+        settings["claude-auto-review"] = dict(DEFAULT_SETTINGS)
+        settings_path.write_text(json.dumps(settings, indent=2) + "\n", encoding="utf-8", newline="\n")
+    return settings_path
+
+
+def cancel_runtime(project_root=None):
+    project_root = Path(project_root or get_project_root())
+    targets = [
+        project_root / STATE_RELATIVE_PATH,
+        project_root / RUNTIME_DIR / "run",
+        project_root / RUNTIME_DIR / "reviews",
+    ]
+    removed = []
+    for target in targets:
+        try:
+            if target.is_dir():
+                shutil.rmtree(target)
+                removed.append(target)
+            elif target.exists():
+                target.unlink()
+                removed.append(target)
+        except OSError:
+            continue
+    return removed

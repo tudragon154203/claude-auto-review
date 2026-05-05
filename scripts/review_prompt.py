@@ -6,6 +6,7 @@ from state import (
     ensure_runtime,
     get_project_root,
     get_unreviewed_files,
+    log_event,
     load_settings,
     load_state,
     mark_files_reviewed,
@@ -107,7 +108,24 @@ If no findings exist, write "Clean - no issues found. Claude may stop." under "#
 
 ## After Review
 
-Fix any CRITICAL or HIGH findings you agree with. If you edit files, the hook will track those new hashes and require another review pass."""
+After receiving review results:
+
+1. Show all findings to the user.
+2. Evaluate each finding against one heuristic: what produces the highest quality code?
+3. Fix the finding unless one of these skip reasons clearly applies:
+   - IMPOSSIBLE: you tried the fix and cannot satisfy feedback, product requirements, lint rules, and tests simultaneously.
+   - CONFLICTS WITH REQUIREMENTS: the feedback directly contradicts explicit product requirements.
+   - MAKES CODE WORSE: applying the feedback would genuinely degrade code quality.
+4. These are not valid skip reasons:
+   - too much time
+   - too complex
+   - out of scope after you touched the file
+   - pre-existing code
+   - only renamed or moved
+   - would require a larger refactor
+5. If uncertain, ask the user.
+
+If you edit files, the hook will track those new hashes and require another review pass."""
 
 
 def main():
@@ -118,11 +136,13 @@ def main():
 
         settings = load_settings(project_root)
         if not settings.get("enabled", True):
+            log_event(project_root, "review_prompt_disabled")
             print("Claude Auto Review is disabled in .claude/settings.json.")
             return 0
 
         unreviewed = get_unreviewed_files(load_state(project_root))
         if not unreviewed:
+            log_event(project_root, "review_prompt_noop")
             print("Claude Auto Review: no unreviewed changes.")
             return 0
 
@@ -164,11 +184,23 @@ Pending.
         )
 
         mark_files_reviewed(unreviewed, review_id, project_root)
+        log_event(
+            project_root,
+            "review_prompt_created",
+            reviewId=review_id,
+            files=files,
+            prompt=str(prompt_path),
+            review=str(review_path),
+        )
         print(f"Claude Auto Review prompt created: {prompt_path}")
         print(f"Review file initialized: {review_path}")
         print("Read the prompt, complete the review file, and fix any agreed CRITICAL or HIGH findings before stopping.")
         return 0
     except Exception as error:
+        try:
+            log_event(get_project_root(), "review_prompt_error", error=str(error))
+        except Exception:
+            pass
         print(f"Claude Auto Review failed open: {error}")
         return 0
 

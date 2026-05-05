@@ -29,3 +29,9 @@ After Claude edits a tracked file, the post tool hook should append a JSON line 
 ```
 
 When Claude tries to stop, the stop hook should return exit code `2` with a JSON block message until the review prompt script has been run.
+
+Hook lifecycle events are written to:
+
+```text
+.claude/claude-auto-review/claude-auto-review.log
+```

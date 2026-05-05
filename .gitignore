@@ -1,6 +1,7 @@
 .claude/claude-auto-review/state.jsonl
 .claude/claude-auto-review/run/
 .claude/claude-auto-review/reviews/
+.claude/claude-auto-review/claude-auto-review.log
 node_modules/
 coverage/
 .env

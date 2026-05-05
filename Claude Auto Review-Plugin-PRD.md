@@ -115,7 +115,8 @@ claude-auto-review/
 │   └── plugin.json              # Plugin manifest
 │
 ├── commands/
-│   └── claude-auto-review.md                  # /claude-auto-review — manual trigger (optional)
+│   ├── claude-auto-review.md                  # /claude-auto-review — manual trigger (optional)
+│   └── cancel-claude-auto-review.md           # /cancel-claude-auto-review — clear runtime state
 │
 ├── hooks/
 │   ├── hooks.json               # Hook registrations (PostToolUse, Stop)
@@ -124,7 +125,8 @@ claude-auto-review/
 │
 ├── scripts/
 │   ├── review_prompt.py         # Generates review prompt from state + rules
-│   └── setup_claude_auto_review.py            # First-run initialization (rules.md, state file)
+│   ├── setup_claude_auto_review.py            # First-run initialization (rules.md, state file)
+│   └── cancel_claude_auto_review.py           # Runtime state cleanup
 │
 ├── agents/
 │   └── reviewer.md              # Single-agent system prompt for the reviewer
@@ -416,16 +418,18 @@ python scripts/setup_claude_auto_review.py
   "description": "Post-Edit Review Loop — automatic code review after Claude writes code",
   "author": "<your-org>",
   "license": "MIT",
-  "commands": ["claude-auto-review"],
+  "commands": ["claude-auto-review", "cancel-claude-auto-review"],
   "hooks": {
     "PostToolUse": [{
       "matcher": "Write|Edit|MultiEdit",
       "script": "hooks/post_tool_use.py",
-      "timeout": 10
+      "timeout": 10,
+      "statusMessage": "Claude Auto Review: tracking changed file..."
     }],
     "Stop": [{
       "script": "hooks/stop_hook.py",
-      "timeout": 30
+      "timeout": 30,
+      "statusMessage": "Claude Auto Review: checking review state..."
     }]
   },
   "agents": ["agents/reviewer.md"],
@@ -442,6 +446,7 @@ python scripts/setup_claude_auto_review.py
   "claude-auto-review": {
     "enabled": true,
     "rulesFile": ".claude/claude-auto-review/rules.md",
+    "includeExtensions": ["py", "ts", "tsx"],
     "skipExtensions": ["md", "json", "yaml", "yml", "css", "scss"],
     "minSeverity": "MEDIUM",
     "autoFix": true
@@ -453,7 +458,8 @@ python scripts/setup_claude_auto_review.py
 | ---------------- | ----------------------- | --------------------------------------- |
 | `enabled`        | `true`                  | Master toggle                           |
 | `rulesFile`      | `.claude/claude-auto-review/rules.md` | Path to project rules                   |
-| `skipExtensions` | `[]`                    | File types to ignore                    |
+| `includeExtensions` | `[]`                 | If non-empty, only these file types trigger review |
+| `skipExtensions` | `[]`                    | File types to ignore; wins over include |
 | `minSeverity`    | `"MEDIUM"`              | Only block stop for ≥ this severity     |
 | `autoFix`        | `true`                  | Claude attempts fixes for CRITICAL/HIGH |
 
@@ -481,14 +487,16 @@ claude-auto-review/
 ├── agents/
 │   └── reviewer.md
 ├── commands/
-│   └── claude-auto-review.md
+│   ├── claude-auto-review.md
+│   └── cancel-claude-auto-review.md
 ├── hooks/
 │   ├── hooks.json
 │   ├── post_tool_use.py
 │   └── stop_hook.py
 ├── scripts/
 │   ├── review_prompt.py
-│   └── setup_claude_auto_review.py
+│   ├── setup_claude_auto_review.py
+│   └── cancel_claude_auto_review.py
 ├── rules/
 │   └── default-rules.md
 ├── tests/

@@ -4,19 +4,21 @@
   "description": "Post-edit review loop for Claude Code: automatically reviews changed files before Claude stops.",
   "author": "claude-auto-review",
   "license": "MIT",
-  "commands": ["claude-auto-review"],
+  "commands": ["claude-auto-review", "cancel-claude-auto-review"],
   "hooks": {
     "PostToolUse": [
       {
         "matcher": "Write|Edit|MultiEdit",
         "script": "hooks/post_tool_use.py",
-        "timeout": 10
+        "timeout": 10,
+        "statusMessage": "Claude Auto Review: tracking changed file..."
       }
     ],
     "Stop": [
       {
         "script": "hooks/stop_hook.py",
-        "timeout": 30
+        "timeout": 30,
+        "statusMessage": "Claude Auto Review: checking review state..."
       }
     ]
   },

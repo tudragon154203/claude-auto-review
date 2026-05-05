@@ -89,6 +89,31 @@ class HookTests(unittest.TestCase):
         self.assertEqual(load_state(project_root), [])
         self.assertEqual(self.run_python("hooks/stop_hook.py", project_root).returncode, 0)
 
+    def test_does_not_track_files_outside_include_extension_allowlist(self):
+        project_root = self.temp_project()
+        (project_root / ".claude").mkdir()
+        (project_root / ".claude" / "settings.json").write_text(
+            json.dumps({"claude-auto-review": {"includeExtensions": ["py"]}}),
+            encoding="utf-8",
+        )
+        (project_root / "src" / "app.ts").write_text("export const value = 1;\n", encoding="utf-8")
+        (project_root / "src" / "app.py").write_text("value = 1\n", encoding="utf-8")
+
+        ts_post = self.run_python("hooks/post_tool_use.py", project_root, json.dumps({"file_path": "src/app.ts"}))
+        py_post = self.run_python("hooks/post_tool_use.py", project_root, json.dumps({"file_path": "src/app.py"}))
+        self.assertEqual(ts_post.returncode, 0)
+        self.assertEqual(py_post.returncode, 0)
+        self.assertEqual([entry["file"] for entry in load_state(project_root)], ["src/app.py"])
+
+    def test_post_tool_use_writes_lifecycle_log_without_stdout(self):
+        project_root = self.temp_project()
+        (project_root / "src" / "app.ts").write_text("export const value = 1;\n", encoding="utf-8")
+
+        post = self.run_python("hooks/post_tool_use.py", project_root, json.dumps({"file_path": "src/app.ts"}))
+        self.assertEqual(post.stdout, "")
+        log_path = project_root / ".claude" / "claude-auto-review" / "claude-auto-review.log"
+        self.assertIn('"event":"file_tracked"', log_path.read_text(encoding="utf-8"))
+
     def test_allows_stop_when_disabled_in_project_settings(self):
         project_root = self.temp_project()
         (project_root / ".claude").mkdir()
@@ -124,6 +149,17 @@ class HookTests(unittest.TestCase):
         stop = self.run_python("hooks/stop_hook.py", project_root)
         self.assertEqual(stop.returncode, 2)
         self.assertIn("src/app.ts", json.loads(stop.stdout)["message"])
+
+    def test_stop_hook_outputs_strict_json_when_blocking(self):
+        project_root = self.temp_project()
+        (project_root / "src" / "app.ts").write_text("export const value = 1;\n", encoding="utf-8")
+        self.run_python("hooks/post_tool_use.py", project_root, json.dumps({"file_path": "src/app.ts"}))
+
+        stop = self.run_python("hooks/stop_hook.py", project_root)
+        self.assertEqual(stop.stderr, "")
+        parsed = json.loads(stop.stdout)
+        self.assertTrue(parsed["block"])
+        self.assertEqual(stop.stdout.strip(), json.dumps(parsed, separators=(",", ":")))
 
     def test_tracks_multiple_files_from_multiedit_style_payload(self):
         project_root = self.temp_project()
@@ -201,9 +237,12 @@ class HookTests(unittest.TestCase):
         setup = self.run_python("scripts/setup_claude_auto_review.py", project_root)
         self.assertEqual(setup.returncode, 0)
         self.assertTrue((project_root / ".claude" / "claude-auto-review" / "scripts" / "review_prompt.py").exists())
+        self.assertTrue((project_root / ".claude" / "claude-auto-review" / "scripts" / "cancel_claude_auto_review.py").exists())
         self.assertTrue((project_root / ".claude" / "claude-auto-review" / "agents" / "reviewer.md").exists())
         self.assertTrue((project_root / ".claude" / "claude-auto-review" / "rules.md").exists())
         self.assertIn(".claude/claude-auto-review/state.jsonl", (project_root / ".gitignore").read_text(encoding="utf-8"))
+        settings = json.loads((project_root / ".claude" / "settings.json").read_text(encoding="utf-8"))
+        self.assertIn("claude-auto-review", settings)
 
     def test_setup_script_is_idempotent_for_gitignore_entries(self):
         project_root = self.temp_project()
@@ -213,6 +252,7 @@ class HookTests(unittest.TestCase):
         self.assertEqual(lines.count(".claude/claude-auto-review/state.jsonl"), 1)
         self.assertEqual(lines.count(".claude/claude-auto-review/run/"), 1)
         self.assertEqual(lines.count(".claude/claude-auto-review/reviews/"), 1)
+        self.assertEqual(lines.count(".claude/claude-auto-review/claude-auto-review.log"), 1)
 
     def test_project_local_shim_runs_review_prompt(self):
         project_root = self.temp_project()
@@ -230,6 +270,45 @@ class HookTests(unittest.TestCase):
         )
         self.assertEqual(result.returncode, 0)
         self.assertEqual(self.run_python("hooks/stop_hook.py", project_root).returncode, 0)
+
+    def test_cancel_script_clears_state_run_and_review_artifacts(self):
+        project_root = self.temp_project()
+        (project_root / "src" / "app.ts").write_text("export const value = 1;\n", encoding="utf-8")
+        self.run_python("hooks/post_tool_use.py", project_root, json.dumps({"file_path": "src/app.ts"}))
+        self.run_python("scripts/review_prompt.py", project_root)
+
+        cancel = self.run_python("scripts/cancel_claude_auto_review.py", project_root)
+        self.assertEqual(cancel.returncode, 0)
+        self.assertFalse((project_root / ".claude" / "claude-auto-review" / "state.jsonl").exists())
+        self.assertFalse((project_root / ".claude" / "claude-auto-review" / "run").exists())
+        self.assertFalse((project_root / ".claude" / "claude-auto-review" / "reviews").exists())
+        log_content = (project_root / ".claude" / "claude-auto-review" / "claude-auto-review.log").read_text(encoding="utf-8")
+        self.assertIn('"event":"cancel_completed"', log_content)
+
+    def test_project_local_cancel_shim_runs(self):
+        project_root = self.temp_project()
+        self.run_python("scripts/setup_claude_auto_review.py", project_root)
+        append_state(
+            {
+                "type": "edit",
+                "file": "src/app.ts",
+                "hash": "deadbeef",
+                "timestamp": "2026-05-05T01:00:00Z",
+                "reviewed": False,
+            },
+            project_root,
+        )
+        shim = project_root / ".claude" / "claude-auto-review" / "scripts" / "cancel_claude_auto_review.py"
+        result = subprocess.run(
+            [sys.executable, str(shim)],
+            cwd=project_root,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            env={**os.environ, "CLAUDE_PROJECT_DIR": str(project_root)},
+        )
+        self.assertEqual(result.returncode, 0)
+        self.assertFalse((project_root / ".claude" / "claude-auto-review" / "state.jsonl").exists())
 
 
 if __name__ == "__main__":
