@@ -56,7 +56,7 @@ The result: a **single-agent, diff-focused, rules-driven review loop** that is f
 | **State is explicit**         | Track reviewed file hashes in a local state file. No hidden magic, no redundant reviews.                                          |
 | **Fail open, not closed**     | If hooks error, allow Claude to proceed. Never block the user because a plugin broke.                                             |
 | **Rules are code**            | Review criteria live in `.claude/claude-auto-review/rules.md`, committed to git, version-controlled, team-shared.                               |
-| **Cross-platform by default** | All hook scripts in Node.js (or Python), not bash. Single codebase, all platforms.                                                |
+| **Cross-platform by default** | All hook scripts in Python, not bash. Single codebase, all platforms.                                                |
 
 ---
 
@@ -119,12 +119,12 @@ claude-auto-review/
 │
 ├── hooks/
 │   ├── hooks.json               # Hook registrations (PostToolUse, Stop)
-│   ├── post-tool-use.js         # Cross-platform file change logger
-│   └── stop-hook.js             # Change detector + stop blocker + review orchestrator
+│   ├── post_tool_use.py         # Cross-platform file change logger
+│   └── stop_hook.py             # Change detector + stop blocker + review orchestrator
 │
 ├── scripts/
-│   ├── review-prompt.js         # Generates review prompt from state + rules
-│   └── setup-claude-auto-review.js            # First-run initialization (rules.md, state file)
+│   ├── review_prompt.py         # Generates review prompt from state + rules
+│   └── setup_claude_auto_review.py            # First-run initialization (rules.md, state file)
 │
 ├── agents/
 │   └── reviewer.md              # Single-agent system prompt for the reviewer
@@ -199,58 +199,15 @@ claude-auto-review/
 
 **Exit code:** Always 0 (never block edits).
 
-**Implementation:** `hooks/post-tool-use.js`
+**Implementation:** `hooks/post_tool_use.py`
 
-```javascript
-#!/usr/bin/env node
-// hooks/post-tool-use.js
-const fs = require('fs');
-const crypto = require('crypto');
-const path = require('path');
-
-const STATE_FILE = '.claude/claude-auto-review/state.jsonl';
-const GIT_ROOT = process.env.CLAUDE_PROJECT_DIR || process.cwd();
-
-function getFileHash(filePath) {
-  const fullPath = path.join(GIT_ROOT, filePath);
-  if (!fs.existsSync(fullPath)) return null;
-  const content = fs.readFileSync(fullPath);
-  return crypto.createHash('sha256').update(content).digest('hex').slice(0, 8);
-}
-
-function appendState(entry) {
-  const statePath = path.join(GIT_ROOT, STATE_FILE);
-  const dir = path.dirname(statePath);
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-  fs.appendFileSync(statePath, JSON.stringify(entry) + '\n');
-}
-
-// Read tool input from stdin (Claude Code hook protocol)
-let toolInput = '';
-process.stdin.on('data', chunk => toolInput += chunk);
-process.stdin.on('end', () => {
-  try {
-    const input = JSON.parse(toolInput);
-    const filePath = input.file_path || input.path;
-    if (!filePath) process.exit(0);
-
-    const hash = getFileHash(filePath);
-    if (!hash) process.exit(0);
-
-    appendState({
-      type: 'edit',
-      file: filePath,
-      hash,
-      timestamp: new Date().toISOString(),
-      reviewed: false
-    });
-
-    process.exit(0);
-  } catch (e) {
-    // Fail open: never block on hook error
-    process.exit(0);
-  }
-});
+```python
+#!/usr/bin/env python3
+# hooks/post_tool_use.py
+#
+# Read Claude hook JSON from stdin, extract changed file paths, hash current
+# file contents, and append JSONL state. All errors return 0 so edits are never
+# blocked by review infrastructure.
 ```
 
 ### 5.2 Stop Hook
@@ -271,78 +228,25 @@ process.stdin.on('end', () => {
 {
   "block": true,
   "message": "Claude Auto Review: Unreviewed changes detected in src/auth.ts, src/login.tsx. Running review...",
-  "feedback": "Review required before stopping. Run the review script: node .claude/claude-auto-review/scripts/review-prompt.js"
+  "feedback": "Review required before stopping. Run the review script: python .claude/claude-auto-review/scripts/review_prompt.py"
 }
 ```
 
 **Timeout:** 5 seconds.
 
-**Implementation:** `hooks/stop-hook.js`
+**Implementation:** `hooks/stop_hook.py`
 
-```javascript
-#!/usr/bin/env node
-// hooks/stop-hook.js
-const fs = require('fs');
-const path = require('path');
-
-const STATE_FILE = '.claude/claude-auto-review/state.jsonl';
-const GIT_ROOT = process.env.CLAUDE_PROJECT_DIR || process.cwd();
-
-function loadState() {
-  const statePath = path.join(GIT_ROOT, STATE_FILE);
-  if (!fs.existsSync(statePath)) return [];
-  return fs.readFileSync(statePath, 'utf8')
-    .trim()
-    .split('\n')
-    .filter(Boolean)
-    .map(line => JSON.parse(line));
-}
-
-function getUnreviewedFiles(state) {
-  const latestByFile = {};
-  for (const entry of state) {
-    if (!latestByFile[entry.file] || new Date(entry.timestamp) > new Date(latestByFile[entry.file].timestamp)) {
-      latestByFile[entry.file] = entry;
-    }
-  }
-  return Object.values(latestByFile).filter(e => !e.reviewed);
-}
-
-function main() {
-  try {
-    const state = loadState();
-    const unreviewed = getUnreviewedFiles(state);
-
-    if (unreviewed.length === 0) {
-      // All clean, allow stop
-      process.exit(0);
-    }
-
-    const files = unreviewed.map(e => e.file).join(', ');
-    const reviewScript = path.join(GIT_ROOT, '.claude/claude-auto-review/scripts/review-prompt.js');
-
-    // Block stop and tell Claude what to do
-    const response = {
-      block: true,
-      message: `Claude Auto Review: Unreviewed changes in ${files}. Running review...`,
-      feedback: `Run: node ${reviewScript}`,
-      continue: false
-    };
-
-    console.log(JSON.stringify(response));
-    process.exit(2); // Blocking error
-  } catch (e) {
-    // Fail open
-    process.exit(0);
-  }
-}
-
-main();
+```python
+#!/usr/bin/env python3
+# hooks/stop_hook.py
+#
+# Load latest tracked file hashes. If any latest hash is unreviewed, print the
+# Claude hook block JSON and exit 2. If clean or if the hook errors, exit 0.
 ```
 
 ### 5.3 Review Orchestration Script
 
-**File:** `scripts/review-prompt.js`
+**File:** `scripts/review_prompt.py`
 
 **Behavior:**
 
@@ -464,7 +368,7 @@ End with one of:
 ### 8.1 Prerequisites
 
 - Claude Code CLI v2.1.0+
-- Node.js 18+ (for cross-platform hook scripts)
+- Python 18+ (for cross-platform hook scripts)
 - Git (for `git diff`)
 
 ### 8.2 Plugin Install
@@ -494,7 +398,7 @@ git clone https://github.com/<your-org>/claude-auto-review.git
 cd claude-auto-review
 
 # Install hooks manually (if not using plugin system)
-node scripts/setup-claude-auto-review.js
+python scripts/setup_claude_auto_review.py
 ```
 
 ---
@@ -516,11 +420,11 @@ node scripts/setup-claude-auto-review.js
   "hooks": {
     "PostToolUse": [{
       "matcher": "Write|Edit|MultiEdit",
-      "script": "hooks/post-tool-use.js",
+      "script": "hooks/post_tool_use.py",
       "timeout": 2
     }],
     "Stop": [{
-      "script": "hooks/stop-hook.js",
+      "script": "hooks/stop_hook.py",
       "timeout": 5
     }]
   },
@@ -580,22 +484,22 @@ claude-auto-review/
 │   └── claude-auto-review.md
 ├── hooks/
 │   ├── hooks.json
-│   ├── post-tool-use.js
-│   └── stop-hook.js
+│   ├── post_tool_use.py
+│   └── stop_hook.py
 ├── scripts/
-│   ├── review-prompt.js
-│   └── setup-claude-auto-review.js
+│   ├── review_prompt.py
+│   └── setup_claude_auto_review.py
 ├── rules/
 │   └── default-rules.md
 ├── tests/
-│   ├── hooks.test.js
-│   ├── state.test.js
-│   └── rules.test.js
+│   ├── test_hooks.py
+│   ├── test_state.py
+│   └── test_rules.py
 ├── docs/
 │   ├── README.md
 │   ├── INSTALL.md
 │   └── RULES-GUIDE.md
-├── package.json
+├── README.md
 ├── justfile / Makefile
 └── LICENSE
 ```
@@ -604,7 +508,7 @@ claude-auto-review/
 
 | Test Type      | Tool                                    | Coverage                                     |
 | -------------- | --------------------------------------- | -------------------------------------------- |
-| Unit tests     | Vitest                                  | Hook scripts, state management, rules parser |
+| Unit tests     | unittest                                  | Hook scripts, state management, rules parser |
 | Integration    | Claude Code test harness                | End-to-end review loop                       |
 | Cross-platform | GitHub Actions (ubuntu, macos, windows) | CI for all hooks                             |
 

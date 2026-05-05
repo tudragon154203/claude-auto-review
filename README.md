@@ -7,6 +7,5 @@ See [docs/README.md](docs/README.md) for behavior, [docs/INSTALL.md](docs/INSTAL
 ## Development
 
 ```bash
-npm install
-npm test
+python -m unittest discover -s tests
 ```

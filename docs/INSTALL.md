@@ -3,7 +3,7 @@
 ## Prerequisites
 
 - Claude Code with plugin support
-- Node.js 18 or newer
+- Python 3.10 or newer
 - Git for diff generation
 
 ## Plugin Install
@@ -15,10 +15,10 @@ Install the plugin through Claude Code using the repository marketplace flow, th
 From a target project:
 
 ```bash
-node path/to/claude-auto-review/scripts/setup-claude-auto-review.js
+python path/to/claude-auto-review/scripts/setup_claude_auto_review.py
 ```
 
-Then add the hook definitions from `hooks/hooks.json` to the target project's Claude settings, adjusting command paths if needed.
+Then add the hook definitions from `hooks/hooks.json` to the target project's Claude settings, adjusting command paths if needed. On systems where `python` is not available, use `python3`.
 
 ## Verify
 

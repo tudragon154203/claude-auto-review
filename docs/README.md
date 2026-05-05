@@ -13,9 +13,8 @@ It is intentionally diff-focused:
 ## Quick Start
 
 ```bash
-npm install
-npm test
-node scripts/setup-claude-auto-review.js
+python -m unittest discover -s tests
+python scripts/setup_claude_auto_review.py
 ```
 
 For plugin installation, use `.claude-plugin/plugin.json`. For manual hook wiring, use `hooks/hooks.json` as the project settings template.
