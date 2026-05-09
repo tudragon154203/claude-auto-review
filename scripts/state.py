@@ -36,19 +36,15 @@ def get_plugin_root():
 
 
 def get_client_id() -> str:
-    """Returns a unique identifier for the current Claude Code client.
+    """Returns a unique identifier for the current Claude Code session.
 
     Uses CLAUDE_SESSION_ID if available (passed by Claude Code hook env).
-    Falls back to a persisted hostname:pid:timestamp tuple.
+    Falls back to an ephemeral hostname:pid:timestamp tuple that is NOT
+    persisted, so each process/session gets its own isolated state.
     """
     session_id = os.environ.get("CLAUDE_SESSION_ID")
     if session_id:
         return session_id
-
-    root = get_project_root()
-    client_id_file = root / RUNTIME_DIR / "client-id"
-    if client_id_file.exists():
-        return client_id_file.read_text().strip()
 
     try:
         hostname = socket.gethostname()
@@ -56,11 +52,7 @@ def get_client_id() -> str:
         hostname = "unknown"
     pid = os.getpid()
     timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
-    client_id = f"{hostname}-{pid}-{timestamp}"
-
-    client_id_file.parent.mkdir(parents=True, exist_ok=True)
-    client_id_file.write_text(client_id)
-    return client_id
+    return f"{hostname}-{pid}-{timestamp}"
 
 
 def get_client_runtime_dir(project_root: Path, client_id: str) -> Path:
