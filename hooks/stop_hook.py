@@ -18,6 +18,7 @@ from state import (  # noqa: E402
     log_event,
     mark_files_reviewed,
     pending_reviews_for_entries,
+    utc_now_iso,
 )
 
 
@@ -76,7 +77,7 @@ def main():
                 ),
             )
             log_event(project_root, "stop_blocked", reason="review_pending", reviewId=review.get("reviewId"), review=review_path)
-            append_state({"type": "stop_blocked", "reason": "review_pending"}, project_root, client_id=client_id)
+            append_state({"type": "stop_blocked", "reason": "review_pending", "timestamp": utc_now_iso()}, project_root, client_id=client_id)
             return 2
 
         files = ", ".join(entry["file"] for entry in unreviewed)
@@ -94,7 +95,7 @@ def main():
             ),
         )
         log_event(project_root, "stop_blocked", files=[entry["file"] for entry in unreviewed])
-        append_state({"type": "stop_blocked", "reason": "no_pending_review"}, project_root, client_id=client_id)
+        append_state({"type": "stop_blocked", "reason": "no_pending_review", "timestamp": utc_now_iso()}, project_root, client_id=client_id)
         return 2
     except Exception as error:
         try:

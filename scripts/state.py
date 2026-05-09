@@ -269,29 +269,26 @@ def pending_reviews_for_entries(state, entries):
 
 def consecutive_stop_blocks(state):
     """
-    Count stop_blocked entries since the oldest unreviewed file was introduced.
-    This resets naturally when all files are reviewed (no unreviewed entries exist).
+    Count stop_blocked entries since the last review-completion marker.
+
+    Walking through the state in order, we find the *last* entry that was a
+    review completion (an edit entry with reviewed=True). Only stop_blocked
+    entries appended after that point are counted. This naturally resets
+    when a review completes — new edits after that start a fresh count.
     """
-    # Find the earliest timestamp among unreviewed entries
-    oldest_unreviewed_ts = None
-    for entry in state:
+    # Find the index of the last reviewed edit (cycle boundary)
+    last_reviewed_idx = -1
+    for idx, entry in enumerate(state):
         if not isinstance(entry, dict):
             continue
-        if entry.get("type") == "edit" and not entry.get("reviewed", False):
-            ts = entry.get("timestamp", "")
-            if oldest_unreviewed_ts is None or ts < oldest_unreviewed_ts:
-                oldest_unreviewed_ts = ts
+        if entry.get("type") == "edit" and entry.get("reviewed", False):
+            last_reviewed_idx = idx
 
-    if oldest_unreviewed_ts is None:
-        # No unreviewed files → no blocks to count
-        return 0
-
-    # Count stop_blocked entries from the oldest unreviewed timestamp onward
+    # Count stop_blocked entries after that boundary
+    start = last_reviewed_idx + 1
     count = 0
-    for entry in state:
-        if not isinstance(entry, dict):
-            continue
-        if entry.get("type") == "stop_blocked" and entry.get("timestamp", "") >= oldest_unreviewed_ts:
+    for entry in state[start:]:
+        if isinstance(entry, dict) and entry.get("type") == "stop_blocked":
             count += 1
     return count
 

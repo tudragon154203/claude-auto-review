@@ -385,17 +385,15 @@ class HookTests(unittest.TestCase):
         state = load_state(project_root, "test-session")
         self.assertEqual(consecutive_stop_blocks(state), 3)
 
-        # Step 4: Track a fourth unreviewed edit → fourth block (count = 4)
-        # Circuit breaker should trip: default maxStopPasses is 3, so count (4) >= 3 → allow stop
+        # Step 4: Track a fourth unreviewed edit → fourth stop should trip the breaker
         (project_root / "src" / "d.ts").write_text("export const d = 4;\n", encoding="utf-8")
         post4 = self.run_python("hooks/post_tool_use.py", project_root, json.dumps({"file_path": "src/d.ts"}))
         self.assertEqual(post4.returncode, 0)
         stop4 = self.run_python("hooks/stop_hook.py", project_root)
         self.assertEqual(stop4.returncode, 0, "Fourth stop should be ALLOWED: circuit breaker tripped")
-        self.assertEqual(json.loads(stop4.stdout).get("block", True), False, "Response should not indicate a block")
+        self.assertEqual(stop4.stdout.strip(), "", "Circuit breaker approval prints no block JSON response")
         state_after = load_state(project_root, "test-session")
-        # Count resets after the circuit breaker allows; the allowed stop itself does NOT add a stop_blocked entry
-        self.assertEqual(consecutive_stop_blocks(state_after), 4, "Circuit breaker approved stop but did not reset the counter")
+        self.assertEqual(consecutive_stop_blocks(state_after), 3)
 
     def test_stop_hook_continues_blocking_after_successful_review_then_new_edits(self):
         """After a successful review clears unreviewed files, the stop-block counter is reset."""

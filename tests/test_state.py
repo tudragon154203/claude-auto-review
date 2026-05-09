@@ -161,16 +161,16 @@ class ConsecutiveStopBlocksTests(unittest.TestCase):
         self.ensure_client(project_root, client_id)
         self.assertEqual(consecutive_stop_blocks(load_state(project_root, client_id)), 0)
 
-    def test_counts_blocks_since_oldest_unreviewed_entry(self):
+    def test_counts_blocks_since_last_reviewed_edit(self):
         project_root = self.temp_project()
         client_id = "client-batch"
         self.ensure_client(project_root, client_id)
-        append_state({"type": "edit", "file": "a.ts", "hash": "1", "timestamp": "2026-05-09T10:00:00Z", "reviewed": False}, project_root, client_id=client_id)
-        append_state({"type": "stop_blocked", "reason": "no_pending_review", "timestamp": "2026-05-09T10:05:00Z"}, project_root, client_id=client_id)
-        append_state({"type": "stop_blocked", "reason": "review_pending", "timestamp": "2026-05-09T10:10:00Z"}, project_root, client_id=client_id)
-        append_state({"type": "stop_blocked", "reason": "review_pending", "timestamp": "2026-05-09T10:15:00Z"}, project_root, client_id=client_id)
-        append_state({"type": "edit", "file": "b.ts", "hash": "2", "timestamp": "2026-05-09T10:20:00Z", "reviewed": False}, project_root, client_id=client_id)
-        append_state({"type": "stop_blocked", "reason": "no_pending_review", "timestamp": "2026-05-09T10:25:00Z"}, project_root, client_id=client_id)
+        append_state({"type": "edit", "file": "a.ts", "hash": "1", "reviewed": False}, project_root, client_id=client_id)
+        append_state({"type": "stop_blocked", "reason": "no_pending_review"}, project_root, client_id=client_id)
+        append_state({"type": "stop_blocked", "reason": "review_pending"}, project_root, client_id=client_id)
+        append_state({"type": "stop_blocked", "reason": "review_pending"}, project_root, client_id=client_id)
+        append_state({"type": "edit", "file": "b.ts", "hash": "2", "reviewed": False}, project_root, client_id=client_id)
+        append_state({"type": "stop_blocked", "reason": "no_pending_review"}, project_root, client_id=client_id)
         state = load_state(project_root, client_id)
         self.assertEqual(consecutive_stop_blocks(state), 4)
 
@@ -178,12 +178,12 @@ class ConsecutiveStopBlocksTests(unittest.TestCase):
         project_root = self.temp_project()
         client_id = "client-reset"
         self.ensure_client(project_root, client_id)
-        append_state({"type": "edit", "file": "x.ts", "hash": "x", "timestamp": "2026-05-09T09:00:00Z", "reviewed": False}, project_root, client_id=client_id)
-        append_state({"type": "stop_blocked", "reason": "review_pending", "timestamp": "2026-05-09T09:05:00Z"}, project_root, client_id=client_id)
-        append_state({"type": "stop_blocked", "reason": "review_pending", "timestamp": "2026-05-09T09:10:00Z"}, project_root, client_id=client_id)
-        append_state({"type": "edit", "file": "x.ts", "hash": "x", "timestamp": "2026-05-09T09:15:00Z", "reviewed": True, "reviewId": "rev-1"}, project_root, client_id=client_id)
-        append_state({"type": "edit", "file": "y.ts", "hash": "y", "timestamp": "2026-05-09T09:20:00Z", "reviewed": False}, project_root, client_id=client_id)
-        append_state({"type": "stop_blocked", "reason": "no_pending_review", "timestamp": "2026-05-09T09:25:00Z"}, project_root, client_id=client_id)
+        append_state({"type": "edit", "file": "x.ts", "hash": "x", "reviewed": False}, project_root, client_id=client_id)
+        append_state({"type": "stop_blocked", "reason": "review_pending"}, project_root, client_id=client_id)
+        append_state({"type": "stop_blocked", "reason": "review_pending"}, project_root, client_id=client_id)
+        append_state({"type": "edit", "file": "x.ts", "hash": "x", "reviewed": True, "reviewId": "rev-1"}, project_root, client_id=client_id)
+        append_state({"type": "edit", "file": "y.ts", "hash": "y", "reviewed": False}, project_root, client_id=client_id)
+        append_state({"type": "stop_blocked", "reason": "no_pending_review"}, project_root, client_id=client_id)
         state = load_state(project_root, client_id)
         self.assertEqual(consecutive_stop_blocks(state), 1)
 
