@@ -19,6 +19,7 @@ DEFAULT_SETTINGS = {
     "minSeverity": "MEDIUM",
     "autoFix": True,
     "maxStopPasses": 3,
+    "pendingReviewTimeoutHours": 1,
 }
 
 
@@ -77,6 +78,67 @@ def client_reviews_dir(project_root: Path, client_id: str) -> Path:
 
 def client_run_dir(project_root: Path, client_id: str) -> Path:
     return get_client_runtime_dir(project_root, client_id) / "run"
+
+
+def is_review_expired(review_entry, timeout_hours):
+    """Return True if a pending review is older than timeout_hours."""
+    if timeout_hours <= 0:
+        return False
+    timestamp_str = review_entry.get("timestamp")
+    if not timestamp_str:
+        return False
+    try:
+        ts_str = timestamp_str
+        if ts_str.endswith("Z"):
+            ts_str = ts_str[:-1] + "+00:00"
+        ts = datetime.fromisoformat(ts_str)
+        if ts.tzinfo is None:
+            ts = ts.replace(tzinfo=timezone.utc)
+        else:
+            ts = ts.astimezone(timezone.utc)
+        age_hours = (datetime.now(timezone.utc) - ts).total_seconds() / 3600.0
+        return age_hours > timeout_hours
+    except (ValueError, TypeError):
+        return False
+
+
+def cleanup_expired_pending_reviews(project_root=None, client_id=""):
+    """Remove expired pending review entries from state and return count removed."""
+    project_root = Path(project_root or get_project_root())
+    if not client_id:
+        client_id = get_client_id()
+    settings = load_settings(project_root)
+    timeout_hours = float(settings.get("pendingReviewTimeoutHours", 1))
+
+    state_path = client_state_path(project_root, client_id)
+    if not state_path.exists():
+        return 0
+
+    entries = []
+    removed = 0
+    for line in state_path.read_text(encoding="utf-8").splitlines():
+        if not line.strip():
+            continue
+        try:
+            entry = json.loads(line)
+        except json.JSONDecodeError:
+            entries.append(line)
+            continue
+        if (
+            isinstance(entry, dict)
+            and entry.get("type") == "review"
+            and entry.get("status") == "pending"
+            and is_review_expired(entry, timeout_hours)
+        ):
+            removed += 1
+            continue
+        entries.append(line)
+
+    if removed > 0:
+        with state_path.open("w", encoding="utf-8", newline="\n") as handle:
+            handle.write("\n".join(entries) + "\n")
+        log_event(project_root, "expired_reviews_cleaned", count=removed)
+    return removed
 
 
 def ensure_client_runtime(project_root: Path, client_id: str):

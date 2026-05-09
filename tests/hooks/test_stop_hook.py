@@ -7,7 +7,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT))
 sys.path.insert(0, str(REPO_ROOT / "scripts"))
 
-from state import consecutive_stop_blocks, load_state  # noqa: E402
+from state import append_state, consecutive_stop_blocks, load_state  # noqa: E402
 from tests.hooks.support import HookTestCase  # noqa: E402
 
 
@@ -202,6 +202,100 @@ class TestStopHook(HookTestCase, unittest.TestCase):
         # Step 5: stop hook now allows stopping
         stop3 = self.run_python("hooks/stop_hook.py", project_root)
         self.assertEqual(stop3.returncode, 0, "Stop should be allowed after review is completed")
+
+    def test_pending_review_not_expired_is_used(self):
+        """A recent pending review is matched and used normally."""
+        project_root = self.temp_project()
+        (project_root / "src" / "app.ts").write_text("export const value = 1;\n", encoding="utf-8")
+        self.run_python("hooks/post_tool_use.py", project_root, json.dumps({"file_path": "src/app.ts"}))
+
+        # First stop creates a pending review
+        stop1 = self.run_python("hooks/stop_hook.py", project_root, env_overrides={"PATH": ""}, use_fake_claude=False)
+        self.assertEqual(stop1.returncode, 2)
+
+        # Second stop should find the pending review (not expired)
+        stop2 = self.run_python("hooks/stop_hook.py", project_root, env_overrides={"PATH": ""}, use_fake_claude=False)
+        self.assertEqual(stop2.returncode, 2)
+        parsed = json.loads(stop2.stdout)
+        self.assertIn("Review", parsed["message"])
+
+    def test_pending_review_expired_is_skipped_and_new_created(self):
+        """An expired pending review is cleaned up from state and skipped."""
+        from datetime import datetime, timedelta, timezone
+
+        project_root = self.temp_project()
+        (project_root / "src" / "app.ts").write_text("export const value = 1;\n", encoding="utf-8")
+        self.run_python("hooks/post_tool_use.py", project_root, json.dumps({"file_path": "src/app.ts"}))
+
+        state_path = project_root / ".claude" / "claude-auto-review" / "clients" / "client-test-session" / "state.jsonl"
+
+        # Create a pending review with an old timestamp (> 1 hour ago)
+        old_time = (datetime.now(timezone.utc) - timedelta(hours=2)).isoformat().replace("+00:00", "Z")
+        append_state(
+            {
+                "type": "review",
+                "reviewId": "rev-expired",
+                "reviewPath": str(project_root / ".claude" / "claude-auto-review" / "clients" / "client-test-session" / "reviews" / "review-expired.md"),
+                "timestamp": old_time,
+                "status": "pending",
+                "files": [{"file": "src/app.ts", "hash": "testhash"}],
+            },
+            project_root,
+            client_id="test-session",
+        )
+
+        # Verify the expired review exists in state before cleanup
+        state_before = load_state(project_root, client_id="test-session")
+        expired_reviews = [e for e in state_before if e.get("type") == "review" and e.get("status") == "pending"]
+        self.assertEqual(len(expired_reviews), 1, "Expired review should be in state")
+
+        # Run stop hook - it should clean up the expired review and block (returncode 2)
+        stop = self.run_python("hooks/stop_hook.py", project_root, env_overrides={"PATH": ""}, use_fake_claude=False)
+        self.assertIn(stop.returncode, [0, 2], "Stop should not crash")
+
+        # After stop hook runs, the specific expired review should be gone from state
+        state_after = load_state(project_root, client_id="test-session")
+        expired_ids = [e.get("reviewId") for e in state_after if e.get("type") == "review" and e.get("status") == "pending"]
+        self.assertNotIn("rev-expired", expired_ids,
+            "Expired review should be removed from state after stop hook")
+
+    def test_pending_review_timeout_custom_setting(self):
+        """pendingReviewTimeoutHours can be customized via project settings."""
+        from datetime import datetime, timedelta, timezone
+
+        project_root = self.temp_project()
+        (project_root / ".claude").mkdir(parents=True, exist_ok=True)
+        (project_root / ".claude" / "settings.json").write_text(
+            json.dumps({"claude-auto-review": {"pendingReviewTimeoutHours": 0.01}}),
+            encoding="utf-8",
+        )
+        (project_root / "src" / "app.ts").write_text("export const value = 1;\n", encoding="utf-8")
+        self.run_python("hooks/post_tool_use.py", project_root, json.dumps({"file_path": "src/app.ts"}))
+
+        # Create a pending review with timestamp from 1 minute ago (exceeds 0.01h = 36s timeout)
+        old_time = (datetime.now(timezone.utc) - timedelta(minutes=1)).isoformat().replace("+00:00", "Z")
+        append_state(
+            {
+                "type": "review",
+                "reviewId": "rev-custom-timeout",
+                "reviewPath": str(project_root / ".claude" / "claude-auto-review" / "clients" / "client-test-session" / "reviews" / "review-custom.md"),
+                "timestamp": old_time,
+                "status": "pending",
+                "files": [{"file": "src/app.ts", "hash": "testhash"}],
+            },
+            project_root,
+            client_id="test-session",
+        )
+
+        # Run stop hook - it reads custom timeout from settings and cleans up
+        stop = self.run_python("hooks/stop_hook.py", project_root, env_overrides={"PATH": ""}, use_fake_claude=False)
+        self.assertIn(stop.returncode, [0, 2], "Stop should not crash")
+
+        # Verify the expired review was cleaned from state (new reviews may exist)
+        state_after = load_state(project_root, client_id="test-session")
+        expired_ids = [e.get("reviewId") for e in state_after if e.get("type") == "review" and e.get("status") == "pending"]
+        self.assertNotIn("rev-custom-timeout", expired_ids,
+            "Expired review should be removed with custom timeout")
 
 
 if __name__ == "__main__":

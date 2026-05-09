@@ -10,12 +10,14 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
 from state import (  # noqa: E402
     append_state,
     client_run_dir,
+    cleanup_expired_pending_reviews,
     consecutive_stop_blocks,
     ensure_client_runtime,
     get_client_id,
     get_project_root,
     get_unreviewed_files,
     is_review_complete,
+    is_review_expired,
     load_settings,
     load_state,
     log_event,
@@ -25,16 +27,25 @@ from state import (  # noqa: E402
 )
 
 
-def find_pending_review_for_files(state, unreviewed_entries):
+def find_pending_review_for_files(state, unreviewed_entries, timeout_hours=0):
     """Find the latest pending review that covers at least some of the unreviewed entries.
 
     Unlike pending_reviews_for_entries which requires full coverage, this accepts
     partial coverage so that new edits after review creation don't block review completion.
+    Expired reviews (if timeout_hours > 0) are skipped and logged.
     """
     needed = {(entry["file"], entry["hash"]) for entry in unreviewed_entries}
     matches = []
     for entry in state:
         if not isinstance(entry, dict) or entry.get("type") != "review" or entry.get("status") != "pending":
+            continue
+        if timeout_hours > 0 and is_review_expired(entry, timeout_hours):
+            log_event(
+                get_project_root(),
+                "stop_review_expired",
+                review_id=entry.get("reviewId", ""),
+                files=[f.get("file", "") for f in entry.get("files", []) if isinstance(f, dict)],
+            )
             continue
         covered = {
             (item.get("file"), item.get("hash"))
@@ -86,6 +97,13 @@ def main():
         client_id = get_client_id()
         ensure_client_runtime(project_root, client_id)
         settings = load_settings(project_root)
+        timeout_hours = float(settings.get("pendingReviewTimeoutHours", 1))
+
+        # Clean up any expired pending reviews before proceeding
+        removed = cleanup_expired_pending_reviews(project_root)
+        if removed > 0:
+            print(f"[claude-auto-review] Removed {removed} expired pending review(s)", file=sys.stderr)
+
         if not settings.get("enabled", True):
             log_event(project_root, "stop_disabled")
             return 0
@@ -106,7 +124,7 @@ def main():
         # Find a pending review that covers at least some of the unreviewed files.
         # This handles the common case where edits arrive after review creation:
         # we can still complete the review for covered files and handle the rest.
-        review = find_pending_review_for_files(state, unreviewed)
+        review = find_pending_review_for_files(state, unreviewed, timeout_hours)
 
         if not review:
             # No matching review — create one via review_prompt.py
@@ -150,7 +168,7 @@ def main():
             if not unreviewed:
                 log_event(project_root, "stop_approved", reason="no_unreviewed_files_after_review")
                 return 0
-            review = find_pending_review_for_files(state, unreviewed)
+            review = find_pending_review_for_files(state, unreviewed, timeout_hours)
             if not review:
                 block_response(
                     f"Claude Auto Review: Failed to create review for {files_str}.",
