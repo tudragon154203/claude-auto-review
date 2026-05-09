@@ -35,16 +35,17 @@ def get_plugin_root():
     return Path(__file__).resolve().parent.parent
 
 
-def get_client_id() -> str:
+def get_client_id(stdin_session_id=None) -> str:
     """Returns a time-ordered unique identifier for the current session.
 
     IDs are prefixed with a sortable timestamp (ISO-like YYYYMMDD-HHMMSS)
     so that lexicographic order matches chronological order. The suffix
-    provides uniqueness: CLAUDE_SESSION_ID when available, otherwise a
-    hostname:pid tuple.
+    provides uniqueness: session_id from stdin (Claude Code hook env), or
+    CLAUDE_SESSION_ID (legacy), or a hostname:pid tuple.
     """
     ts = datetime.now().strftime("%Y%m%d-%H%M%S")
-    session_id = os.environ.get("CLAUDE_SESSION_ID")
+    # stdin_session_id takes priority: it's the actual hook-provided session_id
+    session_id = stdin_session_id or os.environ.get("CLAUDE_SESSION_ID")
     if session_id:
         return f"{ts}_{session_id}"
 

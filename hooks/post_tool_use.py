@@ -26,15 +26,15 @@ from state import (  # noqa: E402
 def main():
     try:
         project_root = get_project_root()
-        client_id = get_client_id()
+        raw = sys.stdin.read().strip()
+        payload = json.loads(raw) if raw else {}
+        client_id = get_client_id(payload.get("session_id"))
         ensure_client_runtime(project_root, client_id)
         settings = load_settings(project_root)
         if not settings.get("enabled", True):
             log_event(project_root, "post_tool_use_disabled")
             return 0
 
-        raw = sys.stdin.read().strip()
-        payload = json.loads(raw) if raw else {}
         state = load_state(project_root, client_id)
         timestamp = utc_now_iso()
 

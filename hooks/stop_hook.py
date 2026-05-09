@@ -94,7 +94,9 @@ def block_response(message, feedback):
 def main():
     try:
         project_root = get_project_root()
-        client_id = get_client_id()
+        raw = sys.stdin.read().strip()
+        payload = json.loads(raw) if raw else {}
+        client_id = get_client_id(payload.get("session_id"))
         ensure_client_runtime(project_root, client_id)
         settings = load_settings(project_root)
         timeout_hours = float(settings.get("pendingReviewTimeoutHours", 1))
