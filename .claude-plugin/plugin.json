@@ -20,6 +20,13 @@
         "timeout": 30,
         "statusMessage": "Claude Auto Review: checking review state..."
       }
+    ],
+    "SessionStop": [
+      {
+        "script": "hooks/session_stop.py",
+        "timeout": 10,
+        "statusMessage": "Claude Auto Review: cleaning session state..."
+      }
     ]
   },
   "agents": ["agents/reviewer.md"],

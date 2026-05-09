@@ -24,6 +24,18 @@
           }
         ]
       }
+    ],
+    "SessionStop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python hooks/session_stop.py",
+            "timeout": 10,
+            "statusMessage": "Claude Auto Review: cleaning session state..."
+          }
+        ]
+      }
     ]
   }
 }

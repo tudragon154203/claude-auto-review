@@ -1,6 +1,15 @@
 import unittest
 
-from scripts.state import cancel_runtime, client_state_path, ensure_client_runtime, ensure_runtime, load_state
+from scripts.state import (
+    cancel_runtime,
+    cancel_session,
+    client_state_path,
+    client_run_dir,
+    client_reviews_dir,
+    ensure_client_runtime,
+    ensure_runtime,
+    load_state,
+)
 
 from tests.state.support import StateTestCase
 
@@ -39,4 +48,24 @@ class TestRuntime(StateTestCase, unittest.TestCase):
         ensure_client_runtime(project_root, "test-client")
         cancel_runtime(project_root, client_id="test-client")
         self.assertFalse((project_root / ".claude" / "claude-auto-review" / "clients" / "client-test-client").exists())
+
+    def test_cancel_session_removes_client_state(self):
+        project_root = self.temp_project()
+        ensure_client_runtime(project_root, "session-a")
+        ensure_client_runtime(project_root, "session-b")
+
+        removed = cancel_session(project_root, client_id="session-a")
+
+        self.assertFalse(
+            (project_root / ".claude" / "claude-auto-review" / "clients" / "client-session-a").exists()
+        )
+        self.assertTrue(
+            (project_root / ".claude" / "claude-auto-review" / "clients" / "client-session-b").exists()
+        )
+        self.assertGreater(len(removed), 0)
+
+    def test_cancel_session_noop_when_no_data(self):
+        project_root = self.temp_project()
+        removed = cancel_session(project_root, client_id="nonexistent")
+        self.assertEqual(removed, [])
 

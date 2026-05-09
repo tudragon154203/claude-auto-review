@@ -480,3 +480,38 @@ def cancel_runtime(project_root=None, client_id=None):
         except OSError:
             continue
     return removed
+
+
+def cancel_session(project_root=None, client_id=""):
+    """Remove only the current client's session runtime data.
+
+    Unlike cancel_runtime(), this does NOT touch root-level state,
+    other clients, rules, or logs — safe for per-session cleanup.
+
+    Because get_client_id() prepends a timestamp, client directories are
+    named ``client-{ts}_{session_id}``.  Multiple hook invocations within
+    the same session can produce different timestamps, so we glob for any
+    directory matching ``client-*_{session_id}`` and remove them all.
+    Also checks for an exact ``client-{client_id}`` match.
+    """
+    project_root = Path(project_root or get_project_root())
+    if not client_id:
+        client_id = get_client_id()
+    session_suffix = client_id.split("_", 1)[-1] if "_" in client_id else client_id
+    clients_dir = project_root / CLIENTS_DIR
+    removed = []
+    if clients_dir.is_dir():
+        for client_dir in sorted(clients_dir.glob(f"client-*_{session_suffix}")):
+            try:
+                shutil.rmtree(client_dir)
+                removed.append(client_dir)
+            except OSError:
+                continue
+        exact_dir = clients_dir / f"client-{client_id}"
+        if exact_dir.exists() and exact_dir not in removed:
+            try:
+                shutil.rmtree(exact_dir)
+                removed.append(exact_dir)
+            except OSError:
+                pass
+    return removed
