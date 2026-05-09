@@ -204,7 +204,6 @@ def main():
         claude_cli = shutil.which("claude")
         if claude_cli and prompt_file.is_file():
             try:
-                pipe_content = prompt_file.read_text(encoding="utf-8", errors="replace")
                 cli_result = subprocess.run(
                     [
                         claude_cli,
@@ -212,8 +211,9 @@ def main():
                         "--bare",
                         "--model",
                         "opus",
+                        "--system-prompt-file",
+                        str(prompt_file),
                     ],
-                    input=pipe_content,
                     cwd=str(project_root),
                     capture_output=True,
                     text=True,
