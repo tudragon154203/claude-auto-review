@@ -1,12 +1,11 @@
 import json
-import os
-import tempfile
+import sys
 import unittest
 from pathlib import Path
 
-REPO_ROOT = Path(__file__).resolve().parent.parent
-import sys
+from tests.support import TempProjectMixin
 
+REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT / "scripts"))
 
 from state import (
@@ -24,9 +23,7 @@ from state import (
 )
 
 
-class ConcurrencyTests(unittest.TestCase):
-    def temp_project(self):
-        return Path(tempfile.mkdtemp(prefix="claude-auto-review-concurrency-"))
+class ConcurrencyTests(TempProjectMixin, unittest.TestCase):
 
     def ensure_client(self, project_root, client_id):
         ensure_client_runtime(project_root, client_id)

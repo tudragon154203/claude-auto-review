@@ -1,9 +1,5 @@
-import tempfile
-from pathlib import Path
+from tests.support import TempProjectMixin
 
 
-class StateTestCase:
+class StateTestCase(TempProjectMixin):
     """Shared base for state unit tests providing a temp project directory."""
-
-    def temp_project(self, prefix="claude-auto-review-"):
-        return Path(tempfile.mkdtemp(prefix=prefix))

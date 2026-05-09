@@ -6,11 +6,12 @@ or append_review_started + pending_reviews_for_entries + mark_files_reviewed.
 """
 
 import json
-import os
 import sys
 import tempfile
 import unittest
 from pathlib import Path
+
+from tests.support import TempProjectMixin
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT / "scripts"))
@@ -39,11 +40,8 @@ from state import (
 )
 
 
-class IntegrationTests(unittest.TestCase):
+class IntegrationTests(TempProjectMixin, unittest.TestCase):
     """Tests combining multiple state functions."""
-
-    def temp_project(self):
-        return Path(tempfile.mkdtemp(prefix="claude-auto-review-int-"))
 
     def test_ensure_runtime_creates_complete_structure(self):
         project_root = self.temp_project()
