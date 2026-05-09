@@ -171,5 +171,66 @@ class TestStopHook(HookTestCase, unittest.TestCase):
         )
 
 
+    def test_stop_hook_creates_subagent_and_waits_for_review(self):
+        """Stop hook blocks, spawns review_prompt as a subagent, waits for it, then allows stop."""
+        import os
+        import subprocess
+
+        project_root = self.temp_project()
+        (project_root / "src" / "app.ts").write_text("export const value = 1;\n", encoding="utf-8")
+        self.run_python("hooks/post_tool_use.py", project_root, json.dumps({"file_path": "src/app.ts"}))
+
+        # Step 1: stop hook blocks with no pending review
+        stop1 = self.run_python("hooks/stop_hook.py", project_root)
+        self.assertEqual(stop1.returncode, 2)
+        parsed = json.loads(stop1.stdout)
+        self.assertTrue(parsed["block"])
+
+        # Step 2: extract the command from feedback and spawn a subagent subprocess
+        command = None
+        for line in parsed["feedback"].splitlines():
+            if line.strip().startswith("python"):
+                command = line.strip()
+                break
+        self.assertIsNotNone(command, f"Expected a python command in feedback: {parsed['feedback']}")
+
+        env = {
+            **os.environ,
+            "CLAUDE_PROJECT_DIR": str(project_root),
+            "CLAUDE_SESSION_ID": "test-session",
+        }
+        subagent = subprocess.Popen(
+            command,
+            shell=True,
+            cwd=project_root,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            env=env,
+        )
+
+        # Step 3: wait for the subagent to finish creating the review
+        stdout, stderr = subagent.communicate(timeout=30)
+        self.assertEqual(subagent.returncode, 0, f"Subagent failed: {stderr.decode('utf-8', errors='replace')}")
+
+        # Step 4: verify the subagent created the review artifacts
+        client_dir = project_root / ".claude" / "claude-auto-review" / "clients" / "client-test-session"
+        reviews = list((client_dir / "reviews").glob("review-*.md"))
+        self.assertEqual(len(reviews), 1, "Subagent should have created exactly one review")
+        prompts = list((client_dir / "run").glob("*-prompt.md"))
+        self.assertEqual(len(prompts), 1, "Subagent should have created exactly one prompt")
+
+        # Step 5: stop hook now blocks because review is pending
+        stop2 = self.run_python("hooks/stop_hook.py", project_root)
+        self.assertEqual(stop2.returncode, 2)
+        self.assertIn("still pending", json.loads(stop2.stdout)["message"])
+
+        # Step 6: complete the review (simulating what the subagent reviewer would do)
+        self.complete_latest_review(project_root)
+
+        # Step 7: stop hook now allows stopping
+        stop3 = self.run_python("hooks/stop_hook.py", project_root)
+        self.assertEqual(stop3.returncode, 0, "Stop should be allowed after subagent completes the review")
+
+
 if __name__ == "__main__":
     unittest.main()
