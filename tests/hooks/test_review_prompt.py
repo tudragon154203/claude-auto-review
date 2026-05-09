@@ -1,0 +1,101 @@
+import json
+import subprocess
+import sys
+import unittest
+from pathlib import Path
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(REPO_ROOT))
+sys.path.insert(0, str(REPO_ROOT / "scripts"))
+
+from state import append_state  # noqa: E402
+from tests.hooks.support import HookTestCase  # noqa: E402
+
+
+class TestReviewPrompt(HookTestCase, unittest.TestCase):
+    def test_review_prompt_creates_prompt_and_allows_later_stop(self):
+        project_root = self.temp_project()
+        (project_root / "src" / "app.ts").write_text("export const value = 1;\n", encoding="utf-8")
+        self.run_python("hooks/post_tool_use.py", project_root, json.dumps({"file_path": "src/app.ts"}))
+
+        review = self.run_python("scripts/review_prompt.py", project_root)
+        self.assertEqual(review.returncode, 0)
+        self.assertEqual(
+            len(list((project_root / ".claude" / "claude-auto-review" / "clients" / "client-test-session" / "run").iterdir())),
+            1,
+        )
+        self.assertEqual(
+            len(list((project_root / ".claude" / "claude-auto-review" / "clients" / "client-test-session" / "reviews").iterdir())),
+            1,
+        )
+        pending_stop = self.run_python("hooks/stop_hook.py", project_root)
+        self.assertEqual(pending_stop.returncode, 2)
+        self.assertIn("still pending", json.loads(pending_stop.stdout)["message"])
+        self.complete_latest_review(project_root)
+        self.assertEqual(self.run_python("hooks/stop_hook.py", project_root).returncode, 0)
+
+    def test_includes_real_git_diff_content_in_generated_review_prompt(self):
+        project_root = self.temp_project()
+        target = project_root / "src" / "app.ts"
+        target.write_text("export const value = 1;\n", encoding="utf-8")
+        subprocess.run(["git", "init"], cwd=project_root, check=True, capture_output=True, text=True)
+        subprocess.run(["git", "config", "user.email", "test@example.com"], cwd=project_root, check=True)
+        subprocess.run(["git", "config", "user.name", "Tester"], cwd=project_root, check=True)
+        subprocess.run(["git", "add", "src/app.ts"], cwd=project_root, check=True)
+        subprocess.run(["git", "commit", "-m", "init"], cwd=project_root, check=True, capture_output=True, text=True)
+        target.write_text("export const value = 2;\n", encoding="utf-8")
+
+        self.run_python("hooks/post_tool_use.py", project_root, json.dumps({"file_path": "src/app.ts"}))
+        review = self.run_python("scripts/review_prompt.py", project_root)
+        self.assertEqual(review.returncode, 0)
+        prompt = next((project_root / ".claude" / "claude-auto-review" / "clients" / "client-test-session" / "run").glob("*prompt.md")).read_text(encoding="utf-8")
+        self.assertIn("-export const value = 1;", prompt)
+        self.assertIn("+export const value = 2;", prompt)
+
+    def test_includes_snapshots_for_untracked_files_when_git_diff_is_empty(self):
+        project_root = self.temp_project()
+        (project_root / "src" / "new.ts").write_text("export const created = true;\n", encoding="utf-8")
+        subprocess.run(["git", "init"], cwd=project_root, check=True, capture_output=True, text=True)
+        self.run_python("hooks/post_tool_use.py", project_root, json.dumps({"file_path": "src/new.ts"}))
+        review = self.run_python("scripts/review_prompt.py", project_root)
+        self.assertEqual(review.returncode, 0)
+        prompt = next((project_root / ".claude" / "claude-auto-review" / "clients" / "client-test-session" / "run").glob("*prompt.md")).read_text(encoding="utf-8")
+        self.assertIn("## Current File Snapshots", prompt)
+        self.assertIn("export const created = true;", prompt)
+
+    def test_review_prompt_includes_custom_project_rules(self):
+        project_root = self.temp_project()
+        target = project_root / "src" / "app.ts"
+        target.write_text("export const value = 1;\n", encoding="utf-8")
+        self.run_python("hooks/post_tool_use.py", project_root, json.dumps({"file_path": "src/app.ts"}))
+        rules_path = project_root / ".claude" / "claude-auto-review" / "rules.md"
+        rules_path.write_text("# Custom Rules\n\n- Custom auth rule must appear.\n", encoding="utf-8")
+
+        review = self.run_python("scripts/review_prompt.py", project_root)
+        self.assertEqual(review.returncode, 0)
+        prompt = next((project_root / ".claude" / "claude-auto-review" / "clients" / "client-test-session" / "run").glob("*prompt.md")).read_text(encoding="utf-8")
+        self.assertIn("Custom auth rule must appear.", prompt)
+
+    def test_review_prompt_describes_deleted_tracked_file(self):
+        project_root = self.temp_project()
+        append_state(
+            {
+                "type": "edit",
+                "file": "src/deleted.ts",
+                "hash": "deadbeef",
+                "timestamp": "2026-05-05T01:00:00Z",
+                "reviewed": False,
+            },
+            project_root,
+            client_id="test-session",
+        )
+
+        review = self.run_python("scripts/review_prompt.py", project_root)
+        self.assertEqual(review.returncode, 0)
+        prompt = next((project_root / ".claude" / "claude-auto-review" / "clients" / "client-test-session" / "run").glob("*prompt.md")).read_text(encoding="utf-8")
+        self.assertIn("## src/deleted.ts", prompt)
+        self.assertIn("File does not currently exist.", prompt)
+
+
+if __name__ == "__main__":
+    unittest.main()
