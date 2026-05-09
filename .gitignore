@@ -12,4 +12,4 @@ npm-debug.log*
 __pycache__/
 *.py[cod]
 .pytest_cache/
-*.ps1
+*.ps1.coverage
