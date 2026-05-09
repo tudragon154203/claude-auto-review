@@ -28,11 +28,15 @@ class TestReviewPrompt(HookTestCase, unittest.TestCase):
             len(list((project_root / ".claude" / "claude-auto-review" / "clients" / "client-test-session" / "reviews").iterdir())),
             1,
         )
-        pending_stop = self.run_python("hooks/stop_hook.py", project_root)
+        pending_stop = self.run_python(
+            "hooks/stop_hook.py", project_root,
+            env_overrides={"PATH": ""},
+            use_fake_claude=False,
+        )
         self.assertEqual(pending_stop.returncode, 2)
-        self.assertIn("still pending", json.loads(pending_stop.stdout)["message"])
+        self.assertIn("Review", json.loads(pending_stop.stdout)["message"])
         self.complete_latest_review(project_root)
-        self.assertEqual(self.run_python("hooks/stop_hook.py", project_root).returncode, 0)
+        self.assertEqual(self.run_python("hooks/stop_hook.py", project_root, env_overrides={"PATH": ""}, use_fake_claude=False).returncode, 0)
 
     def test_includes_real_git_diff_content_in_generated_review_prompt(self):
         project_root = self.temp_project()

@@ -21,7 +21,7 @@ class TestPostToolUseHook(HookTestCase, unittest.TestCase):
         self.assertEqual(post.returncode, 0)
         self.assertEqual(load_state(project_root, "test-session")[0]["file"], "src/app.ts")
 
-        stop = self.run_python("hooks/stop_hook.py", project_root)
+        stop = self.run_python("hooks/stop_hook.py", project_root, env_overrides={"PATH": ""}, use_fake_claude=False)
         self.assertEqual(stop.returncode, 2)
         self.assertTrue(json.loads(stop.stdout)["block"])
 
@@ -45,7 +45,7 @@ class TestPostToolUseHook(HookTestCase, unittest.TestCase):
         self.assertEqual(state[0]["hash"], "__deleted__")
         self.assertFalse(state[0]["reviewed"])
         self.assertTrue(state[0]["deleted"])
-        self.assertEqual(self.run_python("hooks/stop_hook.py", project_root).returncode, 2)
+        self.assertEqual(self.run_python("hooks/stop_hook.py", project_root, env_overrides={"PATH": ""}, use_fake_claude=False).returncode, 2)
 
     def test_post_tool_use_ignores_paths_outside_project(self):
         project_root = self.temp_project()
@@ -125,7 +125,7 @@ class TestPostToolUseHook(HookTestCase, unittest.TestCase):
             sorted(entry["file"] for entry in load_state(project_root, "test-session")),
             ["src/a.ts", "src/b.ts"],
         )
-        self.assertEqual(self.run_python("hooks/stop_hook.py", project_root).returncode, 2)
+        self.assertEqual(self.run_python("hooks/stop_hook.py", project_root, env_overrides={"PATH": ""}, use_fake_claude=False).returncode, 2)
 
 
 if __name__ == "__main__":
