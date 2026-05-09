@@ -10,6 +10,13 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
 
+def real_cli_available():
+    """Return True if CLAUDE_AUTO_REVIEW_TEST_REAL_CLI=1 and claude is on PATH."""
+    if os.environ.get("CLAUDE_AUTO_REVIEW_TEST_REAL_CLI", "").strip() != "1":
+        return False
+    return shutil.which("claude") is not None
+
+
 class TempProjectMixin:
     """Provides a temp_project(prefix) helper."""
 
@@ -28,6 +35,7 @@ class SubprocessMixin:
         client_id="test-session",
         env_overrides=None,
         use_fake_claude=None,
+        timeout=None,
     ):
         env = {
             **os.environ,
@@ -97,6 +105,7 @@ class SubprocessMixin:
                 text=True,
                 encoding="utf-8",
                 env=env,
+                timeout=timeout,
             )
         finally:
             if fake_dir is not None:
