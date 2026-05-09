@@ -8,8 +8,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
 from state import (  # noqa: E402
     DELETED_FILE_HASH,
     append_state,
-    ensure_runtime,
+    ensure_client_runtime,
     extract_file_paths_from_hook_input,
+    get_client_id,
     get_file_hash,
     get_project_root,
     log_event,
@@ -25,7 +26,8 @@ from state import (  # noqa: E402
 def main():
     try:
         project_root = get_project_root()
-        ensure_runtime(project_root)
+        client_id = get_client_id()
+        ensure_client_runtime(project_root, client_id)
         settings = load_settings(project_root)
         if not settings.get("enabled", True):
             log_event(project_root, "post_tool_use_disabled")
@@ -33,7 +35,7 @@ def main():
 
         raw = sys.stdin.read().strip()
         payload = json.loads(raw) if raw else {}
-        state = load_state(project_root)
+        state = load_state(project_root, client_id)
         timestamp = utc_now_iso()
 
         for candidate in extract_file_paths_from_hook_input(payload):
@@ -56,6 +58,7 @@ def main():
                         "deleted": True,
                     },
                     project_root,
+                    client_id=client_id,
                 )
                 log_event(project_root, "file_deletion_tracked", file=file_path, hash=DELETED_FILE_HASH, reviewed=False)
                 continue
@@ -69,6 +72,7 @@ def main():
                     "reviewed": reviewed,
                 },
                 project_root,
+                client_id=client_id,
             )
             log_event(project_root, "file_tracked", file=file_path, hash=file_hash, reviewed=reviewed)
         return 0

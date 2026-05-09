@@ -2,11 +2,13 @@ import hashlib
 import json
 import os
 import shutil
+import socket
 from datetime import datetime, timezone
 from pathlib import Path
 
 STATE_RELATIVE_PATH = Path(".claude") / "claude-auto-review" / "state.jsonl"
 RUNTIME_DIR = Path(".claude") / "claude-auto-review"
+CLIENTS_DIR = RUNTIME_DIR / "clients"
 LOG_RELATIVE_PATH = RUNTIME_DIR / "claude-auto-review.log"
 DELETED_FILE_HASH = "__deleted__"
 DEFAULT_SETTINGS = {
@@ -16,6 +18,7 @@ DEFAULT_SETTINGS = {
     "skipExtensions": [],
     "minSeverity": "MEDIUM",
     "autoFix": True,
+    "maxStopPasses": 3,
 }
 
 
@@ -29,6 +32,59 @@ def get_project_root():
 
 def get_plugin_root():
     return Path(__file__).resolve().parent.parent
+
+
+def get_client_id() -> str:
+    """Returns a unique identifier for the current Claude Code client.
+
+    Uses CLAUDE_SESSION_ID if available (passed by Claude Code hook env).
+    Falls back to a persisted hostname:pid:timestamp tuple.
+    """
+    session_id = os.environ.get("CLAUDE_SESSION_ID")
+    if session_id:
+        return session_id
+
+    root = get_project_root()
+    client_id_file = root / RUNTIME_DIR / "client-id"
+    if client_id_file.exists():
+        return client_id_file.read_text().strip()
+
+    try:
+        hostname = socket.gethostname()
+    except Exception:
+        hostname = "unknown"
+    pid = os.getpid()
+    timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+    client_id = f"{hostname}-{pid}-{timestamp}"
+
+    client_id_file.parent.mkdir(parents=True, exist_ok=True)
+    client_id_file.write_text(client_id)
+    return client_id
+
+
+def get_client_runtime_dir(project_root: Path, client_id: str) -> Path:
+    client_dir = project_root / CLIENTS_DIR / f"client-{client_id}"
+    return client_dir
+
+
+def client_state_path(project_root: Path, client_id: str) -> Path:
+    return get_client_runtime_dir(project_root, client_id) / "state.jsonl"
+
+
+def client_reviews_dir(project_root: Path, client_id: str) -> Path:
+    return get_client_runtime_dir(project_root, client_id) / "reviews"
+
+
+def client_run_dir(project_root: Path, client_id: str) -> Path:
+    return get_client_runtime_dir(project_root, client_id) / "run"
+
+
+def ensure_client_runtime(project_root: Path, client_id: str):
+    client_dir = get_client_runtime_dir(project_root, client_id)
+    (client_dir / "reviews").mkdir(parents=True, exist_ok=True)
+    (client_dir / "run").mkdir(parents=True, exist_ok=True)
+    # Also ensure root runtime exists
+    ensure_runtime(project_root)
 
 
 def normalize_relative_path(file_path, project_root=None):
@@ -106,8 +162,10 @@ def get_file_hash(file_path, project_root=None):
     return digest[:8]
 
 
-def load_state(project_root=None):
-    state_path = get_state_path(project_root)
+def load_state(project_root=None, client_id=""):
+    if not client_id:
+        client_id = get_client_id()
+    state_path = client_state_path(project_root or get_project_root(), client_id)
     if not state_path.exists():
         return []
     entries = []
@@ -121,8 +179,10 @@ def load_state(project_root=None):
     return entries
 
 
-def append_state(entry, project_root=None):
-    state_path = get_state_path(project_root)
+def append_state(entry, project_root=None, client_id=""):
+    if not client_id:
+        client_id = get_client_id()
+    state_path = client_state_path(project_root or get_project_root(), client_id)
     state_path.parent.mkdir(parents=True, exist_ok=True)
     with state_path.open("a", encoding="utf-8", newline="\n") as handle:
         handle.write(json.dumps(entry, separators=(",", ":")) + "\n")
@@ -167,7 +227,9 @@ def get_unreviewed_files(state):
     return [entry for entry in latest_entries_by_file(state).values() if not entry.get("reviewed")]
 
 
-def append_review_started(entries, review_id, review_path, project_root=None):
+def append_review_started(entries, review_id, review_path, project_root=None, client_id=""):
+    if not client_id:
+        client_id = get_client_id()
     append_state(
         {
             "type": "review",
@@ -182,8 +244,10 @@ def append_review_started(entries, review_id, review_path, project_root=None):
                 }
                 for entry in entries
             ],
+            "clientId": client_id,
         },
         project_root,
+        client_id=client_id,
     )
 
 
@@ -203,6 +267,35 @@ def pending_reviews_for_entries(state, entries):
     return sorted(matches, key=_timestamp_value, reverse=True)
 
 
+def consecutive_stop_blocks(state):
+    """
+    Count stop_blocked entries since the oldest unreviewed file was introduced.
+    This resets naturally when all files are reviewed (no unreviewed entries exist).
+    """
+    # Find the earliest timestamp among unreviewed entries
+    oldest_unreviewed_ts = None
+    for entry in state:
+        if not isinstance(entry, dict):
+            continue
+        if entry.get("type") == "edit" and not entry.get("reviewed", False):
+            ts = entry.get("timestamp", "")
+            if oldest_unreviewed_ts is None or ts < oldest_unreviewed_ts:
+                oldest_unreviewed_ts = ts
+
+    if oldest_unreviewed_ts is None:
+        # No unreviewed files → no blocks to count
+        return 0
+
+    # Count stop_blocked entries from the oldest unreviewed timestamp onward
+    count = 0
+    for entry in state:
+        if not isinstance(entry, dict):
+            continue
+        if entry.get("type") == "stop_blocked" and entry.get("timestamp", "") >= oldest_unreviewed_ts:
+            count += 1
+    return count
+
+
 def is_review_complete(review_path):
     path = Path(review_path)
     if not path.is_file():
@@ -213,10 +306,12 @@ def is_review_complete(review_path):
     verdict = content.split("## Verdict", 1)[1].strip()
     if not verdict:
         return False
-    return "Pending" not in verdict
+    return verdict.lower() not in ("pending", "pending.")
 
 
-def mark_files_reviewed(entries, review_id, project_root=None):
+def mark_files_reviewed(entries, review_id, project_root=None, client_id=""):
+    if not client_id:
+        client_id = get_client_id()
     timestamp = utc_now_iso()
     for entry in entries:
         append_state(
@@ -229,6 +324,7 @@ def mark_files_reviewed(entries, review_id, project_root=None):
                 "reviewId": review_id,
             },
             project_root,
+            client_id=client_id,
         )
 
 
@@ -312,13 +408,18 @@ def ensure_project_settings(project_root=None):
     return settings_path
 
 
-def cancel_runtime(project_root=None):
+def cancel_runtime(project_root=None, client_id=None):
     project_root = Path(project_root or get_project_root())
     targets = [
         project_root / STATE_RELATIVE_PATH,
         project_root / RUNTIME_DIR / "run",
         project_root / RUNTIME_DIR / "reviews",
+        project_root / CLIENTS_DIR,
     ]
+    if client_id:
+        targets.append(client_state_path(project_root, client_id))
+        targets.append(get_client_runtime_dir(project_root, client_id) / "run")
+        targets.append(get_client_runtime_dir(project_root, client_id) / "reviews")
     removed = []
     for target in targets:
         try:

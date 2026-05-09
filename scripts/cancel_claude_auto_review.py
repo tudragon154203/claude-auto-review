@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
-from state import cancel_runtime, get_project_root, log_event
+from state import cancel_runtime, get_client_id, get_project_root, log_event
 
 
 def main():
     project_root = get_project_root()
-    removed = cancel_runtime(project_root)
+    client_id = get_client_id()
+    removed = cancel_runtime(project_root, client_id=client_id)
     log_event(project_root, "cancel_completed", removed=[str(path) for path in removed])
     if removed:
         print("Claude Auto Review cancelled. Removed:")

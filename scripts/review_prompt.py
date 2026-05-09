@@ -3,7 +3,11 @@ import subprocess
 from pathlib import Path
 
 from state import (
+    client_reviews_dir,
+    client_run_dir,
+    ensure_client_runtime,
     ensure_runtime,
+    get_client_id,
     get_project_root,
     get_unreviewed_files,
     append_review_started,
@@ -131,7 +135,8 @@ If you edit files, the hook will track those new hashes and require another revi
 def main():
     try:
         project_root = get_project_root()
-        runtime = ensure_runtime(project_root)
+        client_id = get_client_id()
+        ensure_client_runtime(project_root, client_id)
         write_project_script_shim(project_root, Path(__file__).resolve())
 
         settings = load_settings(project_root)
@@ -140,7 +145,7 @@ def main():
             print("Claude Auto Review is disabled in .claude/settings.json.")
             return 0
 
-        unreviewed = get_unreviewed_files(load_state(project_root))
+        unreviewed = get_unreviewed_files(load_state(project_root, client_id))
         if not unreviewed:
             log_event(project_root, "review_prompt_noop")
             print("Claude Auto Review: no unreviewed changes.")
@@ -149,16 +154,18 @@ def main():
         timestamp = utc_now_iso()
         review_id = "rev-" + "".join(ch for ch in timestamp if ch.isdigit())[:14]
         files = [entry["file"] for entry in unreviewed]
-        configured_rules = settings.get("rulesFile") or runtime["rules_path"]
-        rules_path = Path(configured_rules)
+
+        # Determine rules path
+        rules_path = Path(settings.get("rulesFile", ""))
         if not rules_path.is_absolute():
-            rules_path = Path(project_root) / rules_path
-        rules = read_if_exists(rules_path, read_if_exists(runtime["rules_path"]))
+            rules_path = project_root / ".claude" / "claude-auto-review" / "rules.md"
+        rules = read_if_exists(rules_path)
+
         diff = git_diff(files, project_root)
         snapshots = current_file_snapshots(files, project_root)
 
-        review_path = runtime["reviews_dir"] / f"review-{review_id}.md"
-        prompt_path = runtime["run_dir"] / f"review-{review_id}-prompt.md"
+        review_path = client_reviews_dir(project_root, client_id) / f"review-{review_id}.md"
+        prompt_path = client_run_dir(project_root, client_id) / f"review-{review_id}-prompt.md"
         prompt_path.write_text(
             build_prompt(review_id, timestamp, unreviewed, rules, diff, snapshots, review_path),
             encoding="utf-8",
@@ -183,7 +190,7 @@ Pending.
             newline="\n",
         )
 
-        append_review_started(unreviewed, review_id, review_path, project_root)
+        append_review_started(unreviewed, review_id, review_path, project_root, client_id=client_id)
         log_event(
             project_root,
             "review_prompt_created",
@@ -191,6 +198,7 @@ Pending.
             files=files,
             prompt=str(prompt_path),
             review=str(review_path),
+            clientId=client_id,
         )
         print(f"Claude Auto Review prompt created: {prompt_path}")
         print(f"Review file initialized: {review_path}")

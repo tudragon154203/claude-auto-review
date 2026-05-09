@@ -6,7 +6,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from scripts.state import append_state, load_state
+from scripts.state import append_state, consecutive_stop_blocks, load_state
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
@@ -18,7 +18,7 @@ class HookTests(unittest.TestCase):
         return project_root
 
     def run_python(self, script, project_root, input_text=""):
-        env = {**os.environ, "CLAUDE_PROJECT_DIR": str(project_root)}
+        env = {**os.environ, "CLAUDE_PROJECT_DIR": str(project_root), "CLAUDE_SESSION_ID": "test-session"}
         return subprocess.run(
             [sys.executable, str(REPO_ROOT / script)],
             cwd=project_root,
@@ -30,7 +30,7 @@ class HookTests(unittest.TestCase):
         )
 
     def complete_latest_review(self, project_root, verdict="Clean - no issues found. Claude may stop."):
-        review_path = sorted((project_root / ".claude" / "claude-auto-review" / "reviews").glob("review-*.md"))[-1]
+        review_path = sorted((project_root / ".claude" / "claude-auto-review" / "clients" / "client-test-session" / "reviews").glob("review-*.md"))[-1]
         content = review_path.read_text(encoding="utf-8")
         content = content.replace("Pending. Claude must complete this review from", "Completed review from")
         content = content.replace("Pending.", verdict)
@@ -43,7 +43,7 @@ class HookTests(unittest.TestCase):
 
         post = self.run_python("hooks/post_tool_use.py", project_root, json.dumps({"tool_input": {"file_path": "src/app.ts"}}))
         self.assertEqual(post.returncode, 0)
-        self.assertEqual(load_state(project_root)[0]["file"], "src/app.ts")
+        self.assertEqual(load_state(project_root, "test-session")[0]["file"], "src/app.ts")
 
         stop = self.run_python("hooks/stop_hook.py", project_root)
         self.assertEqual(stop.returncode, 2)
@@ -56,7 +56,7 @@ class HookTests(unittest.TestCase):
 
         post = self.run_python("hooks/post_tool_use.py", project_root, json.dumps({"file_path": str(target)}))
         self.assertEqual(post.returncode, 0)
-        self.assertEqual(load_state(project_root)[0]["file"], "src/app.ts")
+        self.assertEqual(load_state(project_root, "test-session")[0]["file"], "src/app.ts")
 
     def test_post_tool_use_tracks_removed_file_and_stop_hook_blocks(self):
         project_root = self.temp_project()
@@ -64,7 +64,7 @@ class HookTests(unittest.TestCase):
 
         post = self.run_python("hooks/post_tool_use.py", project_root, json.dumps(payload))
         self.assertEqual(post.returncode, 0)
-        state = load_state(project_root)
+        state = load_state(project_root, "test-session")
         self.assertEqual(state[0]["file"], "src/deleted.ts")
         self.assertEqual(state[0]["hash"], "__deleted__")
         self.assertFalse(state[0]["reviewed"])
@@ -78,7 +78,7 @@ class HookTests(unittest.TestCase):
 
         post = self.run_python("hooks/post_tool_use.py", project_root, json.dumps({"file_path": str(outside)}))
         self.assertEqual(post.returncode, 0)
-        self.assertEqual(load_state(project_root), [])
+        self.assertEqual(load_state(project_root, "test-session"), [])
 
     def test_review_prompt_creates_prompt_and_allows_later_stop(self):
         project_root = self.temp_project()
@@ -87,8 +87,8 @@ class HookTests(unittest.TestCase):
 
         review = self.run_python("scripts/review_prompt.py", project_root)
         self.assertEqual(review.returncode, 0)
-        self.assertEqual(len(list((project_root / ".claude" / "claude-auto-review" / "run").iterdir())), 1)
-        self.assertEqual(len(list((project_root / ".claude" / "claude-auto-review" / "reviews").iterdir())), 1)
+        self.assertEqual(len(list((project_root / ".claude" / "claude-auto-review" / "clients" / "client-test-session" / "run").iterdir())), 1)
+        self.assertEqual(len(list((project_root / ".claude" / "claude-auto-review" / "clients" / "client-test-session" / "reviews").iterdir())), 1)
         pending_stop = self.run_python("hooks/stop_hook.py", project_root)
         self.assertEqual(pending_stop.returncode, 2)
         self.assertIn("still pending", json.loads(pending_stop.stdout)["message"])
@@ -111,7 +111,7 @@ class HookTests(unittest.TestCase):
 
         post = self.run_python("hooks/post_tool_use.py", project_root, json.dumps({"file_path": "README.md"}))
         self.assertEqual(post.returncode, 0)
-        self.assertEqual(load_state(project_root), [])
+        self.assertEqual(load_state(project_root, "test-session"), [])
         self.assertEqual(self.run_python("hooks/stop_hook.py", project_root).returncode, 0)
 
     def test_does_not_track_files_outside_include_extension_allowlist(self):
@@ -128,7 +128,7 @@ class HookTests(unittest.TestCase):
         py_post = self.run_python("hooks/post_tool_use.py", project_root, json.dumps({"file_path": "src/app.py"}))
         self.assertEqual(ts_post.returncode, 0)
         self.assertEqual(py_post.returncode, 0)
-        self.assertEqual([entry["file"] for entry in load_state(project_root)], ["src/app.py"])
+        self.assertEqual([entry["file"] for entry in load_state(project_root, "test-session")], ["src/app.py"])
 
     def test_post_tool_use_writes_lifecycle_log_without_stdout(self):
         project_root = self.temp_project()
@@ -150,7 +150,7 @@ class HookTests(unittest.TestCase):
 
         post = self.run_python("hooks/post_tool_use.py", project_root, json.dumps({"file_path": "src/app.ts"}))
         self.assertEqual(post.returncode, 0)
-        self.assertEqual(load_state(project_root), [])
+        self.assertEqual(load_state(project_root, "test-session"), [])
         self.assertEqual(self.run_python("hooks/stop_hook.py", project_root).returncode, 0)
 
     def test_treats_previously_reviewed_identical_hash_as_already_reviewed(self):
@@ -162,7 +162,7 @@ class HookTests(unittest.TestCase):
         self.assertEqual(self.run_python("hooks/stop_hook.py", project_root).returncode, 0)
         post_again = self.run_python("hooks/post_tool_use.py", project_root, json.dumps({"file_path": "src/app.ts"}))
         self.assertEqual(post_again.returncode, 0)
-        self.assertTrue(load_state(project_root)[-1]["reviewed"])
+        self.assertTrue(load_state(project_root, "test-session")[-1]["reviewed"])
         self.assertEqual(self.run_python("hooks/stop_hook.py", project_root).returncode, 0)
 
     def test_reblocks_after_reviewed_file_changes_to_new_hash(self):
@@ -197,7 +197,7 @@ class HookTests(unittest.TestCase):
         payload = {"tool_input": {"edits": [{"file_path": "src/a.ts"}, {"file_path": "src/b.ts"}]}}
         post = self.run_python("hooks/post_tool_use.py", project_root, json.dumps(payload))
         self.assertEqual(post.returncode, 0)
-        self.assertEqual(sorted(entry["file"] for entry in load_state(project_root)), ["src/a.ts", "src/b.ts"])
+        self.assertEqual(sorted(entry["file"] for entry in load_state(project_root, "test-session")), ["src/a.ts", "src/b.ts"])
         self.assertEqual(self.run_python("hooks/stop_hook.py", project_root).returncode, 2)
 
     def test_includes_real_git_diff_content_in_generated_review_prompt(self):
@@ -214,7 +214,7 @@ class HookTests(unittest.TestCase):
         self.run_python("hooks/post_tool_use.py", project_root, json.dumps({"file_path": "src/app.ts"}))
         review = self.run_python("scripts/review_prompt.py", project_root)
         self.assertEqual(review.returncode, 0)
-        prompt = next((project_root / ".claude" / "claude-auto-review" / "run").glob("*prompt.md")).read_text(encoding="utf-8")
+        prompt = next((project_root / ".claude" / "claude-auto-review" / "clients" / "client-test-session" / "run").glob("*prompt.md")).read_text(encoding="utf-8")
         self.assertIn("-export const value = 1;", prompt)
         self.assertIn("+export const value = 2;", prompt)
 
@@ -225,7 +225,7 @@ class HookTests(unittest.TestCase):
         self.run_python("hooks/post_tool_use.py", project_root, json.dumps({"file_path": "src/new.ts"}))
         review = self.run_python("scripts/review_prompt.py", project_root)
         self.assertEqual(review.returncode, 0)
-        prompt = next((project_root / ".claude" / "claude-auto-review" / "run").glob("*prompt.md")).read_text(encoding="utf-8")
+        prompt = next((project_root / ".claude" / "claude-auto-review" / "clients" / "client-test-session" / "run").glob("*prompt.md")).read_text(encoding="utf-8")
         self.assertIn("## Current File Snapshots", prompt)
         self.assertIn("export const created = true;", prompt)
 
@@ -239,7 +239,7 @@ class HookTests(unittest.TestCase):
 
         review = self.run_python("scripts/review_prompt.py", project_root)
         self.assertEqual(review.returncode, 0)
-        prompt = next((project_root / ".claude" / "claude-auto-review" / "run").glob("*prompt.md")).read_text(encoding="utf-8")
+        prompt = next((project_root / ".claude" / "claude-auto-review" / "clients" / "client-test-session" / "run").glob("*prompt.md")).read_text(encoding="utf-8")
         self.assertIn("Custom auth rule must appear.", prompt)
 
     def test_review_prompt_describes_deleted_tracked_file(self):
@@ -253,11 +253,12 @@ class HookTests(unittest.TestCase):
                 "reviewed": False,
             },
             project_root,
+            client_id="test-session",
         )
 
         review = self.run_python("scripts/review_prompt.py", project_root)
         self.assertEqual(review.returncode, 0)
-        prompt = next((project_root / ".claude" / "claude-auto-review" / "run").glob("*prompt.md")).read_text(encoding="utf-8")
+        prompt = next((project_root / ".claude" / "claude-auto-review" / "clients" / "client-test-session" / "run").glob("*prompt.md")).read_text(encoding="utf-8")
         self.assertIn("## src/deleted.ts", prompt)
         self.assertIn("File does not currently exist.", prompt)
 
@@ -297,7 +298,7 @@ class HookTests(unittest.TestCase):
             capture_output=True,
             text=True,
             encoding="utf-8",
-            env={**os.environ, "CLAUDE_PROJECT_DIR": str(project_root)},
+            env={**os.environ, "CLAUDE_PROJECT_DIR": str(project_root), "CLAUDE_SESSION_ID": "test-session"},
         )
         self.assertEqual(result.returncode, 0)
         self.complete_latest_review(project_root)
@@ -311,9 +312,9 @@ class HookTests(unittest.TestCase):
 
         cancel = self.run_python("scripts/cancel_claude_auto_review.py", project_root)
         self.assertEqual(cancel.returncode, 0)
-        self.assertFalse((project_root / ".claude" / "claude-auto-review" / "state.jsonl").exists())
+        self.assertFalse((project_root / ".claude" / "claude-auto-review" / "clients" / "client-test-session" / "state.jsonl").exists())
         self.assertFalse((project_root / ".claude" / "claude-auto-review" / "run").exists())
-        self.assertFalse((project_root / ".claude" / "claude-auto-review" / "reviews").exists())
+        self.assertFalse((project_root / ".claude" / "claude-auto-review" / "clients" / "client-test-session" / "reviews").exists())
         log_content = (project_root / ".claude" / "claude-auto-review" / "claude-auto-review.log").read_text(encoding="utf-8")
         self.assertIn('"event":"cancel_completed"', log_content)
 
@@ -329,6 +330,7 @@ class HookTests(unittest.TestCase):
                 "reviewed": False,
             },
             project_root,
+            client_id="test-session",
         )
         shim = project_root / ".claude" / "claude-auto-review" / "scripts" / "cancel_claude_auto_review.py"
         result = subprocess.run(
@@ -337,10 +339,10 @@ class HookTests(unittest.TestCase):
             capture_output=True,
             text=True,
             encoding="utf-8",
-            env={**os.environ, "CLAUDE_PROJECT_DIR": str(project_root)},
+            env={**os.environ, "CLAUDE_PROJECT_DIR": str(project_root), "CLAUDE_SESSION_ID": "test-session"},
         )
         self.assertEqual(result.returncode, 0)
-        self.assertFalse((project_root / ".claude" / "claude-auto-review" / "state.jsonl").exists())
+        self.assertFalse((project_root / ".claude" / "claude-auto-review" / "clients" / "client-test-session" / "state.jsonl").exists())
 
     def test_hook_configs_match_delete_and_remove_tools(self):
         plugin_config = json.loads((REPO_ROOT / ".claude-plugin" / "plugin.json").read_text(encoding="utf-8"))
@@ -351,6 +353,104 @@ class HookTests(unittest.TestCase):
         for tool_name in ("Write", "Edit", "MultiEdit", "Delete", "Remove"):
             self.assertIn(tool_name, plugin_matcher)
             self.assertIn(tool_name, hooks_matcher)
+
+    def test_stop_hook_circuit_breaker_opens_after_max_consecutive_blocks(self):
+        """When maxStopPasses (default 3) consecutive block events accumulate, the hook allows stop."""
+        project_root = self.temp_project()
+        (project_root / "src" / "app.ts").write_text("export const value = 1;\n", encoding="utf-8")
+
+        # Step 1: Track an unreviewed edit → first block (count = 1)
+        post1 = self.run_python("hooks/post_tool_use.py", project_root, json.dumps({"file_path": "src/app.ts"}))
+        self.assertEqual(post1.returncode, 0)
+        stop1 = self.run_python("hooks/stop_hook.py", project_root)
+        self.assertEqual(stop1.returncode, 2, "First stop should be blocked")
+        state = load_state(project_root, "test-session")
+        self.assertEqual(consecutive_stop_blocks(state), 1)
+
+        # Step 2: Track a second unreviewed edit → second block (count = 2)
+        (project_root / "src" / "b.ts").write_text("export const b = 2;\n", encoding="utf-8")
+        post2 = self.run_python("hooks/post_tool_use.py", project_root, json.dumps({"file_path": "src/b.ts"}))
+        self.assertEqual(post2.returncode, 0)
+        stop2 = self.run_python("hooks/stop_hook.py", project_root)
+        self.assertEqual(stop2.returncode, 2, "Second stop should still be blocked")
+        state = load_state(project_root, "test-session")
+        self.assertEqual(consecutive_stop_blocks(state), 2)
+
+        # Step 3: Track a third unreviewed edit → third block (count = 3)
+        (project_root / "src" / "c.ts").write_text("export const c = 3;\n", encoding="utf-8")
+        post3 = self.run_python("hooks/post_tool_use.py", project_root, json.dumps({"file_path": "src/c.ts"}))
+        self.assertEqual(post3.returncode, 0)
+        stop3 = self.run_python("hooks/stop_hook.py", project_root)
+        self.assertEqual(stop3.returncode, 2, "Third stop should still be blocked (threshold not yet exceeded)")
+        state = load_state(project_root, "test-session")
+        self.assertEqual(consecutive_stop_blocks(state), 3)
+
+        # Step 4: Track a fourth unreviewed edit → fourth block (count = 4)
+        # Circuit breaker should trip: default maxStopPasses is 3, so count (4) >= 3 → allow stop
+        (project_root / "src" / "d.ts").write_text("export const d = 4;\n", encoding="utf-8")
+        post4 = self.run_python("hooks/post_tool_use.py", project_root, json.dumps({"file_path": "src/d.ts"}))
+        self.assertEqual(post4.returncode, 0)
+        stop4 = self.run_python("hooks/stop_hook.py", project_root)
+        self.assertEqual(stop4.returncode, 0, "Fourth stop should be ALLOWED: circuit breaker tripped")
+        self.assertEqual(json.loads(stop4.stdout).get("block", True), False, "Response should not indicate a block")
+        state_after = load_state(project_root, "test-session")
+        # Count resets after the circuit breaker allows; the allowed stop itself does NOT add a stop_blocked entry
+        self.assertEqual(consecutive_stop_blocks(state_after), 4, "Circuit breaker approved stop but did not reset the counter")
+
+    def test_stop_hook_continues_blocking_after_successful_review_then_new_edits(self):
+        """After a successful review clears unreviewed files, the stop-block counter is reset."""
+        project_root = self.temp_project()
+        (project_root / "src" / "app.ts").write_text("export const value = 1;\n", encoding="utf-8")
+
+        # First edit → block
+        self.run_python("hooks/post_tool_use.py", project_root, json.dumps({"file_path": "src/app.ts"}))
+        self.assertEqual(self.run_python("hooks/stop_hook.py", project_root).returncode, 2)
+
+        # Start a review
+        self.run_python("scripts/review_prompt.py", project_root)
+
+        # Complete the review
+        review_path = sorted((project_root / ".claude" / "claude-auto-review" / "clients" / "client-test-session" / "reviews").glob("review-*.md"))[-1]
+        content = review_path.read_text(encoding="utf-8")
+        completed = content.replace("Pending.", "Clean - no issues found. Claude may stop.")
+        review_path.write_text(completed, encoding="utf-8", newline="\n")
+
+        # Review complete → stop allowed
+        self.assertEqual(self.run_python("hooks/stop_hook.py", project_root).returncode, 0)
+
+        # New edit after clean state → block count resets to fresh state (0 → 1)
+        (project_root / "src" / "b.ts").write_text("export const b = 2;\n", encoding="utf-8")
+        self.run_python("hooks/post_tool_use.py", project_root, json.dumps({"file_path": "src/b.ts"}))
+        stop = self.run_python("hooks/stop_hook.py", project_root)
+        self.assertEqual(stop.returncode, 2, "New unreviewed edit after clean review should block again")
+        state = load_state(project_root, "test-session")
+        self.assertEqual(consecutive_stop_blocks(state), 1)
+
+    def test_stop_hook_circuit_breaker_settings_override(self):
+        """maxStopPasses can be overridden in project settings."""
+        project_root = self.temp_project()
+        (project_root / ".claude").mkdir()
+        (project_root / ".claude" / "settings.json").write_text(
+            json.dumps({"claude-auto-review": {"maxStopPasses": 2}}),
+            encoding="utf-8",
+        )
+        (project_root / "src" / "app.ts").write_text("export const value = 1;\n", encoding="utf-8")
+
+        # First edit → block
+        self.run_python("hooks/post_tool_use.py", project_root, json.dumps({"file_path": "src/app.ts"}))
+        self.assertEqual(self.run_python("hooks/stop_hook.py", project_root).returncode, 2)
+
+        # Second edit → block (count = 2)
+        (project_root / "src" / "b.ts").write_text("export const b = 2;\n", encoding="utf-8")
+        self.run_python("hooks/post_tool_use.py", project_root, json.dumps({"file_path": "src/b.ts"}))
+        stop2 = self.run_python("hooks/stop_hook.py", project_root)
+        self.assertEqual(stop2.returncode, 2, "With maxStopPasses=2, second block should still trigger")
+
+        # Third edit → should trip: count 3 >= 2
+        (project_root / "src" / "c.ts").write_text("export const c = 3;\n", encoding="utf-8")
+        self.run_python("hooks/post_tool_use.py", project_root, json.dumps({"file_path": "src/c.ts"}))
+        stop3 = self.run_python("hooks/stop_hook.py", project_root)
+        self.assertEqual(stop3.returncode, 0, "Circuit breaker with maxStopPasses=2 should trip on third consecutive block")
 
 
 if __name__ == "__main__":
