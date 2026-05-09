@@ -36,23 +36,24 @@ def get_plugin_root():
 
 
 def get_client_id() -> str:
-    """Returns a unique identifier for the current Claude Code session.
+    """Returns a time-ordered unique identifier for the current session.
 
-    Uses CLAUDE_SESSION_ID if available (passed by Claude Code hook env).
-    Falls back to an ephemeral hostname:pid:timestamp tuple that is NOT
-    persisted, so each process/session gets its own isolated state.
+    IDs are prefixed with a sortable timestamp (ISO-like YYYYMMDD-HHMMSS)
+    so that lexicographic order matches chronological order. The suffix
+    provides uniqueness: CLAUDE_SESSION_ID when available, otherwise a
+    hostname:pid tuple.
     """
+    ts = datetime.now().strftime("%Y%m%d-%H%M%S")
     session_id = os.environ.get("CLAUDE_SESSION_ID")
     if session_id:
-        return session_id
+        return f"{ts}_{session_id}"
 
     try:
         hostname = socket.gethostname()
     except Exception:
         hostname = "unknown"
     pid = os.getpid()
-    timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
-    return f"{hostname}-{pid}-{timestamp}"
+    return f"{ts}_{hostname}-{pid}"
 
 
 def get_client_runtime_dir(project_root: Path, client_id: str) -> Path:
@@ -412,10 +413,7 @@ def ensure_runtime(project_root=None, plugin_root=None):
     project_root = Path(project_root or get_project_root())
     plugin_root = Path(plugin_root or get_plugin_root())
     base_dir = project_root / RUNTIME_DIR
-    reviews_dir = base_dir / "reviews"
-    run_dir = base_dir / "run"
-    reviews_dir.mkdir(parents=True, exist_ok=True)
-    run_dir.mkdir(parents=True, exist_ok=True)
+    base_dir.mkdir(parents=True, exist_ok=True)
 
     state_path = project_root / STATE_RELATIVE_PATH
     state_path.parent.mkdir(parents=True, exist_ok=True)
@@ -436,8 +434,6 @@ def ensure_runtime(project_root=None, plugin_root=None):
         "base_dir": base_dir,
         "state_path": state_path,
         "rules_path": rules_path,
-        "reviews_dir": reviews_dir,
-        "run_dir": run_dir,
         "log_path": project_root / LOG_RELATIVE_PATH,
     }
 

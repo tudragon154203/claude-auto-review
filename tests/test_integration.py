@@ -49,8 +49,6 @@ class IntegrationTests(TempProjectMixin, unittest.TestCase):
         result = ensure_runtime(project_root, REPO_ROOT)
 
         self.assertTrue(result["base_dir"].exists())
-        self.assertTrue(result["run_dir"].exists())
-        self.assertTrue(result["reviews_dir"].exists())
         self.assertTrue(result["rules_path"].exists())
         self.assertTrue(result["state_path"].parent.exists())
         self.assertTrue(result["log_path"].parent.exists())
