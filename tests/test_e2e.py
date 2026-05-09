@@ -198,7 +198,7 @@ class EndToEndTests(TempProjectMixin, SubprocessMixin, unittest.TestCase):
         stop = self.stop(project_root)
 
         parsed = json.loads(stop.stdout)
-        self.assertIn("review_prompt.py", parsed["feedback"])
+        self.assertIn("Review file created at:", parsed["feedback"])
         self.assertIn("src/app.ts", parsed["message"])
 
     def test_setup_idempotent_e2e(self):

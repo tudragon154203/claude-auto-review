@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import json
+import subprocess
 import sys
 from pathlib import Path
 
@@ -82,16 +83,56 @@ def main():
 
         files = ", ".join(entry["file"] for entry in unreviewed)
         plugin_review_script = Path(__file__).resolve().parent.parent / "scripts" / "review_prompt.py"
-        project_review_script = project_root / ".claude" / "claude-auto-review" / "scripts" / "review_prompt.py"
-        command = f'python "{plugin_review_script}"'
+        review_path = project_root / ".claude" / "claude-auto-review" / "scripts" / "review_prompt.py"
+
+        # Run review_prompt.py to generate the review
+        try:
+            result = subprocess.run(
+                [sys.executable, str(plugin_review_script)],
+                cwd=str(project_root),
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                errors="replace",
+                timeout=60,
+            )
+            log_event(project_root, "stop_hook_review_invoked", stdout=result.stdout, stderr=result.stderr, returncode=result.returncode)
+        except subprocess.TimeoutExpired:
+            log_event(project_root, "stop_hook_review_timeout", script=str(plugin_review_script))
+            block_response(
+                f"Claude Auto Review: Timeout generating review for {files}.",
+                "The review generation timed out. Check the logs and try again.",
+            )
+            return 2
+        except Exception as e:
+            log_event(project_root, "stop_hook_review_error", error=str(e))
+            block_response(
+                f"Claude Auto Review: Error generating review for {files}.",
+                f"Failed to run review_prompt.py: {e}",
+            )
+            return 2
+
+        # After running, check if a pending review now exists
+        state = load_state(project_root, client_id)
+        pending_reviews = pending_reviews_for_entries(state, unreviewed)
+        if not pending_reviews:
+            # No review was created - something went wrong
+            block_response(
+                f"Claude Auto Review: Failed to create review for {files}.",
+                f"review_prompt.py ran but no review was created.\n\nOutput:\n{result.stdout}\n\nErrors:\n{result.stderr}",
+            )
+            return 2
+
+        # A review was created - block with the pending review info
+        review = pending_reviews[0]
+        review_path = review.get("reviewPath", "")
         block_response(
-            f"Claude Auto Review: Unreviewed changes detected in {files}.",
+            f"Claude Auto Review: Review {review.get('reviewId')} created for {files}.",
             (
-                f"Start the review by running:\n  {command}\n\n"
+                f"Review file created at:\n  {review_path}\n\n"
                 "Go through each finding in the generated file and set its verdict "
-                "(Confirmed, Skipped, Fixed). Once all findings are reviewed, "
-                "you'll be able to stop.\n"
-                f"Script path: {project_review_script}"
+                "(Confirmed, Skipped, Fixed). Once all verdicts are set, "
+                "stopping will be allowed."
             ),
         )
         log_event(project_root, "stop_blocked", files=[entry["file"] for entry in unreviewed])
