@@ -218,6 +218,8 @@ def main():
                         claude_cli,
                         "--print",
                         "--bare",
+                        "--permission-mode",
+                        "acceptEdits",
                         "--model",
                         "fast",
                         "--system-prompt-file",
