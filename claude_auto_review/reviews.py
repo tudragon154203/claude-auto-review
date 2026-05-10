@@ -14,12 +14,11 @@ def _pending_review_entries(state):
             yield entry
 
 
-def _pending_review_details(state, entries):
+def _pending_review_overlaps(state, entries):
     needed = entry_file_hash_pairs(entries)
     for entry in _pending_review_entries(state):
         covered = review_file_hash_pairs(entry)
-        overlap = needed & covered
-        yield entry, needed, covered, overlap
+        yield entry, covered, needed & covered
 
 
 def entry_file_hash_pairs(entries):
@@ -58,7 +57,8 @@ def is_review_expired(review_entry, timeout_hours):
 
 def pending_reviews_for_entries(state, entries):
     matches = []
-    for entry, needed, covered, overlap in _pending_review_details(state, entries):
+    needed = entry_file_hash_pairs(entries)
+    for entry, covered, _ in _pending_review_overlaps(state, entries):
         if needed and needed.issubset(covered):
             matches.append(entry)
     return sorted(matches, key=lambda e: e.get("timestamp", ""), reverse=True)
@@ -73,7 +73,7 @@ def pending_review_candidates_for_entries(state, entries, project_root=None, tim
     - higher overlap wins, then newer timestamp wins
     """
     candidates = []
-    for entry, _, _, overlap in _pending_review_details(state, entries):
+    for entry, _, overlap in _pending_review_overlaps(state, entries):
         if timeout_hours > 0 and is_review_expired(entry, timeout_hours):
             log_event(
                 project_root,
