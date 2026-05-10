@@ -52,4 +52,3 @@
 - Avoid brittle assertions — test outcomes, not implementation details. Do not assert on trivial "it did not throw" cases without verifying results.
 - Test real error paths: assert on expected error types and messages, not generic catch-all.
 - Prefer parameterized or matrix-style tests for closed sets of inputs; avoid copy-pasted test cases.
-
