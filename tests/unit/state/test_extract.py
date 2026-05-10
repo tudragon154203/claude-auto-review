@@ -2,7 +2,7 @@ import unittest
 
 from claude_auto_review.state import extract_file_paths_from_hook_input
 
-from tests.state.support import StateTestCase
+from tests.unit.state.support import StateTestCase
 
 
 class TestHookInputExtraction(StateTestCase, unittest.TestCase):

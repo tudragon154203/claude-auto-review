@@ -4,11 +4,11 @@ import unittest
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
+REPO_ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(REPO_ROOT))
 
 from claude_auto_review.state import append_state, ensure_client_runtime, load_state  # noqa: E402
-from tests.hooks.support import HookTestCase  # noqa: E402
+from tests.int.hooks.support import HookTestCase  # noqa: E402
 
 
 def find_client_dir(project_root, session_id):

@@ -2,7 +2,7 @@ import unittest
 
 from claude_auto_review.state import get_log_path, get_state_path, normalize_relative_path
 
-from tests.state.support import StateTestCase
+from tests.unit.state.support import StateTestCase
 
 
 class TestPathUtils(StateTestCase, unittest.TestCase):

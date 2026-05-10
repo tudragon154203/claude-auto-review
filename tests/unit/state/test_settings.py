@@ -4,7 +4,7 @@ import unittest
 from claude_auto_review.state import DEFAULT_SETTINGS, ensure_project_settings, load_settings, should_skip_file
 from claude_auto_review.settings import resolve_rules_file_path
 
-from tests.state.support import StateTestCase
+from tests.unit.state.support import StateTestCase
 
 
 class TestSettings(StateTestCase, unittest.TestCase):

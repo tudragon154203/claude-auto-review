@@ -3,10 +3,10 @@ import sys
 import unittest
 from pathlib import Path
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
+REPO_ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(REPO_ROOT))
 from claude_auto_review.state import append_state, consecutive_stop_blocks, load_state  # noqa: E402
-from tests.hooks.support import HookTestCase  # noqa: E402
+from tests.int.hooks.support import HookTestCase  # noqa: E402
 
 
 class TestStopHook(HookTestCase, unittest.TestCase):

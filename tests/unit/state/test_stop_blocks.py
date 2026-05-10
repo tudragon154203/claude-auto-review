@@ -2,7 +2,7 @@ import unittest
 
 from claude_auto_review.state import append_state, client_state_path, consecutive_stop_blocks, ensure_client_runtime, load_state
 
-from tests.state.support import StateTestCase
+from tests.unit.state.support import StateTestCase
 
 
 class TestStopBlocks(StateTestCase, unittest.TestCase):

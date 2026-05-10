@@ -2,7 +2,7 @@ import unittest
 
 from claude_auto_review.state import append_review_started, ensure_client_runtime, ensure_runtime, load_state, mark_files_reviewed, pending_reviews_for_entries, was_hash_reviewed
 
-from tests.state.support import StateTestCase
+from tests.unit.state.support import StateTestCase
 
 
 class TestReviewCycle(StateTestCase, unittest.TestCase):

@@ -5,7 +5,7 @@ from pathlib import Path
 
 from claude_auto_review.state import get_file_hash
 
-from tests.state.support import StateTestCase
+from tests.unit.state.support import StateTestCase
 
 
 class TestFileHash(StateTestCase, unittest.TestCase):

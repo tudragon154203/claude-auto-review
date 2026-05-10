@@ -5,7 +5,7 @@ import unittest.mock as mock
 
 from claude_auto_review.state import get_client_id
 
-from tests.state.support import StateTestCase
+from tests.unit.state.support import StateTestCase
 
 
 class TestClientId(StateTestCase, unittest.TestCase):

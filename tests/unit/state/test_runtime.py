@@ -11,7 +11,7 @@ from claude_auto_review.state import (
     load_state,
 )
 
-from tests.state.support import StateTestCase
+from tests.unit.state.support import StateTestCase
 
 
 class TestRuntime(StateTestCase, unittest.TestCase):
