@@ -69,3 +69,18 @@ class TestRuntime(StateTestCase, unittest.TestCase):
         removed = cancel_session(project_root, client_id="nonexistent")
         self.assertEqual(removed, [])
 
+    def test_cancel_session_does_not_overmatch_underscore_suffix(self):
+        project_root = self.temp_project()
+        ensure_client_runtime(project_root, "team_alpha")
+        ensure_client_runtime(project_root, "other_alpha")
+
+        removed = cancel_session(project_root, client_id="team_alpha")
+
+        self.assertFalse(
+            (project_root / ".claude" / "claude-auto-review" / "clients" / "client-team_alpha").exists()
+        )
+        self.assertTrue(
+            (project_root / ".claude" / "claude-auto-review" / "clients" / "client-other_alpha").exists()
+        )
+        self.assertGreater(len(removed), 0)
+

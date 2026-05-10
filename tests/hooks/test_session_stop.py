@@ -1,12 +1,13 @@
 import json
 import sys
 import unittest
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT))
 
-from scripts.state import ensure_client_runtime  # noqa: E402
+from scripts.state import append_state, ensure_client_runtime, load_state  # noqa: E402
 from tests.hooks.support import HookTestCase  # noqa: E402
 
 
@@ -122,6 +123,67 @@ class TestSessionStopHook(HookTestCase, unittest.TestCase):
         result = self.run_python("hooks/session_stop.py", project_root)
         self.assertEqual(result.returncode, 0)
         self.assertFalse(client_dir.exists())
+
+    def test_session_stop_cleans_expired_pending_reviews_before_removal(self):
+        project_root = self.temp_project()
+        ensure_client_runtime(project_root, "test-session")
+        old_time = (datetime.now(timezone.utc) - timedelta(hours=2)).isoformat().replace("+00:00", "Z")
+        append_state(
+            {
+                "type": "review",
+                "reviewId": "rev-expired",
+                "reviewPath": str(
+                    project_root
+                    / ".claude"
+                    / "claude-auto-review"
+                    / "clients"
+                    / "client-test-session"
+                    / "reviews"
+                    / "review-expired.md"
+                ),
+                "timestamp": old_time,
+                "status": "pending",
+                "files": [{"file": "src/app.ts", "hash": "deadbeef"}],
+            },
+            project_root,
+            client_id="test-session",
+        )
+        self.assertIn("rev-expired", [e.get("reviewId") for e in load_state(project_root, "test-session") if e.get("type") == "review"])
+        result = self.run_python("hooks/session_stop.py", project_root, client_id="test-session")
+        self.assertEqual(result.returncode, 0)
+        log_path = project_root / ".claude" / "claude-auto-review" / "claude-auto-review.log"
+        log_content = log_path.read_text(encoding="utf-8")
+        self.assertIn("session_stop_cleanup", log_content)
+        self.assertIn("\"expired_removed\":1", log_content)
+
+    def test_session_stop_cleanup_uses_payload_session_id(self):
+        project_root = self.temp_project()
+        ensure_client_runtime(project_root, "payload-session")
+        old_time = (datetime.now(timezone.utc) - timedelta(hours=2)).isoformat().replace("+00:00", "Z")
+        append_state(
+            {
+                "type": "review",
+                "reviewId": "rev-expired-payload",
+                "reviewPath": str(
+                    project_root
+                    / ".claude"
+                    / "claude-auto-review"
+                    / "clients"
+                    / "client-payload-session"
+                    / "reviews"
+                    / "review-expired.md"
+                ),
+                "timestamp": old_time,
+                "status": "pending",
+                "files": [{"file": "src/app.ts", "hash": "deadbeef"}],
+            },
+            project_root,
+            client_id="payload-session",
+        )
+        payload = json.dumps({"session_id": "payload-session"})
+        result = self.run_python("hooks/session_stop.py", project_root, input_text=payload, client_id="env-session")
+        self.assertEqual(result.returncode, 0)
+        self.assertFalse((project_root / ".claude" / "claude-auto-review" / "clients" / "client-payload-session").exists())
 
 
 if __name__ == "__main__":

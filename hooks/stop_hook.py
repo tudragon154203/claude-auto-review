@@ -10,7 +10,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
 from state import (  # noqa: E402
     append_state,
     client_run_dir,
-    cleanup_expired_pending_reviews,
     consecutive_stop_blocks,
     ensure_client_runtime,
     get_client_id,
@@ -58,8 +57,8 @@ def find_pending_review_for_files(state, unreviewed_entries, timeout_hours=0):
             matches.append((entry, len(overlap)))
     if not matches:
         return None
-    # Return the one with most overlap (usually the most recent)
-    return max(matches, key=lambda x: x[1])[0]
+    # Prefer larger overlap; break ties by newest timestamp.
+    return max(matches, key=lambda x: (x[1], x[0].get("timestamp", "")))[0]
 
 
 def get_entries_covered_by_review(review_entry, state_entries):
@@ -100,11 +99,6 @@ def main():
         ensure_client_runtime(project_root, client_id)
         settings = load_settings(project_root)
         timeout_hours = float(settings.get("pendingReviewTimeoutHours", 1))
-
-        # Clean up any expired pending reviews before proceeding
-        removed = cleanup_expired_pending_reviews(project_root)
-        if removed > 0:
-            print(f"[claude-auto-review] Removed {removed} expired pending review(s)", file=sys.stderr)
 
         if not settings.get("enabled", True):
             log_event(project_root, "stop_disabled")

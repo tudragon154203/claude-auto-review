@@ -1,22 +1,33 @@
 #!/usr/bin/env python3
+import json
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
 
-from state import cancel_session, get_client_id, get_project_root, log_event  # noqa: E402
+from state import (  # noqa: E402
+    cancel_session,
+    cleanup_expired_pending_reviews,
+    get_client_id,
+    get_project_root,
+    log_event,
+)
 
 
 def main():
     try:
         project_root = get_project_root()
-        client_id = get_client_id()
+        raw = sys.stdin.read().strip()
+        payload = json.loads(raw) if raw else {}
+        client_id = get_client_id(payload.get("session_id") if isinstance(payload, dict) else None)
+        expired_removed = cleanup_expired_pending_reviews(project_root, client_id=client_id)
         removed = cancel_session(project_root, client_id=client_id)
-        if removed:
+        if removed or expired_removed:
             log_event(
                 project_root,
                 "session_stop_cleanup",
                 removed=[str(p) for p in removed],
+                expired_removed=expired_removed,
                 client_id=client_id,
             )
         return 0
