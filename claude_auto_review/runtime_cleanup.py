@@ -1,9 +1,9 @@
-import json
 import shutil
 
 from claude_auto_review.paths import RUNTIME_DIR, client_state_path, get_client_runtime_dir
 from claude_auto_review.reviews import is_review_expired
 from claude_auto_review.runtime_helpers import log_event, resolve_client_id, resolve_project_root
+from claude_auto_review.state_store_read import read_jsonl_records
 from claude_auto_review.settings import load_settings
 
 
@@ -19,12 +19,8 @@ def cleanup_expired_pending_reviews(project_root=None, client_id=""):
 
     entries = []
     removed = 0
-    for line in state_path.read_text(encoding="utf-8").splitlines():
-        if not line.strip():
-            continue
-        try:
-            entry = json.loads(line)
-        except json.JSONDecodeError:
+    for line, entry in read_jsonl_records(state_path):
+        if entry is None:
             entries.append(line)
             continue
         if (
@@ -44,16 +40,17 @@ def cleanup_expired_pending_reviews(project_root=None, client_id=""):
     return removed
 
 
-def _remove_path(target, removed):
+def _remove_tree(target):
     try:
         if target.is_dir():
             shutil.rmtree(target)
-            removed.append(target)
+            return True
         elif target.exists():
             target.unlink()
-            removed.append(target)
+            return True
+        return False
     except OSError:
-        pass
+        return False
 
 
 def cancel_runtime(project_root=None, client_id=""):
@@ -61,12 +58,8 @@ def cancel_runtime(project_root=None, client_id=""):
     removed = []
     if client_id:
         client_dir = get_client_runtime_dir(project_root, client_id)
-        if client_dir.exists():
-            try:
-                shutil.rmtree(client_dir)
-                removed.append(client_dir)
-            except OSError:
-                pass
+        if _remove_tree(client_dir):
+            removed.append(client_dir)
         return removed
     runtime = project_root / RUNTIME_DIR
     if runtime.exists():
@@ -75,7 +68,8 @@ def cancel_runtime(project_root=None, client_id=""):
             runtime / "reviews",
             runtime / "clients",
         ]:
-            _remove_path(target, removed)
+            if _remove_tree(target):
+                removed.append(target)
         try:
             if runtime.exists() and not any(runtime.iterdir()):
                 runtime.rmdir()
@@ -89,13 +83,9 @@ def cancel_session(project_root=None, client_id=""):
     project_root = resolve_project_root(project_root)
     client_id = resolve_client_id(client_id)
     client_dir = get_client_runtime_dir(project_root, client_id)
-    if client_dir.exists():
-        removed = []
-        try:
-            shutil.rmtree(client_dir)
-            removed.append(client_dir)
-        except OSError:
-            pass
+    removed = []
+    if _remove_tree(client_dir):
+        removed.append(client_dir)
         return removed
     return []
 

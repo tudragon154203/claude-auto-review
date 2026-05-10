@@ -3,6 +3,7 @@ import unittest
 from claude_auto_review.state import (
     cancel_runtime,
     cancel_session,
+    cleanup_expired_pending_reviews,
     client_state_path,
     client_run_dir,
     client_reviews_dir,
@@ -84,5 +85,34 @@ class TestRuntime(StateTestCase, unittest.TestCase):
             (project_root / ".claude" / "claude-auto-review" / "clients" / "client-other_alpha").exists()
         )
         self.assertGreater(len(removed), 0)
+
+    def test_cleanup_expired_pending_reviews_preserves_invalid_lines(self):
+        from datetime import datetime, timedelta, timezone
+
+        project_root = self.temp_project()
+        client_id = "cleanup-invalid"
+        ensure_client_runtime(project_root, client_id)
+        state_path = client_state_path(project_root, client_id)
+        expired_time = (datetime.now(timezone.utc) - timedelta(hours=2)).isoformat().replace("+00:00", "Z")
+        state_path.write_text(
+            "\n".join(
+                [
+                    '{"type":"review","reviewId":"expired","reviewPath":"review.md","timestamp":"'
+                    + expired_time
+                    + '","status":"pending","files":[{"file":"a.ts","hash":"1"}]}',
+                    "not-json",
+                    '{"type":"edit","file":"a.ts","hash":"1","timestamp":"2026-05-05T01:00:00Z","reviewed":false}',
+                ]
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+
+        removed = cleanup_expired_pending_reviews(project_root, client_id=client_id)
+
+        self.assertEqual(removed, 1)
+        content = state_path.read_text(encoding="utf-8").splitlines()
+        self.assertIn("not-json", content)
+        self.assertEqual(len(load_state(project_root, client_id)), 1)
 
 

@@ -15,15 +15,23 @@ DEFAULT_SETTINGS = {
 }
 
 
-def load_settings(project_root=None):
-    project_root = Path(project_root or get_project_root())
-    settings_path = project_root / ".claude" / "settings.json"
+def _settings_path(project_root):
+    return Path(project_root or get_project_root()) / ".claude" / "settings.json"
+
+
+def _load_settings_document(settings_path):
     try:
         data = json.loads(settings_path.read_text(encoding="utf-8")) if settings_path.exists() else {}
-        plugin_settings = data.get("claude-auto-review", {}) if isinstance(data, dict) else {}
-        return {**DEFAULT_SETTINGS, **plugin_settings}
     except (OSError, json.JSONDecodeError):
-        return dict(DEFAULT_SETTINGS)
+        return {}
+    return data if isinstance(data, dict) else {}
+
+
+def load_settings(project_root=None):
+    settings_path = _settings_path(project_root)
+    data = _load_settings_document(settings_path)
+    plugin_settings = data.get("claude-auto-review", {})
+    return {**DEFAULT_SETTINGS, **plugin_settings} if isinstance(plugin_settings, dict) else dict(DEFAULT_SETTINGS)
 
 
 def resolve_rules_file_path(project_root, settings):

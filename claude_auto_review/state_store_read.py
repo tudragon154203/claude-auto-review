@@ -1,5 +1,6 @@
 import hashlib
 import json
+from pathlib import Path
 
 from claude_auto_review.paths import normalize_relative_path
 from claude_auto_review.runtime_helpers import resolve_client_id, resolve_project_root
@@ -7,6 +8,22 @@ from claude_auto_review.runtime_helpers import resolve_client_id, resolve_projec
 
 def _timestamp_value(entry):
     return entry.get("timestamp", "")
+
+
+def read_jsonl_records(path):
+    path = Path(path)
+    if not path.exists():
+        return []
+    records = []
+    for line in path.read_text(encoding="utf-8").splitlines():
+        if not line.strip():
+            continue
+        try:
+            entry = json.loads(line)
+        except json.JSONDecodeError:
+            entry = None
+        records.append((line, entry))
+    return records
 
 
 def get_file_hash(file_path, project_root=None):
@@ -26,16 +43,7 @@ def load_state(project_root=None, client_id=""):
     project_root = resolve_project_root(project_root)
     client_id = resolve_client_id(client_id)
     state_file = client_state_path(project_root, client_id)
-    if not state_file.exists():
-        return []
-    entries = []
-    for line in state_file.read_text(encoding="utf-8").splitlines():
-        if line.strip():
-            try:
-                entries.append(json.loads(line))
-            except json.JSONDecodeError:
-                pass
-    return entries
+    return [entry for _, entry in read_jsonl_records(state_file) if entry is not None]
 
 
 def latest_entries_by_file(state):
