@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import subprocess
+from datetime import datetime
 from pathlib import Path
 
 from state import (
@@ -40,6 +41,14 @@ def read_if_exists(path, fallback=""):
     return path.read_text(encoding="utf-8") if path.exists() else fallback
 
 
+def format_review_timestamp(timestamp):
+    ts = datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
+    local_ts = ts.astimezone()
+    offset = local_ts.strftime("%z")
+    offset = f"{offset[:3]}:{offset[3:]}" if offset else ""
+    return f"{local_ts.strftime('%Y-%m-%d | %H:%M:%S')} {offset}".rstrip()
+
+
 def current_file_snapshots(files, project_root):
     sections = []
     max_chars = 40000
@@ -72,6 +81,7 @@ def write_project_script_shim(project_root, plugin_script_path):
 
 
 def build_prompt(review_id, timestamp, entries, rules, diff, snapshots, review_path):
+    readable_timestamp = format_review_timestamp(timestamp)
     file_list = "\n".join(f"- {entry['file']} (hash: {entry['hash']})" for entry in entries)
     return f"""# Claude Auto Review Request {review_id}
 
@@ -86,7 +96,7 @@ Write the final review to:
 Use this exact top matter:
 
 ```markdown
-# Review {review_id} - {timestamp}
+# Review {review_id} - {readable_timestamp}
 
 ## Files Reviewed
 {file_list}
@@ -173,7 +183,7 @@ def main():
         )
         file_list = "\n".join(f"- {entry['file']} (hash: {entry['hash']})" for entry in unreviewed)
         review_path.write_text(
-            f"""# Review {review_id} - {timestamp}
+            f"""# Review {review_id} - {format_review_timestamp(timestamp)}
 
 ## Files Reviewed
 {file_list}
