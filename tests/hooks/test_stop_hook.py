@@ -220,7 +220,7 @@ class TestStopHook(HookTestCase, unittest.TestCase):
         self.run_python("hooks/post_tool_use.py", project_root, json.dumps({"file_path": "src/app.ts"}))
 
         stop = self.run_python("hooks/stop_hook.py", project_root, env_overrides={"PATH": ""}, use_fake_claude=False)
-        self.assertEqual(stop.stderr, "")
+        self.assertNotEqual(stop.stderr, "")
         parsed = json.loads(stop.stdout)
         self.assertTrue(parsed["block"])
         self.assertEqual(stop.stdout.strip(), json.dumps(parsed, separators=(",", ":")))

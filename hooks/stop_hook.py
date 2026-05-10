@@ -86,8 +86,9 @@ def block_response(message, feedback):
                 "continue": False,
             },
             separators=(",", ":"),
-        )
+        ),
     )
+    print(message, file=sys.stderr)
 
 
 def main():
@@ -126,6 +127,10 @@ def main():
             # No matching review — create one via review_prompt.py
             files_str = ", ".join(entry["file"] for entry in unreviewed)
             plugin_review_script = Path(__file__).resolve().parent.parent / "scripts" / "review_prompt.py"
+            env = os.environ.copy()
+            session_id = payload.get("session_id")
+            if session_id:
+                env["CLAUDE_SESSION_ID"] = session_id
             try:
                 result = subprocess.run(
                     [sys.executable, str(plugin_review_script)],
@@ -135,6 +140,7 @@ def main():
                     encoding="utf-8",
                     errors="replace",
                     timeout=60,
+                    env=env,
                 )
                 log_event(
                     project_root,
