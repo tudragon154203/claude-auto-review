@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 import subprocess
-import sys
 from datetime import datetime
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from bootstrap import ensure_repo_root_on_path
+
+ensure_repo_root_on_path()
 
 from scripts.paths import (
     client_reviews_dir,
@@ -13,6 +14,7 @@ from scripts.paths import (
     get_project_root,
     utc_now_iso,
 )
+from scripts.shims import build_runpy_shim_content
 from scripts.state import (
     append_review_started,
     ensure_client_runtime,
@@ -73,14 +75,7 @@ def write_project_script_shim(project_root, plugin_script_path):
     runtime_scripts = Path(project_root) / ".claude" / "claude-auto-review" / "scripts"
     runtime_scripts.mkdir(parents=True, exist_ok=True)
     shim_path = runtime_scripts / "review_prompt.py"
-    plugin_script_path = Path(plugin_script_path).resolve()
-    content = (
-        "#!/usr/bin/env python3\n"
-        "import sys\n"
-        "import runpy\n"
-        f"sys.path.insert(0, {str(plugin_script_path.parent.parent)!r})\n"
-        f"runpy.run_path({str(plugin_script_path)!r}, run_name='__main__')\n"
-    )
+    content = build_runpy_shim_content(plugin_script_path)
     if not shim_path.exists() or shim_path.read_text(encoding="utf-8") != content:
         shim_path.write_text(content, encoding="utf-8", newline="\n")
 

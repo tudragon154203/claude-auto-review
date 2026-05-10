@@ -6,7 +6,9 @@ import subprocess
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from bootstrap import ensure_repo_root_on_path
+
+ensure_repo_root_on_path()
 
 from scripts.paths import client_run_dir, get_client_id, get_project_root, utc_now_iso
 from scripts.reviews import is_review_complete, is_review_expired

@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
-import sys
-from pathlib import Path
+from bootstrap import ensure_repo_root_on_path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+ensure_repo_root_on_path()
 
 from scripts.paths import get_client_id, get_project_root
 from scripts.state import cancel_runtime, log_event

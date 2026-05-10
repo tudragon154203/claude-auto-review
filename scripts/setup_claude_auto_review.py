@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
-import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from bootstrap import ensure_repo_root_on_path
+
+ensure_repo_root_on_path()
 
 from scripts.paths import get_project_root
+from scripts.shims import build_runpy_shim_content
 from scripts.state import ensure_project_settings, ensure_runtime, log_event
 
 
@@ -32,24 +34,8 @@ def main():
     cancel_shim_path = runtime_scripts / "cancel_claude_auto_review.py"
     plugin_review_script = plugin_root / "scripts" / "review_prompt.py"
     plugin_cancel_script = plugin_root / "scripts" / "cancel_claude_auto_review.py"
-    shim_path.write_text(
-        "#!/usr/bin/env python3\n"
-        "import sys\n"
-        "import runpy\n"
-        f"sys.path.insert(0, {str(plugin_review_script.parent.parent)!r})\n"
-        f"runpy.run_path({str(plugin_review_script)!r}, run_name='__main__')\n",
-        encoding="utf-8",
-        newline="\n",
-    )
-    cancel_shim_path.write_text(
-        "#!/usr/bin/env python3\n"
-        "import sys\n"
-        "import runpy\n"
-        f"sys.path.insert(0, {str(plugin_cancel_script.parent.parent)!r})\n"
-        f"runpy.run_path({str(plugin_cancel_script)!r}, run_name='__main__')\n",
-        encoding="utf-8",
-        newline="\n",
-    )
+    shim_path.write_text(build_runpy_shim_content(plugin_review_script), encoding="utf-8", newline="\n")
+    cancel_shim_path.write_text(build_runpy_shim_content(plugin_cancel_script), encoding="utf-8", newline="\n")
     copy_if_changed(plugin_root / "agents" / "reviewer.md", runtime_agents / "reviewer.md")
 
     gitignore_path = project_root / ".gitignore"

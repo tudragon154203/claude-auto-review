@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 import json
 import sys
-from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from bootstrap import ensure_repo_root_on_path
+
+ensure_repo_root_on_path()
 
 from scripts.paths import DELETED_FILE_HASH, get_project_root, normalize_relative_path, utc_now_iso
 from scripts.state import (
