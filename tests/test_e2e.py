@@ -247,7 +247,7 @@ class EndToEndTests(TempProjectMixin, SubprocessMixin, unittest.TestCase):
         self.assertIn("--print", cli_args)
         self.assertIn("--model", cli_args)
         idx = cli_args.index("--model")
-        self.assertEqual(cli_args[idx + 1], "opus")
+        self.assertEqual(cli_args[idx + 1], "fast")
         self.assertIn("--system-prompt-file", cli_args)
 
         # Verify files are marked reviewed

@@ -422,7 +422,7 @@ def ensure_runtime(project_root=None, plugin_root=None):
 
     rules_path = base_dir / "rules.md"
     if not rules_path.exists():
-        default_rules_path = plugin_root / "rules" / "default-rules.md"
+        default_rules_path = plugin_root / "rules" / "review-rules.md"
         if default_rules_path.exists():
             shutil.copyfile(default_rules_path, rules_path)
         else:

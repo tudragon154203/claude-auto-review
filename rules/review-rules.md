@@ -46,6 +46,14 @@
 - Track unique ownership explicitly (e.g. transfer ownership via move semantics or clear API contracts) rather than relying on shared ownership unless reference counting is intentional.
 - Guard against leaks by ensuring every allocation/open has a matching release/close, even on error paths.
 
+## SOLID Principles
+
+- **Single Responsibility:** A class or module should have one reason to change. Reject god objects, catch-all utility classes, and functions that mix orchestration with domain logic.
+- **Open/Closed:** Prefer extending behavior via new code (strategies, plugins, polymorphism) over modifying existing validated code. Flag hardcoded switch statements over closed sets that keep growing.
+- **Liskov Substitution:** Subtypes must be substitutable for their base types. Reject derived classes that narrow preconditions, widen postconditions, or throw `NotImplementedError` for inherited methods.
+- **Interface Segregation:** Clients should not depend on methods they do not use. Prefer small, focused interfaces over large monolithic ones that force consumers to depend on irrelevant capabilities.
+- **Dependency Inversion:** High-level policy must not depend on low-level details; both should depend on abstractions. Flag direct instantiation of infrastructure (DB clients, HTTP callers, filesystem) inside domain or application logic.
+
 ## Testing Quality
 
 - Unit tests must exercise the unit's full lifecycle: set up test fixture, exercise the unit, and tear down/clean up.

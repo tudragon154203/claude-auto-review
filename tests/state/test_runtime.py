@@ -31,7 +31,7 @@ class TestRuntime(StateTestCase, unittest.TestCase):
     def test_ensure_runtime_without_default_rules_creates_fallback(self):
         project_root = self.temp_project()
         fake_plugin = self.temp_project()
-        # No rules/default-rules.md in fake_plugin
+        # No rules/review-rules.md in fake_plugin
         ensure_runtime(project_root, plugin_root=fake_plugin)
         rules_path = project_root / ".claude" / "claude-auto-review" / "rules.md"
         self.assertTrue(rules_path.exists())

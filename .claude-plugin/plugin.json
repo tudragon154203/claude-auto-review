@@ -30,5 +30,5 @@
     ]
   },
   "agents": ["agents/reviewer.md"],
-  "rules": ["rules/default-rules.md"]
+  "rules": ["rules/review-rules.md"]
 }

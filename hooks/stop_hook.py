@@ -219,7 +219,7 @@ def main():
                         "--print",
                         "--bare",
                         "--model",
-                        "opus",
+                        "fast",
                         "--system-prompt-file",
                         str(prompt_file),
                         user_prompt,
