@@ -14,7 +14,7 @@ from pathlib import Path
 
 from tests.support import SubprocessMixin, TempProjectMixin, real_cli_available
 
-REPO_ROOT = Path(__file__).resolve().parent.parent
+REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT))
 from claude_auto_review.state import load_state, get_unreviewed_files
 from claude_auto_review.reviews import is_review_complete
@@ -312,5 +312,3 @@ class EndToEndTests(TempProjectMixin, SubprocessMixin, unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-
-

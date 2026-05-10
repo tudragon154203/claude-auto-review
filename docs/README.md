@@ -110,8 +110,8 @@ python -m unittest discover -s tests
 ```
 
 Test suites:
-- `tests/test_rules.py` — Rules and configuration
-- `tests/test_integration.py` — Cross-function state interactions
-- `tests/test_concurrency.py` — Client/session isolation
-- `tests/test_e2e.py` — Full lifecycle via subprocesses
+- `tests/unit/test_rules.py` — Rules and configuration
+- `tests/int/test_integration.py` — Cross-function state interactions
+- `tests/int/test_concurrency.py` — Client/session isolation
+- `tests/e2e/test_e2e.py` — Full lifecycle via subprocesses
 

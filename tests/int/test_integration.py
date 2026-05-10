@@ -13,7 +13,7 @@ from pathlib import Path
 
 from tests.support import TempProjectMixin
 
-REPO_ROOT = Path(__file__).resolve().parent.parent
+REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT))
 
 from claude_auto_review.paths import (
@@ -290,4 +290,3 @@ class IntegrationTests(TempProjectMixin, unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-
