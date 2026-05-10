@@ -10,7 +10,7 @@ After each file edit (Write/Edit/MultiEdit/Delete), the plugin tracks the file h
 
 The implementation is split into small modules instead of one monolith:
 
-- `hooks/stop_hook.py` and `hooks/post_tool_use.py` are thin entrypoints.
+- `hooks/post_tool_use.py`, `hooks/stop_hook.py`, `hooks/session_end.py` are thin entrypoints.
 - `claude_auto_review/paths.py`, `claude_auto_review/settings.py`, `claude_auto_review/bootstrap.py` cover paths, config, and bootstrapping.
 - `claude_auto_review/state/store_read.py`, `claude_auto_review/state/store_write.py`, `claude_auto_review/state/reviews.py` cover state bookkeeping.
 - `claude_auto_review/runtime/helpers.py`, `claude_auto_review/runtime/setup.py`, `claude_auto_review/runtime/cleanup.py` cover runtime lifecycle.
@@ -29,24 +29,16 @@ The implementation is split into small modules instead of one monolith:
 python -m unittest discover -s tests
 
 # Install in a target project
-python claude_auto_review/install/setup_cli.py
+python -m claude_auto_review.install.setup_cli
 ```
 
 The installer creates the local `.claude/claude-auto-review/` runtime tree and generated wrapper scripts in the target project.
 
-## Documentation
-
-| Doc | Description |
-|-----|-------------|
-| [docs/README.md](docs/README.md) | Behavior, state model, and configuration |
-| [docs/INSTALL.md](docs/INSTALL.md) | Installation instructions |
-| [docs/RULES-GUIDE.md](docs/RULES-GUIDE.md) | Writing project review rules |
-
 ## Implementation
 
 - Dependency-free Python (standard library only)
-- Uses Claude Code PostToolUse and Stop hooks
+- Uses Claude Code PostToolUse, Stop, and SessionEnd hooks
 - Client isolation per session via `CLAUDE_SESSION_ID`
-- Circuit breaker after 3 stop blocks (configurable)
+- Circuit breaker after `maxStopPasses` blocks (default: 3)
 - Auto-completion via Claude CLI sub-agent when available
 
