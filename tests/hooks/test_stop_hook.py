@@ -10,6 +10,64 @@ from tests.hooks.support import HookTestCase  # noqa: E402
 
 
 class TestStopHook(HookTestCase, unittest.TestCase):
+    def test_stop_hook_prefers_higher_overlap_over_newer_review(self):
+        from datetime import datetime, timedelta, timezone
+
+        project_root = self.temp_project()
+        (project_root / "src" / "a.ts").write_text("export const a = 1;\n", encoding="utf-8")
+        (project_root / "src" / "b.ts").write_text("export const b = 1;\n", encoding="utf-8")
+        self.run_python("hooks/post_tool_use.py", project_root, json.dumps({"file_path": "src/a.ts"}))
+        self.run_python("hooks/post_tool_use.py", project_root, json.dumps({"file_path": "src/b.ts"}))
+
+        edits = [e for e in load_state(project_root, "test-session") if e.get("type") == "edit"]
+        hash_a = [e["hash"] for e in edits if e.get("file") == "src/a.ts"][-1]
+        hash_b = [e["hash"] for e in edits if e.get("file") == "src/b.ts"][-1]
+
+        review_dir = project_root / ".claude" / "claude-auto-review" / "clients" / "client-test-session" / "reviews"
+        review_dir.mkdir(parents=True, exist_ok=True)
+        path_high = review_dir / "review-high.md"
+        path_new = review_dir / "review-newer.md"
+        path_high.write_text("## Verdict\n\nPending.\n", encoding="utf-8")
+        path_new.write_text("## Verdict\n\nPending.\n", encoding="utf-8")
+
+        base = datetime.now(timezone.utc)
+        ts_old = base.isoformat().replace("+00:00", "Z")
+        ts_new = (base + timedelta(seconds=1)).isoformat().replace("+00:00", "Z")
+
+        # Older review covers both files (overlap=2)
+        append_state(
+            {
+                "type": "review",
+                "reviewId": "high-overlap",
+                "reviewPath": str(path_high),
+                "timestamp": ts_old,
+                "status": "pending",
+                "files": [
+                    {"file": "src/a.ts", "hash": hash_a},
+                    {"file": "src/b.ts", "hash": hash_b},
+                ],
+            },
+            project_root,
+            client_id="test-session",
+        )
+        # Newer review covers one file only (overlap=1)
+        append_state(
+            {
+                "type": "review",
+                "reviewId": "newer-low-overlap",
+                "reviewPath": str(path_new),
+                "timestamp": ts_new,
+                "status": "pending",
+                "files": [{"file": "src/a.ts", "hash": hash_a}],
+            },
+            project_root,
+            client_id="test-session",
+        )
+
+        stop = self.run_python("hooks/stop_hook.py", project_root, env_overrides={"PATH": ""}, use_fake_claude=False)
+        self.assertEqual(stop.returncode, 2)
+        self.assertIn("Review high-overlap", json.loads(stop.stdout)["message"])
+
     def test_stop_hook_prefers_newest_pending_review_on_equal_overlap(self):
         from datetime import datetime, timedelta, timezone
 

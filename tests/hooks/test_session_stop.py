@@ -26,6 +26,13 @@ def find_client_dir(project_root, session_id):
 
 
 class TestSessionStopHook(HookTestCase, unittest.TestCase):
+    def test_session_stop_fails_open_on_invalid_json_payload(self):
+        project_root = self.temp_project()
+        result = self.run_python("hooks/session_stop.py", project_root, input_text="{not-json")
+        self.assertEqual(result.returncode, 0)
+        log_path = project_root / ".claude" / "claude-auto-review" / "claude-auto-review.log"
+        self.assertTrue(log_path.exists())
+        self.assertIn("session_stop_error", log_path.read_text(encoding="utf-8"))
 
     def test_removes_client_state_after_edits(self):
         """PostToolUse tracks files; SessionStop removes client data."""
@@ -184,6 +191,17 @@ class TestSessionStopHook(HookTestCase, unittest.TestCase):
         result = self.run_python("hooks/session_stop.py", project_root, input_text=payload, client_id="env-session")
         self.assertEqual(result.returncode, 0)
         self.assertFalse((project_root / ".claude" / "claude-auto-review" / "clients" / "client-payload-session").exists())
+
+    def test_session_stop_non_dict_payload_falls_back_to_env_session(self):
+        project_root = self.temp_project()
+        ensure_client_runtime(project_root, "env-session")
+        ensure_client_runtime(project_root, "other-session")
+
+        # JSON number payload parses, but has no session_id
+        result = self.run_python("hooks/session_stop.py", project_root, input_text="1", client_id="env-session")
+        self.assertEqual(result.returncode, 0)
+        self.assertFalse((project_root / ".claude" / "claude-auto-review" / "clients" / "client-env-session").exists())
+        self.assertTrue((project_root / ".claude" / "claude-auto-review" / "clients" / "client-other-session").exists())
 
 
 if __name__ == "__main__":
