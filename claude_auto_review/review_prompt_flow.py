@@ -5,7 +5,7 @@ from claude_auto_review.paths import client_reviews_dir, client_run_dir, utc_now
 from claude_auto_review.review_generation import (
     build_prompt,
     current_file_snapshots,
-    format_review_timestamp,
+    format_review_files,
     git_diff,
     read_if_exists,
 )
@@ -43,24 +43,7 @@ def create_review_prompt_files(project_root, client_id, unreviewed, settings):
         encoding="utf-8",
         newline="\n",
     )
-    file_list = "\n".join(f"- {entry['file']} (hash: {entry['hash']})" for entry in unreviewed)
-    review_path.write_text(
-        f"""# Review {review_id} - {format_review_timestamp(timestamp)}
-
-## Files Reviewed
-{file_list}
-
-## Findings
-
-Pending. Claude must complete this review from {prompt_path}.
-
-## Verdict
-
-Pending.
-""",
-        encoding="utf-8",
-        newline="\n",
-    )
+    review_path.write_text(format_review_files(unreviewed, prompt_path, review_id, timestamp), encoding="utf-8", newline="\n")
 
     return ReviewPromptArtifacts(
         review_id=review_id,

@@ -121,6 +121,12 @@ Pending.
 """
 
 
+def format_review_files(entries, prompt_path, review_id, timestamp):
+    readable_timestamp = format_review_timestamp(timestamp)
+    file_list = format_file_list(entries)
+    return format_review_file(review_id, readable_timestamp, file_list, prompt_path)
+
+
 def current_file_snapshots(files, project_root):
     sections = []
     max_chars = 40000

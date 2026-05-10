@@ -10,6 +10,7 @@ from claude_auto_review.review_generation import (
     build_prompt,
     current_file_snapshots,
     format_review_file,
+    format_review_files,
     format_review_timestamp,
 )
 
@@ -110,6 +111,22 @@ Pending.
 
         self.assertEqual(
             format_review_file("rev-123", readable_timestamp, file_list, prompt_path),
+            expected,
+        )
+
+    def test_format_review_files_builds_review_body_from_entries(self):
+        timestamp = "2026-05-05T01:00:00Z"
+        entries = [{"file": "src/app.ts", "hash": "abc123"}]
+        prompt_path = Path("/tmp/review-123-prompt.md")
+        expected = format_review_file(
+            "rev-123",
+            format_review_timestamp(timestamp),
+            "- src/app.ts (hash: abc123)",
+            prompt_path,
+        )
+
+        self.assertEqual(
+            format_review_files(entries, prompt_path, "rev-123", timestamp),
             expected,
         )
 
