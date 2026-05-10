@@ -1,21 +1,26 @@
 #!/usr/bin/env python3
 import subprocess
+import sys
 from datetime import datetime
 from pathlib import Path
 
-from state import (
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from scripts.paths import (
     client_reviews_dir,
     client_run_dir,
-    ensure_client_runtime,
-    ensure_runtime,
     get_client_id,
     get_project_root,
-    get_unreviewed_files,
+    utc_now_iso,
+)
+from scripts.state import (
     append_review_started,
+    ensure_client_runtime,
+    ensure_runtime,
+    get_unreviewed_files,
     log_event,
     load_settings,
     load_state,
-    utc_now_iso,
 )
 
 
@@ -73,7 +78,7 @@ def write_project_script_shim(project_root, plugin_script_path):
         "#!/usr/bin/env python3\n"
         "import sys\n"
         "import runpy\n"
-        f"sys.path.insert(0, {str(plugin_script_path.parent)!r})\n"
+        f"sys.path.insert(0, {str(plugin_script_path.parent.parent)!r})\n"
         f"runpy.run_path({str(plugin_script_path)!r}, run_name='__main__')\n"
     )
     if not shim_path.exists() or shim_path.read_text(encoding="utf-8") != content:

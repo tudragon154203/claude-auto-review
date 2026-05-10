@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
-from state import cancel_runtime, get_client_id, get_project_root, log_event
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from scripts.paths import get_client_id, get_project_root
+from scripts.state import cancel_runtime, log_event
 
 
 def main():

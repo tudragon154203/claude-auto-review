@@ -3,13 +3,12 @@ import json
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from state import (  # noqa: E402
+from scripts.paths import get_client_id, get_project_root
+from scripts.state import (  # noqa: E402
     cancel_session,
     cleanup_expired_pending_reviews,
-    get_client_id,
-    get_project_root,
     log_event,
 )
 

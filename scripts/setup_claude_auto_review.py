@@ -1,7 +1,11 @@
 #!/usr/bin/env python3
+import sys
 from pathlib import Path
 
-from state import ensure_project_settings, ensure_runtime, get_project_root, log_event
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from scripts.paths import get_project_root
+from scripts.state import ensure_project_settings, ensure_runtime, log_event
 
 
 def copy_if_changed(source, destination):
@@ -32,7 +36,7 @@ def main():
         "#!/usr/bin/env python3\n"
         "import sys\n"
         "import runpy\n"
-        f"sys.path.insert(0, {str(plugin_review_script.parent)!r})\n"
+        f"sys.path.insert(0, {str(plugin_review_script.parent.parent)!r})\n"
         f"runpy.run_path({str(plugin_review_script)!r}, run_name='__main__')\n",
         encoding="utf-8",
         newline="\n",
@@ -41,7 +45,7 @@ def main():
         "#!/usr/bin/env python3\n"
         "import sys\n"
         "import runpy\n"
-        f"sys.path.insert(0, {str(plugin_cancel_script.parent)!r})\n"
+        f"sys.path.insert(0, {str(plugin_cancel_script.parent.parent)!r})\n"
         f"runpy.run_path({str(plugin_cancel_script)!r}, run_name='__main__')\n",
         encoding="utf-8",
         newline="\n",

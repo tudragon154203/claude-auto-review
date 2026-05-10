@@ -3,22 +3,19 @@ import json
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from state import (  # noqa: E402
-    DELETED_FILE_HASH,
+from scripts.paths import DELETED_FILE_HASH, get_project_root, normalize_relative_path, utc_now_iso
+from scripts.state import (
     append_state,
     ensure_client_runtime,
     extract_file_paths_from_hook_input,
     get_client_id,
     get_file_hash,
-    get_project_root,
-    log_event,
     load_settings,
     load_state,
-    normalize_relative_path,
+    log_event,
     should_skip_file,
-    utc_now_iso,
     was_hash_reviewed,
 )
 

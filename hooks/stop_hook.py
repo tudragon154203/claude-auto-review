@@ -6,24 +6,20 @@ import subprocess
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from state import (  # noqa: E402
+from scripts.paths import client_run_dir, get_client_id, get_project_root, utc_now_iso
+from scripts.reviews import is_review_complete, is_review_expired
+from scripts.state import (
     append_state,
-    client_run_dir,
     consecutive_stop_blocks,
     ensure_client_runtime,
-    get_client_id,
-    get_project_root,
     get_unreviewed_files,
-    is_review_complete,
-    is_review_expired,
+    latest_entries_by_file,
     load_settings,
     load_state,
     log_event,
     mark_files_reviewed,
-    utc_now_iso,
-    latest_entries_by_file,
 )
 
 
