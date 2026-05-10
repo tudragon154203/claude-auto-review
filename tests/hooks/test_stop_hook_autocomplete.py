@@ -11,7 +11,7 @@ from claude_auto_review.state import is_review_complete  # noqa: E402
 from tests.hooks.support import HookTestCase  # noqa: E402
 
 
-class TestStopHookRealClaude(HookTestCase, unittest.TestCase):
+class TestStopHookAutocomplete(HookTestCase, unittest.TestCase):
     def test_stop_hook_with_cli_stub_completes_review(self):
         project_root = self.temp_project()
         (project_root / "src" / "app.ts").write_text("export const value = 1;\n", encoding="utf-8")
