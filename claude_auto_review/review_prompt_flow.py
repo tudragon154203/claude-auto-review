@@ -19,24 +19,35 @@ class ReviewPromptArtifacts:
     review_path: Path
     files: list[str]
 
+
+def _review_id_from_timestamp(timestamp):
+    return "rev-" + "".join(ch for ch in timestamp if ch.isdigit())[:14]
+
+
+def _review_prompt_paths(project_root, client_id, review_id):
+    return (
+        client_reviews_dir(project_root, client_id) / f"review-{review_id}.md",
+        client_run_dir(project_root, client_id) / f"review-{review_id}-prompt.md",
+    )
+
+
+def _write_text_file(path, content):
+    path.write_text(content, encoding="utf-8", newline="\n")
+
+
 def create_review_prompt_files(project_root, client_id, unreviewed, settings):
     timestamp = utc_now_iso()
-    review_id = "rev-" + "".join(ch for ch in timestamp if ch.isdigit())[:14]
+    review_id = _review_id_from_timestamp(timestamp)
     files = [entry["file"] for entry in unreviewed]
 
     rules = read_if_exists(resolve_rules_file_path(project_root, settings))
     diff = git_diff(files, project_root)
     snapshots = current_file_snapshots(files, project_root)
 
-    review_path = client_reviews_dir(project_root, client_id) / f"review-{review_id}.md"
-    prompt_path = client_run_dir(project_root, client_id) / f"review-{review_id}-prompt.md"
+    review_path, prompt_path = _review_prompt_paths(project_root, client_id, review_id)
 
-    prompt_path.write_text(
-        build_prompt(review_id, timestamp, unreviewed, rules, diff, snapshots, review_path),
-        encoding="utf-8",
-        newline="\n",
-    )
-    review_path.write_text(format_review_files(unreviewed, prompt_path, review_id, timestamp), encoding="utf-8", newline="\n")
+    _write_text_file(prompt_path, build_prompt(review_id, timestamp, unreviewed, rules, diff, snapshots, review_path))
+    _write_text_file(review_path, format_review_files(unreviewed, prompt_path, review_id, timestamp))
 
     return ReviewPromptArtifacts(
         review_id=review_id,

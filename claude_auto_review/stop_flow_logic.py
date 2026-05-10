@@ -57,6 +57,10 @@ def _review_prompt_command(review_prompt_script):
     return [sys.executable, str(review_prompt_script)]
 
 
+def _review_prompt_path(project_root, client_id, review_id):
+    return client_run_dir(project_root, client_id) / f"review-{review_id}-prompt.md"
+
+
 def _run_review_prompt(project_root, review_prompt_script, env):
     result = subprocess.run(
         _review_prompt_command(review_prompt_script),
@@ -135,7 +139,7 @@ def finalize_review_stop(project_root, client_id, resolution):
     covered_entries = get_entries_covered_by_review(review, state)
     review_id = review.get("reviewId", "")
     review_path = Path(review.get("reviewPath", ""))
-    prompt_file = client_run_dir(project_root, client_id) / f"review-{review_id}-prompt.md"
+    prompt_file = _review_prompt_path(project_root, client_id, review_id)
 
     if is_review_complete(review_path):
         remaining = apply_completed_review(project_root, client_id, review_id, covered_entries)

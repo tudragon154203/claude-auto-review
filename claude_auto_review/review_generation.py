@@ -135,8 +135,7 @@ Pending.
 
 
 def format_review_files(entries, prompt_path, review_id, timestamp):
-    readable_timestamp = format_review_timestamp(timestamp)
-    file_list = format_file_list(entries)
+    readable_timestamp, file_list = _review_context(entries, timestamp)
     return format_review_file(review_id, readable_timestamp, file_list, prompt_path)
 
 
@@ -144,18 +143,12 @@ def current_file_snapshots(files, project_root):
     sections = []
     max_chars = 40000
     for file_path in files:
-        full_path = Path(project_root) / file_path
-        if not full_path.is_file():
-            sections.append(_format_missing_file_snapshot(file_path))
-            continue
-        content = _read_text_with_limit(full_path, max_chars)
-        sections.append(_format_file_snapshot(file_path, content, max_chars=max_chars))
+        sections.append(_snapshot_section(file_path, project_root, max_chars))
     return "\n\n".join(sections)
 
 
 def build_prompt(review_id, timestamp, entries, rules, diff, snapshots, review_path):
-    readable_timestamp = format_review_timestamp(timestamp)
-    file_list = format_file_list(entries)
+    readable_timestamp, file_list = _review_context(entries, timestamp)
     return format_review_prompt(
         review_id,
         readable_timestamp,
@@ -169,6 +162,18 @@ def build_prompt(review_id, timestamp, entries, rules, diff, snapshots, review_p
 
 def _format_missing_file_snapshot(file_path):
     return f"## {file_path}\n\nFile does not currently exist."
+
+
+def _review_context(entries, timestamp):
+    return format_review_timestamp(timestamp), format_file_list(entries)
+
+
+def _snapshot_section(file_path, project_root, max_chars):
+    full_path = Path(project_root) / file_path
+    if not full_path.is_file():
+        return _format_missing_file_snapshot(file_path)
+    content = _read_text_with_limit(full_path, max_chars)
+    return _format_file_snapshot(file_path, content, max_chars=max_chars)
 
 
 def _format_file_snapshot(file_path, content, max_chars=40000):

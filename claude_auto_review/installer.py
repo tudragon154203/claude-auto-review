@@ -3,29 +3,32 @@ from pathlib import Path
 from claude_auto_review.shims import build_runpy_shim_content
 
 
+def _write_text_if_changed(path, content):
+    path = Path(path)
+    if not path.exists() or path.read_text(encoding="utf-8") != content:
+        path.write_text(content, encoding="utf-8", newline="\n")
+
+
 def copy_if_changed(source, destination):
     source = Path(source)
     destination = Path(destination)
     if not source.exists():
         return
     content = source.read_text(encoding="utf-8")
-    if not destination.exists() or destination.read_text(encoding="utf-8") != content:
-        destination.write_text(content, encoding="utf-8", newline="\n")
+    _write_text_if_changed(destination, content)
 
 
 def write_runtime_shims(runtime_scripts, plugin_root):
     runtime_scripts = Path(runtime_scripts)
     plugin_root = Path(plugin_root)
     runtime_scripts.mkdir(parents=True, exist_ok=True)
-    (runtime_scripts / "review_prompt.py").write_text(
+    _write_text_if_changed(
+        runtime_scripts / "review_prompt.py",
         build_runpy_shim_content(plugin_root / "claude_auto_review" / "review_prompt.py"),
-        encoding="utf-8",
-        newline="\n",
     )
-    (runtime_scripts / "cancel_claude_auto_review.py").write_text(
+    _write_text_if_changed(
+        runtime_scripts / "cancel_claude_auto_review.py",
         build_runpy_shim_content(plugin_root / "claude_auto_review" / "cancel_claude_auto_review.py"),
-        encoding="utf-8",
-        newline="\n",
     )
 
 

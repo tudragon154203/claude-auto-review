@@ -1,6 +1,12 @@
 from pathlib import Path
 
 
+def _write_text_if_changed(path, content):
+    path = Path(path)
+    if not path.exists() or path.read_text(encoding="utf-8") != content:
+        path.write_text(content, encoding="utf-8", newline="\n")
+
+
 def build_runpy_shim_content(target_script_path):
     target_script_path = Path(target_script_path).resolve()
     script_dir = target_script_path.parent
@@ -19,6 +25,4 @@ def write_project_script_shim(shim_path, plugin_script_path):
     if shim_path.resolve() == plugin_script_path:
         return
     shim_path.parent.mkdir(parents=True, exist_ok=True)
-    content = build_runpy_shim_content(plugin_script_path)
-    if not shim_path.exists() or shim_path.read_text(encoding="utf-8") != content:
-        shim_path.write_text(content, encoding="utf-8", newline="\n")
+    _write_text_if_changed(shim_path, build_runpy_shim_content(plugin_script_path))

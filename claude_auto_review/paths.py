@@ -22,6 +22,10 @@ def get_plugin_root():
     return Path(__file__).resolve().parent.parent
 
 
+def _project_root_path(project_root=None):
+    return Path(project_root or get_project_root()).resolve()
+
+
 def get_client_id(stdin_session_id=None) -> str:
     """Returns a stable identifier for the current session.
 
@@ -65,7 +69,7 @@ def normalize_relative_path(file_path, project_root=None):
     if not file_path:
         return None
     file_path = os.fspath(file_path)
-    project_root = Path(project_root or get_project_root()).resolve()
+    project_root = _project_root_path(project_root)
     value = file_path[7:] if file_path.startswith("file://") else file_path
     candidate = Path(value)
     resolved = candidate.resolve() if candidate.is_absolute() else (project_root / candidate).resolve()
@@ -79,8 +83,8 @@ def normalize_relative_path(file_path, project_root=None):
 
 
 def get_state_path(project_root=None):
-    return Path(project_root or get_project_root()) / STATE_RELATIVE_PATH
+    return _project_root_path(project_root) / STATE_RELATIVE_PATH
 
 
 def get_log_path(project_root=None):
-    return Path(project_root or get_project_root()) / LOG_RELATIVE_PATH
+    return _project_root_path(project_root) / LOG_RELATIVE_PATH
