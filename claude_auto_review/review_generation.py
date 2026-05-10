@@ -3,6 +3,19 @@ from datetime import datetime
 from pathlib import Path
 
 
+def _read_text_with_limit(path, max_chars, encoding="utf-8"):
+    chunks = []
+    remaining = max_chars + 1
+    with Path(path).open("r", encoding=encoding, errors="replace") as handle:
+        while remaining > 0:
+            chunk = handle.read(min(remaining, 8192))
+            if not chunk:
+                break
+            chunks.append(chunk)
+            remaining -= len(chunk)
+    return "".join(chunks)
+
+
 def git_diff(files, project_root):
     try:
         result = subprocess.run(
@@ -135,7 +148,7 @@ def current_file_snapshots(files, project_root):
         if not full_path.is_file():
             sections.append(_format_missing_file_snapshot(file_path))
             continue
-        content = full_path.read_text(encoding="utf-8", errors="replace")
+        content = _read_text_with_limit(full_path, max_chars)
         sections.append(_format_file_snapshot(file_path, content, max_chars=max_chars))
     return "\n\n".join(sections)
 

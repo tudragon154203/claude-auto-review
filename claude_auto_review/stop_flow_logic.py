@@ -53,6 +53,43 @@ def build_review_completion_prompt(review_path):
     )
 
 
+def _review_prompt_command(review_prompt_script):
+    return [sys.executable, str(review_prompt_script)]
+
+
+def _run_review_prompt(project_root, review_prompt_script, env):
+    result = subprocess.run(
+        _review_prompt_command(review_prompt_script),
+        cwd=str(project_root),
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        timeout=60,
+        env=env,
+    )
+    log_event(
+        project_root,
+        "stop_hook_review_invoked",
+        stdout=result.stdout,
+        stderr=result.stderr,
+        returncode=result.returncode,
+    )
+    return result
+
+
+def _reload_client_state(project_root, client_id):
+    state = load_state(project_root, client_id)
+    return state, get_unreviewed_files(state)
+
+
+def _block_review_prompt_failure(files_str, result):
+    block_response(
+        f"Claude Auto Review: Failed to create review for {files_str}.",
+        f"review_prompt.py ran but no review was created.\n\nOutput:\n{result.stdout}\n\nErrors:\n{result.stderr}",
+    )
+
+
 def resolve_pending_review(project_root, client_id, payload, state, unreviewed, timeout_hours, review_prompt_script):
     review = find_pending_review_for_files(state, unreviewed, project_root, timeout_hours)
     if review:
@@ -64,23 +101,7 @@ def resolve_pending_review(project_root, client_id, payload, state, unreviewed, 
     if session_id:
         env["CLAUDE_SESSION_ID"] = session_id
     try:
-        result = subprocess.run(
-            [sys.executable, str(review_prompt_script)],
-            cwd=str(project_root),
-            capture_output=True,
-            text=True,
-            encoding="utf-8",
-            errors="replace",
-            timeout=60,
-            env=env,
-        )
-        log_event(
-            project_root,
-            "stop_hook_review_invoked",
-            stdout=result.stdout,
-            stderr=result.stderr,
-            returncode=result.returncode,
-        )
+        result = _run_review_prompt(project_root, review_prompt_script, env)
     except subprocess.TimeoutExpired:
         log_event(project_root, "stop_hook_review_timeout", script=str(review_prompt_script))
         block_response(
@@ -96,17 +117,13 @@ def resolve_pending_review(project_root, client_id, payload, state, unreviewed, 
         )
         return StopFlowResolution(state=state, unreviewed=unreviewed, exit_code=2)
 
-    state = load_state(project_root, client_id)
-    unreviewed = get_unreviewed_files(state)
+    state, unreviewed = _reload_client_state(project_root, client_id)
     if not unreviewed:
         log_event(project_root, "stop_approved", reason="no_unreviewed_files_after_review")
         return StopFlowResolution(state=state, unreviewed=unreviewed, exit_code=0)
     review = find_pending_review_for_files(state, unreviewed, project_root, timeout_hours)
     if not review:
-        block_response(
-            f"Claude Auto Review: Failed to create review for {files_str}.",
-            f"review_prompt.py ran but no review was created.\n\nOutput:\n{result.stdout}\n\nErrors:\n{result.stderr}",
-        )
+        _block_review_prompt_failure(files_str, result)
         return StopFlowResolution(state=state, unreviewed=unreviewed, exit_code=2)
     return StopFlowResolution(state=state, unreviewed=unreviewed, review=review)
 
