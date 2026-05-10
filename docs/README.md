@@ -2,6 +2,21 @@
 
 Claude Auto Review is a Claude Code plugin that tracks files edited during a session and blocks session stop until each changed file has a review pass. It is intentionally diff-focused.
 
+## Module Map
+
+The implementation is split by responsibility:
+
+- `hooks/post_tool_use.py` and `hooks/stop_hook.py` are thin entrypoints.
+- `scripts/state.py` is a compatibility facade that re-exports the state helpers.
+- `scripts/settings.py` loads project configuration and defaults.
+- `scripts/runtime.py` handles runtime paths, client IDs, and lifecycle helpers.
+- `scripts/state_store.py` owns JSONL state I/O and review bookkeeping.
+- `scripts/review_generation.py` renders review prompts and creates review files.
+- `scripts/stop_flow.py` orchestrates the stop-hook decision flow.
+- `scripts/stop_selection.py` picks files that still need review.
+- `scripts/stop_autocomplete.py` runs Claude CLI auto-completion.
+- `scripts/installer.py` handles project installation, copied rules, shims, and ignore updates.
+
 ## How It Works
 
 ### Edit Tracking
@@ -25,7 +40,7 @@ When Claude tries to end the session, the `Stop` hook:
 1. Loads the latest hash per file from state.
 2. Checks whether each hash has been marked `reviewed: true`.
 3. If any hash is unreviewed, creates a review prompt and blocks stop (exit code 2) with feedback containing the review file location.
-4. If the `claude` CLI is available, spawns a sub-agent to auto-complete the review.
+4. If the `claude` CLI is available, spawns a sub-agent to auto-complete the review through the stop-flow helpers.
 5. Circuit breaker: after `maxStopPasses` consecutive blocks (default 3), allows stop regardless.
 6. Pending reviews expire after `pendingReviewTimeoutHours` (default 1 hour).
 
@@ -67,6 +82,8 @@ Settings are stored in `.claude/settings.json` under the `claude-auto-review` ke
 .claude/claude-auto-review/agents/
 .claude/claude-auto-review/claude-auto-review.log
 ```
+
+The project-local `scripts/` and `agents/` directories are generated shims and runtime wrappers. They exist so a target repository can invoke the plugin's source logic without duplicating it.
 
 ## Logging
 

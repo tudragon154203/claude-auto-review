@@ -25,8 +25,11 @@ The installer:
 3. Creates `scripts/` and `agents/` shim directories
 4. Adds plugin settings to `.claude/settings.json`
 5. Appends runtime paths to `.gitignore`
+6. Writes generated wrapper scripts under `.claude/claude-auto-review/scripts/` that point back to the plugin source checkout
 
 **Note:** If using Claude Code's plugin marketplace, the hooks are configured automatically from the manifest. For completely manual setups, add hook definitions from `hooks/hooks.json` to `.claude/settings.json`.
+
+The generated `.claude/claude-auto-review/scripts/*.py` files are runtime shims. They do not contain the authoritative implementation; they load the plugin's real Python modules from the installed plugin location.
 
 ## Verify Installation
 
