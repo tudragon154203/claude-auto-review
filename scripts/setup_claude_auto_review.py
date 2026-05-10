@@ -51,8 +51,8 @@ def main():
     gitignore_path = project_root / ".gitignore"
     ignore_entries = [
         ".claude/claude-auto-review/state.jsonl",
-        ".claude/claude-auto-review/run/",
-        ".claude/claude-auto-review/reviews/",
+        ".claude/claude-auto-review/clients/*/run/",
+        ".claude/claude-auto-review/clients/*/reviews/",
         ".claude/claude-auto-review/scripts/",
         ".claude/claude-auto-review/agents/",
         ".claude/claude-auto-review/claude-auto-review.log",

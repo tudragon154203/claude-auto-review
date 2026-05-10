@@ -62,8 +62,8 @@ Settings are stored in `.claude/settings.json` under the `claude-auto-review` ke
 ```text
 .claude/claude-auto-review/state.jsonl
 .claude/claude-auto-review/clients/
-.claude/claude-auto-review/run/
-.claude/claude-auto-review/reviews/
+.claude/claude-auto-review/clients/{client-id}/run/
+.claude/claude-auto-review/clients/{client-id}/reviews/
 .claude/claude-auto-review/scripts/
 .claude/claude-auto-review/agents/
 .claude/claude-auto-review/claude-auto-review.log
