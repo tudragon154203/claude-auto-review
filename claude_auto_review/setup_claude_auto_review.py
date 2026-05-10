@@ -5,10 +5,10 @@ from bootstrap import ensure_repo_root_on_path
 
 ensure_repo_root_on_path()
 
-from scripts.paths import get_project_root
-from scripts.installer import copy_if_changed, ensure_gitignore_entries, write_runtime_shims
-from scripts.runtime_setup import ensure_project_settings, ensure_runtime
-from scripts.state import log_event
+from claude_auto_review.paths import get_project_root
+from claude_auto_review.installer import copy_if_changed, ensure_gitignore_entries, write_runtime_shims
+from claude_auto_review.runtime_setup import ensure_project_settings, ensure_runtime
+from claude_auto_review.state import log_event
 
 
 def main():
@@ -41,3 +41,4 @@ def main():
 
 if __name__ == "__main__":
     raise SystemExit(main())
+

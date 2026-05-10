@@ -1,9 +1,9 @@
 from pathlib import Path
 
-from scripts.paths import get_client_id
-from scripts.runtime_setup import ensure_client_runtime
-from scripts.state import consecutive_stop_blocks, get_unreviewed_files, load_settings, load_state, log_event
-from scripts.stop_flow_logic import finalize_review_stop, resolve_pending_review
+from claude_auto_review.paths import get_client_id
+from claude_auto_review.runtime_setup import ensure_client_runtime
+from claude_auto_review.state import consecutive_stop_blocks, get_unreviewed_files, load_settings, load_state, log_event
+from claude_auto_review.stop_flow_logic import finalize_review_stop, resolve_pending_review
 
 
 def run_stop_flow(project_root, payload):
@@ -40,3 +40,4 @@ def run_stop_flow(project_root, payload):
     if exit_code is not None:
         return exit_code
     return finalize_review_stop(project_root, client_id, state, unreviewed, review)
+

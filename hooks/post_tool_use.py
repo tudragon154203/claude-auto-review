@@ -6,8 +6,8 @@ from bootstrap import ensure_repo_root_on_path
 
 ensure_repo_root_on_path()
 
-from scripts.paths import DELETED_FILE_HASH, get_project_root, normalize_relative_path, utc_now_iso
-from scripts.state import (
+from claude_auto_review.paths import DELETED_FILE_HASH, get_project_root, normalize_relative_path, utc_now_iso
+from claude_auto_review.state import (
     append_state,
     ensure_client_runtime,
     extract_file_paths_from_hook_input,
@@ -84,3 +84,4 @@ def main():
 
 if __name__ == "__main__":
     raise SystemExit(main())
+

@@ -1,0 +1,1 @@
+"""Claude Auto Review package."""

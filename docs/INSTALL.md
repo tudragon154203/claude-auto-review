@@ -15,12 +15,12 @@ Install via Claude Code's plugin marketplace. The plugin manifest at `.claude-pl
 From a target project:
 
 ```bash
-python path/to/claude-auto-review/scripts/setup_claude_auto_review.py
+python path/to/claude-auto-review/claude_auto_review/setup_claude_auto_review.py
 ```
 
 The installer:
 
-1. Creates `.claude/claude-auto-review/` runtime directory and per-client state via `scripts/runtime_setup.py`
+1. Creates `.claude/claude-auto-review/` runtime directory and per-client state via `claude_auto_review/runtime_setup.py`
 2. Copies default rules to `.claude/claude-auto-review/rules.md`
 3. Creates `scripts/` and `agents/` shim directories
 4. Adds plugin settings to `.claude/settings.json`
@@ -31,7 +31,7 @@ The installer:
 
 The generated `.claude/claude-auto-review/scripts/*.py` files are runtime shims. They do not contain the authoritative implementation; they load the plugin's real Python modules from the installed plugin location.
 
-The cancel flow uses `scripts/runtime_cleanup.py` to remove runtime state for the active client or the full project runtime tree.
+The cancel flow uses `claude_auto_review/runtime_cleanup.py` to remove runtime state for the active client or the full project runtime tree.
 
 ## Verify Installation
 
@@ -48,3 +48,4 @@ Hook lifecycle events are logged to:
 ```text
 .claude/claude-auto-review/claude-auto-review.log
 ```
+

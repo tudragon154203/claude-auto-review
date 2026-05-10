@@ -6,8 +6,8 @@ from bootstrap import ensure_repo_root_on_path
 
 ensure_repo_root_on_path()
 
-from scripts.paths import get_project_root
-from scripts.stop_flow import run_stop_flow
+from claude_auto_review.paths import get_project_root
+from claude_auto_review.stop_flow import run_stop_flow
 
 
 def main():
@@ -26,3 +26,4 @@ def main():
 
 if __name__ == "__main__":
     raise SystemExit(main())
+

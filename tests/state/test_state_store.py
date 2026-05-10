@@ -1,6 +1,6 @@
 import unittest
 
-from scripts.state import append_state, client_state_path, ensure_client_runtime, ensure_runtime, get_log_path, get_unreviewed_files, latest_entries_by_file, load_state, log_event, reviewed_hashes_by_file, utc_now_iso, was_hash_reviewed
+from claude_auto_review.state import append_state, client_state_path, ensure_client_runtime, ensure_runtime, get_log_path, get_unreviewed_files, latest_entries_by_file, load_state, log_event, reviewed_hashes_by_file, utc_now_iso, was_hash_reviewed
 
 from tests.state.support import StateTestCase
 
@@ -95,4 +95,5 @@ class TestStateStore(StateTestCase, unittest.TestCase):
         )
         state = load_state(project_root, client_id)
         self.assertEqual(len(state), 2)
+
 

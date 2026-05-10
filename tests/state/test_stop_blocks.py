@@ -1,6 +1,6 @@
 import unittest
 
-from scripts.state import append_state, client_state_path, consecutive_stop_blocks, ensure_client_runtime, load_state
+from claude_auto_review.state import append_state, client_state_path, consecutive_stop_blocks, ensure_client_runtime, load_state
 
 from tests.state.support import StateTestCase
 
@@ -56,4 +56,5 @@ class TestStopBlocks(StateTestCase, unittest.TestCase):
         append_state({"type": "stop_blocked", "reason": "review_pending"}, project_root, client_id=client_id)
         state = load_state(project_root, client_id)
         self.assertEqual(consecutive_stop_blocks(state), 2)
+
 

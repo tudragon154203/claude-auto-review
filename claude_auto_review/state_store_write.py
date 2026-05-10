@@ -1,12 +1,12 @@
 import json
 from pathlib import Path
 
-from scripts.paths import client_state_path, get_client_id, get_log_path, utc_now_iso
-from scripts.runtime_setup import ensure_client_runtime
+from claude_auto_review.paths import client_state_path, get_client_id, get_log_path, utc_now_iso
+from claude_auto_review.runtime_setup import ensure_client_runtime
 
 
 def _resolve_project_root(project_root=None):
-    from scripts.paths import get_project_root
+    from claude_auto_review.paths import get_project_root
 
     return Path(project_root or get_project_root())
 
@@ -68,3 +68,4 @@ def mark_files_reviewed(entries, review_id, project_root=None, client_id=""):
             project_root,
             client_id=client_id,
         )
+

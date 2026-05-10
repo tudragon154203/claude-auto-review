@@ -5,10 +5,10 @@ from bootstrap import ensure_repo_root_on_path
 
 ensure_repo_root_on_path()
 
-from scripts.paths import get_client_id, get_project_root
-from scripts.review_prompt_flow import create_review_prompt_files
-from scripts.shims import write_project_script_shim
-from scripts.state import (
+from claude_auto_review.paths import get_client_id, get_project_root
+from claude_auto_review.review_prompt_flow import create_review_prompt_files
+from claude_auto_review.shims import write_project_script_shim
+from claude_auto_review.state import (
     append_review_started,
     ensure_client_runtime,
     get_unreviewed_files,
@@ -67,3 +67,4 @@ def main():
 
 if __name__ == "__main__":
     raise SystemExit(main())
+

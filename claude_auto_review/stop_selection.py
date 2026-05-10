@@ -1,5 +1,5 @@
-from scripts.reviews import is_review_expired
-from scripts.state import latest_entries_by_file, log_event
+from claude_auto_review.reviews import is_review_expired
+from claude_auto_review.state import latest_entries_by_file, log_event
 
 
 def find_pending_review_for_files(state, unreviewed_entries, project_root, timeout_hours=0):
@@ -42,3 +42,4 @@ def get_entries_covered_by_review(review_entry, state_entries):
         if (file_path, entry.get("hash")) in review_files:
             result.append(entry)
     return result
+

@@ -2,9 +2,9 @@ import shutil
 import subprocess
 from pathlib import Path
 
-from scripts.paths import utc_now_iso
-from scripts.reviews import is_review_complete
-from scripts.state import append_state, get_unreviewed_files, load_state, log_event, mark_files_reviewed
+from claude_auto_review.paths import utc_now_iso
+from claude_auto_review.reviews import is_review_complete
+from claude_auto_review.state import append_state, get_unreviewed_files, load_state, log_event, mark_files_reviewed
 
 
 def attempt_stop_autocomplete(project_root, client_id, review_id, review_path, prompt_file, covered_entries, user_prompt):
@@ -62,3 +62,4 @@ def attempt_stop_autocomplete(project_root, client_id, review_id, review_path, p
     except Exception as e:
         log_event(project_root, "stop_hook_claude_cli_error", error=str(e))
     return False
+

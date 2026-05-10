@@ -8,14 +8,14 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT))
 
-from scripts.state import append_state  # noqa: E402
+from claude_auto_review.state import append_state  # noqa: E402
 from tests.hooks.support import HookTestCase  # noqa: E402
 
 
 class TestSetupCancel(HookTestCase, unittest.TestCase):
     def test_setup_script_creates_runtime_shims_agents_rules_and_gitignore_entries(self):
         project_root = self.temp_project()
-        setup = self.run_python("scripts/setup_claude_auto_review.py", project_root)
+        setup = self.run_python("claude_auto_review/setup_claude_auto_review.py", project_root)
         self.assertEqual(setup.returncode, 0)
         self.assertTrue((project_root / ".claude" / "claude-auto-review" / "scripts" / "review_prompt.py").exists())
         self.assertTrue((project_root / ".claude" / "claude-auto-review" / "scripts" / "cancel_claude_auto_review.py").exists())
@@ -27,8 +27,8 @@ class TestSetupCancel(HookTestCase, unittest.TestCase):
 
     def test_setup_script_is_idempotent_for_gitignore_entries(self):
         project_root = self.temp_project()
-        self.run_python("scripts/setup_claude_auto_review.py", project_root)
-        self.run_python("scripts/setup_claude_auto_review.py", project_root)
+        self.run_python("claude_auto_review/setup_claude_auto_review.py", project_root)
+        self.run_python("claude_auto_review/setup_claude_auto_review.py", project_root)
         lines = (project_root / ".gitignore").read_text(encoding="utf-8").splitlines()
         self.assertEqual(lines.count(".claude/claude-auto-review/state.jsonl"), 0)
         self.assertEqual(lines.count(".claude/claude-auto-review/clients/*/run/"), 1)
@@ -40,7 +40,7 @@ class TestSetupCancel(HookTestCase, unittest.TestCase):
     def test_project_local_shim_runs_review_prompt(self):
         project_root = self.temp_project()
         (project_root / "src" / "app.ts").write_text("export const value = 1;\n", encoding="utf-8")
-        self.run_python("scripts/setup_claude_auto_review.py", project_root)
+        self.run_python("claude_auto_review/setup_claude_auto_review.py", project_root)
         self.run_python("hooks/post_tool_use.py", project_root, json.dumps({"file_path": "src/app.ts"}))
         shim = project_root / ".claude" / "claude-auto-review" / "scripts" / "review_prompt.py"
         result = subprocess.run(
@@ -59,9 +59,9 @@ class TestSetupCancel(HookTestCase, unittest.TestCase):
         project_root = self.temp_project()
         (project_root / "src" / "app.ts").write_text("export const value = 1;\n", encoding="utf-8")
         self.run_python("hooks/post_tool_use.py", project_root, json.dumps({"file_path": "src/app.ts"}))
-        self.run_python("scripts/review_prompt.py", project_root)
+        self.run_python("claude_auto_review/review_prompt.py", project_root)
 
-        cancel = self.run_python("scripts/cancel_claude_auto_review.py", project_root)
+        cancel = self.run_python("claude_auto_review/cancel_claude_auto_review.py", project_root)
         self.assertEqual(cancel.returncode, 0)
         self.assertFalse((project_root / ".claude" / "claude-auto-review" / "clients" / "client-test-session" / "state.jsonl").exists())
         self.assertFalse((project_root / ".claude" / "claude-auto-review" / "clients" / "client-test-session" / "run").exists())
@@ -71,7 +71,7 @@ class TestSetupCancel(HookTestCase, unittest.TestCase):
 
     def test_project_local_cancel_shim_runs(self):
         project_root = self.temp_project()
-        self.run_python("scripts/setup_claude_auto_review.py", project_root)
+        self.run_python("claude_auto_review/setup_claude_auto_review.py", project_root)
         append_state(
             {
                 "type": "edit",
@@ -108,3 +108,5 @@ class TestSetupCancel(HookTestCase, unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+

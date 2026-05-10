@@ -1,6 +1,6 @@
 import unittest
 
-from scripts.state import append_review_started, ensure_client_runtime, ensure_runtime, load_state, mark_files_reviewed, pending_reviews_for_entries, was_hash_reviewed
+from claude_auto_review.state import append_review_started, ensure_client_runtime, ensure_runtime, load_state, mark_files_reviewed, pending_reviews_for_entries, was_hash_reviewed
 
 from tests.state.support import StateTestCase
 
@@ -43,4 +43,5 @@ class TestReviewCycle(StateTestCase, unittest.TestCase):
         append_review_started(entries, "rev-auto", "review.md", project_root, client_id="auto-id")
         state = load_state(project_root, "auto-id")
         self.assertTrue(any(e.get("reviewId") == "rev-auto" for e in state))
+
 

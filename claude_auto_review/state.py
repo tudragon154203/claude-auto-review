@@ -1,4 +1,4 @@
-from scripts.paths import (
+from claude_auto_review.paths import (
     DELETED_FILE_HASH,
     client_reviews_dir,
     client_run_dir,
@@ -12,10 +12,10 @@ from scripts.paths import (
     normalize_relative_path,
     utc_now_iso,
 )
-from scripts.reviews import is_review_complete, pending_reviews_for_entries
-import scripts.runtime as runtime
-from scripts.settings import DEFAULT_SETTINGS, load_settings, should_skip_file
-from scripts.state_store import (
+from claude_auto_review.reviews import is_review_complete, pending_reviews_for_entries
+import claude_auto_review.runtime as runtime
+from claude_auto_review.settings import DEFAULT_SETTINGS, load_settings, should_skip_file
+from claude_auto_review.state_store import (
     append_review_started,
     append_state,
     consecutive_stop_blocks,
@@ -50,3 +50,4 @@ def cancel_runtime(project_root=None, client_id=""):
 
 def cancel_session(project_root=None, client_id=""):
     return runtime.cancel_session(project_root, client_id)
+

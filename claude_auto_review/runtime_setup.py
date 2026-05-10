@@ -2,7 +2,7 @@ import json
 import shutil
 from pathlib import Path
 
-from scripts.paths import (
+from claude_auto_review.paths import (
     LOG_RELATIVE_PATH,
     RUNTIME_DIR,
     STATE_RELATIVE_PATH,
@@ -10,7 +10,7 @@ from scripts.paths import (
     get_plugin_root,
     get_project_root,
 )
-from scripts.settings import DEFAULT_SETTINGS
+from claude_auto_review.settings import DEFAULT_SETTINGS
 
 
 def ensure_client_runtime(project_root, client_id):
@@ -64,3 +64,4 @@ def ensure_project_settings(project_root=None):
         settings["claude-auto-review"] = dict(DEFAULT_SETTINGS)
         settings_path.write_text(json.dumps(settings, indent=2) + "\n", encoding="utf-8", newline="\n")
     return settings_path
+

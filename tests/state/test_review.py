@@ -1,6 +1,6 @@
 import unittest
 
-from scripts.state import is_review_complete
+from claude_auto_review.state import is_review_complete
 
 from tests.state.support import StateTestCase
 
@@ -62,4 +62,5 @@ class TestReviewCompletion(StateTestCase, unittest.TestCase):
         self.assertFalse(is_review_complete(path))
         path.write_text("## Verdict\nPEnDInG.", encoding="utf-8")
         self.assertFalse(is_review_complete(path))
+
 

@@ -1,6 +1,6 @@
 import unittest
 
-from scripts.state import (
+from claude_auto_review.state import (
     cancel_runtime,
     cancel_session,
     client_state_path,
@@ -84,4 +84,5 @@ class TestRuntime(StateTestCase, unittest.TestCase):
             (project_root / ".claude" / "claude-auto-review" / "clients" / "client-other_alpha").exists()
         )
         self.assertGreater(len(removed), 0)
+
 

@@ -4,17 +4,17 @@ import subprocess
 import sys
 from pathlib import Path
 
-from scripts.paths import client_run_dir, utc_now_iso
-from scripts.reviews import is_review_complete
-from scripts.state import (
+from claude_auto_review.paths import client_run_dir, utc_now_iso
+from claude_auto_review.reviews import is_review_complete
+from claude_auto_review.state import (
     append_state,
     get_unreviewed_files,
     load_state,
     log_event,
     mark_files_reviewed,
 )
-from scripts.stop_autocomplete import attempt_stop_autocomplete
-from scripts.stop_selection import find_pending_review_for_files, get_entries_covered_by_review
+from claude_auto_review.stop_autocomplete import attempt_stop_autocomplete
+from claude_auto_review.stop_selection import find_pending_review_for_files, get_entries_covered_by_review
 
 
 def block_response(message, feedback):
@@ -141,3 +141,4 @@ def finalize_review_stop(project_root, client_id, state, unreviewed, review):
     log_event(project_root, "stop_blocked", files=[entry["file"] for entry in unreviewed])
     append_state({"type": "stop_blocked", "reason": "review_pending", "timestamp": utc_now_iso()}, project_root, client_id=client_id)
     return 2
+

@@ -25,7 +25,7 @@ class TempProjectMixin:
 
 
 class SubprocessMixin:
-    """Provides a run_python helper for executing plugin scripts."""
+    """Provides a run_python helper for executing plugin claude_auto_review."""
 
     def run_python(
         self,
@@ -110,3 +110,4 @@ class SubprocessMixin:
         finally:
             if fake_dir is not None:
                 shutil.rmtree(fake_dir, ignore_errors=True)
+

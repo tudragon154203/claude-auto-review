@@ -1,6 +1,6 @@
 import unittest
 
-from scripts.state import extract_file_paths_from_hook_input
+from claude_auto_review.state import extract_file_paths_from_hook_input
 
 from tests.state.support import StateTestCase
 
@@ -38,4 +38,5 @@ class TestHookInputExtraction(StateTestCase, unittest.TestCase):
         payload = {"tool_input": {"edits": [{"file_path": None}, {"file_path": "valid.ts"}]}}
         result = extract_file_paths_from_hook_input(payload)
         self.assertEqual(result, ["valid.ts"])
+
 

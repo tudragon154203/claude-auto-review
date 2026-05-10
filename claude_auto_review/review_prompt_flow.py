@@ -1,8 +1,8 @@
 from dataclasses import dataclass
 from pathlib import Path
 
-from scripts.paths import client_reviews_dir, client_run_dir, utc_now_iso
-from scripts.review_generation import (
+from claude_auto_review.paths import client_reviews_dir, client_run_dir, utc_now_iso
+from claude_auto_review.review_generation import (
     build_prompt,
     current_file_snapshots,
     format_review_timestamp,
@@ -68,3 +68,4 @@ Pending.
         review_path=review_path,
         files=files,
     )
+

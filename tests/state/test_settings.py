@@ -1,7 +1,7 @@
 import json
 import unittest
 
-from scripts.state import DEFAULT_SETTINGS, ensure_project_settings, load_settings, should_skip_file
+from claude_auto_review.state import DEFAULT_SETTINGS, ensure_project_settings, load_settings, should_skip_file
 
 from tests.state.support import StateTestCase
 
@@ -85,4 +85,5 @@ class TestSettings(StateTestCase, unittest.TestCase):
         other_root = self.temp_project()
         result = load_settings(other_root)
         self.assertTrue(result["enabled"])
+
 

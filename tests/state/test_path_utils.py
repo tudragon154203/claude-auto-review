@@ -1,6 +1,6 @@
 import unittest
 
-from scripts.state import get_log_path, get_state_path, normalize_relative_path
+from claude_auto_review.state import get_log_path, get_state_path, normalize_relative_path
 
 from tests.state.support import StateTestCase
 
@@ -44,4 +44,5 @@ class TestPathUtils(StateTestCase, unittest.TestCase):
         project_root = self.temp_project()
         result = get_log_path(project_root)
         self.assertEqual(result, project_root / ".claude" / "claude-auto-review" / "claude-auto-review.log")
+
 

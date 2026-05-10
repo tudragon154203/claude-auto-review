@@ -8,7 +8,7 @@ from tests.support import TempProjectMixin
 REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT))
 
-from scripts.state import (
+from claude_auto_review.state import (
     append_state,
     append_review_started,
     client_reviews_dir,
@@ -242,3 +242,4 @@ class ConcurrencyTests(TempProjectMixin, unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+

@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from scripts.shims import build_runpy_shim_content
+from claude_auto_review.shims import build_runpy_shim_content
 
 
 def copy_if_changed(source, destination):
@@ -18,12 +18,12 @@ def write_runtime_shims(runtime_scripts, plugin_root):
     plugin_root = Path(plugin_root)
     runtime_scripts.mkdir(parents=True, exist_ok=True)
     (runtime_scripts / "review_prompt.py").write_text(
-        build_runpy_shim_content(plugin_root / "scripts" / "review_prompt.py"),
+        build_runpy_shim_content(plugin_root / "claude_auto_review" / "review_prompt.py"),
         encoding="utf-8",
         newline="\n",
     )
     (runtime_scripts / "cancel_claude_auto_review.py").write_text(
-        build_runpy_shim_content(plugin_root / "scripts" / "cancel_claude_auto_review.py"),
+        build_runpy_shim_content(plugin_root / "claude_auto_review" / "cancel_claude_auto_review.py"),
         encoding="utf-8",
         newline="\n",
     )
@@ -38,3 +38,4 @@ def ensure_gitignore_entries(gitignore_path, ignore_entries):
         prefix = "" if not existing or existing.endswith("\n") else "\n"
         with gitignore_path.open("a", encoding="utf-8", newline="\n") as handle:
             handle.write(prefix + "\n".join(missing) + "\n")
+

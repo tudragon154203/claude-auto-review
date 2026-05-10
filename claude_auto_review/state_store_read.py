@@ -2,7 +2,7 @@ import hashlib
 import json
 from pathlib import Path
 
-from scripts.paths import get_project_root, normalize_relative_path
+from claude_auto_review.paths import get_project_root, normalize_relative_path
 
 
 def _resolve_project_root(project_root=None):
@@ -25,7 +25,7 @@ def get_file_hash(file_path, project_root=None):
 
 
 def load_state(project_root=None, client_id=""):
-    from scripts.paths import client_state_path, get_client_id
+    from claude_auto_review.paths import client_state_path, get_client_id
 
     project_root = _resolve_project_root(project_root)
     if not client_id:
@@ -120,3 +120,4 @@ def extract_file_paths_from_hook_input(payload):
             seen.add(candidate)
             unique.append(candidate)
     return unique
+

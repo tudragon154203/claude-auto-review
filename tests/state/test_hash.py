@@ -3,7 +3,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from scripts.state import get_file_hash
+from claude_auto_review.state import get_file_hash
 
 from tests.state.support import StateTestCase
 
@@ -25,4 +25,5 @@ class TestFileHash(StateTestCase, unittest.TestCase):
     def test_get_file_hash_returns_none_for_outside_project(self):
         result = get_file_hash(str(Path(tempfile.mkdtemp()) / "outside.ts"), self.temp_project())
         self.assertIsNone(result)
+
 

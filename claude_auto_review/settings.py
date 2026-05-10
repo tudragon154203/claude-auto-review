@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 
-from scripts.paths import get_project_root
+from claude_auto_review.paths import get_project_root
 
 DEFAULT_SETTINGS = {
     "enabled": True,
@@ -34,4 +34,5 @@ def should_skip_file(file_path, settings=None):
     if include_extensions and ext not in include_extensions:
         return True
     return bool(ext and ext in skip_extensions)
+
 

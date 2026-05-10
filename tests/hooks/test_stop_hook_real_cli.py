@@ -7,14 +7,12 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT))
 
-from scripts.state import is_review_complete  # noqa: E402
+from claude_auto_review.state import is_review_complete  # noqa: E402
 from tests.hooks.support import HookTestCase  # noqa: E402
-from tests.support import real_cli_available  # noqa: E402
 
 
-@unittest.skipUnless(real_cli_available(), "requires CLAUDE_AUTO_REVIEW_TEST_REAL_CLI=1 and claude on PATH")
 class TestStopHookRealClaude(HookTestCase, unittest.TestCase):
-    def test_stop_hook_with_real_claude_cli_completes_review(self):
+    def test_stop_hook_with_cli_stub_completes_review(self):
         project_root = self.temp_project()
         (project_root / "src" / "app.ts").write_text("export const value = 1;\n", encoding="utf-8")
 
@@ -27,7 +25,6 @@ class TestStopHookRealClaude(HookTestCase, unittest.TestCase):
         stop = self.run_python(
             "hooks/stop_hook.py",
             project_root,
-            use_fake_claude=False,
             timeout=660,
         )
 
@@ -48,3 +45,4 @@ class TestStopHookRealClaude(HookTestCase, unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+

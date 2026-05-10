@@ -1,4 +1,4 @@
-"""End-to-end tests exercising the complete review lifecycle across scripts.
+"""End-to-end tests exercising the complete review lifecycle across claude_auto_review.
 
 Runs actual subprocesses against plugin scripts to verify cross-script
 integration: setup → edit tracking → stop blocking → review creation →
@@ -16,7 +16,7 @@ from tests.support import SubprocessMixin, TempProjectMixin
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT))
-from scripts.state import load_state, get_unreviewed_files
+from claude_auto_review.state import load_state, get_unreviewed_files
 
 
 class EndToEndTests(TempProjectMixin, SubprocessMixin, unittest.TestCase):
@@ -45,7 +45,7 @@ class EndToEndTests(TempProjectMixin, SubprocessMixin, unittest.TestCase):
         )
 
     def review(self, project_root, client_id="test-session"):
-        return self.run_python("scripts/review_prompt.py", project_root, client_id=client_id)
+        return self.run_python("claude_auto_review/review_prompt.py", project_root, client_id=client_id)
 
     def complete_review(self, project_root, verdict="Clean - no issues found.",
                         client_id="test-session"):
@@ -66,7 +66,7 @@ class EndToEndTests(TempProjectMixin, SubprocessMixin, unittest.TestCase):
         (project_root / "src" / "main.ts").write_text("const x = 1;\n",
                                                       encoding="utf-8")
 
-        setup = self.run_python("scripts/setup_claude_auto_review.py", project_root)
+        setup = self.run_python("claude_auto_review/setup_claude_auto_review.py", project_root)
         self.assertEqual(setup.returncode, 0)
 
         self.track(project_root, "src/main.ts")
@@ -126,7 +126,7 @@ class EndToEndTests(TempProjectMixin, SubprocessMixin, unittest.TestCase):
         self.track(project_root, "src/a.ts")
         self.review(project_root)
 
-        cancel = self.run_python("scripts/cancel_claude_auto_review.py", project_root)
+        cancel = self.run_python("claude_auto_review/cancel_claude_auto_review.py", project_root)
         self.assertEqual(cancel.returncode, 0)
 
         (project_root / "src" / "b.ts").write_text("b\n", encoding="utf-8")
@@ -203,10 +203,10 @@ class EndToEndTests(TempProjectMixin, SubprocessMixin, unittest.TestCase):
         project_root = self.temp_project()
 
         self.assertEqual(
-            self.run_python("scripts/setup_claude_auto_review.py",
+            self.run_python("claude_auto_review/setup_claude_auto_review.py",
                             project_root).returncode, 0)
         self.assertEqual(
-            self.run_python("scripts/setup_claude_auto_review.py",
+            self.run_python("claude_auto_review/setup_claude_auto_review.py",
                             project_root).returncode, 0)
 
         self.assertTrue((project_root / ".claude" / "claude-auto-review" /
@@ -263,3 +263,5 @@ class EndToEndTests(TempProjectMixin, SubprocessMixin, unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+

@@ -7,19 +7,19 @@ Claude Auto Review is a Claude Code plugin that tracks files edited during a ses
 The implementation is split by responsibility:
 
 - `hooks/post_tool_use.py` and `hooks/stop_hook.py` are thin entrypoints.
-- `scripts/state.py` is a compatibility facade that re-exports the state helpers.
-- `scripts/settings.py` loads project configuration and defaults.
-- `scripts/runtime.py` is a compatibility facade for runtime helpers.
-- `scripts/runtime_setup.py` bootstraps runtime directories, project settings, and per-client state.
-- `scripts/runtime_cleanup.py` handles runtime/session cleanup and expired review pruning.
-- `scripts/state_store.py` owns JSONL state I/O and review bookkeeping.
-- `scripts/review_generation.py` provides shared prompt and file helpers.
-- `scripts/review_prompt_flow.py` renders review prompts and creates review files.
-- `scripts/stop_flow_logic.py` resolves pending reviews and stop decisions.
-- `scripts/stop_flow.py` orchestrates the stop-hook decision flow.
-- `scripts/stop_selection.py` picks files that still need review.
-- `scripts/stop_autocomplete.py` runs Claude CLI auto-completion.
-- `scripts/installer.py` handles project installation, copied rules, shims, and ignore updates.
+- `claude_auto_review/state.py` is a compatibility facade that re-exports the state helpers.
+- `claude_auto_review/settings.py` loads project configuration and defaults.
+- `claude_auto_review/runtime.py` is a compatibility facade for runtime helpers.
+- `claude_auto_review/runtime_setup.py` bootstraps runtime directories, project settings, and per-client state.
+- `claude_auto_review/runtime_cleanup.py` handles runtime/session cleanup and expired review pruning.
+- `claude_auto_review/state_store.py` owns JSONL state I/O and review bookkeeping.
+- `claude_auto_review/review_generation.py` provides shared prompt and file helpers.
+- `claude_auto_review/review_prompt_flow.py` renders review prompts and creates review files.
+- `claude_auto_review/stop_flow_logic.py` resolves pending reviews and stop decisions.
+- `claude_auto_review/stop_flow.py` orchestrates the stop-hook decision flow.
+- `claude_auto_review/stop_selection.py` picks files that still need review.
+- `claude_auto_review/stop_autocomplete.py` runs Claude CLI auto-completion.
+- `claude_auto_review/installer.py` handles project installation, copied rules, shims, and ignore updates.
 
 ## How It Works
 
@@ -114,3 +114,4 @@ Test suites:
 - `tests/test_integration.py` — Cross-function state interactions
 - `tests/test_concurrency.py` — Client/session isolation
 - `tests/test_e2e.py` — Full lifecycle via subprocesses
+

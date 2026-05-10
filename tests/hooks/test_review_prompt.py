@@ -7,7 +7,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT))
 
-from scripts.state import append_state  # noqa: E402
+from claude_auto_review.state import append_state  # noqa: E402
 from tests.hooks.support import HookTestCase  # noqa: E402
 
 
@@ -17,7 +17,7 @@ class TestReviewPrompt(HookTestCase, unittest.TestCase):
         (project_root / "src" / "app.ts").write_text("export const value = 1;\n", encoding="utf-8")
         self.run_python("hooks/post_tool_use.py", project_root, json.dumps({"file_path": "src/app.ts"}))
 
-        review = self.run_python("scripts/review_prompt.py", project_root)
+        review = self.run_python("claude_auto_review/review_prompt.py", project_root)
         self.assertEqual(review.returncode, 0)
         self.assertEqual(
             len(list((project_root / ".claude" / "claude-auto-review" / "clients" / "client-test-session" / "run").iterdir())),
@@ -49,7 +49,7 @@ class TestReviewPrompt(HookTestCase, unittest.TestCase):
         target.write_text("export const value = 2;\n", encoding="utf-8")
 
         self.run_python("hooks/post_tool_use.py", project_root, json.dumps({"file_path": "src/app.ts"}))
-        review = self.run_python("scripts/review_prompt.py", project_root)
+        review = self.run_python("claude_auto_review/review_prompt.py", project_root)
         self.assertEqual(review.returncode, 0)
         prompt = next((project_root / ".claude" / "claude-auto-review" / "clients" / "client-test-session" / "run").glob("*prompt.md")).read_text(encoding="utf-8")
         self.assertIn("-export const value = 1;", prompt)
@@ -60,7 +60,7 @@ class TestReviewPrompt(HookTestCase, unittest.TestCase):
         (project_root / "src" / "new.ts").write_text("export const created = true;\n", encoding="utf-8")
         subprocess.run(["git", "init"], cwd=project_root, check=True, capture_output=True, text=True)
         self.run_python("hooks/post_tool_use.py", project_root, json.dumps({"file_path": "src/new.ts"}))
-        review = self.run_python("scripts/review_prompt.py", project_root)
+        review = self.run_python("claude_auto_review/review_prompt.py", project_root)
         self.assertEqual(review.returncode, 0)
         prompt = next((project_root / ".claude" / "claude-auto-review" / "clients" / "client-test-session" / "run").glob("*prompt.md")).read_text(encoding="utf-8")
         self.assertIn("## Current File Snapshots", prompt)
@@ -74,7 +74,7 @@ class TestReviewPrompt(HookTestCase, unittest.TestCase):
         rules_path = project_root / ".claude" / "claude-auto-review" / "rules.md"
         rules_path.write_text("# Custom Rules\n\n- Custom auth rule must appear.\n", encoding="utf-8")
 
-        review = self.run_python("scripts/review_prompt.py", project_root)
+        review = self.run_python("claude_auto_review/review_prompt.py", project_root)
         self.assertEqual(review.returncode, 0)
         prompt = next((project_root / ".claude" / "claude-auto-review" / "clients" / "client-test-session" / "run").glob("*prompt.md")).read_text(encoding="utf-8")
         self.assertIn("Custom auth rule must appear.", prompt)
@@ -93,7 +93,7 @@ class TestReviewPrompt(HookTestCase, unittest.TestCase):
             client_id="test-session",
         )
 
-        review = self.run_python("scripts/review_prompt.py", project_root)
+        review = self.run_python("claude_auto_review/review_prompt.py", project_root)
         self.assertEqual(review.returncode, 0)
         prompt = next((project_root / ".claude" / "claude-auto-review" / "clients" / "client-test-session" / "run").glob("*prompt.md")).read_text(encoding="utf-8")
         self.assertIn("## src/deleted.ts", prompt)
@@ -102,3 +102,5 @@ class TestReviewPrompt(HookTestCase, unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+

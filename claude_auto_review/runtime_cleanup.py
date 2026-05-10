@@ -2,14 +2,14 @@ import json
 import shutil
 from pathlib import Path
 
-from scripts.paths import RUNTIME_DIR, client_state_path, get_client_id, get_client_runtime_dir, get_project_root
-from scripts.reviews import is_review_expired
-from scripts.settings import load_settings
+from claude_auto_review.paths import RUNTIME_DIR, client_state_path, get_client_id, get_client_runtime_dir, get_project_root
+from claude_auto_review.reviews import is_review_expired
+from claude_auto_review.settings import load_settings
 
 
 def _log_event(project_root, event_type, **kwargs):
     try:
-        from scripts.paths import get_log_path, utc_now_iso
+        from claude_auto_review.paths import get_log_path, utc_now_iso
 
         log_path = get_log_path(project_root)
         log_path.parent.mkdir(parents=True, exist_ok=True)
@@ -113,3 +113,4 @@ def cancel_session(project_root=None, client_id=""):
             pass
         return removed
     return []
+

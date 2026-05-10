@@ -16,7 +16,7 @@ from tests.support import TempProjectMixin
 REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT))
 
-from scripts.paths import (
+from claude_auto_review.paths import (
     client_reviews_dir,
     client_run_dir,
     get_client_id,
@@ -24,8 +24,8 @@ from scripts.paths import (
     get_log_path,
     utc_now_iso,
 )
-from scripts.reviews import pending_reviews_for_entries
-from scripts.state import (
+from claude_auto_review.reviews import pending_reviews_for_entries
+from claude_auto_review.state import (
     append_review_started,
     append_state,
     cancel_runtime,
@@ -290,3 +290,4 @@ class IntegrationTests(TempProjectMixin, unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+

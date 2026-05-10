@@ -3,7 +3,7 @@ import re
 import unittest
 import unittest.mock as mock
 
-from scripts.state import get_client_id
+from claude_auto_review.state import get_client_id
 
 from tests.state.support import StateTestCase
 
@@ -39,3 +39,4 @@ class TestClientId(StateTestCase, unittest.TestCase):
             time.sleep(1)
             id_b = get_client_id("b")
         self.assertLess(id_a, id_b)
+
