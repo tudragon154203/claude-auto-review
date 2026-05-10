@@ -65,9 +65,7 @@ You must review the changed files before stopping. Use the reviewer agent behavi
 
 ## Review Output
 
-Write the final review to:
-
-`{review_path}`
+Output the final review to stdout. It will be captured and saved to the review file. You do not have Write or Edit tools.
 
 Use this exact top matter:
 
@@ -96,26 +94,7 @@ If no findings exist, write "Clean - no issues found. Claude may stop." under "#
 ## Current File Snapshots
 {snapshots}
 
-## After Review
-
-After receiving review results:
-
-1. Show all findings to the user.
-2. Evaluate each finding against one heuristic: what produces the highest quality code?
-3. Fix the finding unless one of these skip reasons clearly applies:
-   - IMPOSSIBLE: you tried the fix and cannot satisfy feedback, product requirements, lint rules, and tests simultaneously.
-   - CONFLICTS WITH REQUIREMENTS: the feedback directly contradicts explicit product requirements.
-   - MAKES CODE WORSE: applying the feedback would genuinely degrade code quality.
-4. These are not valid skip reasons:
-   - too much time
-   - too complex
-   - out of scope after you touched the file
-   - pre-existing code
-   - only renamed or moved
-   - would require a larger refactor
-5. If uncertain, ask the user.
-
-If you edit files, the hook will track those new hashes and require another review pass."""
+Complete the review in 10 turns or less."""
 
 
 def format_review_file(review_id, readable_timestamp, file_list, prompt_path):
@@ -141,7 +120,7 @@ def format_review_files(entries, prompt_path, review_id, timestamp):
 
 def current_file_snapshots(files, project_root):
     sections = []
-    max_chars = 40000
+    max_chars = 10000
     for file_path in files:
         sections.append(_snapshot_section(file_path, project_root, max_chars))
     return "\n\n".join(sections)
