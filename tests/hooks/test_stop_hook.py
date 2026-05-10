@@ -370,7 +370,7 @@ class TestStopHook(HookTestCase, unittest.TestCase):
         self.assertIn("Review", parsed["message"])
 
     def test_pending_review_expired_is_skipped_but_not_cleaned_by_stop_hook(self):
-        """Stop hook skips expired pending reviews, but cleanup is handled by session_stop."""
+        """Stop hook skips expired pending reviews, but cleanup is handled by session_end."""
         from datetime import datetime, timedelta, timezone
 
         project_root = self.temp_project()
@@ -403,7 +403,7 @@ class TestStopHook(HookTestCase, unittest.TestCase):
         stop = self.run_python("hooks/stop_hook.py", project_root, env_overrides={"PATH": ""}, use_fake_claude=False)
         self.assertIn(stop.returncode, [0, 2], "Stop should not crash")
 
-        # Expired entry remains in state; cleanup moved to session_stop.
+        # Expired entry remains in state; cleanup moved to session_end.
         state_after = load_state(project_root, client_id="test-session")
         expired_ids = [e.get("reviewId") for e in state_after if e.get("type") == "review" and e.get("status") == "pending"]
         self.assertIn("rev-expired", expired_ids,
@@ -441,7 +441,7 @@ class TestStopHook(HookTestCase, unittest.TestCase):
         stop = self.run_python("hooks/stop_hook.py", project_root, env_overrides={"PATH": ""}, use_fake_claude=False)
         self.assertIn(stop.returncode, [0, 2], "Stop should not crash")
 
-        # Verify expired review still exists; cleanup moved to session_stop.
+        # Verify expired review still exists; cleanup moved to session_end.
         state_after = load_state(project_root, client_id="test-session")
         expired_ids = [e.get("reviewId") for e in state_after if e.get("type") == "review" and e.get("status") == "pending"]
         self.assertIn("rev-custom-timeout", expired_ids,

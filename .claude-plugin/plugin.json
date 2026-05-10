@@ -21,9 +21,9 @@
         "statusMessage": "Claude Auto Review: checking review state..."
       }
     ],
-    "SessionStop": [
+    "SessionEnd": [
       {
-        "script": "hooks/session_stop.py",
+        "script": "hooks/session_end.py",
         "timeout": 10,
         "statusMessage": "Claude Auto Review: cleaning session state..."
       }

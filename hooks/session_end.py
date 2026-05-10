@@ -25,7 +25,7 @@ def main():
         if removed or expired_removed:
             log_event(
                 project_root,
-                "session_stop_cleanup",
+                "session_end_cleanup",
                 removed=[str(p) for p in removed],
                 expired_removed=expired_removed,
                 client_id=client_id,
@@ -33,10 +33,10 @@ def main():
         return 0
     except Exception as error:
         try:
-            log_event(get_project_root(), "session_stop_error", error=str(error))
+            log_event(get_project_root(), "session_end_error", error=str(error))
         except Exception:
             pass
-        return 0  # Fail open — never block session stop
+        return 0  # Fail open — never block session end
 
 
 if __name__ == "__main__":
