@@ -1,6 +1,6 @@
 # Rules Guide
 
-Rules live in `.claude/claude-auto-review/rules.md` so teams can commit review criteria with the project. The review prompt generator reads this file when it builds the stop-hook prompt.
+Rules live in `.claude/claude-auto-review/rules.md` so teams can commit review criteria with the project. The manual review flow and stop hook both read this file when they build prompts.
 
 Good rules are specific and reviewable:
 

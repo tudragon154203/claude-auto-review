@@ -9,9 +9,13 @@ The implementation is split by responsibility:
 - `hooks/post_tool_use.py` and `hooks/stop_hook.py` are thin entrypoints.
 - `scripts/state.py` is a compatibility facade that re-exports the state helpers.
 - `scripts/settings.py` loads project configuration and defaults.
-- `scripts/runtime.py` handles runtime paths, client IDs, and lifecycle helpers.
+- `scripts/runtime.py` is a compatibility facade for runtime helpers.
+- `scripts/runtime_setup.py` bootstraps runtime directories, project settings, and per-client state.
+- `scripts/runtime_cleanup.py` handles runtime/session cleanup and expired review pruning.
 - `scripts/state_store.py` owns JSONL state I/O and review bookkeeping.
-- `scripts/review_generation.py` renders review prompts and creates review files.
+- `scripts/review_generation.py` provides shared prompt and file helpers.
+- `scripts/review_prompt_flow.py` renders review prompts and creates review files.
+- `scripts/stop_flow_logic.py` resolves pending reviews and stop decisions.
 - `scripts/stop_flow.py` orchestrates the stop-hook decision flow.
 - `scripts/stop_selection.py` picks files that still need review.
 - `scripts/stop_autocomplete.py` runs Claude CLI auto-completion.

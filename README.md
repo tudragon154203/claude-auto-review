@@ -12,8 +12,11 @@ The implementation is split into small modules instead of one monolith:
 
 - `hooks/stop_hook.py` and `hooks/post_tool_use.py` are thin entrypoints.
 - `scripts/state.py` is a compatibility facade for the state helpers.
-- `scripts/state_store.py`, `scripts/runtime.py`, and `scripts/settings.py` cover state, lifecycle, and config.
-- `scripts/review_generation.py` renders prompts and review files.
+- `scripts/runtime.py` is a compatibility facade for runtime helpers; `scripts/runtime_setup.py` and `scripts/runtime_cleanup.py` own setup and cleanup.
+- `scripts/state_store.py` and `scripts/settings.py` cover state bookkeeping and config.
+- `scripts/review_generation.py` provides shared prompt and file helpers.
+- `scripts/review_prompt_flow.py` builds the manual review prompt and review file.
+- `scripts/stop_flow_logic.py` resolves pending reviews and stop decisions.
 - `scripts/stop_flow.py`, `scripts/stop_selection.py`, and `scripts/stop_autocomplete.py` cover stop-hook orchestration.
 - `scripts/installer.py` handles project setup and generated shims.
 

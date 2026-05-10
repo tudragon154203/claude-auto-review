@@ -7,7 +7,8 @@ ensure_repo_root_on_path()
 
 from scripts.paths import get_project_root
 from scripts.installer import copy_if_changed, ensure_gitignore_entries, write_runtime_shims
-from scripts.state import ensure_project_settings, ensure_runtime, log_event
+from scripts.runtime_setup import ensure_project_settings, ensure_runtime
+from scripts.state import log_event
 
 
 def main():
