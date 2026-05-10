@@ -6,19 +6,16 @@ from bootstrap import ensure_repo_root_on_path
 
 ensure_repo_root_on_path()
 
-from claude_auto_review.paths import DELETED_FILE_HASH, get_project_root, normalize_relative_path, utc_now_iso
-from claude_auto_review.state import (
-    append_state,
-    ensure_client_runtime,
+from claude_auto_review.paths import DELETED_FILE_HASH, get_client_id, get_project_root, normalize_relative_path, utc_now_iso
+from claude_auto_review.runtime.setup import ensure_client_runtime
+from claude_auto_review.settings import load_settings, should_skip_file
+from claude_auto_review.state.store_read import (
     extract_file_paths_from_hook_input,
-    get_client_id,
     get_file_hash,
-    load_settings,
     load_state,
-    log_event,
-    should_skip_file,
     was_hash_reviewed,
 )
+from claude_auto_review.state.store_write import append_state, log_event
 
 
 def main():

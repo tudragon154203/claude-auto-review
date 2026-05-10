@@ -11,14 +11,12 @@ After each file edit (Write/Edit/MultiEdit/Delete), the plugin tracks the file h
 The implementation is split into small modules instead of one monolith:
 
 - `hooks/stop_hook.py` and `hooks/post_tool_use.py` are thin entrypoints.
-- `claude_auto_review/state.py` is a compatibility facade for the state helpers.
-- `claude_auto_review/runtime.py` is a compatibility facade for runtime helpers; `claude_auto_review/runtime_setup.py` and `claude_auto_review/runtime_cleanup.py` own setup and cleanup.
-- `claude_auto_review/state_store.py` and `claude_auto_review/settings.py` cover state bookkeeping and config.
-- `claude_auto_review/review_generation.py` provides shared prompt and file helpers.
-- `claude_auto_review/review_prompt_flow.py` builds the manual review prompt and review file.
-- `claude_auto_review/stop_flow_logic.py` resolves pending reviews and stop decisions.
-- `claude_auto_review/stop_flow.py`, `claude_auto_review/stop_selection.py`, and `claude_auto_review/stop_autocomplete.py` cover stop-hook orchestration.
-- `claude_auto_review/installer.py` handles project setup and generated shims.
+- `claude_auto_review/paths.py`, `claude_auto_review/settings.py`, `claude_auto_review/bootstrap.py` cover paths, config, and bootstrapping.
+- `claude_auto_review/state/store_read.py`, `claude_auto_review/state/store_write.py`, `claude_auto_review/state/reviews.py` cover state bookkeeping.
+- `claude_auto_review/runtime/helpers.py`, `claude_auto_review/runtime/setup.py`, `claude_auto_review/runtime/cleanup.py` cover runtime lifecycle.
+- `claude_auto_review/review/generation.py`, `claude_auto_review/review/prompt_flow.py`, `claude_auto_review/review/prompt.py`, `claude_auto_review/review/completion.py` cover review generation and completion.
+- `claude_auto_review/stop/flow.py`, `claude_auto_review/stop/flow_logic.py`, `claude_auto_review/stop/selection.py`, `claude_auto_review/stop/autocomplete.py` cover stop-hook orchestration.
+- `claude_auto_review/install/installer.py`, `claude_auto_review/install/shims.py`, `claude_auto_review/install/setup_cli.py`, `claude_auto_review/install/cancel_cli.py` cover installation.
 
 **Commands:**
 - `/claude-auto-review` — Run manual review for current unreviewed files
@@ -31,7 +29,7 @@ The implementation is split into small modules instead of one monolith:
 python -m unittest discover -s tests
 
 # Install in a target project
-python claude_auto_review/setup_claude_auto_review.py
+python claude_auto_review/install/setup_cli.py
 ```
 
 The installer creates the local `.claude/claude-auto-review/` runtime tree and generated wrapper scripts in the target project.

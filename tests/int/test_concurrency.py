@@ -8,19 +8,11 @@ from tests.support import TempProjectMixin
 REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT))
 
-from claude_auto_review.state import (
-    append_state,
-    append_review_started,
-    client_reviews_dir,
-    client_state_path,
-    ensure_client_runtime,
-    get_client_runtime_dir,
-    get_unreviewed_files,
-    load_state,
-    mark_files_reviewed,
-    pending_reviews_for_entries,
-    was_hash_reviewed,
-)
+from claude_auto_review.paths import client_reviews_dir, client_state_path, get_client_runtime_dir
+from claude_auto_review.runtime.setup import ensure_client_runtime
+from claude_auto_review.state.reviews import pending_reviews_for_entries
+from claude_auto_review.state.store_read import get_unreviewed_files, load_state, was_hash_reviewed
+from claude_auto_review.state.store_write import append_review_started, append_state, mark_files_reviewed
 
 
 class ConcurrencyTests(TempProjectMixin, unittest.TestCase):

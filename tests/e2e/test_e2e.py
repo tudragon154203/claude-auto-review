@@ -16,8 +16,8 @@ from tests.support import SubprocessMixin, TempProjectMixin, real_cli_available
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT))
-from claude_auto_review.state import load_state, get_unreviewed_files
-from claude_auto_review.reviews import is_review_complete
+from claude_auto_review.state.store_read import get_unreviewed_files, load_state
+from claude_auto_review.state.reviews import is_review_complete
 
 
 class EndToEndTests(TempProjectMixin, SubprocessMixin, unittest.TestCase):
@@ -46,7 +46,7 @@ class EndToEndTests(TempProjectMixin, SubprocessMixin, unittest.TestCase):
         )
 
     def review(self, project_root, client_id="test-session"):
-        return self.run_python("claude_auto_review/review_prompt.py", project_root, client_id=client_id)
+        return self.run_python("claude_auto_review/review/prompt.py", project_root, client_id=client_id)
 
     def runtime_script(self, project_root, script_name):
         return project_root / ".claude" / "claude-auto-review" / "scripts" / script_name
@@ -70,7 +70,7 @@ class EndToEndTests(TempProjectMixin, SubprocessMixin, unittest.TestCase):
         (project_root / "src" / "main.ts").write_text("const x = 1;\n",
                                                       encoding="utf-8")
 
-        setup = self.run_python("claude_auto_review/setup_claude_auto_review.py", project_root)
+        setup = self.run_python("claude_auto_review/install/setup_cli.py", project_root)
         self.assertEqual(setup.returncode, 0)
 
         self.track(project_root, "src/main.ts")
@@ -82,7 +82,7 @@ class EndToEndTests(TempProjectMixin, SubprocessMixin, unittest.TestCase):
         project_root = self.temp_project()
         (project_root / "src" / "app.ts").write_text("const value = 1;\n", encoding="utf-8")
 
-        setup = self.run_python("claude_auto_review/setup_claude_auto_review.py", project_root)
+        setup = self.run_python("claude_auto_review/install/setup_cli.py", project_root)
         self.assertEqual(setup.returncode, 0, setup.stderr)
         self.assertTrue(self.runtime_script(project_root, "review_prompt.py").exists())
         self.assertTrue(self.runtime_script(project_root, "cancel_claude_auto_review.py").exists())
@@ -153,7 +153,7 @@ class EndToEndTests(TempProjectMixin, SubprocessMixin, unittest.TestCase):
         self.track(project_root, "src/a.ts")
         self.review(project_root)
 
-        cancel = self.run_python("claude_auto_review/cancel_claude_auto_review.py", project_root)
+        cancel = self.run_python("claude_auto_review/install/cancel_cli.py", project_root)
         self.assertEqual(cancel.returncode, 0)
 
         (project_root / "src" / "b.ts").write_text("b\n", encoding="utf-8")
@@ -230,10 +230,10 @@ class EndToEndTests(TempProjectMixin, SubprocessMixin, unittest.TestCase):
         project_root = self.temp_project()
 
         self.assertEqual(
-            self.run_python("claude_auto_review/setup_claude_auto_review.py",
+            self.run_python("claude_auto_review/install/setup_cli.py",
                             project_root).returncode, 0)
         self.assertEqual(
-            self.run_python("claude_auto_review/setup_claude_auto_review.py",
+            self.run_python("claude_auto_review/install/setup_cli.py",
                             project_root).returncode, 0)
 
         self.assertTrue((project_root / ".claude" / "claude-auto-review" /

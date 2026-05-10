@@ -8,7 +8,7 @@ Run the generated project-local wrapper:
 python .claude/claude-auto-review/scripts/review_prompt.py
 ```
 
-That wrapper calls `claude_auto_review/review_prompt.py`, which uses `claude_auto_review/review_prompt_flow.py` to build the prompt and initialize the review file.
+That wrapper calls `claude_auto_review/review/prompt.py`, which uses `claude_auto_review/review/prompt_flow.py` to build the prompt and initialize the review file.
 
 If the project-local wrapper is not installed yet, run the plugin script directly from the plugin checkout.
 

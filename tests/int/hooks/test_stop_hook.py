@@ -5,7 +5,8 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(REPO_ROOT))
-from claude_auto_review.state import append_state, consecutive_stop_blocks, load_state  # noqa: E402
+from claude_auto_review.state.store_read import consecutive_stop_blocks, load_state  # noqa: E402
+from claude_auto_review.state.store_write import append_state  # noqa: E402
 from tests.int.hooks.support import HookTestCase  # noqa: E402
 
 
@@ -191,7 +192,7 @@ class TestStopHook(HookTestCase, unittest.TestCase):
         project_root = self.temp_project()
         (project_root / "src" / "app.ts").write_text("export const value = 1;\n", encoding="utf-8")
         self.run_python("hooks/post_tool_use.py", project_root, json.dumps({"file_path": "src/app.ts"}))
-        self.run_python("claude_auto_review/review_prompt.py", project_root)
+        self.run_python("claude_auto_review/review/prompt.py", project_root)
         self.complete_latest_review(project_root)
         self.assertEqual(self.run_python("hooks/stop_hook.py", project_root).returncode, 0)
         post_again = self.run_python("hooks/post_tool_use.py", project_root, json.dumps({"file_path": "src/app.ts"}))
@@ -204,7 +205,7 @@ class TestStopHook(HookTestCase, unittest.TestCase):
         target = project_root / "src" / "app.ts"
         target.write_text("export const value = 1;\n", encoding="utf-8")
         self.run_python("hooks/post_tool_use.py", project_root, json.dumps({"file_path": "src/app.ts"}))
-        self.run_python("claude_auto_review/review_prompt.py", project_root)
+        self.run_python("claude_auto_review/review/prompt.py", project_root)
         self.complete_latest_review(project_root)
         self.assertEqual(self.run_python("hooks/stop_hook.py", project_root).returncode, 0)
         target.write_text("export const value = 2;\n", encoding="utf-8")

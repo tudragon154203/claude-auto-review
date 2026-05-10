@@ -7,7 +7,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(REPO_ROOT))
 
-from claude_auto_review.state import is_review_complete  # noqa: E402
+from claude_auto_review.state.reviews import is_review_complete  # noqa: E402
 from tests.int.hooks.support import HookTestCase  # noqa: E402
 
 
