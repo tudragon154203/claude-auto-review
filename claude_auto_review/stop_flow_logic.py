@@ -7,13 +7,8 @@ from pathlib import Path
 
 from claude_auto_review.paths import client_run_dir, utc_now_iso
 from claude_auto_review.reviews import is_review_complete
-from claude_auto_review.state import (
-    append_state,
-    get_unreviewed_files,
-    load_state,
-    log_event,
-    mark_files_reviewed,
-)
+from claude_auto_review.review_completion import apply_completed_review
+from claude_auto_review.state import append_state, get_unreviewed_files, load_state, log_event
 from claude_auto_review.stop_autocomplete import attempt_stop_autocomplete
 from claude_auto_review.stop_selection import find_pending_review_for_files, get_entries_covered_by_review
 
@@ -126,18 +121,13 @@ def finalize_review_stop(project_root, client_id, resolution):
     prompt_file = client_run_dir(project_root, client_id) / f"review-{review_id}-prompt.md"
 
     if is_review_complete(review_path):
-        mark_files_reviewed(covered_entries, review_id, project_root, client_id=client_id)
-        log_event(project_root, "stop_approved", reason="review_completed", reviewId=review_id)
-        state = load_state(project_root, client_id)
-        remaining = get_unreviewed_files(state)
+        remaining = apply_completed_review(project_root, client_id, review_id, covered_entries)
         if not remaining:
             return 0
-        log_event(project_root, "stop_blocked_after_partial_review", remaining=[e["file"] for e in remaining])
         block_response(
             f"Claude Auto Review: Review {review_id} completed, but {len(remaining)} file(s) still need review.",
             "New edits were made after the review was created. Another review will be generated on the next stop attempt.",
         )
-        append_state({"type": "stop_blocked", "reason": "partial_review", "timestamp": utc_now_iso()}, project_root, client_id=client_id)
         return 2
 
     user_prompt = build_review_completion_prompt(review_path)

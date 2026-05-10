@@ -2,9 +2,9 @@ import shutil
 import subprocess
 from pathlib import Path
 
-from claude_auto_review.paths import utc_now_iso
 from claude_auto_review.reviews import is_review_complete
-from claude_auto_review.state import append_state, get_unreviewed_files, load_state, log_event, mark_files_reviewed
+from claude_auto_review.review_completion import apply_completed_review
+from claude_auto_review.state import log_event
 
 
 def attempt_stop_autocomplete(project_root, client_id, review_id, review_path, prompt_file, covered_entries, user_prompt):
@@ -48,14 +48,9 @@ def attempt_stop_autocomplete(project_root, client_id, review_id, review_path, p
             if not is_review_complete(review_path):
                 review_path.write_text(cli_result.stdout, encoding="utf-8", newline="\n")
         if is_review_complete(review_path):
-            mark_files_reviewed(covered_entries, review_id, project_root, client_id=client_id)
-            state = load_state(project_root, client_id)
-            remaining = get_unreviewed_files(state)
+            remaining = apply_completed_review(project_root, client_id, review_id, covered_entries)
             if not remaining:
-                log_event(project_root, "stop_approved", reason="review_completed", reviewId=review_id)
                 return True
-            log_event(project_root, "stop_blocked_after_partial_review", remaining=[e["file"] for e in remaining])
-            append_state({"type": "stop_blocked", "reason": "partial_review", "timestamp": utc_now_iso()}, project_root, client_id=client_id)
             return False
     except subprocess.TimeoutExpired:
         log_event(project_root, "stop_hook_claude_cli_timeout", reviewId=review_id)
