@@ -9,6 +9,7 @@ from claude_auto_review.review_generation import (
     git_diff,
     read_if_exists,
 )
+from claude_auto_review.settings import resolve_rules_file_path
 
 
 @dataclass(frozen=True)
@@ -18,20 +19,12 @@ class ReviewPromptArtifacts:
     review_path: Path
     files: list[str]
 
-
-def _resolve_rules_path(project_root, settings):
-    rules_path = Path(settings.get("rulesFile", ""))
-    if not rules_path.is_absolute():
-        rules_path = project_root / ".claude" / "claude-auto-review" / "rules.md"
-    return rules_path
-
-
 def create_review_prompt_files(project_root, client_id, unreviewed, settings):
     timestamp = utc_now_iso()
     review_id = "rev-" + "".join(ch for ch in timestamp if ch.isdigit())[:14]
     files = [entry["file"] for entry in unreviewed]
 
-    rules = read_if_exists(_resolve_rules_path(project_root, settings))
+    rules = read_if_exists(resolve_rules_file_path(project_root, settings))
     diff = git_diff(files, project_root)
     snapshots = current_file_snapshots(files, project_root)
 

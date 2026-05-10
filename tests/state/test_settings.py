@@ -2,6 +2,7 @@ import json
 import unittest
 
 from claude_auto_review.state import DEFAULT_SETTINGS, ensure_project_settings, load_settings, should_skip_file
+from claude_auto_review.settings import resolve_rules_file_path
 
 from tests.state.support import StateTestCase
 
@@ -33,6 +34,14 @@ class TestSettings(StateTestCase, unittest.TestCase):
     def test_should_skip_file_include_extensions_blocks_others(self):
         settings = {"includeExtensions": ["py"], "skipExtensions": []}
         self.assertTrue(should_skip_file("script.ts", settings))
+
+    def test_resolve_rules_file_path_uses_project_runtime_rules_for_relative_paths(self):
+        project_root = self.temp_project()
+        settings = {"rulesFile": "relative/rules.md"}
+        self.assertEqual(
+            resolve_rules_file_path(project_root, settings),
+            project_root / ".claude" / "claude-auto-review" / "rules.md",
+        )
 
     def test_ensure_project_settings_creates_settings_file(self):
         project_root = self.temp_project()

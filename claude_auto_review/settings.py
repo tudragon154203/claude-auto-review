@@ -26,6 +26,13 @@ def load_settings(project_root=None):
         return dict(DEFAULT_SETTINGS)
 
 
+def resolve_rules_file_path(project_root, settings):
+    rules_path = Path(settings.get("rulesFile", ""))
+    if not rules_path.is_absolute():
+        rules_path = Path(project_root) / ".claude" / "claude-auto-review" / "rules.md"
+    return rules_path
+
+
 def should_skip_file(file_path, settings=None):
     settings = settings or DEFAULT_SETTINGS
     ext = Path(file_path).suffix.lstrip(".").lower()
