@@ -33,24 +33,19 @@ def format_review_timestamp(timestamp):
     return f"{local_ts.strftime('%Y-%m-%d | %H:%M:%S')} {offset}".rstrip()
 
 
-def current_file_snapshots(files, project_root):
-    sections = []
-    max_chars = 40000
-    for file_path in files:
-        full_path = Path(project_root) / file_path
-        if not full_path.is_file():
-            sections.append(f"## {file_path}\n\nFile does not currently exist.")
-            continue
-        content = full_path.read_text(encoding="utf-8", errors="replace")
-        if len(content) > max_chars:
-            content = f"{content[:max_chars]}\n\n[truncated at {max_chars} characters]"
-        sections.append(f"## {file_path}\n\n```\n{content}\n```")
-    return "\n\n".join(sections)
+def format_file_list(entries):
+    return "\n".join(f"- {entry['file']} (hash: {entry['hash']})" for entry in entries)
 
 
-def build_prompt(review_id, timestamp, entries, rules, diff, snapshots, review_path):
-    readable_timestamp = format_review_timestamp(timestamp)
-    file_list = "\n".join(f"- {entry['file']} (hash: {entry['hash']})" for entry in entries)
+def format_review_prompt(
+    review_id,
+    readable_timestamp,
+    file_list,
+    rules,
+    diff,
+    snapshots,
+    review_path,
+):
     return f"""# Claude Auto Review Request {review_id}
 
 You must review the changed files before stopping. Use the reviewer agent behavior from `agents/reviewer.md`: focus on semantic bugs, security, maintainability, and project rules. Do not nitpick formatting.
@@ -108,3 +103,56 @@ After receiving review results:
 5. If uncertain, ask the user.
 
 If you edit files, the hook will track those new hashes and require another review pass."""
+
+
+def format_review_file(review_id, readable_timestamp, file_list, prompt_path):
+    return f"""# Review {review_id} - {readable_timestamp}
+
+## Files Reviewed
+{file_list}
+
+## Findings
+
+Pending. Claude must complete this review from {prompt_path}.
+
+## Verdict
+
+Pending.
+"""
+
+
+def current_file_snapshots(files, project_root):
+    sections = []
+    max_chars = 40000
+    for file_path in files:
+        full_path = Path(project_root) / file_path
+        if not full_path.is_file():
+            sections.append(_format_missing_file_snapshot(file_path))
+            continue
+        content = full_path.read_text(encoding="utf-8", errors="replace")
+        sections.append(_format_file_snapshot(file_path, content, max_chars=max_chars))
+    return "\n\n".join(sections)
+
+
+def build_prompt(review_id, timestamp, entries, rules, diff, snapshots, review_path):
+    readable_timestamp = format_review_timestamp(timestamp)
+    file_list = format_file_list(entries)
+    return format_review_prompt(
+        review_id,
+        readable_timestamp,
+        file_list,
+        rules,
+        diff,
+        snapshots,
+        review_path,
+    )
+
+
+def _format_missing_file_snapshot(file_path):
+    return f"## {file_path}\n\nFile does not currently exist."
+
+
+def _format_file_snapshot(file_path, content, max_chars=40000):
+    if len(content) > max_chars:
+        content = f"{content[:max_chars]}\n\n[truncated at {max_chars} characters]"
+    return f"## {file_path}\n\n```\n{content}\n```"

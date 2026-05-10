@@ -28,7 +28,7 @@ def run_stop_flow(project_root, payload):
         log_event(project_root, "stop_approved", reason="circuit_breaker", block_count=block_count, max_passes=max_passes)
         return 0
 
-    state, unreviewed, review, exit_code = resolve_pending_review(
+    resolution = resolve_pending_review(
         project_root,
         client_id,
         payload,
@@ -37,7 +37,7 @@ def run_stop_flow(project_root, payload):
         timeout_hours,
         Path(__file__).resolve().parent / "review_prompt.py",
     )
-    if exit_code is not None:
-        return exit_code
-    return finalize_review_stop(project_root, client_id, state, unreviewed, review)
+    if resolution.is_terminal:
+        return resolution.exit_code
+    return finalize_review_stop(project_root, client_id, resolution)
 

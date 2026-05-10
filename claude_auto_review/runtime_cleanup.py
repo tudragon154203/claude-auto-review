@@ -1,29 +1,15 @@
 import json
 import shutil
-from pathlib import Path
 
-from claude_auto_review.paths import RUNTIME_DIR, client_state_path, get_client_id, get_client_runtime_dir, get_project_root
+from claude_auto_review.paths import RUNTIME_DIR, client_state_path, get_client_runtime_dir
 from claude_auto_review.reviews import is_review_expired
+from claude_auto_review.runtime_helpers import log_event, resolve_client_id, resolve_project_root
 from claude_auto_review.settings import load_settings
 
 
-def _log_event(project_root, event_type, **kwargs):
-    try:
-        from claude_auto_review.paths import get_log_path, utc_now_iso
-
-        log_path = get_log_path(project_root)
-        log_path.parent.mkdir(parents=True, exist_ok=True)
-        entry = {"timestamp": utc_now_iso(), "event": event_type, **kwargs}
-        with log_path.open("a", encoding="utf-8", newline="\n") as f:
-            f.write(json.dumps(entry, separators=(",", ":")) + "\n")
-    except OSError:
-        pass
-
-
 def cleanup_expired_pending_reviews(project_root=None, client_id=""):
-    project_root = Path(project_root or get_project_root())
-    if not client_id:
-        client_id = get_client_id()
+    project_root = resolve_project_root(project_root)
+    client_id = resolve_client_id(client_id)
     settings = load_settings(project_root)
     timeout_hours = float(settings.get("pendingReviewTimeoutHours", 1))
 
@@ -54,7 +40,7 @@ def cleanup_expired_pending_reviews(project_root=None, client_id=""):
     if removed > 0:
         with state_path.open("w", encoding="utf-8", newline="\n") as handle:
             handle.write("\n".join(entries) + "\n")
-        _log_event(project_root, "expired_reviews_cleaned", count=removed)
+        log_event(project_root, "expired_reviews_cleaned", count=removed)
     return removed
 
 
@@ -71,7 +57,7 @@ def _remove_path(target, removed):
 
 
 def cancel_runtime(project_root=None, client_id=""):
-    project_root = Path(project_root or get_project_root())
+    project_root = resolve_project_root(project_root)
     removed = []
     if client_id:
         client_dir = get_client_runtime_dir(project_root, client_id)
@@ -100,9 +86,8 @@ def cancel_runtime(project_root=None, client_id=""):
 
 
 def cancel_session(project_root=None, client_id=""):
-    project_root = Path(project_root or get_project_root())
-    if not client_id:
-        client_id = get_client_id()
+    project_root = resolve_project_root(project_root)
+    client_id = resolve_client_id(client_id)
     client_dir = get_client_runtime_dir(project_root, client_id)
     if client_dir.exists():
         removed = []

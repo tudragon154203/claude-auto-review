@@ -1,12 +1,8 @@
 import hashlib
 import json
-from pathlib import Path
 
-from claude_auto_review.paths import get_project_root, normalize_relative_path
-
-
-def _resolve_project_root(project_root=None):
-    return Path(project_root or get_project_root())
+from claude_auto_review.paths import normalize_relative_path
+from claude_auto_review.runtime_helpers import resolve_client_id, resolve_project_root
 
 
 def _timestamp_value(entry):
@@ -14,7 +10,7 @@ def _timestamp_value(entry):
 
 
 def get_file_hash(file_path, project_root=None):
-    project_root = _resolve_project_root(project_root)
+    project_root = resolve_project_root(project_root)
     relative = normalize_relative_path(file_path, project_root)
     if not relative:
         return None
@@ -25,11 +21,10 @@ def get_file_hash(file_path, project_root=None):
 
 
 def load_state(project_root=None, client_id=""):
-    from claude_auto_review.paths import client_state_path, get_client_id
+    from claude_auto_review.paths import client_state_path
 
-    project_root = _resolve_project_root(project_root)
-    if not client_id:
-        client_id = get_client_id()
+    project_root = resolve_project_root(project_root)
+    client_id = resolve_client_id(client_id)
     state_file = client_state_path(project_root, client_id)
     if not state_file.exists():
         return []

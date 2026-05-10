@@ -12,11 +12,12 @@ import time
 import unittest
 from pathlib import Path
 
-from tests.support import SubprocessMixin, TempProjectMixin
+from tests.support import SubprocessMixin, TempProjectMixin, real_cli_available
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT))
 from claude_auto_review.state import load_state, get_unreviewed_files
+from claude_auto_review.reviews import is_review_complete
 
 
 class EndToEndTests(TempProjectMixin, SubprocessMixin, unittest.TestCase):
@@ -47,6 +48,9 @@ class EndToEndTests(TempProjectMixin, SubprocessMixin, unittest.TestCase):
     def review(self, project_root, client_id="test-session"):
         return self.run_python("claude_auto_review/review_prompt.py", project_root, client_id=client_id)
 
+    def runtime_script(self, project_root, script_name):
+        return project_root / ".claude" / "claude-auto-review" / "scripts" / script_name
+
     def complete_review(self, project_root, verdict="Clean - no issues found.",
                         client_id="test-session"):
         review_dir = (project_root / ".claude" / "claude-auto-review" /
@@ -73,6 +77,29 @@ class EndToEndTests(TempProjectMixin, SubprocessMixin, unittest.TestCase):
         stop1 = self.stop(project_root)
         self.assertEqual(stop1.returncode, 0)
         self.assertEqual(stop1.stdout.strip(), "")
+
+    def test_setup_installs_runtime_artifacts_and_review_flow(self):
+        project_root = self.temp_project()
+        (project_root / "src" / "app.ts").write_text("const value = 1;\n", encoding="utf-8")
+
+        setup = self.run_python("claude_auto_review/setup_claude_auto_review.py", project_root)
+        self.assertEqual(setup.returncode, 0, setup.stderr)
+        self.assertTrue(self.runtime_script(project_root, "review_prompt.py").exists())
+        self.assertTrue(self.runtime_script(project_root, "cancel_claude_auto_review.py").exists())
+
+        self.track(project_root, "src/app.ts")
+        review = self.review(project_root)
+        self.assertEqual(review.returncode, 0, review.stderr)
+        self.assertIn("Review file initialized:", review.stdout)
+
+        stop_blocked = self.stop(project_root, use_fake_claude=False, env_overrides={"PATH": ""})
+        self.assertEqual(stop_blocked.returncode, 2)
+
+        self.complete_review(project_root)
+        stop_allowed = self.stop(project_root, use_fake_claude=False, env_overrides={"PATH": ""})
+        self.assertEqual(stop_allowed.returncode, 0)
+        state = load_state(project_root, "test-session")
+        self.assertEqual(len(get_unreviewed_files(state)), 0)
 
     def test_multiple_sequential_review_cycles(self):
         project_root = self.temp_project()
@@ -259,6 +286,28 @@ class EndToEndTests(TempProjectMixin, SubprocessMixin, unittest.TestCase):
 
         # No unreviewed files remain
         self.assertEqual(len(get_unreviewed_files(state)), 0)
+
+    @unittest.skipUnless(real_cli_available(), "real claude CLI not available")
+    def test_stop_hook_auto_completes_review_with_real_claude(self):
+        project_root = self.temp_project()
+        (project_root / "src" / "app.ts").write_text("export const value = 1;\n", encoding="utf-8")
+
+        self.track(project_root, "src/app.ts")
+        stop = self.stop(project_root, use_fake_claude=False)
+        self.assertEqual(stop.returncode, 0, stop.stderr)
+        self.assertEqual(stop.stdout.strip(), "")
+
+        client_dir = (project_root / ".claude" / "claude-auto-review" /
+                      "clients" / "client-test-session")
+        review_path = sorted((client_dir / "reviews").glob("review-*.md"))[-1]
+        content = review_path.read_text(encoding="utf-8")
+        self.assertTrue(
+            is_review_complete(review_path),
+            f"Real claude should complete the review file, got:\n{content}",
+        )
+
+        log_path = project_root / ".claude" / "claude-auto-review" / "claude-auto-review.log"
+        self.assertIn("stop_hook_claude_cli_done", log_path.read_text(encoding="utf-8"))
 
 
 if __name__ == "__main__":

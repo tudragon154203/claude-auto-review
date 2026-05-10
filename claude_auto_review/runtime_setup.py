@@ -10,6 +10,7 @@ from claude_auto_review.paths import (
     get_plugin_root,
     get_project_root,
 )
+from claude_auto_review.runtime_helpers import resolve_project_root
 from claude_auto_review.settings import DEFAULT_SETTINGS
 
 
@@ -23,7 +24,7 @@ def ensure_client_runtime(project_root, client_id):
 
 
 def ensure_runtime(project_root=None, plugin_root=None):
-    project_root = Path(project_root or get_project_root())
+    project_root = resolve_project_root(project_root)
     plugin_root = Path(plugin_root or get_plugin_root())
     base_dir = project_root / RUNTIME_DIR
     base_dir.mkdir(parents=True, exist_ok=True)

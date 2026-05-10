@@ -2,6 +2,7 @@ import json
 import os
 import subprocess
 import sys
+from dataclasses import dataclass
 from pathlib import Path
 
 from claude_auto_review.paths import client_run_dir, utc_now_iso
@@ -15,6 +16,18 @@ from claude_auto_review.state import (
 )
 from claude_auto_review.stop_autocomplete import attempt_stop_autocomplete
 from claude_auto_review.stop_selection import find_pending_review_for_files, get_entries_covered_by_review
+
+
+@dataclass(frozen=True)
+class StopFlowResolution:
+    state: list
+    unreviewed: list
+    review: dict | None = None
+    exit_code: int | None = None
+
+    @property
+    def is_terminal(self):
+        return self.exit_code is not None
 
 
 def block_response(message, feedback):
@@ -48,7 +61,7 @@ def build_review_completion_prompt(review_path):
 def resolve_pending_review(project_root, client_id, payload, state, unreviewed, timeout_hours, review_prompt_script):
     review = find_pending_review_for_files(state, unreviewed, project_root, timeout_hours)
     if review:
-        return state, unreviewed, review, None
+        return StopFlowResolution(state=state, unreviewed=unreviewed, review=review)
 
     files_str = build_unreviewed_files_string(unreviewed)
     env = os.environ.copy()
@@ -79,31 +92,34 @@ def resolve_pending_review(project_root, client_id, payload, state, unreviewed, 
             f"Claude Auto Review: Timeout generating review for {files_str}.",
             "The review generation timed out. Check the logs and try again.",
         )
-        return state, unreviewed, None, 2
+        return StopFlowResolution(state=state, unreviewed=unreviewed, exit_code=2)
     except Exception as e:
         log_event(project_root, "stop_hook_review_error", error=str(e))
         block_response(
             f"Claude Auto Review: Error generating review for {files_str}.",
             f"Failed to run review_prompt.py: {e}",
         )
-        return state, unreviewed, None, 2
+        return StopFlowResolution(state=state, unreviewed=unreviewed, exit_code=2)
 
     state = load_state(project_root, client_id)
     unreviewed = get_unreviewed_files(state)
     if not unreviewed:
         log_event(project_root, "stop_approved", reason="no_unreviewed_files_after_review")
-        return state, unreviewed, None, 0
+        return StopFlowResolution(state=state, unreviewed=unreviewed, exit_code=0)
     review = find_pending_review_for_files(state, unreviewed, project_root, timeout_hours)
     if not review:
         block_response(
             f"Claude Auto Review: Failed to create review for {files_str}.",
             f"review_prompt.py ran but no review was created.\n\nOutput:\n{result.stdout}\n\nErrors:\n{result.stderr}",
         )
-        return state, unreviewed, None, 2
-    return state, unreviewed, review, None
+        return StopFlowResolution(state=state, unreviewed=unreviewed, exit_code=2)
+    return StopFlowResolution(state=state, unreviewed=unreviewed, review=review)
 
 
-def finalize_review_stop(project_root, client_id, state, unreviewed, review):
+def finalize_review_stop(project_root, client_id, resolution):
+    state = resolution.state
+    unreviewed = resolution.unreviewed
+    review = resolution.review
     covered_entries = get_entries_covered_by_review(review, state)
     review_id = review.get("reviewId", "")
     review_path = Path(review.get("reviewPath", ""))

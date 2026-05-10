@@ -15,6 +15,9 @@ def build_runpy_shim_content(target_script_path):
 
 def write_project_script_shim(shim_path, plugin_script_path):
     shim_path = Path(shim_path)
+    plugin_script_path = Path(plugin_script_path).resolve()
+    if shim_path.resolve() == plugin_script_path:
+        return
     shim_path.parent.mkdir(parents=True, exist_ok=True)
     content = build_runpy_shim_content(plugin_script_path)
     if not shim_path.exists() or shim_path.read_text(encoding="utf-8") != content:

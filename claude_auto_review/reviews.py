@@ -2,6 +2,18 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 
+def entry_file_hash_pairs(entries):
+    return {
+        (entry.get("file"), entry.get("hash"))
+        for entry in entries
+        if isinstance(entry, dict) and entry.get("file") and entry.get("hash")
+    }
+
+
+def review_file_hash_pairs(review_entry):
+    return entry_file_hash_pairs(review_entry.get("files", []))
+
+
 def is_review_expired(review_entry, timeout_hours):
     """Return True if a pending review is older than timeout_hours."""
     if timeout_hours <= 0:
@@ -25,19 +37,52 @@ def is_review_expired(review_entry, timeout_hours):
 
 
 def pending_reviews_for_entries(state, entries):
-    needed = {(entry["file"], entry["hash"]) for entry in entries}
+    needed = entry_file_hash_pairs(entries)
     matches = []
     for entry in state:
         if not isinstance(entry, dict) or entry.get("type") != "review" or entry.get("status") != "pending":
             continue
-        covered = {
-            (item.get("file"), item.get("hash"))
-            for item in entry.get("files", [])
-            if isinstance(item, dict)
-        }
+        covered = review_file_hash_pairs(entry)
         if needed and needed.issubset(covered):
             matches.append(entry)
     return sorted(matches, key=lambda e: e.get("timestamp", ""), reverse=True)
+
+
+def pending_review_candidates_for_entries(state, entries, project_root=None, timeout_hours=0):
+    """Return pending reviews that overlap the requested file/hash pairs.
+
+    Matching semantics:
+    - a review is eligible if it covers at least one requested file/hash pair
+    - expired reviews are skipped
+    - higher overlap wins, then newer timestamp wins
+    """
+    needed = entry_file_hash_pairs(entries)
+    candidates = []
+    for entry in state:
+        if not isinstance(entry, dict) or entry.get("type") != "review" or entry.get("status") != "pending":
+            continue
+        if timeout_hours > 0 and is_review_expired(entry, timeout_hours):
+            from claude_auto_review.state import log_event
+
+            log_event(
+                project_root,
+                "stop_review_expired",
+                review_id=entry.get("reviewId", ""),
+                files=[f.get("file", "") for f in entry.get("files", []) if isinstance(f, dict)],
+            )
+            continue
+        covered = review_file_hash_pairs(entry)
+        overlap = needed & covered
+        if overlap:
+            candidates.append({"review": entry, "overlap_count": len(overlap)})
+    return sorted(candidates, key=lambda item: (item["overlap_count"], item["review"].get("timestamp", "")), reverse=True)
+
+
+def best_pending_review_for_entries(state, entries, project_root=None, timeout_hours=0):
+    candidates = pending_review_candidates_for_entries(state, entries, project_root=project_root, timeout_hours=timeout_hours)
+    if not candidates:
+        return None
+    return candidates[0]["review"]
 
 
 def is_review_complete(review_path):
