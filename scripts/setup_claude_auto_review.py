@@ -6,18 +6,8 @@ from bootstrap import ensure_repo_root_on_path
 ensure_repo_root_on_path()
 
 from scripts.paths import get_project_root
-from scripts.shims import build_runpy_shim_content
+from scripts.installer import copy_if_changed, ensure_gitignore_entries, write_runtime_shims
 from scripts.state import ensure_project_settings, ensure_runtime, log_event
-
-
-def copy_if_changed(source, destination):
-    source = Path(source)
-    destination = Path(destination)
-    if not source.exists():
-        return
-    content = source.read_text(encoding="utf-8")
-    if not destination.exists() or destination.read_text(encoding="utf-8") != content:
-        destination.write_text(content, encoding="utf-8", newline="\n")
 
 
 def main():
@@ -27,32 +17,21 @@ def main():
     ensure_project_settings(project_root)
     runtime_scripts = runtime["base_dir"] / "scripts"
     runtime_agents = runtime["base_dir"] / "agents"
-    runtime_scripts.mkdir(parents=True, exist_ok=True)
     runtime_agents.mkdir(parents=True, exist_ok=True)
 
-    shim_path = runtime_scripts / "review_prompt.py"
-    cancel_shim_path = runtime_scripts / "cancel_claude_auto_review.py"
-    plugin_review_script = plugin_root / "scripts" / "review_prompt.py"
-    plugin_cancel_script = plugin_root / "scripts" / "cancel_claude_auto_review.py"
-    shim_path.write_text(build_runpy_shim_content(plugin_review_script), encoding="utf-8", newline="\n")
-    cancel_shim_path.write_text(build_runpy_shim_content(plugin_cancel_script), encoding="utf-8", newline="\n")
+    write_runtime_shims(runtime_scripts, plugin_root)
     copy_if_changed(plugin_root / "agents" / "reviewer.md", runtime_agents / "reviewer.md")
 
-    gitignore_path = project_root / ".gitignore"
-    ignore_entries = [
-        ".claude/claude-auto-review/clients/*/run/",
-        ".claude/claude-auto-review/clients/*/reviews/",
-        ".claude/claude-auto-review/scripts/",
-        ".claude/claude-auto-review/agents/",
-        ".claude/claude-auto-review/claude-auto-review.log",
-    ]
-    existing = gitignore_path.read_text(encoding="utf-8") if gitignore_path.exists() else ""
-    existing_lines = set(existing.splitlines())
-    missing = [entry for entry in ignore_entries if entry not in existing_lines]
-    if missing:
-        prefix = "" if not existing or existing.endswith("\n") else "\n"
-        with gitignore_path.open("a", encoding="utf-8", newline="\n") as handle:
-            handle.write(prefix + "\n".join(missing) + "\n")
+    ensure_gitignore_entries(
+        project_root / ".gitignore",
+        [
+            ".claude/claude-auto-review/clients/*/run/",
+            ".claude/claude-auto-review/clients/*/reviews/",
+            ".claude/claude-auto-review/scripts/",
+            ".claude/claude-auto-review/agents/",
+            ".claude/claude-auto-review/claude-auto-review.log",
+        ],
+    )
 
     log_event(project_root, "setup_completed")
     print(f"Claude Auto Review initialized at {runtime['base_dir']}")
