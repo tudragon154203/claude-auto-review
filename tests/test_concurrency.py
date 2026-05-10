@@ -6,9 +6,9 @@ from pathlib import Path
 from tests.support import TempProjectMixin
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(REPO_ROOT / "scripts"))
+sys.path.insert(0, str(REPO_ROOT))
 
-from state import (
+from scripts.state import (
     append_state,
     append_review_started,
     client_reviews_dir,

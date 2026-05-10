@@ -13,17 +13,12 @@ class TestClientId(StateTestCase, unittest.TestCase):
     def test_get_client_id_uses_session_id_from_env(self):
         with mock.patch.dict(os.environ, {"CLAUDE_SESSION_ID": "fixed-session"}):
             result = get_client_id()
-            self.assertTrue(result.endswith("_fixed-session"))
-            # Timestamp prefix must be YYYYMMDD-HHMMSS
-            ts_part = result.split("_", 1)[0]
-            self.assertRegex(ts_part, r"^\d{8}-\d{6}$")
+            self.assertEqual(result, "fixed-session")
 
     def test_get_client_id_uses_stdin_session_id(self):
         with mock.patch.dict(os.environ, {}, clear=True):
             result = get_client_id("hook-session-123")
-            self.assertTrue(result.endswith("_hook-session-123"))
-            ts_part = result.split("_", 1)[0]
-            self.assertRegex(ts_part, r"^\d{8}-\d{6}$")
+            self.assertEqual(result, "hook-session-123")
 
     def test_get_client_id_stdin_overrides_env(self):
         with mock.patch.dict(os.environ, {"CLAUDE_SESSION_ID": "env-session"}):

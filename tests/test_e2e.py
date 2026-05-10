@@ -15,8 +15,8 @@ from pathlib import Path
 from tests.support import SubprocessMixin, TempProjectMixin
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(REPO_ROOT / "scripts"))
-from state import load_state, get_unreviewed_files
+sys.path.insert(0, str(REPO_ROOT))
+from scripts.state import load_state, get_unreviewed_files
 
 
 class EndToEndTests(TempProjectMixin, SubprocessMixin, unittest.TestCase):

@@ -5,21 +5,23 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT))
-sys.path.insert(0, str(REPO_ROOT / "scripts"))
 
-from state import ensure_client_runtime  # noqa: E402
+from scripts.state import ensure_client_runtime  # noqa: E402
 from tests.hooks.support import HookTestCase  # noqa: E402
 
 
 def find_client_dir(project_root, session_id):
-    """Find the client directory matching a session_id suffix.
-
-    get_client_id() produces '{timestamp}_{session_id}', so the directory
-    is 'client-{timestamp}_{session_id}'. We glob for the suffix.
-    """
+    """Find the client directory for a session_id (by suffix or exact)."""
     clients_dir = project_root / ".claude" / "claude-auto-review" / "clients"
+    # Old style: client-{timestamp}_{session_id}
     matches = sorted(clients_dir.glob(f"client-*_{session_id}"))
-    return matches[-1] if matches else None
+    if matches:
+        return matches[-1]
+    # New style: client-{session_id}
+    exact = clients_dir / f"client-{session_id}"
+    if exact.is_dir():
+        return exact
+    return None
 
 
 class TestSessionStopHook(HookTestCase, unittest.TestCase):

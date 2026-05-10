@@ -36,19 +36,21 @@ def get_plugin_root():
 
 
 def get_client_id(stdin_session_id=None) -> str:
-    """Returns a time-ordered unique identifier for the current session.
+    """Returns a stable identifier for the current session.
 
-    IDs are prefixed with a sortable timestamp (ISO-like YYYYMMDD-HHMMSS)
-    so that lexicographic order matches chronological order. The suffix
-    provides uniqueness: session_id from stdin (Claude Code hook env), or
-    CLAUDE_SESSION_ID (legacy), or a hostname:pid tuple.
+    When a session_id is available (from stdin or CLAUDE_SESSION_ID),
+    it used directly as the client_id. This ensures all hook invocations
+    within the same session share the same client directory.
+
+    When no session_id is available, a timestamp prefix is added to
+    provide ordering and uniqueness (for standalone usage).
     """
-    ts = datetime.now().strftime("%Y%m%d-%H%M%S")
-    # stdin_session_id takes priority: it's the actual hook-provided session_id
     session_id = stdin_session_id or os.environ.get("CLAUDE_SESSION_ID")
     if session_id:
-        return f"{ts}_{session_id}"
+        return session_id
 
+    # No session_id: create one with timestamp prefix for ordering
+    ts = datetime.now().strftime("%Y%m%d-%H%M%S")
     try:
         hostname = socket.gethostname()
     except Exception:

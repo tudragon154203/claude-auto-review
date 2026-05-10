@@ -206,6 +206,12 @@ def main():
         claude_cli = shutil.which("claude")
         if claude_cli and prompt_file.is_file():
             try:
+                user_prompt = (
+                    f"Complete the review at {review_path}. "
+                    "Read each file, evaluate findings, set verdicts "
+                    "(Confirmed/Skipped/Fixed), and write the final review "
+                    "with a non-Pending Verdict."
+                )
                 cli_result = subprocess.run(
                     [
                         claude_cli,
@@ -215,6 +221,7 @@ def main():
                         "opus",
                         "--system-prompt-file",
                         str(prompt_file),
+                        user_prompt,
                     ],
                     cwd=str(project_root),
                     capture_output=True,
@@ -231,7 +238,9 @@ def main():
                     stderr=cli_result.stderr[:500] if cli_result.stderr else "",
                 )
                 if cli_result.returncode == 0 and cli_result.stdout.strip():
-                    review_path.write_text(cli_result.stdout, encoding="utf-8", newline="\n")
+                    # Only overwrite if the subagent didn't write a completed review itself
+                    if not is_review_complete(review_path):
+                        review_path.write_text(cli_result.stdout, encoding="utf-8", newline="\n")
                 if is_review_complete(review_path):
                     mark_files_reviewed(covered_entries, review_id, project_root, client_id=client_id)
                     # Check for remaining unreviewed files
