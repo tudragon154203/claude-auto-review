@@ -52,6 +52,7 @@ class IntegrationTests(TempProjectMixin, unittest.TestCase):
         self.assertTrue(result["rules_path"].exists())
         self.assertTrue(result["state_path"].parent.exists())
         self.assertTrue(result["log_path"].parent.exists())
+        self.assertFalse((project_root / ".claude" / "claude-auto-review" / "state.jsonl").exists())
 
     def test_log_event_writes_formatted_entries(self):
         project_root = self.temp_project()

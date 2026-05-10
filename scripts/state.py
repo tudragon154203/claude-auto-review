@@ -417,10 +417,8 @@ def ensure_runtime(project_root=None, plugin_root=None):
     plugin_root = Path(plugin_root or get_plugin_root())
     base_dir = project_root / RUNTIME_DIR
     base_dir.mkdir(parents=True, exist_ok=True)
-
     state_path = project_root / STATE_RELATIVE_PATH
     state_path.parent.mkdir(parents=True, exist_ok=True)
-    state_path.touch(exist_ok=True)
 
     rules_path = base_dir / "rules.md"
     if not rules_path.exists():
@@ -461,7 +459,6 @@ def ensure_project_settings(project_root=None):
 def cancel_runtime(project_root=None, client_id=None):
     project_root = Path(project_root or get_project_root())
     targets = [
-        project_root / STATE_RELATIVE_PATH,
         project_root / RUNTIME_DIR / "run",
         project_root / RUNTIME_DIR / "reviews",
         project_root / CLIENTS_DIR,
@@ -487,8 +484,8 @@ def cancel_runtime(project_root=None, client_id=None):
 def cancel_session(project_root=None, client_id=""):
     """Remove only the current client's session runtime data.
 
-    Unlike cancel_runtime(), this does NOT touch root-level state,
-    other clients, rules, or logs — safe for per-session cleanup.
+    Unlike cancel_runtime(), this does NOT touch other clients,
+    rules, or logs — safe for per-session cleanup.
 
     Also supports cleanup of legacy timestamp-prefixed directories named
     ``client-{ts}_{session_id}`` for the *exact* session id.

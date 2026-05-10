@@ -60,7 +60,6 @@ Settings are stored in `.claude/settings.json` under the `claude-auto-review` ke
 ### Local runtime (gitignored)
 
 ```text
-.claude/claude-auto-review/state.jsonl
 .claude/claude-auto-review/clients/
 .claude/claude-auto-review/clients/{client-id}/run/
 .claude/claude-auto-review/clients/{client-id}/reviews/

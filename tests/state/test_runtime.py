@@ -26,6 +26,7 @@ class TestRuntime(StateTestCase, unittest.TestCase):
         project_root = self.temp_project()
         result = ensure_runtime(project_root)
         self.assertTrue(result["rules_path"].exists())
+        self.assertFalse((project_root / ".claude" / "claude-auto-review" / "state.jsonl").exists())
 
     def test_ensure_runtime_without_default_rules_creates_fallback(self):
         project_root = self.temp_project()

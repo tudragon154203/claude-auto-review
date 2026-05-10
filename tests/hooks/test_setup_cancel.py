@@ -21,7 +21,7 @@ class TestSetupCancel(HookTestCase, unittest.TestCase):
         self.assertTrue((project_root / ".claude" / "claude-auto-review" / "scripts" / "cancel_claude_auto_review.py").exists())
         self.assertTrue((project_root / ".claude" / "claude-auto-review" / "agents" / "reviewer.md").exists())
         self.assertTrue((project_root / ".claude" / "claude-auto-review" / "rules.md").exists())
-        self.assertIn(".claude/claude-auto-review/state.jsonl", (project_root / ".gitignore").read_text(encoding="utf-8"))
+        self.assertNotIn(".claude/claude-auto-review/state.jsonl", (project_root / ".gitignore").read_text(encoding="utf-8"))
         settings = json.loads((project_root / ".claude" / "settings.json").read_text(encoding="utf-8"))
         self.assertIn("claude-auto-review", settings)
 
@@ -30,7 +30,7 @@ class TestSetupCancel(HookTestCase, unittest.TestCase):
         self.run_python("scripts/setup_claude_auto_review.py", project_root)
         self.run_python("scripts/setup_claude_auto_review.py", project_root)
         lines = (project_root / ".gitignore").read_text(encoding="utf-8").splitlines()
-        self.assertEqual(lines.count(".claude/claude-auto-review/state.jsonl"), 1)
+        self.assertEqual(lines.count(".claude/claude-auto-review/state.jsonl"), 0)
         self.assertEqual(lines.count(".claude/claude-auto-review/clients/*/run/"), 1)
         self.assertEqual(lines.count(".claude/claude-auto-review/clients/*/reviews/"), 1)
         self.assertEqual(lines.count(".claude/claude-auto-review/scripts/"), 1)
