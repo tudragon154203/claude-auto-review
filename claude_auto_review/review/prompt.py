@@ -65,7 +65,7 @@ def _run_review_prompt(project_root, client_id):
     )
     print(f"Claude Auto Review prompt created: {artifacts.prompt_path}")
     print(f"Review file initialized: {artifacts.review_path}")
-    print("Read the prompt, complete the review file, and fix any agreed CRITICAL or HIGH findings before stopping.")
+    print("Read the prompt, complete the review file, and fix all Confirmed findings before stopping.")
     return 0
 
 

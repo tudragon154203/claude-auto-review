@@ -62,10 +62,13 @@ class TestReviewPrompt(unittest.TestCase):
             review_id="rev1", review_path=Path("/fake/review.md"),
             prompt_path=Path("/fake/prompt.md"), files=["a.ts"],
         )
-        with patch("builtins.print"):
+        with patch("builtins.print") as mock_print:
             result = _run_review_prompt(Path("/fake/project"), "c1")
         self.assertEqual(result, 0)
         mock_append.assert_called_once()
+        printed = "\n".join(call.args[0] for call in mock_print.call_args_list)
+        self.assertIn("fix all Confirmed findings", printed)
+        self.assertNotIn("CRITICAL or HIGH", printed)
 
     @patch("claude_auto_review.review.prompt._log_failure")
     @patch("claude_auto_review.review.prompt.get_client_id", return_value="c1")
