@@ -53,8 +53,8 @@ def append_review_started(entries, review_id, review_path, project_root=None, cl
     _append_jsonl_state(_review_state_entry(entries, review_id, review_path, client_id), project_root, client_id)
 
 
-def mark_files_reviewed(entries, review_id, project_root=None, client_id=""):
+def mark_files_reviewed(entries, review_id, project_root=None, client_id="", timestamp=None):
     project_root, client_id = _write_context(project_root, client_id)
-    timestamp = local_now_iso()
+    timestamp = timestamp or local_now_iso()
     for entry in entries:
         _append_jsonl_state(_reviewed_edit_entry(entry, review_id, timestamp), project_root, client_id)
