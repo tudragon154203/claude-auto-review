@@ -2,10 +2,31 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from claude_auto_review.install.installer import ensure_gitignore_entries
+from unittest.mock import patch
+
+from claude_auto_review.install.installer import copy_if_changed, ensure_gitignore_entries, _write_text_if_changed
 
 
 class TestInstaller(unittest.TestCase):
+    def test_write_text_if_changed_skips_identical_content(self):
+        temp_dir = Path(tempfile.mkdtemp(prefix="claude-auto-review-write-"))
+        target = temp_dir / "file.txt"
+        target.write_text("same", encoding="utf-8")
+
+        with patch.object(Path, "write_text") as mock_write:
+            _write_text_if_changed(target, "same")
+
+        mock_write.assert_not_called()
+
+    def test_copy_if_changed_skips_missing_source(self):
+        temp_dir = Path(tempfile.mkdtemp(prefix="claude-auto-review-copy-"))
+        source = temp_dir / "missing.txt"
+        destination = temp_dir / "dest.txt"
+
+        copy_if_changed(source, destination)
+
+        self.assertFalse(destination.exists())
+
     def test_ensure_gitignore_entries_replaces_legacy_claude_auto_review_entries(self):
         temp_dir = Path(tempfile.mkdtemp(prefix="claude-auto-review-gitignore-"))
         gitignore_path = temp_dir / ".gitignore"

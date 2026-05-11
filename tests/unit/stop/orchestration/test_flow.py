@@ -6,6 +6,30 @@ from claude_auto_review.stop.orchestration.flow import run_stop_flow
 
 
 class TestRunStopFlow(unittest.TestCase):
+    @patch("claude_auto_review.stop.orchestration.flow.log_event")
+    @patch("claude_auto_review.stop.orchestration.flow.get_unreviewed_files", return_value=[{"file": "a.ts", "hash": "1"}])
+    @patch("claude_auto_review.stop.orchestration.flow.load_state", return_value=[{"type": "edit", "file": "a.ts", "hash": "1", "reviewed": False}])
+    @patch("claude_auto_review.stop.orchestration.flow.ensure_client_runtime")
+    @patch("claude_auto_review.stop.orchestration.flow.load_settings")
+    def test_disabled_setting_returns_0_and_logs_stop_disabled(
+        self,
+        mock_settings,
+        mock_runtime,
+        mock_state,
+        mock_unreviewed,
+        mock_log,
+    ):
+        mock_settings.return_value = {
+            "enabled": False,
+            "pendingReviewTimeoutHours": 1,
+            "maxStopPasses": 3,
+        }
+
+        result = run_stop_flow(Path("/fake"), {"session_id": "sid"})
+
+        self.assertEqual(result, 0)
+        mock_log.assert_called_once_with(Path("/fake"), "stop_disabled")
+
     @patch("claude_auto_review.stop.orchestration.flow.get_unreviewed_files", return_value=[])
     @patch("claude_auto_review.stop.orchestration.flow.load_state", return_value=[])
     @patch("claude_auto_review.stop.orchestration.flow.ensure_client_runtime")
@@ -107,3 +131,34 @@ class TestRunStopFlow(unittest.TestCase):
         result = run_stop_flow(Path("/fake"), {"session_id": "sid", "last_assistant_message": "done"})
 
         self.assertEqual(result, 2)
+
+    @patch("claude_auto_review.stop.orchestration.flow.finalize_review_stop", return_value=2)
+    @patch("claude_auto_review.stop.orchestration.flow.resolve_pending_review")
+    @patch("claude_auto_review.stop.orchestration.flow.consecutive_stop_blocks", return_value=0)
+    @patch("claude_auto_review.stop.orchestration.flow.get_unreviewed_files", return_value=[{"file": "a.ts", "hash": "1"}])
+    @patch("claude_auto_review.stop.orchestration.flow.load_state", return_value=[{"type": "edit", "file": "a.ts", "hash": "1", "reviewed": False}])
+    @patch("claude_auto_review.stop.orchestration.flow.ensure_client_runtime")
+    @patch("claude_auto_review.stop.orchestration.flow.load_settings")
+    def test_non_terminal_resolution_is_forwarded_to_finalize(
+        self,
+        mock_settings,
+        mock_runtime,
+        mock_state,
+        mock_unreviewed,
+        mock_blocks,
+        mock_resolve,
+        mock_finalize,
+    ):
+        mock_settings.return_value = {
+            "enabled": True,
+            "pendingReviewTimeoutHours": 1,
+            "maxStopPasses": 3,
+            "lastAssistantMessageClassifierEnabled": True,
+        }
+        mock_resolve.return_value.is_terminal = False
+        mock_resolve.return_value.exit_code = None
+
+        result = run_stop_flow(Path("/fake"), {"session_id": "sid", "last_assistant_message": "done"})
+
+        self.assertEqual(result, 2)
+        mock_finalize.assert_called_once()

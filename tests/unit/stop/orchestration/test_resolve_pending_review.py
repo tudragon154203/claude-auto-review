@@ -77,3 +77,17 @@ class TestResolvePendingReview(unittest.TestCase):
         )
         call_env = mock_run.call_args[1].get("env") or mock_run.call_args[0][2]
         self.assertEqual(call_env.get("CLAUDE_SESSION_ID"), "sid-123")
+
+    @patch("claude_auto_review.stop.orchestration.pending._block_review_prompt_failure")
+    @patch("claude_auto_review.stop.orchestration.pending.find_pending_review_for_files")
+    @patch("claude_auto_review.stop.orchestration.pending._reload_client_state")
+    @patch("claude_auto_review.stop.orchestration.pending._run_review_prompt")
+    def test_missing_review_after_prompt_blocks_failure(self, mock_run, mock_reload, mock_find, mock_block):
+        mock_find.side_effect = [None, None]
+        mock_run.return_value = MagicMock(stdout="review output", stderr="", returncode=0)
+        mock_reload.return_value = ([{"type": "edit"}], [{"file": "a.ts", "hash": "1"}])
+
+        result = resolve_pending_review(**self.base_kwargs)
+
+        self.assertEqual(result.exit_code, 2)
+        mock_block.assert_called_once()
