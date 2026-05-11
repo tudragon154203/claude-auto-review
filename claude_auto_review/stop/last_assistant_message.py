@@ -8,6 +8,7 @@ from urllib import error, parse, request
 from claude_auto_review.paths import local_now_iso
 from claude_auto_review.runtime.helpers import log_event
 from claude_auto_review.state.store_write import append_state
+from claude_auto_review.stop.extraction import extract_last_assistant_message_text
 
 CLASSIFIER_MODEL = "claude-3-5-haiku-20241022"
 CLASSIFIER_MAX_TOKENS = 16
@@ -50,46 +51,6 @@ class AssistantMessageClassificationResult:
         if self.http_status is not None:
             entry["httpStatus"] = self.http_status
         return entry
-
-
-def _extract_message_candidate(payload):
-    if not isinstance(payload, dict):
-        return None
-    if "last_assistant_message" in payload:
-        return payload.get("last_assistant_message")
-    if "lastAssistantMessage" in payload:
-        return payload.get("lastAssistantMessage")
-    conversation = payload.get("conversation")
-    if isinstance(conversation, dict):
-        return conversation.get("last_assistant_message")
-    return None
-
-
-def _normalize_message_content(value):
-    if isinstance(value, str):
-        return value
-    if not isinstance(value, dict):
-        return ""
-
-    content = value.get("content")
-    if isinstance(content, str):
-        return content
-    if not isinstance(content, list):
-        return ""
-
-    parts = []
-    for block in content:
-        if not isinstance(block, dict):
-            continue
-        text = block.get("text")
-        if isinstance(text, str):
-            parts.append(text)
-    return "".join(parts)
-
-
-def extract_last_assistant_message_text(payload):
-    return _normalize_message_content(_extract_message_candidate(payload)).strip()
-
 
 def sanitize_base_url(base_url):
     if not isinstance(base_url, str) or not base_url.strip():

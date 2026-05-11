@@ -9,16 +9,18 @@ from claude_auto_review.stop.flow_logic import (
     StopFlowResolution,
     resolve_pending_review,
     finalize_review_stop,
-    block_response,
-    build_unreviewed_files_string,
-    build_review_completion_prompt,
-    build_review_findings_feedback,
-    review_feedback_max_chars,
     _review_prompt_command,
     _review_prompt_path,
     _reload_client_state,
     _block_review_prompt_failure,
     _run_review_prompt,
+)
+from claude_auto_review.stop.feedback import (
+    block_response,
+    build_review_completion_prompt,
+    build_review_findings_feedback,
+    build_unreviewed_files_string,
+    review_feedback_max_chars,
 )
 
 
@@ -270,8 +272,8 @@ class TestFinalizeReviewStop(unittest.TestCase):
         mock_classify.assert_called_once()
 
     @patch("claude_auto_review.stop.flow_logic.classify_last_assistant_message")
-    @patch("claude_auto_review.stop.flow_logic.append_state")
-    @patch("claude_auto_review.stop.flow_logic.block_response")
+    @patch("claude_auto_review.stop.feedback.append_state")
+    @patch("claude_auto_review.stop.feedback.block_response")
     @patch("claude_auto_review.stop.flow_logic.get_entries_covered_by_review", return_value=[])
     @patch("claude_auto_review.stop.flow_logic.is_review_clean", return_value=False)
     @patch("claude_auto_review.stop.flow_logic.is_review_complete", return_value=True)
@@ -297,8 +299,8 @@ class TestFinalizeReviewStop(unittest.TestCase):
         mock_classify.assert_not_called()
 
     @patch("claude_auto_review.stop.flow_logic.classify_last_assistant_message")
-    @patch("claude_auto_review.stop.flow_logic.append_state")
-    @patch("claude_auto_review.stop.flow_logic.block_response")
+    @patch("claude_auto_review.stop.feedback.append_state")
+    @patch("claude_auto_review.stop.feedback.block_response")
     @patch("claude_auto_review.stop.flow_logic.get_entries_covered_by_review", return_value=[])
     @patch("claude_auto_review.stop.flow_logic.attempt_stop_autocomplete", return_value=False)
     @patch("claude_auto_review.stop.flow_logic.is_review_clean", side_effect=[False])

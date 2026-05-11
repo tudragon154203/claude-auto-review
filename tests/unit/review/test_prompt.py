@@ -3,7 +3,7 @@ from unittest.mock import patch, MagicMock
 from pathlib import Path
 
 from claude_auto_review.review.prompt import _log_failure, _run_review_prompt, main
-from claude_auto_review.stop.flow_logic import build_unreviewed_files_string
+from claude_auto_review.stop.feedback import build_unreviewed_files_string
 
 
 class TestReviewPrompt(unittest.TestCase):
