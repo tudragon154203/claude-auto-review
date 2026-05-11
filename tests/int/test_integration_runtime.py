@@ -11,7 +11,7 @@ from claude_auto_review.runtime.setup import ensure_client_runtime, ensure_proje
 from claude_auto_review.settings import load_settings
 from claude_auto_review.state.store_read import consecutive_stop_blocks, load_state
 from claude_auto_review.state.store_write import append_state, log_event
-from claude_auto_review.stop.last_assistant_message import classify_last_assistant_message
+from claude_auto_review.stop.classifier.last_assistant_message import classify_last_assistant_message
 
 
 class IntegrationRuntimeTests(IntegrationTestCase):

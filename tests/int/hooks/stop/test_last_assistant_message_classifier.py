@@ -4,7 +4,7 @@ import threading
 import unittest
 from http.server import HTTPServer
 
-from claude_auto_review.stop.models import CLASSIFIER_MODEL
+from claude_auto_review.stop.classifier.models import CLASSIFIER_MODEL
 from tests.int.hooks.support import HookTestCase
 from tests.support import make_classifier_handler
 

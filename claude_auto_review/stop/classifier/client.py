@@ -1,7 +1,7 @@
 import json
 import socket
 from urllib import error, parse, request
-from claude_auto_review.stop.models import (
+from claude_auto_review.stop.classifier.models import (
     CLASSIFIER_MODEL,
     CLASSIFIER_MAX_TOKENS,
     _SYSTEM_PROMPT,
@@ -96,3 +96,4 @@ def call_classifier_api(message_text, base_url, api_key, started_at, timeout_sec
         return result_factory("error", "bad_response", started_at, message_chars, base_url=base_url)
     except Exception:
         return result_factory("error", "http_error", started_at, message_chars, base_url=base_url)
+

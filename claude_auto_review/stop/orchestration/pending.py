@@ -3,9 +3,9 @@ import subprocess
 
 from claude_auto_review.state.store_write import log_event
 from claude_auto_review.stop.feedback import build_unreviewed_files_string, block_response
-from claude_auto_review.stop.resolution import StopFlowResolution
-from claude_auto_review.stop.selection import find_pending_review_for_files
-from claude_auto_review.stop.review_prompt_runner import (
+from claude_auto_review.stop.orchestration.resolution import StopFlowResolution
+from claude_auto_review.stop.reviews.selection import find_pending_review_for_files
+from claude_auto_review.stop.reviews.prompt_runner import (
     _block_review_prompt_failure,
     _reload_client_state,
     _run_review_prompt,
@@ -51,3 +51,4 @@ def resolve_pending_review(project_root, client_id, payload, state, unreviewed, 
         return StopFlowResolution(state=state, unreviewed=unreviewed, exit_code=2)
 
     return StopFlowResolution(state=state, unreviewed=unreviewed, review=review)
+

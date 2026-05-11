@@ -1,6 +1,6 @@
 import unittest
 
-from claude_auto_review.stop.selection import find_pending_review_for_files, get_entries_covered_by_review
+from claude_auto_review.stop.reviews.selection import find_pending_review_for_files, get_entries_covered_by_review
 
 
 class TestSelection(unittest.TestCase):
@@ -38,4 +38,3 @@ class TestSelection(unittest.TestCase):
         covered = get_entries_covered_by_review(review_entry, state_entries)
 
         self.assertEqual([entry["hash"] for entry in covered], ["22222222"])
-

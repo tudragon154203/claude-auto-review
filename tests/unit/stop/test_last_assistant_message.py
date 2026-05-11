@@ -7,17 +7,17 @@ from unittest.mock import patch
 from urllib import error
 
 from claude_auto_review.state.store_read import load_state
-from claude_auto_review.stop.models import (
+from claude_auto_review.stop.classifier.models import (
     CLASSIFICATION_EVENT,
     CLASSIFIER_MODEL,
 )
-from claude_auto_review.stop.client import (
+from claude_auto_review.stop.classifier.client import (
     sanitize_base_url,
 )
-from claude_auto_review.stop.last_assistant_message import (
+from claude_auto_review.stop.classifier.last_assistant_message import (
     classify_last_assistant_message,
 )
-from claude_auto_review.stop.extraction import (
+from claude_auto_review.stop.classifier.extraction import (
     extract_last_assistant_message_text,
 )
 
@@ -145,7 +145,7 @@ class TestLastAssistantMessageClassifier(StateTestCase, unittest.TestCase):
     def test_unknown_debug_response_is_logged_but_not_persisted_to_state(self):
         payload = {"content": [{"text": "unknown"}], "id": "msg-debug"}
 
-        with patch("claude_auto_review.stop.last_assistant_message.log_event") as mock_log:
+        with patch("claude_auto_review.stop.classifier.last_assistant_message.log_event") as mock_log:
             classify_last_assistant_message(
                 self.project_root,
                 self.client_id,
@@ -205,7 +205,7 @@ class TestLastAssistantMessageClassifier(StateTestCase, unittest.TestCase):
         self.assertEqual(result.reason, "bad_response")
 
     def test_missing_message_is_logged_as_skipped(self):
-        with patch("claude_auto_review.stop.last_assistant_message.log_event") as mock_log:
+        with patch("claude_auto_review.stop.classifier.last_assistant_message.log_event") as mock_log:
             result = classify_last_assistant_message(
                 self.project_root,
                 self.client_id,

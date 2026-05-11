@@ -2,14 +2,14 @@ import os
 import time
 from claude_auto_review.runtime.helpers import log_event
 from claude_auto_review.state.store_write import append_state
-from claude_auto_review.stop.extraction import extract_last_assistant_message_text
-from claude_auto_review.stop.models import (
+from claude_auto_review.stop.classifier.extraction import extract_last_assistant_message_text
+from claude_auto_review.stop.classifier.models import (
     DEFAULT_TIMEOUT_SECONDS,
     CLASSIFICATION_EVENT,
     CLASSIFIER_MODEL,
     result_factory
 )
-from claude_auto_review.stop.client import sanitize_base_url, call_classifier_api
+from claude_auto_review.stop.classifier.client import sanitize_base_url, call_classifier_api
 
 def _persist_result(project_root, client_id, result):
     log_event(project_root, CLASSIFICATION_EVENT, **result.as_event_fields())
@@ -57,3 +57,4 @@ def classify_last_assistant_message(project_root, client_id, payload, settings, 
 
     _persist_result(project_root, client_id, result)
     return result
+

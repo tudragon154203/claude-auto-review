@@ -2,14 +2,14 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from claude_auto_review.stop.flow import run_stop_flow
+from claude_auto_review.stop.orchestration.flow import run_stop_flow
 
 
 class TestRunStopFlow(unittest.TestCase):
-    @patch("claude_auto_review.stop.flow.get_unreviewed_files", return_value=[])
-    @patch("claude_auto_review.stop.flow.load_state", return_value=[])
-    @patch("claude_auto_review.stop.flow.ensure_client_runtime")
-    @patch("claude_auto_review.stop.flow.load_settings")
+    @patch("claude_auto_review.stop.orchestration.flow.get_unreviewed_files", return_value=[])
+    @patch("claude_auto_review.stop.orchestration.flow.load_state", return_value=[])
+    @patch("claude_auto_review.stop.orchestration.flow.ensure_client_runtime")
+    @patch("claude_auto_review.stop.orchestration.flow.load_settings")
     def test_classifier_skipped_when_no_unreviewed_files(
         self,
         mock_settings,
@@ -28,11 +28,11 @@ class TestRunStopFlow(unittest.TestCase):
 
         self.assertEqual(result, 0)
 
-    @patch("claude_auto_review.stop.flow.consecutive_stop_blocks", return_value=3)
-    @patch("claude_auto_review.stop.flow.get_unreviewed_files", return_value=[{"file": "a.ts", "hash": "1"}])
-    @patch("claude_auto_review.stop.flow.load_state", return_value=[{"type": "edit", "file": "a.ts", "hash": "1", "reviewed": False}])
-    @patch("claude_auto_review.stop.flow.ensure_client_runtime")
-    @patch("claude_auto_review.stop.flow.load_settings")
+    @patch("claude_auto_review.stop.orchestration.flow.consecutive_stop_blocks", return_value=3)
+    @patch("claude_auto_review.stop.orchestration.flow.get_unreviewed_files", return_value=[{"file": "a.ts", "hash": "1"}])
+    @patch("claude_auto_review.stop.orchestration.flow.load_state", return_value=[{"type": "edit", "file": "a.ts", "hash": "1", "reviewed": False}])
+    @patch("claude_auto_review.stop.orchestration.flow.ensure_client_runtime")
+    @patch("claude_auto_review.stop.orchestration.flow.load_settings")
     def test_classifier_skipped_when_circuit_breaker_allows_stop(
         self,
         mock_settings,
@@ -52,12 +52,12 @@ class TestRunStopFlow(unittest.TestCase):
 
         self.assertEqual(result, 0)
 
-    @patch("claude_auto_review.stop.flow.resolve_pending_review")
-    @patch("claude_auto_review.stop.flow.consecutive_stop_blocks", return_value=0)
-    @patch("claude_auto_review.stop.flow.get_unreviewed_files", return_value=[{"file": "a.ts", "hash": "1"}])
-    @patch("claude_auto_review.stop.flow.load_state", return_value=[{"type": "edit", "file": "a.ts", "hash": "1", "reviewed": False}])
-    @patch("claude_auto_review.stop.flow.ensure_client_runtime")
-    @patch("claude_auto_review.stop.flow.load_settings")
+    @patch("claude_auto_review.stop.orchestration.flow.resolve_pending_review")
+    @patch("claude_auto_review.stop.orchestration.flow.consecutive_stop_blocks", return_value=0)
+    @patch("claude_auto_review.stop.orchestration.flow.get_unreviewed_files", return_value=[{"file": "a.ts", "hash": "1"}])
+    @patch("claude_auto_review.stop.orchestration.flow.load_state", return_value=[{"type": "edit", "file": "a.ts", "hash": "1", "reviewed": False}])
+    @patch("claude_auto_review.stop.orchestration.flow.ensure_client_runtime")
+    @patch("claude_auto_review.stop.orchestration.flow.load_settings")
     def test_classifier_invoked_when_enabled(
         self,
         mock_settings,
@@ -80,12 +80,12 @@ class TestRunStopFlow(unittest.TestCase):
 
         self.assertEqual(result, 0)
 
-    @patch("claude_auto_review.stop.flow.resolve_pending_review")
-    @patch("claude_auto_review.stop.flow.consecutive_stop_blocks", return_value=0)
-    @patch("claude_auto_review.stop.flow.get_unreviewed_files", return_value=[{"file": "a.ts", "hash": "1"}])
-    @patch("claude_auto_review.stop.flow.load_state", return_value=[{"type": "edit", "file": "a.ts", "hash": "1", "reviewed": False}])
-    @patch("claude_auto_review.stop.flow.ensure_client_runtime")
-    @patch("claude_auto_review.stop.flow.load_settings")
+    @patch("claude_auto_review.stop.orchestration.flow.resolve_pending_review")
+    @patch("claude_auto_review.stop.orchestration.flow.consecutive_stop_blocks", return_value=0)
+    @patch("claude_auto_review.stop.orchestration.flow.get_unreviewed_files", return_value=[{"file": "a.ts", "hash": "1"}])
+    @patch("claude_auto_review.stop.orchestration.flow.load_state", return_value=[{"type": "edit", "file": "a.ts", "hash": "1", "reviewed": False}])
+    @patch("claude_auto_review.stop.orchestration.flow.ensure_client_runtime")
+    @patch("claude_auto_review.stop.orchestration.flow.load_settings")
     def test_disabled_setting_bypasses_classifier_without_changing_result(
         self,
         mock_settings,

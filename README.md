@@ -35,7 +35,7 @@ flowchart TD
 - `claude_auto_review/state/store_read.py`, `claude_auto_review/state/store_write.py`, `claude_auto_review/state/reviews.py` cover state bookkeeping.
 - `claude_auto_review/runtime/helpers.py`, `claude_auto_review/runtime/setup.py`, `claude_auto_review/runtime/cleanup.py` cover runtime lifecycle.
 - `claude_auto_review/review/generation.py`, `claude_auto_review/review/prompt_flow.py`, `claude_auto_review/review/prompt.py`, `claude_auto_review/review/completion.py` cover review generation and completion.
-- `claude_auto_review/stop/flow.py`, `claude_auto_review/stop/flow_logic.py`, `claude_auto_review/stop/selection.py`, `claude_auto_review/stop/autocomplete.py` cover stop-hook orchestration.
+- `claude_auto_review/stop/orchestration/flow.py`, `claude_auto_review/stop/orchestration/pending.py`, `claude_auto_review/stop/orchestration/finalize.py`, `claude_auto_review/stop/reviews/selection.py`, `claude_auto_review/stop/reviews/autocomplete.py` cover stop-hook orchestration.
 - `claude_auto_review/install/installer.py`, `claude_auto_review/install/shims.py`, `claude_auto_review/install/setup_cli.py`, `claude_auto_review/install/cancel_cli.py` cover installation.
 
 **Commands:**
@@ -62,4 +62,3 @@ The installer creates the local `.claude/claude-auto-review/` runtime tree and g
 - Circuit breaker after `maxStopPasses` blocks (default: 3)
 - Auto-completion via Claude CLI sub-agent when available
 - Reviewer hard-cap via `reviewerTimeoutSeconds` (default: 600 seconds)
-

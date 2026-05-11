@@ -4,16 +4,16 @@ from claude_auto_review.paths import local_now_iso
 from claude_auto_review.state.reviews import is_review_clean, is_review_complete
 from claude_auto_review.review.completion import apply_completed_review
 from claude_auto_review.state.store_write import append_state, log_event
-from claude_auto_review.stop.autocomplete import attempt_stop_autocomplete
+from claude_auto_review.stop.reviews.autocomplete import attempt_stop_autocomplete
 from claude_auto_review.stop.feedback import (
     block_completed_review_findings,
     block_response,
     build_review_completion_prompt,
     build_unreviewed_files_string,
 )
-from claude_auto_review.stop.last_assistant_message import classify_last_assistant_message
-from claude_auto_review.stop.selection import get_entries_covered_by_review
-from claude_auto_review.stop.review_prompt_runner import _review_prompt_path
+from claude_auto_review.stop.classifier.last_assistant_message import classify_last_assistant_message
+from claude_auto_review.stop.reviews.selection import get_entries_covered_by_review
+from claude_auto_review.stop.reviews.prompt_runner import _review_prompt_path
 
 
 def _classify_last_assistant_message_if_enabled(project_root, client_id, payload, settings):
@@ -83,3 +83,4 @@ def finalize_review_stop(project_root, client_id, resolution, payload, settings)
         client_id=client_id,
     )
     return 2
+
