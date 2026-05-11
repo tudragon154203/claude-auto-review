@@ -3,7 +3,7 @@ import sys
 import unittest
 from pathlib import Path
 
-REPO_ROOT = Path(__file__).resolve().parents[3]
+REPO_ROOT = Path(__file__).resolve().parents[4]
 sys.path.insert(0, str(REPO_ROOT))
 from claude_auto_review.state.store_read import consecutive_stop_blocks, load_state  # noqa: E402
 from claude_auto_review.state.store_write import append_state  # noqa: E402

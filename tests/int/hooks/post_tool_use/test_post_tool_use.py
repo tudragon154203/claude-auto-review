@@ -4,7 +4,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-REPO_ROOT = Path(__file__).resolve().parents[3]
+REPO_ROOT = Path(__file__).resolve().parents[4]
 sys.path.insert(0, str(REPO_ROOT))
 
 from claude_auto_review.state.store_read import load_state  # noqa: E402
@@ -48,12 +48,13 @@ class TestPostToolUseHook(HookTestCase, unittest.TestCase):
 
     def test_post_tool_use_ignores_paths_outside_project(self):
         project_root = self.temp_project()
-        outside = Path(tempfile.mkdtemp(prefix="claude-auto-review-outside-")) / "outside.ts"
-        outside.write_text("export const outside = true;\n", encoding="utf-8")
+        with tempfile.TemporaryDirectory(prefix="claude-auto-review-outside-") as tmpdir:
+            outside = Path(tmpdir) / "outside.ts"
+            outside.write_text("export const outside = true;\n", encoding="utf-8")
 
-        post = self.run_python("hooks/post_tool_use.py", project_root, json.dumps({"file_path": str(outside)}))
-        self.assertEqual(post.returncode, 0)
-        self.assertEqual(load_state(project_root, "test-session"), [])
+            post = self.run_python("hooks/post_tool_use.py", project_root, json.dumps({"file_path": str(outside)}))
+            self.assertEqual(post.returncode, 0)
+            self.assertEqual(load_state(project_root, "test-session"), [])
 
     def test_fails_open_for_invalid_hook_input(self):
         project_root = self.temp_project()
