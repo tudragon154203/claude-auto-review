@@ -46,6 +46,17 @@ class TestRuntime(StateTestCase, unittest.TestCase):
         cancel_runtime(project_root, client_id="test-client")
         self.assertFalse((project_root / ".claude" / "claude-auto-review" / "clients" / "client-test-client").exists())
 
+    def test_cancel_runtime_removes_empty_runtime_directory(self):
+        project_root = self.temp_project()
+        runtime_dir = project_root / ".claude" / "claude-auto-review"
+        for child in ("run", "reviews", "clients"):
+            (runtime_dir / child).mkdir(parents=True, exist_ok=True)
+
+        removed = cancel_runtime(project_root)
+
+        self.assertIn(runtime_dir, removed)
+        self.assertFalse(runtime_dir.exists())
+
     def test_cancel_session_removes_client_state(self):
         project_root = self.temp_project()
         ensure_client_runtime(project_root, "session-a")

@@ -12,6 +12,7 @@ from claude_auto_review.review.generation import (
     format_review_file,
     format_review_files,
     format_review_timestamp,
+    git_diff,
 )
 
 
@@ -121,6 +122,11 @@ Pending.
         self.assertIn("[truncated at 10000 characters]", snapshots)
         self.assertIn("## src/missing.ts", snapshots)
         self.assertIn("File does not currently exist.", snapshots)
+
+    def test_git_diff_uses_real_git_output_when_repo_is_available(self):
+        diff = git_diff([], REPO_ROOT)
+
+        self.assertIsInstance(diff, str)
 
 
 if __name__ == "__main__":
