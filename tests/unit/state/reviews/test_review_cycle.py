@@ -13,7 +13,7 @@ class TestReviewCycle(StateTestCase, unittest.TestCase):
     def test_recognizes_hashes_reviewed_in_earlier_entries(self):
         project_root = self.temp_project()
         ensure_runtime(project_root)
-        entry = {"type": "edit", "file": "a.ts", "hash": "11111111", "timestamp": "2026-05-05T01:00:00Z", "reviewed": False}
+        entry = {"type": "edit", "file": "a.ts", "hash": "11111111", "timestamp": "2026-05-05T08:00:00+07:00", "reviewed": False}
         mark_files_reviewed([entry], "rev-1", project_root)
         self.assertTrue(was_hash_reviewed(load_state(project_root), "a.ts", "11111111"))
 

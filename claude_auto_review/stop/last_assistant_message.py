@@ -5,7 +5,7 @@ import time
 from dataclasses import asdict, dataclass
 from urllib import error, parse, request
 
-from claude_auto_review.paths import utc_now_iso
+from claude_auto_review.paths import local_now_iso
 from claude_auto_review.runtime.helpers import log_event
 from claude_auto_review.state.store_write import append_state
 
@@ -39,7 +39,7 @@ class AssistantMessageClassificationResult:
     def as_state_entry(self):
         entry = {
             "type": "assistant_message_classification",
-            "timestamp": utc_now_iso(),
+            "timestamp": local_now_iso(),
             "status": self.status,
             "reason": self.reason,
             "latencyMs": self.latency_ms,

@@ -86,7 +86,7 @@ class TestReviewPrompt(HookTestCase, unittest.TestCase):
                 "type": "edit",
                 "file": "src/deleted.ts",
                 "hash": "deadbeef",
-                "timestamp": "2026-05-05T01:00:00Z",
+                "timestamp": "2026-05-05T08:00:00+07:00",
                 "reviewed": False,
             },
             project_root,

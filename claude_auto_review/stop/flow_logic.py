@@ -5,7 +5,7 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 
-from claude_auto_review.paths import client_run_dir, utc_now_iso
+from claude_auto_review.paths import client_run_dir, local_now_iso
 from claude_auto_review.state.reviews import is_review_complete
 from claude_auto_review.review.completion import apply_completed_review
 from claude_auto_review.state.store_read import get_unreviewed_files, load_state
@@ -167,5 +167,5 @@ def finalize_review_stop(project_root, client_id, resolution):
         ),
     )
     log_event(project_root, "stop_blocked", files=[entry["file"] for entry in unreviewed])
-    append_state({"type": "stop_blocked", "reason": "review_pending", "timestamp": utc_now_iso()}, project_root, client_id=client_id)
+    append_state({"type": "stop_blocked", "reason": "review_pending", "timestamp": local_now_iso()}, project_root, client_id=client_id)
     return 2

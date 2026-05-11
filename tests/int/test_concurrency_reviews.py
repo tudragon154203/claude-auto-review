@@ -14,8 +14,8 @@ class ConcurrencyReviewTests(ClientIsolationTestCase):
         self.ensure_client(project_root, client_a)
         self.ensure_client(project_root, client_b)
 
-        entries_a = [{"type": "edit", "file": "shared.ts", "hash": "hash1", "timestamp": "2026-05-09T12:00:00Z", "reviewed": False}]
-        entries_b = [{"type": "edit", "file": "shared.ts", "hash": "hash2", "timestamp": "2026-05-09T13:00:00Z", "reviewed": False}]
+        entries_a = [{"type": "edit", "file": "shared.ts", "hash": "hash1", "timestamp": "2026-05-09T12:00:00+07:00", "reviewed": False}]
+        entries_b = [{"type": "edit", "file": "shared.ts", "hash": "hash2", "timestamp": "2026-05-09T13:00:00+07:00", "reviewed": False}]
 
         append_review_started(entries_a, "rev-a", "dummy-a.md", project_root, client_id=client_a)
         append_review_started(entries_b, "rev-b", "dummy-b.md", project_root, client_id=client_b)
@@ -32,7 +32,7 @@ class ConcurrencyReviewTests(ClientIsolationTestCase):
         client_id = "client-with-id"
         self.ensure_client(project_root, client_id)
 
-        entries = [{"type": "edit", "file": "file1.ts", "hash": "h1", "timestamp": "2026-05-09T20:00:00Z", "reviewed": False}]
+        entries = [{"type": "edit", "file": "file1.ts", "hash": "h1", "timestamp": "2026-05-09T20:00:00+07:00", "reviewed": False}]
         review_path = client_reviews_dir(project_root, client_id) / "review-test.md"
         append_review_started(entries, "rev-test", review_path, project_root, client_id=client_id)
 
@@ -50,8 +50,8 @@ class ConcurrencyReviewTests(ClientIsolationTestCase):
         self.ensure_client(project_root, client_a)
         self.ensure_client(project_root, client_b)
 
-        entry_a = {"type": "edit", "file": "a.ts", "hash": "hash-a", "timestamp": "2026-05-09T21:00:00Z", "reviewed": False}
-        entry_b = {"type": "edit", "file": "b.ts", "hash": "hash-b", "timestamp": "2026-05-09T22:00:00Z", "reviewed": False}
+        entry_a = {"type": "edit", "file": "a.ts", "hash": "hash-a", "timestamp": "2026-05-09T21:00:00+07:00", "reviewed": False}
+        entry_b = {"type": "edit", "file": "b.ts", "hash": "hash-b", "timestamp": "2026-05-09T22:00:00+07:00", "reviewed": False}
 
         append_state(entry_a, project_root, client_id=client_a)
         append_state(entry_b, project_root, client_id=client_b)

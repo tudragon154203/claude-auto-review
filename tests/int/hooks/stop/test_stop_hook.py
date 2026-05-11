@@ -20,7 +20,7 @@ class TestStopHook(HookTestCase, unittest.TestCase):
         ]
 
     def test_stop_hook_prefers_higher_overlap_over_newer_review(self):
-        from datetime import datetime, timedelta, timezone
+        from datetime import datetime, timedelta
 
         project_root = self.temp_project()
         (project_root / "src" / "a.ts").write_text("export const a = 1;\n", encoding="utf-8")
@@ -39,9 +39,9 @@ class TestStopHook(HookTestCase, unittest.TestCase):
         path_high.write_text("## Verdict\n\nPending.\n", encoding="utf-8")
         path_new.write_text("## Verdict\n\nPending.\n", encoding="utf-8")
 
-        base = datetime.now(timezone.utc)
-        ts_old = base.isoformat().replace("+00:00", "Z")
-        ts_new = (base + timedelta(seconds=1)).isoformat().replace("+00:00", "Z")
+        base = datetime.now().astimezone()
+        ts_old = base.isoformat()
+        ts_new = (base + timedelta(seconds=1)).isoformat()
 
         # Older review covers both files (overlap=2)
         append_state(
@@ -78,7 +78,7 @@ class TestStopHook(HookTestCase, unittest.TestCase):
         self.assertIn("Review high-overlap", json.loads(stop.stdout)["message"])
 
     def test_stop_hook_prefers_newest_pending_review_on_equal_overlap(self):
-        from datetime import datetime, timedelta, timezone
+        from datetime import datetime, timedelta
 
         project_root = self.temp_project()
         target = project_root / "src" / "app.ts"
@@ -93,9 +93,9 @@ class TestStopHook(HookTestCase, unittest.TestCase):
         old_path.write_text("## Verdict\n\nPending.\n", encoding="utf-8")
         new_path.write_text("## Verdict\n\nPending.\n", encoding="utf-8")
 
-        base = datetime.now(timezone.utc)
-        ts_old = base.isoformat().replace("+00:00", "Z")
-        ts_new = (base + timedelta(seconds=1)).isoformat().replace("+00:00", "Z")
+        base = datetime.now().astimezone()
+        ts_old = base.isoformat()
+        ts_new = (base + timedelta(seconds=1)).isoformat()
         append_state(
             {
                 "type": "review",
@@ -126,7 +126,7 @@ class TestStopHook(HookTestCase, unittest.TestCase):
         self.assertIn("Review new", json.loads(stop.stdout)["message"])
 
     def test_stop_hook_does_not_clean_expired_reviews_for_payload_session_id(self):
-        from datetime import datetime, timedelta, timezone
+        from datetime import datetime, timedelta
 
         project_root = self.temp_project()
         (project_root / "src" / "app.ts").write_text("export const value = 1;\n", encoding="utf-8")
@@ -135,7 +135,7 @@ class TestStopHook(HookTestCase, unittest.TestCase):
         payload = json.dumps({"session_id": "payload-session", "file_path": "src/app.ts"})
         self.run_python("hooks/post_tool_use.py", project_root, payload, client_id="env-session")
 
-        old_time = (datetime.now(timezone.utc) - timedelta(hours=2)).isoformat().replace("+00:00", "Z")
+        old_time = (datetime.now().astimezone() - timedelta(hours=2)).isoformat()
         append_state(
             {
                 "type": "review",
@@ -432,7 +432,7 @@ class TestStopHook(HookTestCase, unittest.TestCase):
 
     def test_pending_review_expired_is_skipped_but_not_cleaned_by_stop_hook(self):
         """Stop hook skips expired pending reviews, but cleanup is handled by session_end."""
-        from datetime import datetime, timedelta, timezone
+        from datetime import datetime, timedelta
 
         project_root = self.temp_project()
         (project_root / "src" / "app.ts").write_text("export const value = 1;\n", encoding="utf-8")
@@ -441,7 +441,7 @@ class TestStopHook(HookTestCase, unittest.TestCase):
         state_path = project_root / ".claude" / "claude-auto-review" / "clients" / "client-test-session" / "state.jsonl"
 
         # Create a pending review with an old timestamp (> 1 hour ago)
-        old_time = (datetime.now(timezone.utc) - timedelta(hours=2)).isoformat().replace("+00:00", "Z")
+        old_time = (datetime.now().astimezone() - timedelta(hours=2)).isoformat()
         append_state(
             {
                 "type": "review",
@@ -472,7 +472,7 @@ class TestStopHook(HookTestCase, unittest.TestCase):
 
     def test_pending_review_timeout_custom_setting_skip_only(self):
         """Stop hook honors timeout for matching, without performing cleanup."""
-        from datetime import datetime, timedelta, timezone
+        from datetime import datetime, timedelta
 
         project_root = self.temp_project()
         (project_root / ".claude").mkdir(parents=True, exist_ok=True)
@@ -484,7 +484,7 @@ class TestStopHook(HookTestCase, unittest.TestCase):
         self.run_python("hooks/post_tool_use.py", project_root, json.dumps({"file_path": "src/app.ts"}))
 
         # Create a pending review with timestamp from 1 minute ago (exceeds 0.01h = 36s timeout)
-        old_time = (datetime.now(timezone.utc) - timedelta(minutes=1)).isoformat().replace("+00:00", "Z")
+        old_time = (datetime.now().astimezone() - timedelta(minutes=1)).isoformat()
         append_state(
             {
                 "type": "review",

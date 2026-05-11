@@ -1,6 +1,6 @@
 import unittest
 
-from claude_auto_review.paths import client_state_path, get_log_path, utc_now_iso
+from claude_auto_review.paths import client_state_path, get_log_path, local_now_iso
 from claude_auto_review.runtime.setup import ensure_client_runtime, ensure_runtime
 from claude_auto_review.state.store_read import get_unreviewed_files, latest_entries_by_file, load_state, reviewed_hashes_by_file, was_hash_reviewed
 from claude_auto_review.state.store_write import append_state, log_event
@@ -13,9 +13,9 @@ class TestStateStore(StateTestCase, unittest.TestCase):
     def test_loads_latest_unreviewed_file_entries(self):
         project_root = self.temp_project()
         ensure_runtime(project_root)
-        append_state({"type": "edit", "file": "a.ts", "hash": "11111111", "timestamp": "2026-05-05T01:00:00Z", "reviewed": False}, project_root)
-        append_state({"type": "edit", "file": "a.ts", "hash": "22222222", "timestamp": "2026-05-05T02:00:00Z", "reviewed": True, "reviewId": "rev-1"}, project_root)
-        append_state({"type": "edit", "file": "b.ts", "hash": "33333333", "timestamp": "2026-05-05T03:00:00Z", "reviewed": False}, project_root)
+        append_state({"type": "edit", "file": "a.ts", "hash": "11111111", "timestamp": "2026-05-05T08:00:00+07:00", "reviewed": False}, project_root)
+        append_state({"type": "edit", "file": "a.ts", "hash": "22222222", "timestamp": "2026-05-05T09:00:00+07:00", "reviewed": True, "reviewId": "rev-1"}, project_root)
+        append_state({"type": "edit", "file": "b.ts", "hash": "33333333", "timestamp": "2026-05-05T10:00:00+07:00", "reviewed": False}, project_root)
 
         self.assertEqual(get_unreviewed_files(load_state(project_root))[0]["file"], "b.ts")
 
@@ -27,10 +27,16 @@ class TestStateStore(StateTestCase, unittest.TestCase):
         state_path.write_text('{"type":"edit","file":"a.ts","hash":"1","reviewed":false}\nnot-json\n', encoding="utf-8")
         self.assertEqual(len(load_state(project_root, client_id)), 1)
 
-    def test_utc_now_iso_returns_valid_iso_format(self):
-        result = utc_now_iso()
-        self.assertTrue(result.endswith("Z"))
+    def test_local_now_iso_returns_valid_iso_format(self):
+        result = local_now_iso()
+        self.assertFalse(result.endswith("Z"))
         self.assertIn("T", result)
+
+    def test_local_now_iso_returns_system_timezone_format(self):
+        result = local_now_iso()
+        self.assertIn("T", result)
+        self.assertNotIn("Z", result)
+        self.assertRegex(result, r"[+-]\d{2}:\d{2}$")
 
     def test_log_event_creates_log_file(self):
         project_root = self.temp_project()

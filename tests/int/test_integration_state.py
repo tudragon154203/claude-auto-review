@@ -1,6 +1,6 @@
 from tests.int.support import IntegrationTestCase
 
-from claude_auto_review.paths import utc_now_iso
+from claude_auto_review.paths import local_now_iso
 from claude_auto_review.runtime.setup import ensure_client_runtime
 from claude_auto_review.state.reviews import pending_reviews_for_entries
 from claude_auto_review.state.store_read import consecutive_stop_blocks, get_unreviewed_files, load_state, was_hash_reviewed
@@ -17,7 +17,7 @@ class IntegrationStateTests(IntegrationTestCase):
             "type": "edit",
             "file": "src/main.ts",
             "hash": "abc123",
-            "timestamp": utc_now_iso(),
+            "timestamp": local_now_iso(),
             "reviewed": False,
         }
         append_state(entry, project_root, client_id=client_id)
@@ -47,7 +47,7 @@ class IntegrationStateTests(IntegrationTestCase):
                     "type": "edit",
                     "file": file,
                     "hash": h,
-                    "timestamp": utc_now_iso(),
+                    "timestamp": local_now_iso(),
                     "reviewed": False,
                 },
                 project_root,
@@ -76,12 +76,12 @@ class IntegrationStateTests(IntegrationTestCase):
         ensure_client_runtime(project_root, "bob")
 
         append_state(
-            {"type": "edit", "file": "alice.txt", "hash": "1111", "timestamp": utc_now_iso(), "reviewed": False},
+            {"type": "edit", "file": "alice.txt", "hash": "1111", "timestamp": local_now_iso(), "reviewed": False},
             project_root,
             client_id="alice",
         )
         append_state(
-            {"type": "edit", "file": "bob.txt", "hash": "2222", "timestamp": utc_now_iso(), "reviewed": False},
+            {"type": "edit", "file": "bob.txt", "hash": "2222", "timestamp": local_now_iso(), "reviewed": False},
             project_root,
             client_id="bob",
         )
@@ -102,14 +102,14 @@ class IntegrationStateTests(IntegrationTestCase):
         client_id = "stop-blocks-reset"
         ensure_client_runtime(project_root, client_id)
 
-        append_state({"type": "edit", "file": "a.ts", "hash": "h1", "timestamp": utc_now_iso(), "reviewed": False}, project_root, client_id=client_id)
+        append_state({"type": "edit", "file": "a.ts", "hash": "h1", "timestamp": local_now_iso(), "reviewed": False}, project_root, client_id=client_id)
         for _ in range(3):
-            append_state({"type": "stop_blocked", "reason": "x", "timestamp": utc_now_iso()}, project_root, client_id=client_id)
+            append_state({"type": "stop_blocked", "reason": "x", "timestamp": local_now_iso()}, project_root, client_id=client_id)
 
         state = load_state(project_root, client_id)
         self.assertEqual(consecutive_stop_blocks(state), 3)
 
-        append_state({"type": "edit", "file": "a.ts", "hash": "h1", "timestamp": utc_now_iso(), "reviewed": True, "reviewId": "r1"}, project_root, client_id=client_id)
+        append_state({"type": "edit", "file": "a.ts", "hash": "h1", "timestamp": local_now_iso(), "reviewed": True, "reviewId": "r1"}, project_root, client_id=client_id)
         state = load_state(project_root, client_id)
         self.assertEqual(consecutive_stop_blocks(state), 0)
 
@@ -121,7 +121,7 @@ class IntegrationStateTests(IntegrationTestCase):
         entries = [{"file": "f1.ts", "hash": "a"}, {"file": "f2.ts", "hash": "b"}]
         for e in entries:
             append_state(
-                {"type": "edit", "file": e["file"], "hash": e["hash"], "timestamp": utc_now_iso(), "reviewed": False},
+                {"type": "edit", "file": e["file"], "hash": e["hash"], "timestamp": local_now_iso(), "reviewed": False},
                 project_root,
                 client_id=client_id,
             )

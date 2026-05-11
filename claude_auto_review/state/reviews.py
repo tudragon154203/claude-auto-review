@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime
 from pathlib import Path
 
 from claude_auto_review.runtime.helpers import log_event
@@ -45,11 +45,12 @@ def is_review_expired(review_entry, timeout_hours):
         if ts_str.endswith("Z"):
             ts_str = ts_str[:-1] + "+00:00"
         ts = datetime.fromisoformat(ts_str)
+        local_now = datetime.now().astimezone()
         if ts.tzinfo is None:
-            ts = ts.replace(tzinfo=timezone.utc)
+            ts = ts.replace(tzinfo=local_now.tzinfo)
         else:
-            ts = ts.astimezone(timezone.utc)
-        age_hours = (datetime.now(timezone.utc) - ts).total_seconds() / 3600.0
+            ts = ts.astimezone(local_now.tzinfo)
+        age_hours = (local_now - ts).total_seconds() / 3600.0
         return age_hours > timeout_hours
     except (ValueError, TypeError):
         return False

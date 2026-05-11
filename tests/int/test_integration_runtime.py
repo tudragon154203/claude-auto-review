@@ -1,5 +1,6 @@
 import json
 import tempfile
+from datetime import datetime
 from pathlib import Path
 
 from tests.int.support import IntegrationTestCase, REPO_ROOT, _FakeResponse
@@ -38,6 +39,7 @@ class IntegrationRuntimeTests(IntegrationTestCase):
         self.assertEqual(entry["foo"], "bar")
         self.assertEqual(entry["count"], 42)
         self.assertIn("timestamp", entry)
+        self.assertFalse(entry["timestamp"].endswith("Z"))
 
     def test_ensure_project_settings_preserves_user_values(self):
         project_root = self.temp_project()
@@ -102,7 +104,7 @@ class IntegrationRuntimeTests(IntegrationTestCase):
                 "type": "edit",
                 "file": "x.ts",
                 "hash": "deadbeef",
-                "timestamp": "2026-05-09T00:00:00Z",
+                "timestamp": datetime.now().astimezone().isoformat(),
                 "reviewed": False,
             },
             project_root,
