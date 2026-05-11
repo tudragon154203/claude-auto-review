@@ -46,6 +46,19 @@ class TestAutoComplete(unittest.TestCase):
     @patch("claude_auto_review.stop.autocomplete.subprocess.run")
     @patch("claude_auto_review.stop.autocomplete.shutil.which", return_value="/usr/bin/claude")
     @patch("pathlib.Path.is_file", return_value=True)
+    def test_passes_configured_timeout_to_subprocess(self, mock_is_file, mock_which, mock_run, mock_log):
+        mock_run.return_value = MagicMock(returncode=1, stdout="", stderr="")
+        attempt_stop_autocomplete(
+            project_root=Path("/fake"), client_id="c", review_id="r",
+            review_path=Path("/fake/review.md"), prompt_file=Path("/fake/prompt.md"),
+            covered_entries=[], user_prompt="finish", reviewer_timeout_seconds=42,
+        )
+        self.assertEqual(mock_run.call_args.kwargs["timeout"], 42.0)
+
+    @patch("claude_auto_review.stop.autocomplete.log_event")
+    @patch("claude_auto_review.stop.autocomplete.subprocess.run")
+    @patch("claude_auto_review.stop.autocomplete.shutil.which", return_value="/usr/bin/claude")
+    @patch("pathlib.Path.is_file", return_value=True)
     def test_general_exception(self, mock_is_file, mock_which, mock_run, mock_log):
         mock_run.side_effect = Exception("boom")
         result = attempt_stop_autocomplete(

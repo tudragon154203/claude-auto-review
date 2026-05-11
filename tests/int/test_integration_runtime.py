@@ -65,6 +65,7 @@ class IntegrationRuntimeTests(IntegrationTestCase):
         settings = load_settings(project_root)
         self.assertFalse(settings["enabled"])
         self.assertEqual(settings["customKey"], "value")
+        self.assertEqual(settings["reviewerTimeoutSeconds"], 600)
         self.assertTrue(settings["lastAssistantMessageClassifierEnabled"])
         self.assertEqual(settings["lastAssistantMessageClassifierTimeoutSeconds"], 10)
 

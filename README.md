@@ -61,4 +61,5 @@ The installer creates the local `.claude/claude-auto-review/` runtime tree and g
 - Client isolation per session via `CLAUDE_SESSION_ID`
 - Circuit breaker after `maxStopPasses` blocks (default: 3)
 - Auto-completion via Claude CLI sub-agent when available
+- Reviewer hard-cap via `reviewerTimeoutSeconds` (default: 600 seconds)
 

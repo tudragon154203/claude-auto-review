@@ -14,6 +14,7 @@ class TestSettings(StateTestCase, unittest.TestCase):
         project_root = self.temp_project()
         result = load_settings(project_root)
         self.assertTrue(result["enabled"])
+        self.assertEqual(result["reviewerTimeoutSeconds"], 600)
         self.assertTrue(result["lastAssistantMessageClassifierEnabled"])
         self.assertEqual(result["lastAssistantMessageClassifierTimeoutSeconds"], 10)
 
@@ -26,6 +27,7 @@ class TestSettings(StateTestCase, unittest.TestCase):
                 {
                     "claude-auto-review": {
                         "maxStopPasses": 5,
+                        "reviewerTimeoutSeconds": 120,
                         "lastAssistantMessageClassifierEnabled": False,
                         "lastAssistantMessageClassifierTimeoutSeconds": 3,
                     }
@@ -35,6 +37,7 @@ class TestSettings(StateTestCase, unittest.TestCase):
         )
         result = load_settings(project_root)
         self.assertEqual(result["maxStopPasses"], 5)
+        self.assertEqual(result["reviewerTimeoutSeconds"], 120)
         self.assertFalse(result["lastAssistantMessageClassifierEnabled"])
         self.assertEqual(result["lastAssistantMessageClassifierTimeoutSeconds"], 3)
 
@@ -80,6 +83,7 @@ class TestSettings(StateTestCase, unittest.TestCase):
         self.assertIn("hooks", settings)
         self.assertEqual(settings["hooks"]["PostToolUse"][0]["hooks"][0]["command"], "python hooks/post_tool_use.py")
         self.assertEqual(settings["hooks"]["Stop"][0]["hooks"][0]["command"], "python hooks/stop_hook.py")
+        self.assertEqual(settings["hooks"]["Stop"][0]["hooks"][0]["timeout"], 660)
         self.assertEqual(settings["hooks"]["SessionEnd"][0]["hooks"][0]["command"], "python hooks/session_end.py")
 
     def test_ensure_project_settings_does_not_overwrite_existing(self):

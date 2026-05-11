@@ -10,6 +10,7 @@ DEFAULT_SETTINGS = {
     "skipExtensions": [],
     "maxStopPasses": 3,
     "pendingReviewTimeoutHours": 1,
+    "reviewerTimeoutSeconds": 600,
     "lastAssistantMessageClassifierEnabled": True,
     "lastAssistantMessageClassifierTimeoutSeconds": 10,
 }

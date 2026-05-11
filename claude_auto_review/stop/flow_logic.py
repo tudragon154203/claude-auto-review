@@ -147,6 +147,7 @@ def finalize_review_stop(project_root, client_id, resolution, payload, settings)
     review_id = review.get("reviewId", "")
     review_path = Path(review.get("reviewPath", ""))
     prompt_file = _review_prompt_path(project_root, client_id, review_id)
+    reviewer_timeout_seconds = settings.get("reviewerTimeoutSeconds", 600)
 
     if is_review_complete(review_path) and is_review_clean(review_path):
         remaining = apply_completed_review(project_root, client_id, review_id, covered_entries)
@@ -160,7 +161,16 @@ def finalize_review_stop(project_root, client_id, resolution, payload, settings)
         return 2
 
     user_prompt = build_review_completion_prompt(review_path)
-    if attempt_stop_autocomplete(project_root, client_id, review_id, review_path, prompt_file, covered_entries, user_prompt):
+    if attempt_stop_autocomplete(
+        project_root,
+        client_id,
+        review_id,
+        review_path,
+        prompt_file,
+        covered_entries,
+        user_prompt,
+        reviewer_timeout_seconds=reviewer_timeout_seconds,
+    ):
         return 0
 
     _classify_last_assistant_message_if_enabled(project_root, client_id, payload, settings)
