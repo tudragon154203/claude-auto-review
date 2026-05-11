@@ -11,11 +11,26 @@ from claude_auto_review.state.store_read import load_state
 
 
 class EndToEndLastAssistantMessageTests(EndToEndTestCase):
-    def test_stop_hook_e2e_logs_last_assistant_message_classification(self):
+    def test_stop_hook_e2e_logs_last_assistant_message_classification_invalid_label(self):
         project_root = self.temp_project()
         (project_root / "src" / "app.ts").write_text("export const value = 1;\n", encoding="utf-8")
         self.track(project_root, "src/app.ts")
-        server, base_url = self.start_classifier_server(label="complete")
+        classifier_response = {
+            "id": "gen-test",
+            "type": "message",
+            "role": "assistant",
+            "content": [
+                {
+                    "type": "thinking",
+                    "thinking": "\nThe user wants me to classify whether the assistant message is a true completion or",
+                }
+            ],
+            "model": CLASSIFIER_MODEL,
+            "stop_reason": "max_tokens",
+            "stop_sequence": None,
+            "usage": {"input_tokens": 286, "output_tokens": 16},
+        }
+        server, base_url = self.start_classifier_server(payload=classifier_response)
         try:
             result = self.run_python(
                 "hooks/stop_hook.py",
@@ -40,12 +55,14 @@ class EndToEndLastAssistantMessageTests(EndToEndTestCase):
         state = load_state(project_root, "test-session")
         classifier_entries = [entry for entry in state if entry.get("type") == "assistant_message_classification"]
         self.assertEqual(len(classifier_entries), 1)
-        self.assertEqual(classifier_entries[0]["status"], "complete")
+        self.assertEqual(classifier_entries[0]["status"], "unknown")
+        self.assertEqual(classifier_entries[0]["reason"], "invalid_label")
         self.assertEqual(classifier_entries[0]["baseUrl"], base_url)
 
         log_entries = [entry for entry in self.read_log_entries(project_root) if entry.get("event") == "last_assistant_message_classified"]
         self.assertEqual(len(log_entries), 1)
-        self.assertEqual(log_entries[0]["status"], "complete")
-        self.assertEqual(log_entries[0]["reason"], "parsed_label")
+        self.assertEqual(log_entries[0]["status"], "unknown")
+        self.assertEqual(log_entries[0]["reason"], "invalid_label")
         self.assertEqual(log_entries[0]["base_url"], base_url)
+        self.assertEqual(json.loads(log_entries[0]["debug_response"]), classifier_response)
         self.assertNotIn("secret-key", json.dumps(log_entries[0]))

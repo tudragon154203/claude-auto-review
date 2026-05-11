@@ -10,6 +10,7 @@ from claude_auto_review.state.store_read import load_state
 from claude_auto_review.stop.classifier.models import (
     CLASSIFICATION_EVENT,
     CLASSIFIER_MODEL,
+    DEFAULT_TIMEOUT_SECONDS,
 )
 from claude_auto_review.stop.classifier.client import (
     sanitize_base_url,
@@ -107,12 +108,53 @@ class TestLastAssistantMessageClassifier(StateTestCase, unittest.TestCase):
         self.assertEqual(seen["headers"]["Anthropic-version"], "2023-06-01")
         self.assertEqual(seen["headers"]["X-api-key"], "top-secret")
         self.assertEqual(seen["body"]["model"], CLASSIFIER_MODEL)
-        self.assertEqual(seen["body"]["max_tokens"], 16)
+        self.assertEqual(seen["body"]["max_tokens"], 1024)
         self.assertEqual(seen["body"]["temperature"], 0)
         self.assertEqual(seen["body"]["stop_sequences"], ["\n"])
         self.assertIn("exactly one lowercase label", seen["body"]["system"])
         self.assertIn("Ship it.", seen["body"]["messages"][0]["content"][0]["text"])
         self.assertTrue(seen["body"]["messages"][0]["content"][0]["text"].endswith("\n\nLabel:"))
+
+    def test_classifier_disabled_returns_none(self):
+        result = classify_last_assistant_message(
+            self.project_root,
+            self.client_id,
+            {"last_assistant_message": "Ship it."},
+            {"lastAssistantMessageClassifierEnabled": False},
+            env=self.env,
+            urlopen=lambda req, timeout: _FakeResponse({"content": [{"text": "complete"}]}),
+        )
+        self.assertIsNone(result)
+
+    def test_missing_api_key_is_logged_as_error(self):
+        result = classify_last_assistant_message(
+            self.project_root,
+            self.client_id,
+            {"last_assistant_message": "Ship it."},
+            self.settings,
+            env={"ANTHROPIC_BASE_URL": "http://127.0.0.1:13456"},
+            urlopen=lambda req, timeout: _FakeResponse({"content": [{"text": "complete"}]}),
+        )
+        self.assertEqual(result.status, "error")
+        self.assertEqual(result.reason, "missing_api_key")
+
+    def test_invalid_timeout_falls_back_to_default(self):
+        seen = {}
+
+        def fake_urlopen(req, timeout):
+            seen["timeout"] = timeout
+            return _FakeResponse({"content": [{"text": "complete"}]})
+
+        result = classify_last_assistant_message(
+            self.project_root,
+            self.client_id,
+            {"last_assistant_message": "Ship it."},
+            {"lastAssistantMessageClassifierEnabled": True, "lastAssistantMessageClassifierTimeoutSeconds": "nope"},
+            env=self.env,
+            urlopen=fake_urlopen,
+        )
+        self.assertEqual(result.status, "complete")
+        self.assertEqual(seen["timeout"], float(DEFAULT_TIMEOUT_SECONDS))
 
     def test_accepts_exact_labels(self):
         for label in ("complete", "incomplete", "unknown"):
@@ -141,6 +183,24 @@ class TestLastAssistantMessageClassifier(StateTestCase, unittest.TestCase):
         self.assertEqual(result.status, "unknown")
         self.assertEqual(result.reason, "invalid_label")
         self.assertEqual(result.debug_response, json.dumps(payload, separators=(",", ":")))
+
+    def test_ignores_thinking_blocks_when_parsing_label(self):
+        payload = {
+            "content": [
+                {"type": "thinking", "thinking": "The answer is probably incomplete."},
+                {"type": "text", "text": "complete"},
+            ]
+        }
+        result = classify_last_assistant_message(
+            self.project_root,
+            self.client_id,
+            {"last_assistant_message": "Message"},
+            self.settings,
+            env=self.env,
+            urlopen=lambda req, timeout: _FakeResponse(payload),
+        )
+        self.assertEqual(result.status, "complete")
+        self.assertEqual(result.reason, "parsed_label")
 
     def test_unknown_debug_response_is_logged_but_not_persisted_to_state(self):
         payload = {"content": [{"text": "unknown"}], "id": "msg-debug"}

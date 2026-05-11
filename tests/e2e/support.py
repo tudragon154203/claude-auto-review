@@ -52,8 +52,8 @@ class EndToEndTestCase(TempProjectMixin, SubprocessMixin, unittest.TestCase):
             if line.strip()
         ]
 
-    def start_classifier_server(self, label="complete"):
-        handler_cls = make_classifier_handler(label)
+    def start_classifier_server(self, label="complete", payload=None):
+        handler_cls = make_classifier_handler(label, response_payload=payload)
         server = _ThreadedHTTPServer(("127.0.0.1", 0), handler_cls)
         thread = threading.Thread(target=server.serve_forever, daemon=True)
         thread.start()

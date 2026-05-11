@@ -52,7 +52,15 @@ def _parse_classifier_label(response_json):
     content = response_json.get("content")
     if not isinstance(content, list):
         return "unknown", "bad_response"
-    text = "".join(block.get("text", "") for block in content if isinstance(block, dict) and isinstance(block.get("text"), str))
+    text = "".join(
+        block.get("text", "")
+        for block in content
+        if (
+            isinstance(block, dict)
+            and block.get("type", "text") == "text"
+            and isinstance(block.get("text"), str)
+        )
+    )
     label = text.strip().lower()
     if label in {"complete", "incomplete", "unknown"}:
         return label, "parsed_label"

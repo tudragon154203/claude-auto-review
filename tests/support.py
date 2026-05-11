@@ -116,7 +116,7 @@ class SubprocessMixin:
                 shutil.rmtree(fake_dir, ignore_errors=True)
 
 
-def make_classifier_handler(response_label="complete", response_delay=0):
+def make_classifier_handler(response_label="complete", response_delay=0, response_payload=None):
     """Return an isolated HTTP handler class for last-assistant-message tests."""
 
     class _ClassifierHandler(BaseHTTPRequestHandler):
@@ -133,7 +133,9 @@ def make_classifier_handler(response_label="complete", response_delay=0):
             )
             if response_delay:
                 time.sleep(response_delay)
-            payload = {"content": [{"type": "text", "text": response_label}]}
+            payload = response_payload
+            if payload is None:
+                payload = {"content": [{"type": "text", "text": response_label}]}
             encoded = json.dumps(payload).encode("utf-8")
             self.send_response(200)
             self.send_header("Content-Type", "application/json")
