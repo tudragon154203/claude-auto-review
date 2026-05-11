@@ -11,3 +11,4 @@ __pycache__/
 *.ps1
 repomix-*
 .memsearch/
+.claude/claude-auto-review/

@@ -32,12 +32,18 @@ def write_runtime_shims(runtime_scripts, plugin_root):
     )
 
 
-def ensure_gitignore_entries(gitignore_path, ignore_entries):
+def ensure_gitignore_entries(gitignore_path, ignore_entries, remove_entries=None):
     gitignore_path = Path(gitignore_path)
     existing = gitignore_path.read_text(encoding="utf-8") if gitignore_path.exists() else ""
-    existing_lines = set(existing.splitlines())
+    lines = existing.splitlines()
+    remove_entries = set(remove_entries or [])
+    filtered_lines = [line for line in lines if line not in remove_entries]
+    existing_lines = set(filtered_lines)
     missing = [entry for entry in ignore_entries if entry not in existing_lines]
-    if missing:
-        prefix = "" if not existing or existing.endswith("\n") else "\n"
-        with gitignore_path.open("a", encoding="utf-8", newline="\n") as handle:
-            handle.write(prefix + "\n".join(missing) + "\n")
+    if filtered_lines != lines or missing:
+        if filtered_lines and missing:
+            filtered_lines.extend(missing)
+        elif missing:
+            filtered_lines = list(missing)
+        with gitignore_path.open("w", encoding="utf-8", newline="\n") as handle:
+            handle.write("\n".join(filtered_lines) + "\n")
