@@ -7,12 +7,18 @@ from unittest.mock import patch
 from urllib import error
 
 from claude_auto_review.state.store_read import load_state
-from claude_auto_review.stop.last_assistant_message import (
+from claude_auto_review.stop.models import (
     CLASSIFICATION_EVENT,
     CLASSIFIER_MODEL,
-    classify_last_assistant_message,
-    extract_last_assistant_message_text,
+)
+from claude_auto_review.stop.client import (
     sanitize_base_url,
+)
+from claude_auto_review.stop.last_assistant_message import (
+    classify_last_assistant_message,
+)
+from claude_auto_review.stop.extraction import (
+    extract_last_assistant_message_text,
 )
 
 from tests.unit.state.support import StateTestCase
