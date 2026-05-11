@@ -275,9 +275,7 @@ class EndToEndTests(TempProjectMixin, SubprocessMixin, unittest.TestCase):
         self.assertIn("--model", cli_args)
         idx = cli_args.index("--model")
         self.assertEqual(cli_args[idx + 1], "fast")
-        self.assertIn("--permission-mode", cli_args)
-        idx = cli_args.index("--permission-mode")
-        self.assertEqual(cli_args[idx + 1], "acceptEdits")
+        self.assertIn("--allowedTools", cli_args)
         self.assertIn("--system-prompt-file", cli_args)
 
         # Verify files are marked reviewed

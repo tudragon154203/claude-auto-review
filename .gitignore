@@ -9,8 +9,4 @@ __pycache__/
 .pytest_cache/
 .coverage
 *.ps1
-.claude/claude-auto-review/clients/*/run/
-.claude/claude-auto-review/clients/*/reviews/
-.claude/claude-auto-review/scripts/
-.claude/claude-auto-review/agents/
-.claude/claude-auto-review/claude-auto-review.log
+repomix-*

@@ -1,6 +1,6 @@
 import unittest
 
-from claude_auto_review.state.reviews import is_review_complete
+from claude_auto_review.state.reviews import is_review_complete, is_review_expired
 
 from tests.unit.state.support import StateTestCase
 
@@ -62,5 +62,29 @@ class TestReviewCompletion(StateTestCase, unittest.TestCase):
         self.assertFalse(is_review_complete(path))
         path.write_text("## Verdict\nPEnDInG.", encoding="utf-8")
         self.assertFalse(is_review_complete(path))
+
+    def test_is_review_expired_with_timeout_zero(self):
+        entry = {"timestamp": "2024-01-01T00:00:00Z"}
+        self.assertFalse(is_review_expired(entry, 0))
+
+    def test_is_review_expired_missing_timestamp(self):
+        entry = {"reviewId": "r1"}
+        self.assertFalse(is_review_expired(entry, 1))
+
+    def test_is_review_expired_invalid_timestamp(self):
+        entry = {"timestamp": "not-a-date"}
+        self.assertFalse(is_review_expired(entry, 1))
+
+    def test_is_review_expired_old_review(self):
+        from datetime import datetime, timedelta, timezone
+        old_time = (datetime.now(timezone.utc) - timedelta(hours=2)).isoformat().replace("+00:00", "Z")
+        entry = {"timestamp": old_time}
+        self.assertTrue(is_review_expired(entry, 1))
+
+    def test_is_review_expired_recent_review(self):
+        from datetime import datetime, timedelta, timezone
+        recent_time = (datetime.now(timezone.utc) - timedelta(minutes=30)).isoformat().replace("+00:00", "Z")
+        entry = {"timestamp": recent_time}
+        self.assertFalse(is_review_expired(entry, 1))
 
 

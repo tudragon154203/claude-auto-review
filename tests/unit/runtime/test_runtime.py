@@ -1,4 +1,6 @@
 import unittest
+from pathlib import Path
+from unittest.mock import patch
 
 from claude_auto_review.paths import client_reviews_dir, client_run_dir, client_state_path
 from claude_auto_review.runtime.cleanup import cancel_runtime, cancel_session, cleanup_expired_pending_reviews
@@ -78,6 +80,34 @@ class TestRuntime(StateTestCase, unittest.TestCase):
             (project_root / ".claude" / "claude-auto-review" / "clients" / "client-other_alpha").exists()
         )
         self.assertGreater(len(removed), 0)
+
+    def test_remove_tree_oserror_suppressed(self):
+        from claude_auto_review.runtime.cleanup import _remove_tree
+        with patch("claude_auto_review.runtime.cleanup.shutil.rmtree", side_effect=OSError("no perms")):
+            result = _remove_tree(Path("/fake/dir"))
+            self.assertFalse(result)
+
+    def test_remove_tree_unlink_file(self):
+        from claude_auto_review.runtime.cleanup import _remove_tree
+        project_root = self.temp_project()
+        f = project_root / "temp.txt"
+        f.write_text("hi", encoding="utf-8")
+        result = _remove_tree(f)
+        self.assertTrue(result)
+        self.assertFalse(f.exists())
+
+    def test_remove_tree_nonexistent(self):
+        from claude_auto_review.runtime.cleanup import _remove_tree
+        result = _remove_tree(Path("/nonexistent/nope"))
+        self.assertFalse(result)
+
+    def test_helpers_log_event_oserror_suppression(self):
+        from claude_auto_review.runtime.helpers import log_event
+        with patch("claude_auto_review.runtime.helpers.get_log_path", side_effect=OSError("no write")):
+            try:
+                log_event(Path("/fake"), "test_event")
+            except Exception:
+                self.fail("log_event should suppress OSError")
 
     def test_cleanup_expired_pending_reviews_preserves_invalid_lines(self):
         from datetime import datetime, timedelta, timezone
