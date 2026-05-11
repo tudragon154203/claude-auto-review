@@ -106,3 +106,21 @@ def is_review_complete(review_path):
     if not verdict:
         return False
     return verdict.lower() not in ("pending", "pending.")
+
+
+def is_review_clean(review_path):
+    """Return True only if the review verdict indicates no blocking issues.
+
+    Note: The verdict must start with 'clean' to allow stop. This is coupled
+    with the verdict template in agents/reviewer.md. Template changes may require
+    updating this check.
+    """
+    path = Path(review_path)
+    if not path.is_file():
+        return False
+    content = path.read_text(encoding="utf-8", errors="replace")
+    if "## Verdict" not in content:
+        return False
+    verdict = content.split("## Verdict", 1)[1].strip().lower()
+    # Use startswith for resilience to template wording variations
+    return verdict.startswith("clean")

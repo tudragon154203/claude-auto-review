@@ -192,7 +192,7 @@ class TestFinalizeReviewStop(unittest.TestCase):
             state=[], unreviewed=[{"file": "still.ts", "hash": "1"}],
             review={"reviewId": "r1", "reviewPath": "/fake/r.md"},
         )
-        result = finalize_review_stop(Path("/fake"), "c", resolution, {"last_assistant_message": "done"}, {})
+        result = finalize_review_stop(Path("/fake"), "c", resolution, {"last_assistant_message": "done"}, {"lastAssistantMessageClassifierEnabled": True})
         self.assertEqual(result, 2)
         mock_classify.assert_called_once()
 
@@ -219,7 +219,7 @@ class TestFinalizeReviewStop(unittest.TestCase):
             state=[], unreviewed=[{"file": "a.ts", "hash": "1"}],
             review={"reviewId": "r1", "reviewPath": "/fake/r.md"},
         )
-        result = finalize_review_stop(Path("/fake"), "c", resolution, {"last_assistant_message": "done"}, {})
+        result = finalize_review_stop(Path("/fake"), "c", resolution, {"last_assistant_message": "done"}, {"lastAssistantMessageClassifierEnabled": True})
         self.assertEqual(result, 2)
         mock_append.assert_called_once()
         mock_classify.assert_called_once()

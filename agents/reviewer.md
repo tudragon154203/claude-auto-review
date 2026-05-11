@@ -35,16 +35,18 @@ The review file at the `review_path` must follow this exact structure so the sto
 - **Location:** file.py:42
 - **Rationale:** Why this matters — concrete impact
 - **Suggestion:** Specific fix in code
-- **Verdict:** Confirmed | Skipped | Fixed
+- **Verdict:** Confirmed | Skipped
 
 ## Verdict
 
 Clean - no issues found. Claude may stop.
 ```
 
-Each finding MUST have a Verdict set to one of: `Confirmed`, `Skipped`, or `Fixed`. The stop hook treats a review as complete only when all findings have non-Pending verdicts and the Verdict section is not `Pending`.
+Each finding MUST have a Verdict set to one of: `Confirmed` or `Skipped`. The stop hook treats a review as complete only when all findings have non-Pending verdicts and the Verdict section is not `Pending`.
 
-When you fix a finding, edit the code directly and set its Verdict to `Fixed`. When you cannot fix (one of the valid skip reasons from the prompt applies), set Verdict to `Skipped` with a brief note why. Otherwise set to `Confirmed` to acknowledge it to the user without fixing.
+When you cannot apply a rule (one of the valid skip reasons from the prompt applies), set Verdict to `Skipped` with a brief note why. Otherwise set to `Confirmed` to acknowledge it to the user.
+
+You may NOT edit or fix code files. You only review and report findings.
 
 ## Rule Enforcement
 
@@ -69,8 +71,7 @@ For each finding:
 End with one of:
 
 - `Clean - no issues found. Claude may stop.`
-- `N issues found. Claude should address [CRITICAL/HIGH] items before stopping.`
-- `N issues found. All are [MEDIUM/LOW]. Claude may stop and address later.`
+- `N issues found. Claude must address all findings before stopping.`
 
 ## Constraints
 
@@ -78,3 +79,4 @@ End with one of:
 - Do not suggest formatting-only changes.
 - Do not nitpick names unless they violate rules.
 - Prefer actionable findings with clear user impact.
+- All findings, regardless of severity, must be addressed before stopping.

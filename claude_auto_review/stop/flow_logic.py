@@ -97,7 +97,7 @@ def _block_review_prompt_failure(files_str, result):
 
 
 def _classify_last_assistant_message_if_enabled(project_root, client_id, payload, settings):
-    if settings.get("lastAssistantMessageClassifierEnabled", True):
+    if settings.get("lastAssistantMessageClassifierEnabled", False):
         classify_last_assistant_message(project_root, client_id, payload, settings)
 
 
