@@ -33,7 +33,7 @@ class TestPostToolUseHook(HookTestCase, unittest.TestCase):
         self.assertEqual(post.returncode, 0)
         self.assertEqual(load_state(project_root, "test-session")[0]["file"], "src/app.ts")
 
-    def test_post_tool_use_tracks_removed_file_and_stop_hook_blocks(self):
+    def test_post_tool_use_tracks_removed_file_and_stop_hook_allows(self):
         project_root = self.temp_project()
         payload = {"tool_name": "Remove", "tool_input": {"file_path": "src/deleted.ts"}}
 
@@ -44,7 +44,8 @@ class TestPostToolUseHook(HookTestCase, unittest.TestCase):
         self.assertEqual(state[0]["hash"], "__deleted__")
         self.assertFalse(state[0]["reviewed"])
         self.assertTrue(state[0]["deleted"])
-        self.assertEqual(self.run_python("hooks/stop_hook.py", project_root, env_overrides={"PATH": ""}, use_fake_claude=False).returncode, 2)
+        # Deleted files should allow stop since they no longer exist
+        self.assertEqual(self.run_python("hooks/stop_hook.py", project_root, env_overrides={"PATH": ""}, use_fake_claude=False).returncode, 0)
 
     def test_post_tool_use_ignores_paths_outside_project(self):
         project_root = self.temp_project()

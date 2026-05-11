@@ -78,7 +78,11 @@ def was_hash_reviewed(state, file_path, file_hash):
 
 
 def get_unreviewed_files(state):
-    return [entry for entry in latest_entries_by_file(state).values() if not entry.get("reviewed")]
+    return [
+        entry
+        for entry in latest_entries_by_file(state).values()
+        if not entry.get("reviewed") and not entry.get("deleted")
+    ]
 
 
 def consecutive_stop_blocks(state):
