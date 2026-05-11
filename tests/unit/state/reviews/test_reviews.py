@@ -64,7 +64,7 @@ class TestReviewCompletion(StateTestCase, unittest.TestCase):
         self.assertFalse(is_review_complete(path))
 
     def test_is_review_expired_with_timeout_zero(self):
-        entry = {"timestamp": "2024-01-01T00:00:00Z"}
+        entry = {"timestamp": "2024-01-01T07:00:00+07:00"}
         self.assertFalse(is_review_expired(entry, 0))
 
     def test_is_review_expired_missing_timestamp(self):
@@ -76,14 +76,14 @@ class TestReviewCompletion(StateTestCase, unittest.TestCase):
         self.assertFalse(is_review_expired(entry, 1))
 
     def test_is_review_expired_old_review(self):
-        from datetime import datetime, timedelta, timezone
-        old_time = (datetime.now(timezone.utc) - timedelta(hours=2)).isoformat().replace("+00:00", "Z")
+        from datetime import datetime, timedelta
+        old_time = (datetime.now().astimezone() - timedelta(hours=2)).isoformat()
         entry = {"timestamp": old_time}
         self.assertTrue(is_review_expired(entry, 1))
 
     def test_is_review_expired_recent_review(self):
-        from datetime import datetime, timedelta, timezone
-        recent_time = (datetime.now(timezone.utc) - timedelta(minutes=30)).isoformat().replace("+00:00", "Z")
+        from datetime import datetime, timedelta
+        recent_time = (datetime.now().astimezone() - timedelta(minutes=30)).isoformat()
         entry = {"timestamp": recent_time}
         self.assertFalse(is_review_expired(entry, 1))
 

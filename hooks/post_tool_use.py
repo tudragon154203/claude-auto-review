@@ -6,7 +6,7 @@ from bootstrap import ensure_repo_root_on_path
 
 ensure_repo_root_on_path()
 
-from claude_auto_review.paths import DELETED_FILE_HASH, get_client_id, get_project_root, normalize_relative_path, utc_now_iso
+from claude_auto_review.paths import DELETED_FILE_HASH, get_client_id, get_project_root, local_now_iso, normalize_relative_path
 from claude_auto_review.runtime.setup import ensure_client_runtime
 from claude_auto_review.settings import load_settings, should_skip_file
 from claude_auto_review.state.store_read import (
@@ -31,7 +31,7 @@ def main():
             return 0
 
         state = load_state(project_root, client_id)
-        timestamp = utc_now_iso()
+        timestamp = local_now_iso()
 
         for candidate in extract_file_paths_from_hook_input(payload):
             file_path = normalize_relative_path(candidate, project_root)

@@ -17,7 +17,7 @@
     "Stop": [
       {
         "script": "hooks/stop_hook.py",
-        "timeout": 30,
+        "timeout": 660,
         "statusMessage": "Claude Auto Review: checking review state..."
       }
     ],

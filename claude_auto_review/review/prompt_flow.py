@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from pathlib import Path
 
-from claude_auto_review.paths import client_reviews_dir, client_run_dir, utc_now_iso
+from claude_auto_review.paths import client_reviews_dir, client_run_dir, local_now_iso
 from claude_auto_review.review.generation import (
     build_prompt,
     current_file_snapshots,
@@ -36,7 +36,7 @@ def _write_text_file(path, content):
 
 
 def create_review_prompt_files(project_root, client_id, unreviewed, settings):
-    timestamp = utc_now_iso()
+    timestamp = local_now_iso()
     review_id = _review_id_from_timestamp(timestamp)
     files = [entry["file"] for entry in unreviewed]
 

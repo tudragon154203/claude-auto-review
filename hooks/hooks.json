@@ -19,7 +19,7 @@
           {
             "type": "command",
             "command": "python hooks/stop_hook.py",
-            "timeout": 600,
+            "timeout": 660,
             "statusMessage": "Claude Auto Review: checking review state..."
           }
         ]

@@ -14,16 +14,32 @@ class TestSettings(StateTestCase, unittest.TestCase):
         project_root = self.temp_project()
         result = load_settings(project_root)
         self.assertTrue(result["enabled"])
+        self.assertEqual(result["reviewerTimeoutSeconds"], 600)
+        self.assertTrue(result["lastAssistantMessageClassifierEnabled"])
+        self.assertEqual(result["lastAssistantMessageClassifierTimeoutSeconds"], 10)
 
     def test_load_settings_merges_project_settings(self):
         project_root = self.temp_project()
         settings_dir = project_root / ".claude"
         settings_dir.mkdir()
         (settings_dir / "settings.json").write_text(
-            json.dumps({"claude-auto-review": {"maxStopPasses": 5}}), encoding="utf-8"
+            json.dumps(
+                {
+                    "claude-auto-review": {
+                        "maxStopPasses": 5,
+                        "reviewerTimeoutSeconds": 120,
+                        "lastAssistantMessageClassifierEnabled": False,
+                        "lastAssistantMessageClassifierTimeoutSeconds": 3,
+                    }
+                }
+            ),
+            encoding="utf-8",
         )
         result = load_settings(project_root)
         self.assertEqual(result["maxStopPasses"], 5)
+        self.assertEqual(result["reviewerTimeoutSeconds"], 120)
+        self.assertFalse(result["lastAssistantMessageClassifierEnabled"])
+        self.assertEqual(result["lastAssistantMessageClassifierTimeoutSeconds"], 3)
 
     def test_should_skip_file_no_extension(self):
         self.assertFalse(should_skip_file("README", DEFAULT_SETTINGS))
@@ -49,15 +65,61 @@ class TestSettings(StateTestCase, unittest.TestCase):
         ensure_project_settings(project_root)
         settings_path = project_root / ".claude" / "settings.json"
         self.assertTrue(settings_path.exists())
+        settings = json.loads(settings_path.read_text(encoding="utf-8"))
+        self.assertIn("claude-auto-review", settings)
+        self.assertIn("hooks", settings)
+        self.assertIn("PostToolUse", settings["hooks"])
+        self.assertIn("Stop", settings["hooks"])
+        self.assertIn("SessionEnd", settings["hooks"])
+
+    def test_ensure_project_settings_installs_claude_hooks_into_settings_json(self):
+        project_root = self.temp_project()
+
+        ensure_project_settings(project_root)
+
+        settings_path = project_root / ".claude" / "settings.json"
+        settings = json.loads(settings_path.read_text(encoding="utf-8"))
+
+        self.assertIn("hooks", settings)
+        self.assertEqual(settings["hooks"]["PostToolUse"][0]["hooks"][0]["command"], "python hooks/post_tool_use.py")
+        self.assertEqual(settings["hooks"]["Stop"][0]["hooks"][0]["command"], "python hooks/stop_hook.py")
+        self.assertEqual(settings["hooks"]["Stop"][0]["hooks"][0]["timeout"], 660)
+        self.assertEqual(settings["hooks"]["SessionEnd"][0]["hooks"][0]["command"], "python hooks/session_end.py")
 
     def test_ensure_project_settings_does_not_overwrite_existing(self):
         project_root = self.temp_project()
         settings_path = project_root / ".claude" / "settings.json"
         settings_path.parent.mkdir(parents=True, exist_ok=True)
-        settings_path.write_text(json.dumps({"claude-auto-review": {"maxStopPasses": 99}}), encoding="utf-8")
+        settings_path.write_text(
+            json.dumps(
+                {
+                    "claude-auto-review": {"maxStopPasses": 99},
+                    "hooks": {
+                        "PostToolUse": [
+                            {
+                                "matcher": "Write",
+                                "hooks": [
+                                    {"type": "command", "command": "python custom.py"}
+                                ],
+                            }
+                        ]
+                    },
+                }
+            ),
+            encoding="utf-8",
+        )
         ensure_project_settings(project_root)
         settings = json.loads(settings_path.read_text(encoding="utf-8"))
         self.assertEqual(settings["claude-auto-review"]["maxStopPasses"], 99)
+        self.assertIn("hooks", settings)
+        self.assertEqual(
+            settings["hooks"]["PostToolUse"][0]["hooks"][0]["command"],
+            "python custom.py",
+        )
+        self.assertEqual(
+            settings["hooks"]["Stop"][0]["hooks"][0]["command"],
+            "python hooks/stop_hook.py",
+        )
 
     def test_ensure_project_settings_handles_non_dict_json(self):
         project_root = self.temp_project()
@@ -67,6 +129,7 @@ class TestSettings(StateTestCase, unittest.TestCase):
         ensure_project_settings(project_root)
         settings = json.loads(settings_path.read_text(encoding="utf-8"))
         self.assertIn("claude-auto-review", settings)
+        self.assertIn("hooks", settings)
 
     def test_ensure_project_settings_handles_oserror(self):
         project_root = self.temp_project()

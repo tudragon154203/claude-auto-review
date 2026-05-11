@@ -1,6 +1,6 @@
 import json
 
-from claude_auto_review.paths import client_state_path, utc_now_iso
+from claude_auto_review.paths import client_state_path, local_now_iso
 from claude_auto_review.runtime.setup import ensure_client_runtime
 from claude_auto_review.runtime.helpers import log_event, resolve_client_id, resolve_project_root
 
@@ -21,7 +21,7 @@ def _review_state_entry(entries, review_id, review_path, client_id):
         "type": "review",
         "reviewId": review_id,
         "reviewPath": str(review_path),
-        "timestamp": utc_now_iso(),
+        "timestamp": local_now_iso(),
         "status": "pending",
         "files": _review_file_entries(entries),
         "clientId": client_id,
@@ -55,6 +55,6 @@ def append_review_started(entries, review_id, review_path, project_root=None, cl
 
 def mark_files_reviewed(entries, review_id, project_root=None, client_id=""):
     project_root, client_id = _write_context(project_root, client_id)
-    timestamp = utc_now_iso()
+    timestamp = local_now_iso()
     for entry in entries:
         _append_jsonl_state(_reviewed_edit_entry(entry, review_id, timestamp), project_root, client_id)

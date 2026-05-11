@@ -18,7 +18,7 @@ from claude_auto_review.review.generation import (
 class ReviewGenerationTests(unittest.TestCase):
     def test_build_prompt_assembles_expected_sections(self):
         review_id = "rev-123"
-        timestamp = "2026-05-05T01:00:00Z"
+        timestamp = "2026-05-05T08:00:00+07:00"
         readable_timestamp = format_review_timestamp(timestamp)
         entries = [{"file": "src/app.ts", "hash": "abc123"}]
         rules = "Rule one."
@@ -94,7 +94,7 @@ Pending.
         )
 
     def test_format_review_files_builds_review_body_from_entries(self):
-        timestamp = "2026-05-05T01:00:00Z"
+        timestamp = "2026-05-05T08:00:00+07:00"
         entries = [{"file": "src/app.ts", "hash": "abc123"}]
         prompt_path = Path("/tmp/review-123-prompt.md")
         expected = format_review_file(

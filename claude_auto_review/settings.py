@@ -8,10 +8,11 @@ DEFAULT_SETTINGS = {
     "rulesFile": str(Path(".claude") / "claude-auto-review" / "rules.md"),
     "includeExtensions": [],
     "skipExtensions": [],
-    "minSeverity": "MEDIUM",
-    "autoFix": True,
     "maxStopPasses": 3,
     "pendingReviewTimeoutHours": 1,
+    "reviewerTimeoutSeconds": 600,
+    "lastAssistantMessageClassifierEnabled": True,
+    "lastAssistantMessageClassifierTimeoutSeconds": 10,
 }
 
 

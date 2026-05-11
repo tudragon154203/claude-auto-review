@@ -2,12 +2,21 @@ import shutil
 import subprocess
 from pathlib import Path
 
-from claude_auto_review.state.reviews import is_review_complete
 from claude_auto_review.review.completion import apply_completed_review
+from claude_auto_review.state.reviews import is_review_clean, is_review_complete
 from claude_auto_review.state.store_write import log_event
 
 
-def attempt_stop_autocomplete(project_root, client_id, review_id, review_path, prompt_file, covered_entries, user_prompt):
+def attempt_stop_autocomplete(
+    project_root,
+    client_id,
+    review_id,
+    review_path,
+    prompt_file,
+    covered_entries,
+    user_prompt,
+    reviewer_timeout_seconds=600,
+):
     claude_cli = shutil.which("claude")
     if not claude_cli:
         log_event(project_root, "stop_hook_claude_cli_not_found")
@@ -40,7 +49,7 @@ def attempt_stop_autocomplete(project_root, client_id, review_id, review_path, p
             text=True,
             encoding="utf-8",
             errors="replace",
-            timeout=600,
+            timeout=float(reviewer_timeout_seconds),
         )
         log_event(
             project_root,
@@ -52,7 +61,7 @@ def attempt_stop_autocomplete(project_root, client_id, review_id, review_path, p
         if cli_result.returncode == 0 and cli_result.stdout.strip():
             if not is_review_complete(review_path):
                 review_path.write_text(cli_result.stdout, encoding="utf-8", newline="\n")
-        if is_review_complete(review_path):
+        if is_review_complete(review_path) and is_review_clean(review_path):
             remaining = apply_completed_review(project_root, client_id, review_id, covered_entries)
             if not remaining:
                 return True

@@ -1,0 +1,139 @@
+from tests.int.support import IntegrationTestCase
+
+from claude_auto_review.paths import local_now_iso
+from claude_auto_review.runtime.setup import ensure_client_runtime
+from claude_auto_review.state.reviews import pending_reviews_for_entries
+from claude_auto_review.state.store_read import consecutive_stop_blocks, get_unreviewed_files, load_state, was_hash_reviewed
+from claude_auto_review.state.store_write import append_review_started, append_state, mark_files_reviewed
+
+
+class IntegrationStateTests(IntegrationTestCase):
+    def test_review_started_to_pending_detection_cycle(self):
+        project_root = self.temp_project()
+        client_id = "review-cycle"
+        ensure_client_runtime(project_root, client_id)
+
+        entry = {
+            "type": "edit",
+            "file": "src/main.ts",
+            "hash": "abc123",
+            "timestamp": local_now_iso(),
+            "reviewed": False,
+        }
+        append_state(entry, project_root, client_id=client_id)
+
+        state = load_state(project_root, client_id)
+        entries = [e for e in state if e.get("type") == "edit"]
+        self.assertEqual(len(entries), 1)
+
+        append_review_started(entries, "rev-001", "reviews/rev-001.md", project_root, client_id=client_id)
+
+        state = load_state(project_root, client_id)
+        unreviewed = get_unreviewed_files(state)
+        self.assertEqual(len(unreviewed), 1)
+
+        reviews = pending_reviews_for_entries(state, entries)
+        self.assertEqual(len(reviews), 1)
+        self.assertEqual(reviews[0]["reviewId"], "rev-001")
+
+    def test_mark_files_reviewed_cross_function_consistency(self):
+        project_root = self.temp_project()
+        client_id = "mark-consistency"
+        ensure_client_runtime(project_root, client_id)
+
+        for file, h in [("a.ts", "h1"), ("b.ts", "h2"), ("c.ts", "h3")]:
+            append_state(
+                {
+                    "type": "edit",
+                    "file": file,
+                    "hash": h,
+                    "timestamp": local_now_iso(),
+                    "reviewed": False,
+                },
+                project_root,
+                client_id=client_id,
+            )
+
+        state = load_state(project_root, client_id)
+        self.assertEqual(len(get_unreviewed_files(state)), 3)
+
+        mark_files_reviewed([{"file": "b.ts", "hash": "h2"}], "rev-001", project_root, client_id=client_id)
+
+        state = load_state(project_root, client_id)
+        self.assertTrue(was_hash_reviewed(state, "b.ts", "h2"))
+        self.assertFalse(was_hash_reviewed(state, "a.ts", "h1"))
+        self.assertFalse(was_hash_reviewed(state, "c.ts", "h3"))
+
+        unreviewed = get_unreviewed_files(state)
+        self.assertEqual(len(unreviewed), 2)
+        unreviewed_files = {e["file"] for e in unreviewed}
+        self.assertIn("a.ts", unreviewed_files)
+        self.assertIn("c.ts", unreviewed_files)
+
+    def test_multiple_clients_state_isolation(self):
+        project_root = self.temp_project()
+        ensure_client_runtime(project_root, "alice")
+        ensure_client_runtime(project_root, "bob")
+
+        append_state(
+            {"type": "edit", "file": "alice.txt", "hash": "1111", "timestamp": local_now_iso(), "reviewed": False},
+            project_root,
+            client_id="alice",
+        )
+        append_state(
+            {"type": "edit", "file": "bob.txt", "hash": "2222", "timestamp": local_now_iso(), "reviewed": False},
+            project_root,
+            client_id="bob",
+        )
+
+        state_a = load_state(project_root, "alice")
+        state_b = load_state(project_root, "bob")
+
+        files_a = {e["file"] for e in state_a if e.get("type") == "edit"}
+        files_b = {e["file"] for e in state_b if e.get("type") == "edit"}
+
+        self.assertIn("alice.txt", files_a)
+        self.assertNotIn("bob.txt", files_a)
+        self.assertIn("bob.txt", files_b)
+        self.assertNotIn("alice.txt", files_b)
+
+    def test_consecutive_stop_blocks_with_reviewed_edit_reset(self):
+        project_root = self.temp_project()
+        client_id = "stop-blocks-reset"
+        ensure_client_runtime(project_root, client_id)
+
+        append_state({"type": "edit", "file": "a.ts", "hash": "h1", "timestamp": local_now_iso(), "reviewed": False}, project_root, client_id=client_id)
+        for _ in range(3):
+            append_state({"type": "stop_blocked", "reason": "x", "timestamp": local_now_iso()}, project_root, client_id=client_id)
+
+        state = load_state(project_root, client_id)
+        self.assertEqual(consecutive_stop_blocks(state), 3)
+
+        append_state({"type": "edit", "file": "a.ts", "hash": "h1", "timestamp": local_now_iso(), "reviewed": True, "reviewId": "r1"}, project_root, client_id=client_id)
+        state = load_state(project_root, client_id)
+        self.assertEqual(consecutive_stop_blocks(state), 0)
+
+    def test_append_review_started_marks_review_state_consistently(self):
+        project_root = self.temp_project()
+        client_id = "review-state"
+        ensure_client_runtime(project_root, client_id)
+
+        entries = [{"file": "f1.ts", "hash": "a"}, {"file": "f2.ts", "hash": "b"}]
+        for e in entries:
+            append_state(
+                {"type": "edit", "file": e["file"], "hash": e["hash"], "timestamp": local_now_iso(), "reviewed": False},
+                project_root,
+                client_id=client_id,
+            )
+
+        state_before = load_state(project_root, client_id)
+        pending = pending_reviews_for_entries(state_before, state_before)
+        self.assertEqual(len(pending), 0)
+
+        append_review_started(entries, "rev-01", "reviews/rev-01.md", project_root, client_id=client_id)
+
+        state_after = load_state(project_root, client_id)
+        edit_entries = [e for e in state_after if e.get("type") == "edit"]
+        pending = pending_reviews_for_entries(state_after, edit_entries)
+        self.assertEqual(len(pending), 1)
+        self.assertEqual(pending[0]["reviewId"], "rev-01")

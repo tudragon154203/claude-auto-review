@@ -22,20 +22,70 @@ class TestSetupCancel(HookTestCase, unittest.TestCase):
         self.assertTrue((project_root / ".claude" / "claude-auto-review" / "agents" / "reviewer.md").exists())
         self.assertTrue((project_root / ".claude" / "claude-auto-review" / "rules.md").exists())
         self.assertNotIn(".claude/claude-auto-review/state.jsonl", (project_root / ".gitignore").read_text(encoding="utf-8"))
+        self.assertIn(".claude/claude-auto-review/", (project_root / ".gitignore").read_text(encoding="utf-8"))
         settings = json.loads((project_root / ".claude" / "settings.json").read_text(encoding="utf-8"))
         self.assertIn("claude-auto-review", settings)
+        self.assertIn("hooks", settings)
+        self.assertIn("PostToolUse", settings["hooks"])
+        self.assertIn("Stop", settings["hooks"])
+        self.assertIn("SessionEnd", settings["hooks"])
+
+    def test_setup_script_preserves_existing_hooks_when_installing(self):
+        project_root = self.temp_project()
+        settings_path = project_root / ".claude" / "settings.json"
+        settings_path.parent.mkdir(parents=True, exist_ok=True)
+        settings_path.write_text(
+            json.dumps(
+                {
+                    "hooks": {
+                        "Stop": [
+                            {
+                                "hooks": [
+                                    {
+                                        "type": "command",
+                                        "command": "python custom-stop.py",
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                }
+            ),
+            encoding="utf-8",
+        )
+
+        setup = self.run_python("claude_auto_review/install/setup_cli.py", project_root)
+        self.assertEqual(setup.returncode, 0)
+        settings = json.loads(settings_path.read_text(encoding="utf-8"))
+        stop_commands = [
+            hook["command"]
+            for entry in settings["hooks"]["Stop"]
+            for hook in entry["hooks"]
+        ]
+        self.assertIn("python custom-stop.py", stop_commands)
+        self.assertIn("python hooks/stop_hook.py", stop_commands)
 
     def test_setup_script_is_idempotent_for_gitignore_entries(self):
         project_root = self.temp_project()
         self.run_python("claude_auto_review/install/setup_cli.py", project_root)
         self.run_python("claude_auto_review/install/setup_cli.py", project_root)
         lines = (project_root / ".gitignore").read_text(encoding="utf-8").splitlines()
+        self.assertEqual(lines.count(".claude/claude-auto-review/"), 1)
         self.assertEqual(lines.count(".claude/claude-auto-review/state.jsonl"), 0)
-        self.assertEqual(lines.count(".claude/claude-auto-review/clients/*/run/"), 1)
-        self.assertEqual(lines.count(".claude/claude-auto-review/clients/*/reviews/"), 1)
-        self.assertEqual(lines.count(".claude/claude-auto-review/scripts/"), 1)
-        self.assertEqual(lines.count(".claude/claude-auto-review/agents/"), 1)
-        self.assertEqual(lines.count(".claude/claude-auto-review/claude-auto-review.log"), 1)
+        self.assertEqual(lines.count(".claude/claude-auto-review/clients/*/run/"), 0)
+        self.assertEqual(lines.count(".claude/claude-auto-review/clients/*/reviews/"), 0)
+        self.assertEqual(lines.count(".claude/claude-auto-review/scripts/"), 0)
+        self.assertEqual(lines.count(".claude/claude-auto-review/agents/"), 0)
+        self.assertEqual(lines.count(".claude/claude-auto-review/claude-auto-review.log"), 0)
+
+    def test_setup_script_is_idempotent_for_hooks_entries(self):
+        project_root = self.temp_project()
+        self.run_python("claude_auto_review/install/setup_cli.py", project_root)
+        self.run_python("claude_auto_review/install/setup_cli.py", project_root)
+        settings = json.loads((project_root / ".claude" / "settings.json").read_text(encoding="utf-8"))
+        self.assertEqual(len(settings["hooks"]["PostToolUse"]), 1)
+        self.assertEqual(len(settings["hooks"]["Stop"]), 1)
+        self.assertEqual(len(settings["hooks"]["SessionEnd"]), 1)
 
     def test_project_local_shim_runs_review_prompt(self):
         project_root = self.temp_project()
@@ -77,7 +127,7 @@ class TestSetupCancel(HookTestCase, unittest.TestCase):
                 "type": "edit",
                 "file": "src/app.ts",
                 "hash": "deadbeef",
-                "timestamp": "2026-05-05T01:00:00Z",
+                "timestamp": "2026-05-05T08:00:00+07:00",
                 "reviewed": False,
             },
             project_root,

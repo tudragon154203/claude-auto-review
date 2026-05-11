@@ -10,3 +10,5 @@ __pycache__/
 .coverage
 *.ps1
 repomix-*
+.memsearch/
+.claude/claude-auto-review/

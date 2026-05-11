@@ -5,12 +5,13 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 
-from claude_auto_review.paths import client_run_dir, utc_now_iso
-from claude_auto_review.state.reviews import is_review_complete
+from claude_auto_review.paths import client_run_dir, local_now_iso
+from claude_auto_review.state.reviews import is_review_clean, is_review_complete
 from claude_auto_review.review.completion import apply_completed_review
 from claude_auto_review.state.store_read import get_unreviewed_files, load_state
 from claude_auto_review.state.store_write import append_state, log_event
 from claude_auto_review.stop.autocomplete import attempt_stop_autocomplete
+from claude_auto_review.stop.last_assistant_message import classify_last_assistant_message
 from claude_auto_review.stop.selection import find_pending_review_for_files, get_entries_covered_by_review
 
 
@@ -49,7 +50,7 @@ def build_review_completion_prompt(review_path):
     return (
         f"Complete the review at {review_path}. "
         "Read each file, evaluate findings, set verdicts "
-        "(Confirmed/Skipped/Fixed), and write the final review "
+        "(Confirmed/Skipped), and write the final review "
         "with a non-Pending Verdict."
     )
 
@@ -95,6 +96,11 @@ def _block_review_prompt_failure(files_str, result):
     )
 
 
+def _classify_last_assistant_message_if_enabled(project_root, client_id, payload, settings):
+    if settings.get("lastAssistantMessageClassifierEnabled", False):
+        classify_last_assistant_message(project_root, client_id, payload, settings)
+
+
 def resolve_pending_review(project_root, client_id, payload, state, unreviewed, timeout_hours, review_prompt_script):
     review = find_pending_review_for_files(state, unreviewed, project_root, timeout_hours)
     if review:
@@ -133,7 +139,7 @@ def resolve_pending_review(project_root, client_id, payload, state, unreviewed, 
     return StopFlowResolution(state=state, unreviewed=unreviewed, review=review)
 
 
-def finalize_review_stop(project_root, client_id, resolution):
+def finalize_review_stop(project_root, client_id, resolution, payload, settings):
     state = resolution.state
     unreviewed = resolution.unreviewed
     review = resolution.review
@@ -141,11 +147,13 @@ def finalize_review_stop(project_root, client_id, resolution):
     review_id = review.get("reviewId", "")
     review_path = Path(review.get("reviewPath", ""))
     prompt_file = _review_prompt_path(project_root, client_id, review_id)
+    reviewer_timeout_seconds = settings.get("reviewerTimeoutSeconds", 600)
 
-    if is_review_complete(review_path):
+    if is_review_complete(review_path) and is_review_clean(review_path):
         remaining = apply_completed_review(project_root, client_id, review_id, covered_entries)
         if not remaining:
             return 0
+        _classify_last_assistant_message_if_enabled(project_root, client_id, payload, settings)
         block_response(
             f"Claude Auto Review: Review {review_id} completed, but {len(remaining)} file(s) still need review.",
             "New edits were made after the review was created. Another review will be generated on the next stop attempt.",
@@ -153,19 +161,29 @@ def finalize_review_stop(project_root, client_id, resolution):
         return 2
 
     user_prompt = build_review_completion_prompt(review_path)
-    if attempt_stop_autocomplete(project_root, client_id, review_id, review_path, prompt_file, covered_entries, user_prompt):
+    if attempt_stop_autocomplete(
+        project_root,
+        client_id,
+        review_id,
+        review_path,
+        prompt_file,
+        covered_entries,
+        user_prompt,
+        reviewer_timeout_seconds=reviewer_timeout_seconds,
+    ):
         return 0
 
+    _classify_last_assistant_message_if_enabled(project_root, client_id, payload, settings)
     files_str = build_unreviewed_files_string(unreviewed)
     block_response(
         f"Claude Auto Review: Review {review_id} created for {files_str}.",
         (
             f"Review file created at:\n  {review_path}\n\n"
             "Go through each finding in the generated file and set its verdict "
-            "(Confirmed, Skipped, Fixed). Once all verdicts are set, "
+            "(Confirmed, Skipped). Once all findings are resolved, "
             "stopping will be allowed."
         ),
     )
     log_event(project_root, "stop_blocked", files=[entry["file"] for entry in unreviewed])
-    append_state({"type": "stop_blocked", "reason": "review_pending", "timestamp": utc_now_iso()}, project_root, client_id=client_id)
+    append_state({"type": "stop_blocked", "reason": "review_pending", "timestamp": local_now_iso()}, project_root, client_id=client_id)
     return 2

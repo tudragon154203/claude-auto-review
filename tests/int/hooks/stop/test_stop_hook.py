@@ -11,8 +11,16 @@ from tests.int.hooks.support import HookTestCase  # noqa: E402
 
 
 class TestStopHook(HookTestCase, unittest.TestCase):
+    def _read_log_entries(self, project_root):
+        log_path = project_root / ".claude" / "claude-auto-review" / "claude-auto-review.log"
+        return [
+            json.loads(line)
+            for line in log_path.read_text(encoding="utf-8").splitlines()
+            if line.strip()
+        ]
+
     def test_stop_hook_prefers_higher_overlap_over_newer_review(self):
-        from datetime import datetime, timedelta, timezone
+        from datetime import datetime, timedelta
 
         project_root = self.temp_project()
         (project_root / "src" / "a.ts").write_text("export const a = 1;\n", encoding="utf-8")
@@ -31,9 +39,9 @@ class TestStopHook(HookTestCase, unittest.TestCase):
         path_high.write_text("## Verdict\n\nPending.\n", encoding="utf-8")
         path_new.write_text("## Verdict\n\nPending.\n", encoding="utf-8")
 
-        base = datetime.now(timezone.utc)
-        ts_old = base.isoformat().replace("+00:00", "Z")
-        ts_new = (base + timedelta(seconds=1)).isoformat().replace("+00:00", "Z")
+        base = datetime.now().astimezone()
+        ts_old = base.isoformat()
+        ts_new = (base + timedelta(seconds=1)).isoformat()
 
         # Older review covers both files (overlap=2)
         append_state(
@@ -70,7 +78,7 @@ class TestStopHook(HookTestCase, unittest.TestCase):
         self.assertIn("Review high-overlap", json.loads(stop.stdout)["message"])
 
     def test_stop_hook_prefers_newest_pending_review_on_equal_overlap(self):
-        from datetime import datetime, timedelta, timezone
+        from datetime import datetime, timedelta
 
         project_root = self.temp_project()
         target = project_root / "src" / "app.ts"
@@ -85,9 +93,9 @@ class TestStopHook(HookTestCase, unittest.TestCase):
         old_path.write_text("## Verdict\n\nPending.\n", encoding="utf-8")
         new_path.write_text("## Verdict\n\nPending.\n", encoding="utf-8")
 
-        base = datetime.now(timezone.utc)
-        ts_old = base.isoformat().replace("+00:00", "Z")
-        ts_new = (base + timedelta(seconds=1)).isoformat().replace("+00:00", "Z")
+        base = datetime.now().astimezone()
+        ts_old = base.isoformat()
+        ts_new = (base + timedelta(seconds=1)).isoformat()
         append_state(
             {
                 "type": "review",
@@ -118,7 +126,7 @@ class TestStopHook(HookTestCase, unittest.TestCase):
         self.assertIn("Review new", json.loads(stop.stdout)["message"])
 
     def test_stop_hook_does_not_clean_expired_reviews_for_payload_session_id(self):
-        from datetime import datetime, timedelta, timezone
+        from datetime import datetime, timedelta
 
         project_root = self.temp_project()
         (project_root / "src" / "app.ts").write_text("export const value = 1;\n", encoding="utf-8")
@@ -127,7 +135,7 @@ class TestStopHook(HookTestCase, unittest.TestCase):
         payload = json.dumps({"session_id": "payload-session", "file_path": "src/app.ts"})
         self.run_python("hooks/post_tool_use.py", project_root, payload, client_id="env-session")
 
-        old_time = (datetime.now(timezone.utc) - timedelta(hours=2)).isoformat().replace("+00:00", "Z")
+        old_time = (datetime.now().astimezone() - timedelta(hours=2)).isoformat()
         append_state(
             {
                 "type": "review",
@@ -225,6 +233,58 @@ class TestStopHook(HookTestCase, unittest.TestCase):
         parsed = json.loads(stop.stdout)
         self.assertTrue(parsed["block"])
         self.assertEqual(stop.stdout.strip(), json.dumps(parsed, separators=(",", ":")))
+
+    def test_stop_hook_skips_classifier_when_disabled(self):
+        project_root = self.temp_project()
+        (project_root / ".claude").mkdir(parents=True, exist_ok=True)
+        (project_root / ".claude" / "settings.json").write_text(
+            json.dumps({"claude-auto-review": {"lastAssistantMessageClassifierEnabled": False}}),
+            encoding="utf-8",
+        )
+
+        payload = json.dumps({"last_assistant_message": "This should be ignored for classification."})
+        stop = self.run_python("hooks/stop_hook.py", project_root, input_text=payload, use_fake_claude=False)
+        self.assertEqual(stop.returncode, 0)
+        log_path = project_root / ".claude" / "claude-auto-review" / "claude-auto-review.log"
+        if log_path.exists():
+            events = [e for e in self._read_log_entries(project_root) if e.get("event") == "last_assistant_message_classified"]
+            self.assertEqual(events, [])
+        else:
+            self.assertFalse(log_path.exists())
+
+    def test_stop_hook_logs_skipped_classifier_for_missing_message(self):
+        project_root = self.temp_project()
+        (project_root / "src" / "app.ts").write_text("export const value = 1;\n", encoding="utf-8")
+        self.run_python("hooks/post_tool_use.py", project_root, json.dumps({"file_path": "src/app.ts"}))
+        stop = self.run_python(
+            "hooks/stop_hook.py",
+            project_root,
+            input_text=json.dumps({"session_id": "test-session"}),
+            env_overrides={"PATH": ""},
+            use_fake_claude=False,
+        )
+        self.assertEqual(stop.returncode, 2)
+        events = [e for e in self._read_log_entries(project_root) if e.get("event") == "last_assistant_message_classified"]
+        self.assertEqual(events[-1]["status"], "skipped")
+        self.assertEqual(events[-1]["reason"], "missing_message")
+
+    def test_stop_hook_logs_missing_api_key_without_affecting_clean_stop(self):
+        project_root = self.temp_project()
+        (project_root / "src" / "app.ts").write_text("export const value = 1;\n", encoding="utf-8")
+        self.run_python("hooks/post_tool_use.py", project_root, json.dumps({"file_path": "src/app.ts"}))
+        payload = json.dumps({"last_assistant_message": "Looks final."})
+        stop = self.run_python(
+            "hooks/stop_hook.py",
+            project_root,
+            input_text=payload,
+            env_overrides={"ANTHROPIC_BASE_URL": "http://127.0.0.1:13456", "ANTHROPIC_API_KEY": "", "PATH": ""},
+            use_fake_claude=False,
+        )
+        self.assertEqual(stop.returncode, 2)
+        events = [e for e in self._read_log_entries(project_root) if e.get("event") == "last_assistant_message_classified"]
+        self.assertEqual(events[-1]["status"], "error")
+        self.assertEqual(events[-1]["reason"], "missing_api_key")
+        self.assertNotIn("x-api-key", json.dumps(events[-1]).lower())
 
     def test_stop_hook_circuit_breaker_opens_after_max_consecutive_blocks(self):
         """When maxStopPasses (default 3) consecutive block events accumulate, the hook allows stop."""
@@ -372,7 +432,7 @@ class TestStopHook(HookTestCase, unittest.TestCase):
 
     def test_pending_review_expired_is_skipped_but_not_cleaned_by_stop_hook(self):
         """Stop hook skips expired pending reviews, but cleanup is handled by session_end."""
-        from datetime import datetime, timedelta, timezone
+        from datetime import datetime, timedelta
 
         project_root = self.temp_project()
         (project_root / "src" / "app.ts").write_text("export const value = 1;\n", encoding="utf-8")
@@ -381,7 +441,7 @@ class TestStopHook(HookTestCase, unittest.TestCase):
         state_path = project_root / ".claude" / "claude-auto-review" / "clients" / "client-test-session" / "state.jsonl"
 
         # Create a pending review with an old timestamp (> 1 hour ago)
-        old_time = (datetime.now(timezone.utc) - timedelta(hours=2)).isoformat().replace("+00:00", "Z")
+        old_time = (datetime.now().astimezone() - timedelta(hours=2)).isoformat()
         append_state(
             {
                 "type": "review",
@@ -412,7 +472,7 @@ class TestStopHook(HookTestCase, unittest.TestCase):
 
     def test_pending_review_timeout_custom_setting_skip_only(self):
         """Stop hook honors timeout for matching, without performing cleanup."""
-        from datetime import datetime, timedelta, timezone
+        from datetime import datetime, timedelta
 
         project_root = self.temp_project()
         (project_root / ".claude").mkdir(parents=True, exist_ok=True)
@@ -424,7 +484,7 @@ class TestStopHook(HookTestCase, unittest.TestCase):
         self.run_python("hooks/post_tool_use.py", project_root, json.dumps({"file_path": "src/app.ts"}))
 
         # Create a pending review with timestamp from 1 minute ago (exceeds 0.01h = 36s timeout)
-        old_time = (datetime.now(timezone.utc) - timedelta(minutes=1)).isoformat().replace("+00:00", "Z")
+        old_time = (datetime.now().astimezone() - timedelta(minutes=1)).isoformat()
         append_state(
             {
                 "type": "review",

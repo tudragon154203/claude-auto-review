@@ -31,6 +31,9 @@ def main():
     ensure_gitignore_entries(
         project_root / ".gitignore",
         [
+            ".claude/claude-auto-review/",
+        ],
+        remove_entries=[
             ".claude/claude-auto-review/clients/*/run/",
             ".claude/claude-auto-review/clients/*/reviews/",
             ".claude/claude-auto-review/scripts/",

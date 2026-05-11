@@ -10,6 +10,26 @@ After each file edit (Write/Edit/MultiEdit/Delete), the plugin tracks the file h
 
 The implementation is split into small modules instead of one monolith:
 
+```mermaid
+flowchart TD
+    A[Claude edits file] --> B[PostToolUse hook]
+    B --> C[Track file hash in client state]
+    C --> D[Claude attempts stop]
+    D --> E[Stop hook]
+    E --> F[Classify last_assistant_message<br/>log-only sidecar]
+    F --> G{Unreviewed files?}
+    G -- No --> H[Allow stop]
+    G -- Yes --> I{Pending review exists?}
+    I -- No --> J[Generate review prompt and review file]
+    J --> K{Claude CLI available?}
+    K -- Yes --> L[Autocomplete review]
+    K -- No --> M[Block stop with review instructions]
+    I -- Yes --> N{Review complete?}
+    N -- Yes --> O[Mark covered hashes reviewed]
+    O --> H
+    N -- No --> K
+```
+
 - `hooks/post_tool_use.py`, `hooks/stop_hook.py`, `hooks/session_end.py` are thin entrypoints.
 - `claude_auto_review/paths.py`, `claude_auto_review/settings.py`, `claude_auto_review/bootstrap.py` cover paths, config, and bootstrapping.
 - `claude_auto_review/state/store_read.py`, `claude_auto_review/state/store_write.py`, `claude_auto_review/state/reviews.py` cover state bookkeeping.
@@ -41,4 +61,5 @@ The installer creates the local `.claude/claude-auto-review/` runtime tree and g
 - Client isolation per session via `CLAUDE_SESSION_ID`
 - Circuit breaker after `maxStopPasses` blocks (default: 3)
 - Auto-completion via Claude CLI sub-agent when available
+- Reviewer hard-cap via `reviewerTimeoutSeconds` (default: 600 seconds)
 

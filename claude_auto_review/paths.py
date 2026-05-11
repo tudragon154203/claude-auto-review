@@ -1,6 +1,6 @@
 import os
 import socket
-from datetime import datetime, timezone
+from datetime import datetime
 from pathlib import Path
 
 STATE_RELATIVE_PATH = Path(".claude") / "claude-auto-review" / "state.jsonl"
@@ -10,8 +10,12 @@ LOG_RELATIVE_PATH = RUNTIME_DIR / "claude-auto-review.log"
 DELETED_FILE_HASH = "__deleted__"
 
 
+def local_now_iso():
+    return datetime.now().astimezone().isoformat()
+
+
 def utc_now_iso():
-    return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+    return local_now_iso()
 
 
 def get_project_root():

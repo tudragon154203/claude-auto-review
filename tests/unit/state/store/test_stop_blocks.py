@@ -60,4 +60,14 @@ class TestStopBlocks(StateTestCase, unittest.TestCase):
         state = load_state(project_root, client_id)
         self.assertEqual(consecutive_stop_blocks(state), 2)
 
+    def test_ignores_assistant_message_classification_entries(self):
+        project_root = self.temp_project()
+        client_id = "client-classifier"
+        self.ensure_client(project_root, client_id)
+        append_state({"type": "edit", "file": "a.ts", "hash": "1", "reviewed": False}, project_root, client_id=client_id)
+        append_state({"type": "assistant_message_classification", "status": "complete"}, project_root, client_id=client_id)
+        append_state({"type": "stop_blocked", "reason": "review_pending"}, project_root, client_id=client_id)
+        state = load_state(project_root, client_id)
+        self.assertEqual(consecutive_stop_blocks(state), 1)
+
 

@@ -41,4 +41,4 @@ def run_stop_flow(project_root, payload):
     )
     if resolution.is_terminal:
         return resolution.exit_code
-    return finalize_review_stop(project_root, client_id, resolution)
+    return finalize_review_stop(project_root, client_id, resolution, payload, settings)

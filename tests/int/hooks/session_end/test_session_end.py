@@ -1,7 +1,7 @@
 import json
 import sys
 import unittest
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[4]
@@ -136,7 +136,7 @@ class TestSessionEndHook(HookTestCase, unittest.TestCase):
     def test_session_end_cleans_expired_pending_reviews_before_removal(self):
         project_root = self.temp_project()
         ensure_client_runtime(project_root, "test-session")
-        old_time = (datetime.now(timezone.utc) - timedelta(hours=2)).isoformat().replace("+00:00", "Z")
+        old_time = (datetime.now().astimezone() - timedelta(hours=2)).isoformat()
         append_state(
             {
                 "type": "review",
@@ -168,7 +168,7 @@ class TestSessionEndHook(HookTestCase, unittest.TestCase):
     def test_session_end_cleanup_uses_payload_session_id(self):
         project_root = self.temp_project()
         ensure_client_runtime(project_root, "payload-session")
-        old_time = (datetime.now(timezone.utc) - timedelta(hours=2)).isoformat().replace("+00:00", "Z")
+        old_time = (datetime.now().astimezone() - timedelta(hours=2)).isoformat()
         append_state(
             {
                 "type": "review",

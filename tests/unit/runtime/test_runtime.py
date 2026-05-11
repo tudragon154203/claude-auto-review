@@ -110,13 +110,14 @@ class TestRuntime(StateTestCase, unittest.TestCase):
                 self.fail("log_event should suppress OSError")
 
     def test_cleanup_expired_pending_reviews_preserves_invalid_lines(self):
-        from datetime import datetime, timedelta, timezone
+        from datetime import datetime, timedelta
 
         project_root = self.temp_project()
         client_id = "cleanup-invalid"
         ensure_client_runtime(project_root, client_id)
         state_path = client_state_path(project_root, client_id)
-        expired_time = (datetime.now(timezone.utc) - timedelta(hours=2)).isoformat().replace("+00:00", "Z")
+        expired_time = (datetime.now().astimezone() - timedelta(hours=2)).isoformat()
+        current_time = datetime.now().astimezone().isoformat()
         state_path.write_text(
             "\n".join(
                 [
@@ -124,7 +125,9 @@ class TestRuntime(StateTestCase, unittest.TestCase):
                     + expired_time
                     + '","status":"pending","files":[{"file":"a.ts","hash":"1"}]}',
                     "not-json",
-                    '{"type":"edit","file":"a.ts","hash":"1","timestamp":"2026-05-05T01:00:00Z","reviewed":false}',
+                    '{"type":"edit","file":"a.ts","hash":"1","timestamp":"'
+                    + current_time
+                    + '","reviewed":false}',
                 ]
             )
             + "\n",

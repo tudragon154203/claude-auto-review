@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime
 from pathlib import Path
 
 from claude_auto_review.runtime.helpers import log_event
@@ -45,11 +45,12 @@ def is_review_expired(review_entry, timeout_hours):
         if ts_str.endswith("Z"):
             ts_str = ts_str[:-1] + "+00:00"
         ts = datetime.fromisoformat(ts_str)
+        local_now = datetime.now().astimezone()
         if ts.tzinfo is None:
-            ts = ts.replace(tzinfo=timezone.utc)
+            ts = ts.replace(tzinfo=local_now.tzinfo)
         else:
-            ts = ts.astimezone(timezone.utc)
-        age_hours = (datetime.now(timezone.utc) - ts).total_seconds() / 3600.0
+            ts = ts.astimezone(local_now.tzinfo)
+        age_hours = (local_now - ts).total_seconds() / 3600.0
         return age_hours > timeout_hours
     except (ValueError, TypeError):
         return False
@@ -105,3 +106,21 @@ def is_review_complete(review_path):
     if not verdict:
         return False
     return verdict.lower() not in ("pending", "pending.")
+
+
+def is_review_clean(review_path):
+    """Return True only if the review verdict indicates no blocking issues.
+
+    Note: The verdict must start with 'clean' to allow stop. This is coupled
+    with the verdict template in agents/reviewer.md. Template changes may require
+    updating this check.
+    """
+    path = Path(review_path)
+    if not path.is_file():
+        return False
+    content = path.read_text(encoding="utf-8", errors="replace")
+    if "## Verdict" not in content:
+        return False
+    verdict = content.split("## Verdict", 1)[1].strip().lower()
+    # Use startswith for resilience to template wording variations
+    return verdict.startswith("clean")
