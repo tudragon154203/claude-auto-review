@@ -42,17 +42,24 @@ flowchart TD
 - `/claude-auto-review` — Run manual review for current unreviewed files
 - `/cancel-claude-auto-review` — Cancel all runtime state for this project
 
+## Installation
+
+See [INSTALL.md](INSTALL.md) for the full installation guide.
+
+Quick install from a target project:
+
+```bash
+python path/to/claude-auto-review/claude_auto_review/install/setup_cli.py
+```
+
+The installer creates the local `.claude/claude-auto-review/` runtime tree, copies the default rules, configures `.claude/settings.json`, and updates `.gitignore`.
+
 ## Quick Start
 
 ```bash
 # Run tests
 python -m unittest discover -s tests
-
-# Install in a target project
-python -m claude_auto_review.install.setup_cli
 ```
-
-The installer creates the local `.claude/claude-auto-review/` runtime tree and generated wrapper scripts in the target project.
 
 ## Implementation
 
