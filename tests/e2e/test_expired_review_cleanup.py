@@ -1,4 +1,7 @@
 import json
+import os
+import subprocess
+import sys
 from datetime import datetime, timedelta
 from pathlib import Path
 
@@ -18,13 +21,29 @@ _CLEANUP_SCRIPT = (
 class ExpiredReviewCleanupE2ETests(EndToEndTestCase):
     def _run_cleanup(self, project_root, client_id):
         repo_root = str(Path(__file__).resolve().parents[2])
-        return self.run_python(
+        cmd = [
+            sys.executable,
             "-c",
-            project_root,
-            env_overrides={"PYTHONPATH": repo_root},
-            use_fake_claude=False,
-            extra_args=[_CLEANUP_SCRIPT, repo_root, str(project_root), client_id],
+            _CLEANUP_SCRIPT,
+            repo_root,
+            str(project_root),
+            client_id,
+        ]
+        env = {
+            **os.environ,
+            "CLAUDE_PROJECT_DIR": str(project_root),
+            "CLAUDE_SESSION_ID": client_id,
+            "PYTHONPATH": repo_root,
+        }
+        proc = subprocess.run(
+            cmd,
+            cwd=project_root,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            env=env,
         )
+        return proc
 
     def _write_settings(self, project_root, timeout_hours=1):
         settings_path = project_root / ".claude" / "settings.json"
