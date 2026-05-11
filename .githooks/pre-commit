@@ -1,0 +1,12 @@
+#!/bin/sh
+# Run unit tests only when Python source or test files are staged.
+
+related=$(git diff --cached --name-only --diff-filter=ACMR | grep -E '^(claude_auto_review/|hooks/|tests/).*\.py$' || true)
+
+if [ -z "$related" ]; then
+    echo "pre-commit: no Python source/test changes detected, skipping tests"
+    exit 0
+fi
+
+echo "pre-commit: running tests (changed: $(echo "$related" | tr '\n' ' '))"
+python -m unittest discover -s tests
