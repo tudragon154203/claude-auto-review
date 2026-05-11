@@ -165,8 +165,9 @@ class EndToEndLifecycleTests(EndToEndTestCase):
         stop = self.stop(project_root, use_fake_claude=False, env_overrides={"PATH": ""})
 
         parsed = json.loads(stop.stdout)
-        self.assertIn("Review file created at:", parsed["feedback"])
-        self.assertIn("src/app.ts", parsed["message"])
+        self.assertEqual(parsed["decision"], "block")
+        self.assertIn("Review file created at:", parsed["reason"])
+        self.assertIn("src/app.ts", parsed["systemMessage"])
 
     def test_setup_idempotent_e2e(self):
         project_root = self.temp_project()

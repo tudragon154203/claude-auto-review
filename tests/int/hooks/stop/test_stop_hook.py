@@ -75,7 +75,7 @@ class TestStopHook(HookTestCase, unittest.TestCase):
 
         stop = self.run_python("hooks/stop_hook.py", project_root, env_overrides={"PATH": ""}, use_fake_claude=False)
         self.assertEqual(stop.returncode, 2)
-        self.assertIn("Review high-overlap", json.loads(stop.stdout)["message"])
+        self.assertIn("Review high-overlap", json.loads(stop.stdout)["systemMessage"])
 
     def test_stop_hook_prefers_newest_pending_review_on_equal_overlap(self):
         from datetime import datetime, timedelta
@@ -123,7 +123,7 @@ class TestStopHook(HookTestCase, unittest.TestCase):
 
         stop = self.run_python("hooks/stop_hook.py", project_root, env_overrides={"PATH": ""}, use_fake_claude=False)
         self.assertEqual(stop.returncode, 2)
-        self.assertIn("Review new", json.loads(stop.stdout)["message"])
+        self.assertIn("Review new", json.loads(stop.stdout)["systemMessage"])
 
     def test_stop_hook_does_not_clean_expired_reviews_for_payload_session_id(self):
         from datetime import datetime, timedelta
@@ -231,7 +231,12 @@ class TestStopHook(HookTestCase, unittest.TestCase):
         stop = self.run_python("hooks/stop_hook.py", project_root, env_overrides={"PATH": ""}, use_fake_claude=False)
         self.assertNotEqual(stop.stderr, "")
         parsed = json.loads(stop.stdout)
-        self.assertTrue(parsed["block"])
+        self.assertEqual(parsed["decision"], "block")
+        self.assertIn("reason", parsed)
+        self.assertIn("systemMessage", parsed)
+        self.assertNotIn("block", parsed)
+        self.assertNotIn("message", parsed)
+        self.assertNotIn("feedback", parsed)
         self.assertEqual(stop.stdout.strip(), json.dumps(parsed, separators=(",", ":")))
 
     def test_stop_hook_skips_classifier_when_disabled(self):
@@ -388,7 +393,7 @@ class TestStopHook(HookTestCase, unittest.TestCase):
         )
         self.assertEqual(stop1.returncode, 2)
         parsed = json.loads(stop1.stdout)
-        self.assertTrue(parsed["block"])
+        self.assertEqual(parsed["decision"], "block")
 
         # Step 2: verify the stop hook already created the review artifacts
         client_dir = project_root / ".claude" / "claude-auto-review" / "clients" / "client-test-session"
@@ -405,7 +410,7 @@ class TestStopHook(HookTestCase, unittest.TestCase):
         )
         self.assertEqual(stop2.returncode, 2)
         # Message indicates review exists but needs completion
-        self.assertIn("Review", json.loads(stop2.stdout)["message"])
+        self.assertIn("Review", json.loads(stop2.stdout)["systemMessage"])
 
         # Step 4: complete the review
         self.complete_latest_review(project_root)
@@ -428,7 +433,7 @@ class TestStopHook(HookTestCase, unittest.TestCase):
         stop2 = self.run_python("hooks/stop_hook.py", project_root, env_overrides={"PATH": ""}, use_fake_claude=False)
         self.assertEqual(stop2.returncode, 2)
         parsed = json.loads(stop2.stdout)
-        self.assertIn("Review", parsed["message"])
+        self.assertIn("Review", parsed["systemMessage"])
 
     def test_pending_review_expired_is_skipped_but_not_cleaned_by_stop_hook(self):
         """Stop hook skips expired pending reviews, but cleanup is handled by session_end."""

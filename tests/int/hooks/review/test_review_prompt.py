@@ -33,7 +33,7 @@ class TestReviewPrompt(HookTestCase, unittest.TestCase):
             use_fake_claude=False,
         )
         self.assertEqual(pending_stop.returncode, 2)
-        self.assertIn("Review", json.loads(pending_stop.stdout)["message"])
+        self.assertIn("Review", json.loads(pending_stop.stdout)["systemMessage"])
         self.complete_latest_review(project_root)
         self.assertEqual(self.run_python("hooks/stop_hook.py", project_root, env_overrides={"PATH": ""}, use_fake_claude=False).returncode, 0)
 

@@ -1,4 +1,5 @@
 import os
+import json
 import subprocess
 import unittest
 from unittest.mock import patch, MagicMock, call
@@ -56,8 +57,13 @@ class TestHelpers(unittest.TestCase):
             block_response("msg", "feedback")
         self.assertEqual(mock_print.call_count, 2)
         payload = mock_print.call_args_list[0].args[0]
-        self.assertIn('"decision":"block"', payload)
-        self.assertIn('"reason":"feedback"', payload)
+        parsed = json.loads(payload)
+        self.assertEqual(parsed["decision"], "block")
+        self.assertEqual(parsed["reason"], "feedback")
+        self.assertEqual(parsed["systemMessage"], "msg")
+        self.assertNotIn("block", parsed)
+        self.assertNotIn("message", parsed)
+        self.assertNotIn("feedback", parsed)
         self.assertNotIn('"continue":false', payload)
 
     def test_build_review_findings_feedback_includes_review_content(self):

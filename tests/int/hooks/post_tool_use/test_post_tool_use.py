@@ -22,7 +22,7 @@ class TestPostToolUseHook(HookTestCase, unittest.TestCase):
 
         stop = self.run_python("hooks/stop_hook.py", project_root, env_overrides={"PATH": ""}, use_fake_claude=False)
         self.assertEqual(stop.returncode, 2)
-        self.assertTrue(json.loads(stop.stdout)["block"])
+        self.assertEqual(json.loads(stop.stdout)["decision"], "block")
 
     def test_post_tool_use_accepts_absolute_file_paths(self):
         project_root = self.temp_project()
