@@ -8,8 +8,10 @@ DEFAULT_TIMEOUT_SECONDS = 10
 CLASSIFICATION_EVENT = "last_assistant_message_classified"
 
 _SYSTEM_PROMPT = (
-    "Classify whether the assistant message is a true completion or final answer. "
-    "Output exactly one label only: complete, incomplete, or unknown."
+    "You are a strict classifier. Classify whether the assistant message is a true "
+    "completion or final answer. Return exactly one lowercase label: complete, "
+    "incomplete, or unknown. Do not include punctuation, quotes, markdown, JSON, "
+    "explanation, or any text other than the label."
 )
 
 
@@ -22,11 +24,14 @@ class AssistantMessageClassificationResult:
     model: str = CLASSIFIER_MODEL
     base_url: str = ""
     http_status: int | None = None
+    debug_response: str | None = None
 
     def as_event_fields(self):
         fields = asdict(self)
         if fields["http_status"] is None:
             fields.pop("http_status")
+        if fields["debug_response"] is None:
+            fields.pop("debug_response")
         return fields
 
     def as_state_entry(self):
@@ -44,7 +49,7 @@ class AssistantMessageClassificationResult:
             entry["httpStatus"] = self.http_status
         return entry
 
-def result_factory(status, reason, started_at, message_chars, base_url="", http_status=None):
+def result_factory(status, reason, started_at, message_chars, base_url="", http_status=None, debug_response=None):
     return AssistantMessageClassificationResult(
         status=status,
         reason=reason,
@@ -52,4 +57,5 @@ def result_factory(status, reason, started_at, message_chars, base_url="", http_
         message_chars=message_chars,
         base_url=base_url,
         http_status=http_status,
+        debug_response=debug_response,
     )

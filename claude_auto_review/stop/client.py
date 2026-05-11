@@ -32,6 +32,7 @@ def _build_request_body(message_text):
         "model": CLASSIFIER_MODEL,
         "max_tokens": CLASSIFIER_MAX_TOKENS,
         "temperature": 0,
+        "stop_sequences": ["\n"],
         "system": _SYSTEM_PROMPT,
         "messages": [
             {
@@ -39,7 +40,7 @@ def _build_request_body(message_text):
                 "content": [
                     {
                         "type": "text",
-                        "text": f"Assistant message:\n{message_text}",
+                        "text": f"Assistant message:\n{message_text}\n\nLabel:",
                     }
                 ],
             }
@@ -77,7 +78,10 @@ def call_classifier_api(message_text, base_url, api_key, started_at, timeout_sec
         with urlopen(req, timeout=timeout_seconds) as response:
             response_data = json.loads(response.read().decode("utf-8"))
             label, reason = _parse_classifier_label(response_data)
-            return result_factory(label, reason, started_at, message_chars, base_url=base_url)
+            debug_response = None
+            if label == "unknown":
+                debug_response = json.dumps(response_data, ensure_ascii=False, separators=(",", ":"))
+            return result_factory(label, reason, started_at, message_chars, base_url=base_url, debug_response=debug_response)
     except error.HTTPError as exc:
         return result_factory("error", "http_error", started_at, message_chars, base_url=base_url, http_status=exc.code)
     except (socket.timeout, TimeoutError):
