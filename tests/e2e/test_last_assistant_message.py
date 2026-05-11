@@ -2,7 +2,7 @@ import json
 import sys
 from pathlib import Path
 
-from claude_auto_review.stop.last_assistant_message import CLASSIFIER_MODEL
+from claude_auto_review.stop.models import CLASSIFIER_MODEL
 from tests.e2e.support import EndToEndTestCase
 
 REPO_ROOT = Path(__file__).resolve().parents[2]

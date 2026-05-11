@@ -6,6 +6,7 @@ from claude_auto_review.stop.extraction import extract_last_assistant_message_te
 from claude_auto_review.stop.models import (
     DEFAULT_TIMEOUT_SECONDS,
     CLASSIFICATION_EVENT,
+    CLASSIFIER_MODEL,
     result_factory
 )
 from claude_auto_review.stop.client import sanitize_base_url, call_classifier_api
