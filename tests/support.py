@@ -1,10 +1,11 @@
-"""Shared test support: temp-project and subprocess helpers."""
 import json
 import os
 import shutil
 import subprocess
 import sys
 import tempfile
+import time
+from http.server import BaseHTTPRequestHandler
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -21,7 +22,10 @@ class TempProjectMixin:
     """Provides a temp_project(prefix) helper."""
 
     def temp_project(self, prefix="claude-auto-review-"):
-        return Path(tempfile.mkdtemp(prefix=prefix))
+        temp_dir = tempfile.TemporaryDirectory(prefix=prefix)
+        if hasattr(self, "addCleanup"):
+            self.addCleanup(temp_dir.cleanup)
+        return Path(temp_dir.name)
 
 
 class SubprocessMixin:
@@ -110,4 +114,38 @@ class SubprocessMixin:
         finally:
             if fake_dir is not None:
                 shutil.rmtree(fake_dir, ignore_errors=True)
+
+
+def make_classifier_handler(response_label="complete", response_delay=0):
+    """Return an isolated HTTP handler class for last-assistant-message tests."""
+
+    class _ClassifierHandler(BaseHTTPRequestHandler):
+        requests = []
+
+        def do_POST(self):
+            body = self.rfile.read(int(self.headers.get("Content-Length", "0"))).decode("utf-8")
+            type(self).requests.append(
+                {
+                    "path": self.path,
+                    "headers": dict(self.headers.items()),
+                    "body": json.loads(body),
+                }
+            )
+            if response_delay:
+                time.sleep(response_delay)
+            payload = {"content": [{"type": "text", "text": response_label}]}
+            encoded = json.dumps(payload).encode("utf-8")
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", str(len(encoded)))
+            self.end_headers()
+            try:
+                self.wfile.write(encoded)
+            except OSError:
+                pass
+
+        def log_message(self, fmt, *args):
+            return
+
+    return _ClassifierHandler
 

@@ -3,38 +3,10 @@ import socketserver
 import tempfile
 import threading
 import unittest
-from http.server import BaseHTTPRequestHandler, HTTPServer
+from http.server import HTTPServer
 from pathlib import Path
 
-from tests.support import SubprocessMixin, TempProjectMixin
-
-
-class _ClassifierHandler(BaseHTTPRequestHandler):
-    response_label = "complete"
-    requests = []
-
-    def do_POST(self):
-        body = self.rfile.read(int(self.headers.get("Content-Length", "0"))).decode("utf-8")
-        type(self).requests.append(
-            {
-                "path": self.path,
-                "headers": dict(self.headers.items()),
-                "body": json.loads(body),
-            }
-        )
-        payload = {"content": [{"type": "text", "text": type(self).response_label}]}
-        encoded = json.dumps(payload).encode("utf-8")
-        self.send_response(200)
-        self.send_header("Content-Type", "application/json")
-        self.send_header("Content-Length", str(len(encoded)))
-        self.end_headers()
-        try:
-            self.wfile.write(encoded)
-        except OSError:
-            pass
-
-    def log_message(self, fmt, *args):
-        return
+from tests.support import SubprocessMixin, TempProjectMixin, make_classifier_handler
 
 
 class _ThreadedHTTPServer(socketserver.ThreadingMixIn, HTTPServer):
@@ -43,7 +15,9 @@ class _ThreadedHTTPServer(socketserver.ThreadingMixIn, HTTPServer):
 
 class EndToEndTestCase(TempProjectMixin, SubprocessMixin, unittest.TestCase):
     def temp_project(self):
-        project_root = Path(tempfile.mkdtemp(prefix="claude-auto-review-e2e-"))
+        temp_dir = tempfile.TemporaryDirectory(prefix="claude-auto-review-e2e-")
+        self.addCleanup(temp_dir.cleanup)
+        project_root = Path(temp_dir.name)
         (project_root / "src").mkdir(parents=True)
         return project_root
 
@@ -79,9 +53,8 @@ class EndToEndTestCase(TempProjectMixin, SubprocessMixin, unittest.TestCase):
         ]
 
     def start_classifier_server(self, label="complete"):
-        _ClassifierHandler.response_label = label
-        _ClassifierHandler.requests = []
-        server = _ThreadedHTTPServer(("127.0.0.1", 0), _ClassifierHandler)
+        handler_cls = make_classifier_handler(label)
+        server = _ThreadedHTTPServer(("127.0.0.1", 0), handler_cls)
         thread = threading.Thread(target=server.serve_forever, daemon=True)
         thread.start()
         return server, f"http://127.0.0.1:{server.server_port}"

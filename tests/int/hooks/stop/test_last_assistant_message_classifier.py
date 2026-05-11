@@ -1,43 +1,12 @@
 import json
 import socketserver
 import threading
-import time
 import unittest
-from http.server import BaseHTTPRequestHandler, HTTPServer
+from http.server import HTTPServer
 
 from claude_auto_review.stop.last_assistant_message import CLASSIFIER_MODEL
 from tests.int.hooks.support import HookTestCase
-
-
-class _ClassifierHandler(BaseHTTPRequestHandler):
-    response_label = "complete"
-    response_delay = 0
-    requests = []
-
-    def do_POST(self):
-        body = self.rfile.read(int(self.headers.get("Content-Length", "0"))).decode("utf-8")
-        type(self).requests.append(
-            {
-                "path": self.path,
-                "headers": dict(self.headers.items()),
-                "body": json.loads(body),
-            }
-        )
-        if type(self).response_delay:
-            time.sleep(type(self).response_delay)
-        payload = {"content": [{"type": "text", "text": type(self).response_label}]}
-        encoded = json.dumps(payload).encode("utf-8")
-        self.send_response(200)
-        self.send_header("Content-Type", "application/json")
-        self.send_header("Content-Length", str(len(encoded)))
-        self.end_headers()
-        try:
-            self.wfile.write(encoded)
-        except OSError:
-            pass
-
-    def log_message(self, fmt, *args):
-        return
+from tests.support import make_classifier_handler
 
 
 class _ThreadedHTTPServer(socketserver.ThreadingMixIn, HTTPServer):
@@ -46,10 +15,8 @@ class _ThreadedHTTPServer(socketserver.ThreadingMixIn, HTTPServer):
 
 class TestLastAssistantMessageClassifierHook(HookTestCase, unittest.TestCase):
     def _start_server(self, label="complete", delay=0):
-        _ClassifierHandler.response_label = label
-        _ClassifierHandler.response_delay = delay
-        _ClassifierHandler.requests = []
-        server = _ThreadedHTTPServer(("127.0.0.1", 0), _ClassifierHandler)
+        handler_cls = make_classifier_handler(label, response_delay=delay)
+        server = _ThreadedHTTPServer(("127.0.0.1", 0), handler_cls)
         thread = threading.Thread(target=server.serve_forever, daemon=True)
         thread.start()
         return server, f"http://127.0.0.1:{server.server_port}"
@@ -85,8 +52,8 @@ class TestLastAssistantMessageClassifierHook(HookTestCase, unittest.TestCase):
             server.server_close()
 
         self.assertEqual(result.returncode, 2)
-        self.assertEqual(len(_ClassifierHandler.requests), 1)
-        self.assertEqual(_ClassifierHandler.requests[0]["body"]["model"], CLASSIFIER_MODEL)
+        self.assertEqual(len(server.RequestHandlerClass.requests), 1)
+        self.assertEqual(server.RequestHandlerClass.requests[0]["body"]["model"], CLASSIFIER_MODEL)
         entries = [e for e in self._read_log_entries(project_root) if e.get("event") == "last_assistant_message_classified"]
         self.assertEqual(entries[-1]["status"], "complete")
         self.assertEqual(entries[-1]["reason"], "parsed_label")

@@ -3,7 +3,7 @@ import sys
 from pathlib import Path
 
 from claude_auto_review.stop.last_assistant_message import CLASSIFIER_MODEL
-from tests.e2e.support import EndToEndTestCase, _ClassifierHandler
+from tests.e2e.support import EndToEndTestCase
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT))
@@ -33,9 +33,9 @@ class EndToEndLastAssistantMessageTests(EndToEndTestCase):
             server.server_close()
 
         self.assertEqual(result.returncode, 2)
-        self.assertEqual(len(_ClassifierHandler.requests), 1)
-        self.assertEqual(_ClassifierHandler.requests[0]["path"], "/v1/messages")
-        self.assertEqual(_ClassifierHandler.requests[0]["body"]["model"], CLASSIFIER_MODEL)
+        self.assertEqual(len(server.RequestHandlerClass.requests), 1)
+        self.assertEqual(server.RequestHandlerClass.requests[0]["path"], "/v1/messages")
+        self.assertEqual(server.RequestHandlerClass.requests[0]["body"]["model"], CLASSIFIER_MODEL)
 
         state = load_state(project_root, "test-session")
         classifier_entries = [entry for entry in state if entry.get("type") == "assistant_message_classification"]
