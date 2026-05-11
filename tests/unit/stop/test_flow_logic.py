@@ -11,6 +11,8 @@ from claude_auto_review.stop.flow_logic import (
     block_response,
     build_unreviewed_files_string,
     build_review_completion_prompt,
+    build_review_findings_feedback,
+    review_feedback_max_chars,
     _review_prompt_command,
     _review_prompt_path,
     _reload_client_state,
@@ -53,6 +55,43 @@ class TestHelpers(unittest.TestCase):
         with patch("builtins.print") as mock_print:
             block_response("msg", "feedback")
         self.assertEqual(mock_print.call_count, 2)
+        payload = mock_print.call_args_list[0].args[0]
+        self.assertIn('"decision":"block"', payload)
+        self.assertIn('"reason":"feedback"', payload)
+        self.assertNotIn('"continue":false', payload)
+
+    def test_build_review_findings_feedback_includes_review_content(self):
+        with self.subTest("complete feedback"):
+            import tempfile
+
+            with tempfile.TemporaryDirectory() as temp_dir:
+                review_path = Path(temp_dir) / "review.md"
+                review_path.write_text("## Findings\nBug here\n\n## Verdict\n1 issue found.", encoding="utf-8")
+
+                feedback = build_review_findings_feedback("rev1", review_path)
+
+                self.assertIn("Act on the review below before stopping", feedback)
+                self.assertIn("Bug here", feedback)
+                self.assertIn(str(review_path), feedback)
+
+    def test_review_feedback_max_chars_uses_settings(self):
+        self.assertEqual(review_feedback_max_chars({"reviewFeedbackMaxChars": "42"}), 42)
+
+    def test_review_feedback_max_chars_falls_back_for_invalid_value(self):
+        self.assertEqual(review_feedback_max_chars({"reviewFeedbackMaxChars": "nope"}), 9000)
+
+    def test_build_review_findings_feedback_truncates_to_configured_limit(self):
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            review_path = Path(temp_dir) / "review.md"
+            review_path.write_text("abcdef", encoding="utf-8")
+
+            feedback = build_review_findings_feedback("rev1", review_path, max_chars=3)
+
+            self.assertIn("abc", feedback)
+            self.assertNotIn("abcdef", feedback)
+            self.assertIn("Review truncated at 3 characters", feedback)
 
     def test_block_review_prompt_failure(self):
         with patch("claude_auto_review.stop.flow_logic.block_response") as mock_block:
@@ -223,6 +262,60 @@ class TestFinalizeReviewStop(unittest.TestCase):
         self.assertEqual(result, 2)
         mock_append.assert_called_once()
         mock_classify.assert_called_once()
+
+    @patch("claude_auto_review.stop.flow_logic.classify_last_assistant_message")
+    @patch("claude_auto_review.stop.flow_logic.append_state")
+    @patch("claude_auto_review.stop.flow_logic.block_response")
+    @patch("claude_auto_review.stop.flow_logic.get_entries_covered_by_review", return_value=[])
+    @patch("claude_auto_review.stop.flow_logic.is_review_clean", return_value=False)
+    @patch("claude_auto_review.stop.flow_logic.is_review_complete", return_value=True)
+    def test_completed_review_with_findings_blocks_with_review_feedback(
+        self,
+        mock_complete,
+        mock_clean,
+        mock_covered,
+        mock_block,
+        mock_append,
+        mock_classify,
+    ):
+        resolution = StopFlowResolution(
+            state=[],
+            unreviewed=[{"file": "a.ts", "hash": "1"}],
+            review={"reviewId": "r1", "reviewPath": "/fake/r.md"},
+        )
+        result = finalize_review_stop(Path("/fake"), "c", resolution, {"last_assistant_message": "done"}, {})
+        self.assertEqual(result, 2)
+        self.assertIn("found issues", mock_block.call_args.args[0])
+        self.assertIn("Act on the review below", mock_block.call_args.args[1])
+        mock_append.assert_called_once()
+        mock_classify.assert_not_called()
+
+    @patch("claude_auto_review.stop.flow_logic.classify_last_assistant_message")
+    @patch("claude_auto_review.stop.flow_logic.append_state")
+    @patch("claude_auto_review.stop.flow_logic.block_response")
+    @patch("claude_auto_review.stop.flow_logic.get_entries_covered_by_review", return_value=[])
+    @patch("claude_auto_review.stop.flow_logic.attempt_stop_autocomplete", return_value=False)
+    @patch("claude_auto_review.stop.flow_logic.is_review_clean", side_effect=[False])
+    @patch("claude_auto_review.stop.flow_logic.is_review_complete", side_effect=[False, True])
+    def test_autocomplete_findings_are_returned_to_parent_session(
+        self,
+        mock_complete,
+        mock_clean,
+        mock_auto,
+        mock_covered,
+        mock_block,
+        mock_append,
+        mock_classify,
+    ):
+        resolution = StopFlowResolution(
+            state=[],
+            unreviewed=[{"file": "a.ts", "hash": "1"}],
+            review={"reviewId": "r1", "reviewPath": "/fake/r.md"},
+        )
+        result = finalize_review_stop(Path("/fake"), "c", resolution, {"last_assistant_message": "done"}, {})
+        self.assertEqual(result, 2)
+        self.assertIn("Act on the review below", mock_block.call_args.args[1])
+        mock_append.assert_called_once()
 
 
 if __name__ == "__main__":

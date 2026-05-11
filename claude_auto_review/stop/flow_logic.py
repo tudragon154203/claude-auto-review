@@ -10,10 +10,10 @@ from claude_auto_review.state.reviews import is_review_clean, is_review_complete
 from claude_auto_review.review.completion import apply_completed_review
 from claude_auto_review.state.store_read import get_unreviewed_files, load_state
 from claude_auto_review.state.store_write import append_state, log_event
+from claude_auto_review.settings import DEFAULT_SETTINGS
 from claude_auto_review.stop.autocomplete import attempt_stop_autocomplete
 from claude_auto_review.stop.last_assistant_message import classify_last_assistant_message
 from claude_auto_review.stop.selection import find_pending_review_for_files, get_entries_covered_by_review
-
 
 @dataclass(frozen=True)
 class StopFlowResolution:
@@ -31,10 +31,9 @@ def block_response(message, feedback):
     print(
         json.dumps(
             {
-                "block": True,
-                "message": message,
-                "feedback": feedback,
-                "continue": False,
+                "decision": "block",
+                "reason": feedback,
+                "systemMessage": message,
             },
             separators=(",", ":"),
         ),
@@ -52,6 +51,53 @@ def build_review_completion_prompt(review_path):
         "Read each file, evaluate findings, set verdicts "
         "(Confirmed/Skipped), and write the final review "
         "with a non-Pending Verdict."
+    )
+
+
+def review_feedback_max_chars(settings):
+    try:
+        return max(0, int(settings.get("reviewFeedbackMaxChars", DEFAULT_SETTINGS["reviewFeedbackMaxChars"])))
+    except (TypeError, ValueError):
+        return DEFAULT_SETTINGS["reviewFeedbackMaxChars"]
+
+
+def read_review_feedback(review_path, max_chars=None):
+    if max_chars is None:
+        max_chars = DEFAULT_SETTINGS["reviewFeedbackMaxChars"]
+    path = Path(review_path)
+    if not path.is_file():
+        return f"Review file is missing: {path}"
+    content = path.read_text(encoding="utf-8", errors="replace")
+    if len(content) <= max_chars:
+        return content
+    return (
+        f"{content[:max_chars]}\n\n"
+        f"[Review truncated at {max_chars} characters. Read the full review at {path}.]"
+    )
+
+
+def build_review_findings_feedback(review_id, review_path, max_chars=None):
+    review_text = read_review_feedback(review_path, max_chars=max_chars)
+    return (
+        f"Claude Auto Review completed review {review_id} and found blocking findings.\n\n"
+        f"Review file: {review_path}\n\n"
+        "Act on the review below before stopping. Fix each Confirmed finding, "
+        "or make a narrowly justified code change that renders it inapplicable. "
+        "After making changes, try stopping again so the changed files are reviewed.\n\n"
+        f"{review_text}"
+    )
+
+
+def block_completed_review_findings(project_root, client_id, review_id, review_path, unreviewed, settings):
+    block_response(
+        f"Claude Auto Review: Review {review_id} found issues to address.",
+        build_review_findings_feedback(review_id, review_path, review_feedback_max_chars(settings)),
+    )
+    log_event(project_root, "stop_blocked", files=[entry["file"] for entry in unreviewed], reviewId=review_id)
+    append_state(
+        {"type": "stop_blocked", "reason": "review_findings", "timestamp": local_now_iso()},
+        project_root,
+        client_id=client_id,
     )
 
 
@@ -159,6 +205,10 @@ def finalize_review_stop(project_root, client_id, resolution, payload, settings)
             "New edits were made after the review was created. Another review will be generated on the next stop attempt.",
         )
         return 2
+    if is_review_complete(review_path):
+        _classify_last_assistant_message_if_enabled(project_root, client_id, payload, settings)
+        block_completed_review_findings(project_root, client_id, review_id, review_path, unreviewed, settings)
+        return 2
 
     user_prompt = build_review_completion_prompt(review_path)
     if attempt_stop_autocomplete(
@@ -172,6 +222,11 @@ def finalize_review_stop(project_root, client_id, resolution, payload, settings)
         reviewer_timeout_seconds=reviewer_timeout_seconds,
     ):
         return 0
+
+    if is_review_complete(review_path) and not is_review_clean(review_path):
+        _classify_last_assistant_message_if_enabled(project_root, client_id, payload, settings)
+        block_completed_review_findings(project_root, client_id, review_id, review_path, unreviewed, settings)
+        return 2
 
     _classify_last_assistant_message_if_enabled(project_root, client_id, payload, settings)
     files_str = build_unreviewed_files_string(unreviewed)

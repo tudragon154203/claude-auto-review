@@ -15,6 +15,7 @@ class TestSettings(StateTestCase, unittest.TestCase):
         result = load_settings(project_root)
         self.assertTrue(result["enabled"])
         self.assertEqual(result["reviewerTimeoutSeconds"], 600)
+        self.assertEqual(result["reviewFeedbackMaxChars"], 9000)
         self.assertTrue(result["lastAssistantMessageClassifierEnabled"])
         self.assertEqual(result["lastAssistantMessageClassifierTimeoutSeconds"], 10)
 
@@ -28,6 +29,7 @@ class TestSettings(StateTestCase, unittest.TestCase):
                     "claude-auto-review": {
                         "maxStopPasses": 5,
                         "reviewerTimeoutSeconds": 120,
+                        "reviewFeedbackMaxChars": 321,
                         "lastAssistantMessageClassifierEnabled": False,
                         "lastAssistantMessageClassifierTimeoutSeconds": 3,
                     }
@@ -38,6 +40,7 @@ class TestSettings(StateTestCase, unittest.TestCase):
         result = load_settings(project_root)
         self.assertEqual(result["maxStopPasses"], 5)
         self.assertEqual(result["reviewerTimeoutSeconds"], 120)
+        self.assertEqual(result["reviewFeedbackMaxChars"], 321)
         self.assertFalse(result["lastAssistantMessageClassifierEnabled"])
         self.assertEqual(result["lastAssistantMessageClassifierTimeoutSeconds"], 3)
 

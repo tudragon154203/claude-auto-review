@@ -11,6 +11,7 @@ DEFAULT_SETTINGS = {
     "maxStopPasses": 3,
     "pendingReviewTimeoutHours": 1,
     "reviewerTimeoutSeconds": 600,
+    "reviewFeedbackMaxChars": 9000,
     "lastAssistantMessageClassifierEnabled": True,
     "lastAssistantMessageClassifierTimeoutSeconds": 10,
 }
