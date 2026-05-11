@@ -1,0 +1,4 @@
+* text=auto eol=lf
+
+# Keep PowerShell scripts native to Windows line endings.
+*.ps1 text eol=crlf
