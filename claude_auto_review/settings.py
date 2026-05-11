@@ -9,9 +9,10 @@ DEFAULT_SETTINGS = {
     "includeExtensions": [],
     "skipExtensions": [],
     "minSeverity": "MEDIUM",
-    "autoFix": True,
     "maxStopPasses": 3,
     "pendingReviewTimeoutHours": 1,
+    "lastAssistantMessageClassifierEnabled": True,
+    "lastAssistantMessageClassifierTimeoutSeconds": 10,
 }
 
 
