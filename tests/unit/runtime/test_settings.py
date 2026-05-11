@@ -14,16 +14,29 @@ class TestSettings(StateTestCase, unittest.TestCase):
         project_root = self.temp_project()
         result = load_settings(project_root)
         self.assertTrue(result["enabled"])
+        self.assertTrue(result["lastAssistantMessageClassifierEnabled"])
+        self.assertEqual(result["lastAssistantMessageClassifierTimeoutSeconds"], 10)
 
     def test_load_settings_merges_project_settings(self):
         project_root = self.temp_project()
         settings_dir = project_root / ".claude"
         settings_dir.mkdir()
         (settings_dir / "settings.json").write_text(
-            json.dumps({"claude-auto-review": {"maxStopPasses": 5}}), encoding="utf-8"
+            json.dumps(
+                {
+                    "claude-auto-review": {
+                        "maxStopPasses": 5,
+                        "lastAssistantMessageClassifierEnabled": False,
+                        "lastAssistantMessageClassifierTimeoutSeconds": 3,
+                    }
+                }
+            ),
+            encoding="utf-8",
         )
         result = load_settings(project_root)
         self.assertEqual(result["maxStopPasses"], 5)
+        self.assertFalse(result["lastAssistantMessageClassifierEnabled"])
+        self.assertEqual(result["lastAssistantMessageClassifierTimeoutSeconds"], 3)
 
     def test_should_skip_file_no_extension(self):
         self.assertFalse(should_skip_file("README", DEFAULT_SETTINGS))
