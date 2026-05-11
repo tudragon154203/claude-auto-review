@@ -57,12 +57,13 @@ class TestAutoComplete(unittest.TestCase):
         mock_log.assert_called_with(Path("/fake"), "stop_hook_claude_cli_error", error="boom")
 
     @patch("claude_auto_review.stop.autocomplete.apply_completed_review", return_value=[])
+    @patch("claude_auto_review.stop.autocomplete.is_review_clean", return_value=True)
     @patch("claude_auto_review.stop.autocomplete.is_review_complete", return_value=True)
     @patch("claude_auto_review.stop.autocomplete.log_event")
     @patch("claude_auto_review.stop.autocomplete.subprocess.run")
     @patch("claude_auto_review.stop.autocomplete.shutil.which", return_value="/usr/bin/claude")
     @patch("pathlib.Path.is_file", return_value=True)
-    def test_successful_completion(self, mock_is_file, mock_which, mock_run, mock_log, mock_complete, mock_apply):
+    def test_successful_completion(self, mock_is_file, mock_which, mock_run, mock_log, mock_complete, mock_clean, mock_apply):
         mock_run.return_value = MagicMock(returncode=0, stdout="## Verdict\nClean", stderr="")
         result = attempt_stop_autocomplete(
             project_root=Path("/fake"), client_id="c", review_id="r",
@@ -72,11 +73,12 @@ class TestAutoComplete(unittest.TestCase):
         self.assertTrue(result)
 
     @patch("claude_auto_review.stop.autocomplete.apply_completed_review", return_value=[{"file": "still.ts"}])
+    @patch("claude_auto_review.stop.autocomplete.is_review_clean", return_value=True)
     @patch("claude_auto_review.stop.autocomplete.is_review_complete", return_value=True)
     @patch("claude_auto_review.stop.autocomplete.log_event")
     @patch("claude_auto_review.stop.autocomplete.subprocess.run")
     @patch("claude_auto_review.stop.autocomplete.shutil.which", return_value="/usr/bin/claude")
-    def test_completion_with_remaining_returns_false(self, mock_which, mock_run, mock_log, mock_complete, mock_apply):
+    def test_completion_with_remaining_returns_false(self, mock_which, mock_run, mock_log, mock_complete, mock_clean, mock_apply):
         mock_run.return_value = MagicMock(returncode=0, stdout="## Verdict\nClean", stderr="")
         result = attempt_stop_autocomplete(
             project_root=Path("/fake"), client_id="c", review_id="r",

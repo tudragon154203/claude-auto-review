@@ -5,7 +5,6 @@ from claude_auto_review.runtime.setup import ensure_client_runtime
 from claude_auto_review.settings import load_settings
 from claude_auto_review.state.store_read import consecutive_stop_blocks, get_unreviewed_files, load_state
 from claude_auto_review.state.store_write import log_event
-from claude_auto_review.stop.last_assistant_message import classify_last_assistant_message
 from claude_auto_review.stop.flow_logic import finalize_review_stop, resolve_pending_review
 
 
@@ -31,9 +30,6 @@ def run_stop_flow(project_root, payload):
         log_event(project_root, "stop_approved", reason="circuit_breaker", block_count=block_count, max_passes=max_passes)
         return 0
 
-    if settings.get("lastAssistantMessageClassifierEnabled", True):
-        classify_last_assistant_message(project_root, client_id, payload, settings)
-
     resolution = resolve_pending_review(
         project_root,
         client_id,
@@ -45,4 +41,4 @@ def run_stop_flow(project_root, payload):
     )
     if resolution.is_terminal:
         return resolution.exit_code
-    return finalize_review_stop(project_root, client_id, resolution)
+    return finalize_review_stop(project_root, client_id, resolution, payload, settings)
