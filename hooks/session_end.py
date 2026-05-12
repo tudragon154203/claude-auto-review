@@ -6,7 +6,7 @@ from bootstrap import ensure_repo_root_on_path
 ensure_repo_root_on_path()
 
 from claude_auto_review.paths import get_client_id, get_project_root
-from claude_auto_review.runtime.cleanup import cancel_session, cleanup_expired_pending_reviews
+from claude_auto_review.runtime.cleanup import cancel_session, cleanup_expired_pending_reviews, cleanup_stale_clients
 from claude_auto_review.runtime.helpers import get_payload_session_id, read_json_payload, run_fail_open
 from claude_auto_review.runtime.helpers import log_event
 
@@ -17,13 +17,15 @@ def _run_session_end():
     payload = read_json_payload(raw)
     client_id = get_client_id(get_payload_session_id(payload))
     expired_removed = cleanup_expired_pending_reviews(project_root, client_id=client_id)
+    stale_removed = cleanup_stale_clients(project_root)
     removed = cancel_session(project_root, client_id=client_id)
-    if removed or expired_removed:
+    if removed or expired_removed or stale_removed:
         log_event(
             project_root,
             "session_end_cleanup",
             removed=[str(p) for p in removed],
             expired_removed=expired_removed,
+            stale_removed=[str(p) for p in stale_removed],
             client_id=client_id,
         )
     return 0
