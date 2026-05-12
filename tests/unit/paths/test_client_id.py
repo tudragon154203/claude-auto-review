@@ -4,7 +4,7 @@ import unittest
 import unittest.mock as mock
 from pathlib import Path
 
-from claude_auto_review.paths import get_client_id, get_project_root, utc_now_iso
+from claude_auto_review.paths import get_client_id, get_project_root, local_now_iso
 
 from tests.unit.state.support import StateTestCase
 
@@ -44,8 +44,8 @@ class TestClientId(StateTestCase, unittest.TestCase):
         with mock.patch.dict(os.environ, {"CLAUDE_PROJECT_DIR": str(Path.cwd())}, clear=True):
             self.assertEqual(get_project_root(), Path.cwd().resolve())
 
-    def test_utc_now_iso_returns_timestamp_string(self):
-        value = utc_now_iso()
+    def test_local_now_iso_returns_timestamp_string(self):
+        value = local_now_iso()
         self.assertIsInstance(value, str)
         self.assertIn("T", value)
 

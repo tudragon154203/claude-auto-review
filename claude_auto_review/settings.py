@@ -3,17 +3,30 @@ from pathlib import Path
 
 from claude_auto_review.paths import get_project_root
 
+# Setting keys for easy reference
+SETTING_ENABLED = "enabled"
+SETTING_RULES_FILE = "rulesFile"
+SETTING_INCLUDE_EXTS = "includeExtensions"
+SETTING_SKIP_EXTS = "skipExtensions"
+SETTING_MAX_STOP_PASSES = "maxStopPasses"
+SETTING_PENDING_TIMEOUT = "pendingReviewTimeoutHours"
+SETTING_REVIEWER_TIMEOUT = "reviewerTimeoutSeconds"
+SETTING_FEEDBACK_MAX_CHARS = "reviewFeedbackMaxChars"
+SETTING_CLASSIFIER_ENABLED = "lastAssistantMessageClassifierEnabled"
+SETTING_CLASSIFIER_TIMEOUT = "lastAssistantMessageClassifierTimeoutSeconds"
+
+# Default settings for the plugin
 DEFAULT_SETTINGS = {
-    "enabled": True,
-    "rulesFile": str(Path(".claude") / "claude-auto-review" / "rules.md"),
-    "includeExtensions": [],
-    "skipExtensions": [],
-    "maxStopPasses": 3,
-    "pendingReviewTimeoutHours": 1,
-    "reviewerTimeoutSeconds": 600,
-    "reviewFeedbackMaxChars": 9000,
-    "lastAssistantMessageClassifierEnabled": True,
-    "lastAssistantMessageClassifierTimeoutSeconds": 10,
+    SETTING_ENABLED: True,
+    SETTING_RULES_FILE: str(Path(".claude") / "claude-auto-review" / "rules.md"),
+    SETTING_INCLUDE_EXTS: [],
+    SETTING_SKIP_EXTS: [],
+    SETTING_MAX_STOP_PASSES: 3,
+    SETTING_PENDING_TIMEOUT: 1,
+    SETTING_REVIEWER_TIMEOUT: 600,
+    SETTING_FEEDBACK_MAX_CHARS: 9000,
+    SETTING_CLASSIFIER_ENABLED: True,
+    SETTING_CLASSIFIER_TIMEOUT: 10,
 }
 
 
@@ -37,7 +50,7 @@ def load_settings(project_root=None):
 
 
 def resolve_rules_file_path(project_root, settings):
-    rules_path = Path(settings.get("rulesFile", ""))
+    rules_path = Path(settings.get(SETTING_RULES_FILE, ""))
     if not rules_path.is_absolute():
         rules_path = Path(project_root) / ".claude" / "claude-auto-review" / "rules.md"
     return rules_path
@@ -46,8 +59,8 @@ def resolve_rules_file_path(project_root, settings):
 def should_skip_file(file_path, settings=None):
     settings = settings or DEFAULT_SETTINGS
     ext = Path(file_path).suffix.lstrip(".").lower()
-    include_extensions = [str(value).lstrip(".").lower() for value in settings.get("includeExtensions", [])]
-    skip_extensions = [str(value).lstrip(".").lower() for value in settings.get("skipExtensions", [])]
+    include_extensions = [str(value).lstrip(".").lower() for value in settings.get(SETTING_INCLUDE_EXTS, [])]
+    skip_extensions = [str(value).lstrip(".").lower() for value in settings.get(SETTING_SKIP_EXTS, [])]
     if include_extensions and ext not in include_extensions:
         return True
     return bool(ext and ext in skip_extensions)

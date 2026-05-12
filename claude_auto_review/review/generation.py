@@ -3,6 +3,9 @@ from datetime import datetime
 from pathlib import Path
 
 
+from claude_auto_review.utils.datetime_utils import parse_iso_timestamp
+
+
 def _read_text_with_limit(path, max_chars, encoding="utf-8"):
     chunks = []
     remaining = max_chars + 1
@@ -39,7 +42,7 @@ def read_if_exists(path, fallback=""):
 
 
 def format_review_timestamp(timestamp):
-    ts = datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
+    ts = parse_iso_timestamp(timestamp)
     local_ts = ts.astimezone()
     offset = local_ts.strftime("%z")
     offset = f"{offset[:3]}:{offset[3:]}" if offset else ""

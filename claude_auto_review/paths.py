@@ -1,6 +1,6 @@
 import os
 import socket
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 STATE_RELATIVE_PATH = Path(".claude") / "claude-auto-review" / "state.jsonl"
@@ -10,12 +10,12 @@ LOG_RELATIVE_PATH = RUNTIME_DIR / "claude-auto-review.log"
 DELETED_FILE_HASH = "__deleted__"
 
 
+FILE_URI_PREFIX = "file://"
+
+
 def local_now_iso():
     return datetime.now().astimezone().isoformat()
 
-
-def utc_now_iso():
-    return local_now_iso()
 
 
 def get_project_root():
@@ -24,6 +24,10 @@ def get_project_root():
 
 def get_plugin_root():
     return Path(__file__).resolve().parent.parent
+
+
+def get_reviewer_prompt_script():
+    return get_plugin_root() / "review" / "prompt.py"
 
 
 def _project_root_path(project_root=None):
@@ -74,7 +78,7 @@ def normalize_relative_path(file_path, project_root=None):
         return None
     file_path = os.fspath(file_path)
     project_root = _project_root_path(project_root)
-    value = file_path[7:] if file_path.startswith("file://") else file_path
+    value = file_path[len(FILE_URI_PREFIX) :] if file_path.startswith(FILE_URI_PREFIX) else file_path
     candidate = Path(value)
     resolved = candidate.resolve() if candidate.is_absolute() else (project_root / candidate).resolve()
     try:
