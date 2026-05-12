@@ -12,16 +12,35 @@ from claude_auto_review.stop.reviews.prompt_runner import (
 )
 
 
+def _build_review_prompt_env(payload):
+    env = os.environ.copy()
+    session_id = payload.get("session_id")
+    if session_id:
+        env["CLAUDE_SESSION_ID"] = session_id
+    return env
+
+
+def _resolve_prompted_review(project_root, client_id, timeout_hours, files_str, result):
+    state, unreviewed = _reload_client_state(project_root, client_id)
+    if not unreviewed:
+        log_event(project_root, "stop_approved", reason="no_unreviewed_files_after_review")
+        return StopFlowResolution(state=state, unreviewed=unreviewed, exit_code=0)
+
+    review = find_pending_review_for_files(state, unreviewed, project_root, timeout_hours)
+    if not review:
+        _block_review_prompt_failure(files_str, result)
+        return StopFlowResolution(state=state, unreviewed=unreviewed, exit_code=2)
+
+    return StopFlowResolution(state=state, unreviewed=unreviewed, review=review)
+
+
 def resolve_pending_review(project_root, client_id, payload, state, unreviewed, timeout_hours, review_prompt_script):
     review = find_pending_review_for_files(state, unreviewed, project_root, timeout_hours)
     if review:
         return StopFlowResolution(state=state, unreviewed=unreviewed, review=review)
 
     files_str = build_unreviewed_files_string(unreviewed)
-    env = os.environ.copy()
-    session_id = payload.get("session_id")
-    if session_id:
-        env["CLAUDE_SESSION_ID"] = session_id
+    env = _build_review_prompt_env(payload)
 
     try:
         result = _run_review_prompt(project_root, review_prompt_script, env)
@@ -40,15 +59,5 @@ def resolve_pending_review(project_root, client_id, payload, state, unreviewed, 
         )
         return StopFlowResolution(state=state, unreviewed=unreviewed, exit_code=2)
 
-    state, unreviewed = _reload_client_state(project_root, client_id)
-    if not unreviewed:
-        log_event(project_root, "stop_approved", reason="no_unreviewed_files_after_review")
-        return StopFlowResolution(state=state, unreviewed=unreviewed, exit_code=0)
-
-    review = find_pending_review_for_files(state, unreviewed, project_root, timeout_hours)
-    if not review:
-        _block_review_prompt_failure(files_str, result)
-        return StopFlowResolution(state=state, unreviewed=unreviewed, exit_code=2)
-
-    return StopFlowResolution(state=state, unreviewed=unreviewed, review=review)
+    return _resolve_prompted_review(project_root, client_id, timeout_hours, files_str, result)
 

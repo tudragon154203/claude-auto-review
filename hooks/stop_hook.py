@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-import json
 import sys
 
 from bootstrap import ensure_repo_root_on_path
@@ -7,22 +6,19 @@ from bootstrap import ensure_repo_root_on_path
 ensure_repo_root_on_path()
 
 from claude_auto_review.paths import get_project_root
-from claude_auto_review.runtime.helpers import log_event
+from claude_auto_review.runtime.helpers import read_json_payload, run_fail_open
 from claude_auto_review.stop.orchestration.flow import run_stop_flow
 
 
+def _run_stop_hook():
+    project_root = get_project_root()
+    raw = sys.stdin.read()
+    payload = read_json_payload(raw)
+    return run_stop_flow(project_root, payload)
+
+
 def main():
-    try:
-        project_root = get_project_root()
-        raw = sys.stdin.read().strip()
-        payload = json.loads(raw) if raw else {}
-        return run_stop_flow(project_root, payload)
-    except Exception as error:
-        try:
-            log_event(get_project_root(), "stop_error", error=str(error))
-        except Exception:
-            pass
-        return 0
+    return run_fail_open(_run_stop_hook, event_type="stop_error")
 
 
 if __name__ == "__main__":

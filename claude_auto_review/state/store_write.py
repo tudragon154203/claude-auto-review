@@ -8,10 +8,8 @@ from claude_auto_review.runtime.helpers import log_event, resolve_client_id, res
 from claude_auto_review.state.models import (
     EditRecord,
     ReviewMetadata,
-    ReviewCompletedRecord,
     StateEvent,
 )
-from claude_auto_review.state.store_read import load_state, get_unreviewed_files
 
 
 def _append_jsonl_state(entry, project_root, client_id):
@@ -71,43 +69,16 @@ def mark_files_reviewed(entries, review_id, project_root=None, client_id="", tim
         _append_jsonl_state(event.to_dict(), project_root, client_id)
 
 
-def apply_completed_review(project_root: Path, client_id: str, review_id: str, covered_entries: list[dict[str, str]]) -> list[dict[str, str]]:
-    for item in covered_entries:
-        if not isinstance(item, dict) or "file" not in item or "hash" not in item:
-            raise ValueError(f"covered_entries must be list of dicts with 'file' and 'hash', got {item}")
-
-    mark_files_reviewed(covered_entries, review_id, project_root, client_id)
-
-    log_event(project_root, "stop_approved", reason="review_completed", reviewId=review_id)
-
-    state = load_state(project_root, client_id)
-    remaining = get_unreviewed_files(state)
-
-    from claude_auto_review.review.completion import _format_duration
-
-    # Try to find duration from ReviewMetadata
-    metadata = next((e for e in reversed(state) if e.get("type") == "review" and e.get("reviewId") == review_id), {})
-    duration_str = None
-    duration_seconds = None
-    if metadata.get("timestamp"):
-        from datetime import datetime
-        try:
-           start = datetime.fromisoformat(metadata["timestamp"])
-           delta = (datetime.now(start.tzinfo) - start).total_seconds()
-           duration_seconds = int(delta)
-           duration_str = _format_duration(duration_seconds)
-        except Exception:
-           pass
-
-    event = ReviewCompletedRecord(
-        timestamp=local_now_iso(),
-        reviewId=review_id,
-        files=covered_entries,
-        clientId=client_id,
-        duration=duration_str,
-        durationSeconds=duration_seconds,
+def apply_completed_review(project_root: Path, client_id: str, review_id: str, covered_entries: list[dict[str, str]]) -> list[dict[str, Any]]:
+    from claude_auto_review.review.completion import (
+        _apply_completed_review_validated,
+        _validate_covered_entries,
     )
-    append_state(event, project_root, client_id)
+
+    validated_entries = _validate_covered_entries(covered_entries)
+    # Keep the legacy telemetry hooks here while the completion module owns the state transition.
+    log_event(project_root, "stop_approved", reason="review_completed", reviewId=review_id)
+    remaining = _apply_completed_review_validated(project_root, client_id, review_id, validated_entries)
 
     if remaining:
         log_event(project_root, "stop_blocked_after_partial_review", reviewId=review_id, remaining=[e["file"] for e in remaining])

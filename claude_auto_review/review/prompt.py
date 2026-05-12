@@ -14,6 +14,7 @@ ensure_repo_root_on_path()
 from claude_auto_review.paths import get_client_id, get_project_root
 from claude_auto_review.review.prompt_flow import create_review_prompt_files
 from claude_auto_review.install.shims import write_project_script_shim
+from claude_auto_review.runtime.helpers import run_fail_open
 from claude_auto_review.runtime.setup import ensure_client_runtime
 from claude_auto_review.settings import load_settings
 from claude_auto_review.state.store_read import get_unreviewed_files, load_state
@@ -30,6 +31,7 @@ def _log_failure(project_root, error):
         print(traceback_text, file=sys.stderr)
     else:
         print(message)
+    return True
 
 
 def _run_review_prompt(project_root, client_id):
@@ -70,13 +72,13 @@ def _run_review_prompt(project_root, client_id):
 
 
 def main():
-    try:
-        project_root = get_project_root()
+    project_root = get_project_root()
+
+    def _run():
         client_id = get_client_id()
         return _run_review_prompt(project_root, client_id)
-    except Exception as error:
-        _log_failure(get_project_root(), error)
-        return 0
+
+    return run_fail_open(_run, on_error=lambda error: _log_failure(project_root, error))
 
 
 if __name__ == "__main__":

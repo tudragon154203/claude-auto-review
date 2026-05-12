@@ -23,6 +23,41 @@ def _classify_last_assistant_message_if_enabled(project_root, client_id, payload
         classify_last_assistant_message(project_root, client_id, payload, settings)
 
 
+def _complete_clean_review(project_root, client_id, review_id, covered_entries):
+    remaining = apply_completed_review(project_root, client_id, review_id, covered_entries)
+    if not remaining:
+        return 0
+    block_response(
+        f"Claude Auto Review: Review {review_id} completed, but {len(remaining)} file(s) still need review.",
+        "New edits were made after the review was created. Another review will be generated on the next stop attempt.",
+    )
+    return 2
+
+
+def _block_pending_review(project_root, client_id, review_id, review_path, unreviewed):
+    files_str = build_unreviewed_files_string(unreviewed)
+    review_path_rel = review_path.relative_to(project_root).as_posix()
+    block_response(
+        f"Claude Auto Review: Review {review_id} created for {files_str}.",
+        (
+            f"Review file created at:\n  {review_path_rel}\n\n"
+            "Go through each finding in the generated file and set its verdict "
+            "(Confirmed, Skipped). Once all findings are resolved, "
+            "stopping will be allowed."
+        ),
+    )
+    append_state(
+        StopBlockedRecord(
+            timestamp=local_now_iso(),
+            reason="review_pending",
+            files=[entry["file"] for entry in unreviewed],
+        ),
+        project_root,
+        client_id=client_id,
+    )
+    return 2
+
+
 def finalize_review_stop(project_root, client_id, resolution, payload, settings):
     state = resolution.state
     unreviewed = resolution.unreviewed
@@ -36,14 +71,7 @@ def finalize_review_stop(project_root, client_id, resolution, payload, settings)
     exit_code = 2
     try:
         if is_review_complete(review_path) and is_review_clean(review_path):
-            remaining = apply_completed_review(project_root, client_id, review_id, covered_entries)
-            if not remaining:
-                exit_code = 0
-                return exit_code
-            block_response(
-                f"Claude Auto Review: Review {review_id} completed, but {len(remaining)} file(s) still need review.",
-                "New edits were made after the review was created. Another review will be generated on the next stop attempt.",
-            )
+            exit_code = _complete_clean_review(project_root, client_id, review_id, covered_entries)
             return exit_code
 
         if is_review_complete(review_path):
@@ -68,28 +96,7 @@ def finalize_review_stop(project_root, client_id, resolution, payload, settings)
             block_completed_review_findings(project_root, client_id, review_id, review_path, unreviewed, settings)
             return exit_code
 
-        files_str = build_unreviewed_files_string(unreviewed)
-        review_path_rel = review_path.relative_to(project_root).as_posix()
-        block_response(
-            f"Claude Auto Review: Review {review_id} created for {files_str}.",
-            (
-                f"Review file created at:\n  {review_path_rel}\n\n"
-                "Go through each finding in the generated file and set its verdict "
-                "(Confirmed, Skipped). Once all findings are resolved, "
-                "stopping will be allowed."
-            ),
-        )
-        append_state(
-            StopBlockedRecord(
-                timestamp=local_now_iso(),
-                reason="review_pending",
-                files=[entry["file"] for entry in unreviewed],
-            ),
-            project_root,
-            client_id=client_id,
-        )
-        return exit_code
+        return _block_pending_review(project_root, client_id, review_id, review_path, unreviewed)
     finally:
         if exit_code != 0:
             _classify_last_assistant_message_if_enabled(project_root, client_id, payload, settings)
-

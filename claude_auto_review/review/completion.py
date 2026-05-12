@@ -42,6 +42,15 @@ def _format_duration(seconds: float) -> str:
     return " ".join(parts)
 
 
+def _validate_covered_entries(covered_entries: list[dict[str, str]]) -> list[dict[str, str]]:
+    validated: list[dict[str, str]] = []
+    for item in covered_entries:
+        if not isinstance(item, dict) or "file" not in item or "hash" not in item:
+            raise ValueError(f"covered_entries item missing 'file' or 'hash': {item!r}")
+        validated.append({"file": item["file"], "hash": item["hash"]})
+    return validated
+
+
 def _review_completed_entry(
     review_id: str,
     covered_entries: list[dict[str, str]],
@@ -61,16 +70,12 @@ def _review_completed_entry(
     )
 
 
-def apply_completed_review(
+def _apply_completed_review_validated(
     project_root: Path,
     client_id: str,
     review_id: str,
     covered_entries: list[dict[str, str]],
 ) -> list[dict[str, Any]]:
-    for item in covered_entries:
-        if not isinstance(item, dict) or "file" not in item or "hash" not in item:
-            raise ValueError(f"covered_entries item missing 'file' or 'hash': {item!r}")
-
     state_before = load_state(project_root, client_id)
     timestamp = local_now_iso()
     append_state(
@@ -87,3 +92,13 @@ def apply_completed_review(
             client_id=client_id,
         )
     return remaining
+
+
+def apply_completed_review(
+    project_root: Path,
+    client_id: str,
+    review_id: str,
+    covered_entries: list[dict[str, str]],
+) -> list[dict[str, Any]]:
+    validated_entries = _validate_covered_entries(covered_entries)
+    return _apply_completed_review_validated(project_root, client_id, review_id, validated_entries)

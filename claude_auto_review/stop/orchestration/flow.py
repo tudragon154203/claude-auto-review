@@ -9,6 +9,11 @@ from claude_auto_review.stop.orchestration.finalize import finalize_review_stop
 from claude_auto_review.stop.orchestration.pending import resolve_pending_review
 
 
+def _allow_stop(project_root, reason, **details):
+    log_event(project_root, "stop_approved", reason=reason, **details)
+    return 0
+
+
 def run_stop_flow(project_root, payload):
     client_id = get_client_id(payload.get("session_id"))
     ensure_client_runtime(project_root, client_id)
@@ -22,14 +27,17 @@ def run_stop_flow(project_root, payload):
     state = load_state(project_root, client_id)
     unreviewed = get_unreviewed_files(state)
     if not unreviewed:
-        log_event(project_root, "stop_approved", reason="no_unreviewed_files")
-        return 0
+        return _allow_stop(project_root, "no_unreviewed_files")
 
     max_passes = int(settings.get("maxStopPasses", 3))
     block_count = consecutive_stop_blocks(state)
     if block_count >= max_passes:
-        log_event(project_root, "stop_approved", reason="circuit_breaker", block_count=block_count, max_passes=max_passes)
-        return 0
+        return _allow_stop(
+            project_root,
+            "circuit_breaker",
+            block_count=block_count,
+            max_passes=max_passes,
+        )
 
     resolution = resolve_pending_review(
         project_root,
