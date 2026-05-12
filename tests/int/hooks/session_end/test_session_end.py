@@ -165,15 +165,7 @@ class TestSessionEndHook(HookTestCase, unittest.TestCase):
             {
                 "type": "review",
                 "reviewId": "rev-expired-payload",
-                "reviewPath": str(
-                    project_root
-                    / ".claude"
-                    / "claude-auto-review"
-                    / "clients"
-                    / "client-payload-session"
-                    / "reviews"
-                    / "review-expired.md"
-                ),
+                "reviewPath": ".claude/claude-auto-review/clients/client-payload-session/reviews/review-expired.md",
                 "timestamp": old_time,
                 "status": "pending",
                 "files": [{"file": "src/app.ts", "hash": "deadbeef"}],

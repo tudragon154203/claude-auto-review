@@ -87,7 +87,7 @@ class TestStopHookOverlap(HookTestCase, unittest.TestCase):
             {
                 "type": "review",
                 "reviewId": "old",
-                "reviewPath": str(old_path),
+                "reviewPath": old_path.relative_to(project_root).as_posix(),
                 "timestamp": ts_old,
                 "status": "pending",
                 "files": [{"file": "src/app.ts", "hash": current_hash}],
@@ -99,7 +99,7 @@ class TestStopHookOverlap(HookTestCase, unittest.TestCase):
             {
                 "type": "review",
                 "reviewId": "new",
-                "reviewPath": str(new_path),
+                "reviewPath": new_path.relative_to(project_root).as_posix(),
                 "timestamp": ts_new,
                 "status": "pending",
                 "files": [{"file": "src/app.ts", "hash": current_hash}],
@@ -133,7 +133,7 @@ class TestStopHookOverlap(HookTestCase, unittest.TestCase):
             {
                 "type": "review",
                 "reviewId": "stale",
-                "reviewPath": str(stale_path),
+                "reviewPath": stale_path.relative_to(project_root).as_posix(),
                 "timestamp": datetime.now().astimezone().isoformat(),
                 "status": "pending",
                 "files": [{"file": "src/a.ts", "hash": old_hash_a}, {"file": "src/b.ts", "hash": hash_b}],
