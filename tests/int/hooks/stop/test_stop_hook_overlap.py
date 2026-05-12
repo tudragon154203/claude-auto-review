@@ -112,3 +112,47 @@ class TestStopHookOverlap(HookTestCase, unittest.TestCase):
         self.assertEqual(stop.returncode, 2)
         self.assertIn("Review new", json.loads(stop.stdout)["systemMessage"])
 
+    def test_stop_hook_rebuilds_review_when_existing_review_is_partial_stale_match(self):
+        project_root = self.temp_project()
+        file_a = project_root / "src" / "a.ts"
+        file_b = project_root / "src" / "b.ts"
+        file_a.write_text("export const a = 1;\n", encoding="utf-8")
+        file_b.write_text("export const b = 1;\n", encoding="utf-8")
+        self.run_python("hooks/post_tool_use.py", project_root, json.dumps({"file_path": "src/a.ts"}))
+        self.run_python("hooks/post_tool_use.py", project_root, json.dumps({"file_path": "src/b.ts"}))
+
+        edits = [e for e in load_state(project_root, "test-session") if e.get("type") == "edit"]
+        old_hash_a = [e["hash"] for e in edits if e.get("file") == "src/a.ts"][-1]
+        hash_b = [e["hash"] for e in edits if e.get("file") == "src/b.ts"][-1]
+
+        review_dir = project_root / ".claude" / "claude-auto-review" / "clients" / "client-test-session" / "reviews"
+        review_dir.mkdir(parents=True, exist_ok=True)
+        stale_path = review_dir / "review-stale.md"
+        stale_path.write_text("## Verdict\n\nNot clean - fix a.ts.\n", encoding="utf-8")
+        append_state(
+            {
+                "type": "review",
+                "reviewId": "stale",
+                "reviewPath": str(stale_path),
+                "timestamp": datetime.now().astimezone().isoformat(),
+                "status": "pending",
+                "files": [{"file": "src/a.ts", "hash": old_hash_a}, {"file": "src/b.ts", "hash": hash_b}],
+            },
+            project_root,
+            client_id="test-session",
+        )
+
+        file_a.write_text("export const a = 2;\n", encoding="utf-8")
+        self.run_python("hooks/post_tool_use.py", project_root, json.dumps({"file_path": "src/a.ts"}))
+        latest_hash_a = load_state(project_root, "test-session")[-1]["hash"]
+
+        stop = self.run_python("hooks/stop_hook.py", project_root, env_overrides={"PATH": ""}, use_fake_claude=False)
+
+        self.assertEqual(stop.returncode, 2)
+        self.assertNotIn("Review stale found issues", json.loads(stop.stdout)["systemMessage"])
+        reviews = [e for e in load_state(project_root, "test-session") if e.get("type") == "review"]
+        self.assertEqual(len(reviews), 2)
+        latest_review = reviews[-1]
+        self.assertNotEqual(latest_review["reviewId"], "stale")
+        self.assertIn({"file": "src/a.ts", "hash": latest_hash_a}, latest_review["files"])
+        self.assertIn({"file": "src/b.ts", "hash": hash_b}, latest_review["files"])

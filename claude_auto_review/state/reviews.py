@@ -65,6 +65,29 @@ def pending_reviews_for_entries(state, entries):
     return sorted(matches, key=lambda e: e.get("timestamp", ""), reverse=True)
 
 
+def best_pending_review_covering_entries(state, entries, project_root=None, timeout_hours=0):
+    needed = entry_file_hash_pairs(entries)
+    if not needed:
+        return None
+
+    matches = []
+    for entry, covered, overlap in _pending_review_overlaps(state, entries):
+        if timeout_hours > 0 and is_review_expired(entry, timeout_hours):
+            log_event(
+                project_root,
+                "stop_review_expired",
+                review_id=entry.get("reviewId", ""),
+                files=[f.get("file", "") for f in entry.get("files", []) if isinstance(f, dict)],
+            )
+            continue
+        if needed.issubset(covered):
+            matches.append({"review": entry, "overlap_count": len(overlap)})
+
+    if not matches:
+        return None
+    return sorted(matches, key=lambda item: (item["overlap_count"], item["review"].get("timestamp", "")), reverse=True)[0]["review"]
+
+
 def pending_review_candidates_for_entries(state, entries, project_root=None, timeout_hours=0):
     """Return pending reviews that overlap the requested file/hash pairs.
 
