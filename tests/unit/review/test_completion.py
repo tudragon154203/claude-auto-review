@@ -49,19 +49,6 @@ class TestCompletion(unittest.TestCase):
         self.assertEqual(mock_append.call_args.args[0].type, "review_completed")
         mock_mark.assert_called_once()
 
-    @patch("claude_auto_review.state.store_write.log_event")
-    @patch("claude_auto_review.review.completion._apply_completed_review_validated", return_value=[])
-    @patch("claude_auto_review.review.completion._validate_covered_entries", return_value=[{"file": "a.ts", "hash": "1"}])
-    def test_store_write_wrapper_delegates_to_canonical_completion(self, mock_validate, mock_apply, mock_log):
-        from claude_auto_review.state.store_write import apply_completed_review as legacy_apply_completed_review
-
-        remaining = legacy_apply_completed_review(Path("/fake"), "cid", "rid", [{"file": "a.ts", "hash": "1"}])
-
-        self.assertEqual(remaining, [])
-        mock_validate.assert_called_once_with([{"file": "a.ts", "hash": "1"}])
-        mock_apply.assert_called_once_with(Path("/fake"), "cid", "rid", [{"file": "a.ts", "hash": "1"}])
-        mock_log.assert_called_once_with(Path("/fake"), "stop_approved", reason="review_completed", reviewId="rid")
-
     def test_apply_completed_review_raises_on_missing_hash(self):
         with self.assertRaises(ValueError):
             apply_completed_review(Path("/fake"), "cid", "rid", [{"file": "a.ts"}])

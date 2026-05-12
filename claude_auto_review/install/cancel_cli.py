@@ -12,7 +12,7 @@ ensure_repo_root_on_path()
 
 from claude_auto_review.paths import get_client_id, get_project_root
 from claude_auto_review.runtime.cleanup import cancel_runtime
-from claude_auto_review.state.store_write import log_event
+from claude_auto_review.runtime.helpers import log_event
 
 
 def main():

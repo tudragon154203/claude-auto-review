@@ -87,7 +87,7 @@ class TestPendingReviewSelection(unittest.TestCase):
         ]
         entries = [{"file": "a.ts", "hash": "1"}, {"file": "b.ts", "hash": "2"}]
 
-        with patch("claude_auto_review.state.reviews.log_event") as mock_log:
+        with patch("claude_auto_review.state.review_matching.log_event") as mock_log:
             candidates = pending_review_candidates_for_entries(
                 state,
                 entries,

@@ -1,13 +1,11 @@
 import json
-import re
 import socket
 from urllib import error, parse, request
-from claude_auto_review.stop.classifier.models import (
-    CLASSIFIER_MODEL,
-    CLASSIFIER_MAX_TOKENS,
-    _SYSTEM_PROMPT,
-    result_factory
-)
+from claude_auto_review.stop.classifier.models import result_factory
+from claude_auto_review.stop.classifier.request import build_classifier_request_body
+from claude_auto_review.stop.classifier.response import parse_classifier_label, response_payload_debug_json
+
+_parse_classifier_label = parse_classifier_label
 
 def sanitize_base_url(base_url):
     if not isinstance(base_url, str) or not base_url.strip():
@@ -28,53 +26,11 @@ def _request_url(base_url):
     return f"{sanitized}/v1/messages"
 
 
-def _build_request_body(message_text):
-    return {
-        "model": CLASSIFIER_MODEL,
-        "max_tokens": CLASSIFIER_MAX_TOKENS,
-        "temperature": 0,
-        "stop_sequences": ["\n"],
-        "system": _SYSTEM_PROMPT,
-        "messages": [
-            {
-                "role": "user",
-                "content": [
-                    {
-                        "type": "text",
-                        "text": f"Assistant message:\n{message_text}\n\nLabel:",
-                    }
-                ],
-            }
-        ],
-    }
-
-
-def _parse_classifier_label(response_json):
-    if not isinstance(response_json, dict):
-        return "unknown", "bad_response"
-    content = response_json.get("content")
-    if not isinstance(content, list):
-        return "unknown", "bad_response"
-    text = "".join(
-        block.get("text", "")
-        for block in content
-        if (
-            isinstance(block, dict)
-            and block.get("type", "text") == "text"
-            and isinstance(block.get("text"), str)
-        )
-    )
-    matches = re.findall(r"\b(complete|incomplete|unknown)\b", text.lower())
-    if matches:
-        return matches[0], "parsed_label"
-    return "unknown", "invalid_label"
-
-
 def call_classifier_api(message_text, base_url, api_key, started_at, timeout_seconds, urlopen=None):
     message_chars = len(message_text)
     urlopen = request.urlopen if urlopen is None else urlopen
 
-    body = json.dumps(_build_request_body(message_text)).encode("utf-8")
+    body = json.dumps(build_classifier_request_body(message_text)).encode("utf-8")
     req = request.Request(
         _request_url(base_url),
         data=body,
@@ -107,9 +63,9 @@ def call_classifier_api(message_text, base_url, api_key, started_at, timeout_sec
     except (UnicodeDecodeError, json.JSONDecodeError, TypeError, ValueError):
         return result_factory("error", "bad_response", started_at, message_chars, base_url=base_url)
 
-    label, reason = _parse_classifier_label(response_data)
+    label, reason = parse_classifier_label(response_data)
     debug_response = None
     if label == "unknown":
-        debug_response = json.dumps(response_data, ensure_ascii=False, separators=(",", ":"))
+        debug_response = response_payload_debug_json(response_data)
     return result_factory(label, reason, started_at, message_chars, base_url=base_url, debug_response=debug_response)
 

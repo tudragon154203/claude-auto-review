@@ -18,7 +18,8 @@ from claude_auto_review.runtime.helpers import run_fail_open
 from claude_auto_review.runtime.setup import ensure_client_runtime
 from claude_auto_review.settings import load_settings
 from claude_auto_review.state.store_read import get_unreviewed_files, load_state
-from claude_auto_review.state.store_write import append_review_started, log_event
+from claude_auto_review.runtime.helpers import log_event
+from claude_auto_review.state.store_write import append_review_started
 
 
 def _log_failure(project_root, error):

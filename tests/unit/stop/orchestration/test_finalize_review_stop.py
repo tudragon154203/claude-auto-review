@@ -46,7 +46,7 @@ class TestFinalizeReviewStop(unittest.TestCase):
         mock_classify.assert_not_called()
 
     @patch("claude_auto_review.stop.orchestration.finalize.classify_last_assistant_message")
-    @patch("claude_auto_review.stop.orchestration.finalize.append_state")
+    @patch("claude_auto_review.stop.orchestration.response_actions.append_state")
     @patch("claude_auto_review.stop.orchestration.finalize.get_entries_covered_by_review", return_value=[])
     @patch("claude_auto_review.stop.orchestration.finalize.attempt_stop_autocomplete", return_value=False)
     @patch("claude_auto_review.stop.orchestration.finalize.is_review_complete", return_value=False)

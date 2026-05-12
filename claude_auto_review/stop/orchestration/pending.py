@@ -1,7 +1,7 @@
 import os
 import subprocess
 
-from claude_auto_review.state.store_write import log_event
+from claude_auto_review.runtime.helpers import log_event
 from claude_auto_review.stop.feedback import build_unreviewed_files_string, block_response
 from claude_auto_review.stop.orchestration.resolution import StopFlowResolution
 from claude_auto_review.stop.reviews.selection import find_pending_review_for_files

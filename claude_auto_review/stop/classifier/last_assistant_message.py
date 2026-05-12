@@ -1,6 +1,7 @@
 import os
 import time
-from claude_auto_review.state.store_write import append_state, log_event
+from claude_auto_review.runtime.helpers import log_event
+from claude_auto_review.state.store_write import append_state
 from claude_auto_review.stop.classifier.extraction import extract_last_assistant_message_text
 from claude_auto_review.stop.classifier.models import (
     DEFAULT_TIMEOUT_SECONDS,
@@ -54,4 +55,3 @@ def classify_last_assistant_message(project_root, client_id, payload, settings, 
 
     _persist_result(project_root, client_id, result)
     return result
-

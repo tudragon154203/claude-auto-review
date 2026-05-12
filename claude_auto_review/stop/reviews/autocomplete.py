@@ -4,7 +4,7 @@ from pathlib import Path
 
 from claude_auto_review.review.completion import apply_completed_review
 from claude_auto_review.state.reviews import is_review_clean, is_review_complete
-from claude_auto_review.state.store_write import log_event
+from claude_auto_review.runtime.helpers import log_event
 
 
 def attempt_stop_autocomplete(

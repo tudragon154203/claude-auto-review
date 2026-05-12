@@ -2,7 +2,7 @@ import subprocess
 import sys
 
 from claude_auto_review.state.store_read import get_unreviewed_files, load_state
-from claude_auto_review.state.store_write import log_event
+from claude_auto_review.runtime.helpers import log_event
 from claude_auto_review.stop.feedback import block_response
 
 

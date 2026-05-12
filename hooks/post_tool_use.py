@@ -8,14 +8,15 @@ ensure_repo_root_on_path()
 from claude_auto_review.paths import DELETED_FILE_HASH, get_client_id, get_project_root, local_now_iso, normalize_relative_path
 from claude_auto_review.runtime.setup import ensure_client_runtime
 from claude_auto_review.settings import load_settings, should_skip_file
+from claude_auto_review.state.hook_input import extract_file_paths_from_hook_input
 from claude_auto_review.state.store_read import (
-    extract_file_paths_from_hook_input,
     get_file_hash,
     load_state,
     was_hash_reviewed,
 )
 from claude_auto_review.runtime.helpers import read_json_payload, run_fail_open
-from claude_auto_review.state.store_write import append_state, log_event
+from claude_auto_review.runtime.helpers import log_event
+from claude_auto_review.state.store_write import append_state
 
 
 def _run_post_tool_use():
@@ -79,4 +80,3 @@ def main():
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

@@ -49,7 +49,7 @@ See [INSTALL.md](INSTALL.md) for the full installation guide.
 Quick install from a target project:
 
 ```bash
-python /path/to/claude-auto-review/install.py
+python /path/to/claude-auto-review/claude_auto_review/install/setup_cli.py
 ```
 
 The installer creates the local `.claude/claude-auto-review/` runtime tree, copies the default rules, configures `.claude/settings.json`, and updates `.gitignore`.

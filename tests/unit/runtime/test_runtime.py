@@ -209,7 +209,7 @@ class TestRuntime(StateTestCase, unittest.TestCase):
 
         with (
             patch("pathlib.Path.open", new=fail_on_state_write),
-            patch("claude_auto_review.runtime.cleanup.log_failure") as mock_log,
+            patch("claude_auto_review.runtime.pending_cleanup.log_failure") as mock_log,
         ):
             removed = cleanup_expired_pending_reviews(project_root, client_id=client_id)
 

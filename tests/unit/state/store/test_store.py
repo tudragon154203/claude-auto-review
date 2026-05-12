@@ -3,7 +3,8 @@ import unittest
 from claude_auto_review.paths import client_state_path, get_log_path, local_now_iso
 from claude_auto_review.runtime.setup import ensure_client_runtime, ensure_runtime
 from claude_auto_review.state.store_read import get_unreviewed_files, latest_entries_by_file, load_state, reviewed_hashes_by_file, was_hash_reviewed
-from claude_auto_review.state.store_write import append_state, log_event
+from claude_auto_review.runtime.helpers import log_event
+from claude_auto_review.state.store_write import append_state
 
 from tests.unit.state.support import StateTestCase
 

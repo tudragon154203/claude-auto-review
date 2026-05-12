@@ -1,6 +1,6 @@
 import unittest
 
-from claude_auto_review.state.store_read import extract_file_paths_from_hook_input
+from claude_auto_review.state.hook_input import extract_file_paths_from_hook_input
 
 from tests.unit.state.support import StateTestCase
 

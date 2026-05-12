@@ -11,7 +11,7 @@
 From inside the project where you want reviews to run:
 
 ```bash
-python /path/to/claude-auto-review/install.py
+python /path/to/claude-auto-review/claude_auto_review/install/setup_cli.py
 ```
 
 Replace `/path/to/claude-auto-review` with the actual location of this repo on your machine.
@@ -30,7 +30,7 @@ The installer is idempotent - running it again won't duplicate entries.
 ## Uninstall
 
 ```bash
-python /path/to/claude-auto-review/uninstall.py
+python /path/to/claude-auto-review/claude_auto_review/install/cancel_cli.py
 ```
 
 This removes runtime state for the active session. Delete `.claude/claude-auto-review/` and remove the hook entries from `.claude/settings.json` to fully uninstall.

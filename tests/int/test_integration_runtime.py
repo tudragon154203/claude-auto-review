@@ -10,7 +10,8 @@ from claude_auto_review.runtime.cleanup import cancel_runtime
 from claude_auto_review.runtime.setup import ensure_client_runtime, ensure_project_settings, ensure_runtime
 from claude_auto_review.settings import DEFAULT_SETTINGS, DEFAULT_TIMEOUT_SECONDS, load_settings
 from claude_auto_review.state.store_read import consecutive_stop_blocks, load_state
-from claude_auto_review.state.store_write import append_state, log_event
+from claude_auto_review.runtime.helpers import log_event
+from claude_auto_review.state.store_write import append_state
 from claude_auto_review.stop.classifier.last_assistant_message import classify_last_assistant_message
 
 

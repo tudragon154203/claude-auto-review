@@ -8,7 +8,7 @@ ensure_repo_root_on_path()
 from claude_auto_review.paths import get_client_id, get_project_root
 from claude_auto_review.runtime.cleanup import cancel_session, cleanup_expired_pending_reviews
 from claude_auto_review.runtime.helpers import get_payload_session_id, read_json_payload, run_fail_open
-from claude_auto_review.state.store_write import log_event
+from claude_auto_review.runtime.helpers import log_event
 
 
 def _run_session_end():

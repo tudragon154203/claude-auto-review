@@ -1,10 +1,8 @@
 import json
-from pathlib import Path
-from typing import Any
 
 from claude_auto_review.paths import client_state_path, local_now_iso
 from claude_auto_review.runtime.setup import ensure_client_runtime
-from claude_auto_review.runtime.helpers import log_event, resolve_client_id, resolve_project_root
+from claude_auto_review.runtime.helpers import resolve_client_id, resolve_project_root
 from claude_auto_review.state.models import (
     EditRecord,
     ReviewMetadata,
@@ -67,20 +65,3 @@ def mark_files_reviewed(entries, review_id, project_root=None, client_id="", tim
     for entry in entries:
         event = _reviewed_edit_entry(entry, review_id, timestamp)
         _append_jsonl_state(event.to_dict(), project_root, client_id)
-
-
-def apply_completed_review(project_root: Path, client_id: str, review_id: str, covered_entries: list[dict[str, str]]) -> list[dict[str, Any]]:
-    from claude_auto_review.review.completion import (
-        _apply_completed_review_validated,
-        _validate_covered_entries,
-    )
-
-    validated_entries = _validate_covered_entries(covered_entries)
-    # Keep the legacy telemetry hooks here while the completion module owns the state transition.
-    log_event(project_root, "stop_approved", reason="review_completed", reviewId=review_id)
-    remaining = _apply_completed_review_validated(project_root, client_id, review_id, validated_entries)
-
-    if remaining:
-        log_event(project_root, "stop_blocked_after_partial_review", reviewId=review_id, remaining=[e["file"] for e in remaining])
-
-    return remaining

@@ -1,13 +1,18 @@
 import subprocess
 from pathlib import Path
 
-
-from claude_auto_review.utils.datetime_utils import parse_iso_timestamp
-
-
-_TEXT_READ_CHUNK_SIZE = 8192
-_SNAPSHOT_READ_LIMIT_CHARS = 10000
-_SNAPSHOT_RENDER_LIMIT_CHARS = 40000
+from claude_auto_review.review.rendering import (
+    _review_context,
+    current_file_snapshots,
+    format_file_list,
+    format_review_timestamp,
+)
+from claude_auto_review.review.prompt_templates import (
+    build_prompt as _build_prompt,
+    format_review_file,
+    format_review_files as _format_review_files,
+    format_review_prompt,
+)
 
 _GIT_DIFF_UNAVAILABLE_MESSAGE = "Git diff unavailable. Review the current file contents directly."
 
@@ -96,90 +101,9 @@ def git_diff(files, project_root):
 def read_if_exists(path, fallback=""):
     path = Path(path)
     return path.read_text(encoding="utf-8") if path.exists() else fallback
-
-
-def format_review_timestamp(timestamp):
-    ts = parse_iso_timestamp(timestamp)
-    local_ts = ts.astimezone()
-    offset = local_ts.strftime("%z")
-    offset = f"{offset[:3]}:{offset[3:]}" if offset else ""
-    return f"{local_ts.strftime('%Y-%m-%d | %H:%M:%S')} {offset}".rstrip()
-
-
-def format_file_list(entries):
-    return "\n".join(f"- {entry['file']} (hash: {entry['hash']})" for entry in entries)
-
-
-def format_review_prompt(
-    review_id,
-    readable_timestamp,
-    file_list,
-    rules,
-    diff,
-    snapshots,
-    review_path,
-):
-    return _REVIEW_PROMPT_TEMPLATE.format(
-        review_id=review_id,
-        readable_timestamp=readable_timestamp,
-        file_list=file_list,
-        rules=rules,
-        diff=diff,
-        snapshots=snapshots,
-    )
-
-
-def format_review_file(review_id, readable_timestamp, file_list, prompt_path):
-    return _REVIEW_FILE_TEMPLATE.format(
-        review_id=review_id,
-        readable_timestamp=readable_timestamp,
-        file_list=file_list,
-        prompt_path=prompt_path,
-    )
-
-
 def format_review_files(entries, prompt_path, review_id, timestamp):
-    readable_timestamp, file_list = _review_context(entries, timestamp)
-    return format_review_file(review_id, readable_timestamp, file_list, prompt_path)
-
-
-def current_file_snapshots(files, project_root):
-    sections = []
-    for file_path in files:
-        sections.append(_snapshot_section(file_path, project_root, _SNAPSHOT_READ_LIMIT_CHARS))
-    return "\n\n".join(sections)
+    return _format_review_files(entries, prompt_path, review_id, timestamp, _review_context)
 
 
 def build_prompt(review_id, timestamp, entries, rules, diff, snapshots, review_path):
-    readable_timestamp, file_list = _review_context(entries, timestamp)
-    return format_review_prompt(
-        review_id,
-        readable_timestamp,
-        file_list,
-        rules,
-        diff,
-        snapshots,
-        review_path,
-    )
-
-
-def _format_missing_file_snapshot(file_path):
-    return f"## {file_path}\n\nFile does not currently exist."
-
-
-def _review_context(entries, timestamp):
-    return format_review_timestamp(timestamp), format_file_list(entries)
-
-
-def _snapshot_section(file_path, project_root, max_chars):
-    full_path = Path(project_root) / file_path
-    if not full_path.is_file():
-        return _format_missing_file_snapshot(file_path)
-    content = _read_text_with_limit(full_path, max_chars)
-    return _format_file_snapshot(file_path, content, max_chars=max_chars)
-
-
-def _format_file_snapshot(file_path, content, max_chars=_SNAPSHOT_RENDER_LIMIT_CHARS):
-    if len(content) > max_chars:
-        content = f"{content[:max_chars]}\n\n[truncated at {max_chars} characters]"
-    return f"## {file_path}\n\n```\n{content}\n```"
+    return _build_prompt(review_id, timestamp, entries, rules, diff, snapshots, review_path, _review_context)

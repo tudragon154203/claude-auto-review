@@ -4,7 +4,7 @@ from claude_auto_review.paths import get_client_id
 from claude_auto_review.runtime.setup import ensure_client_runtime
 from claude_auto_review.settings import load_settings
 from claude_auto_review.state.store_read import consecutive_stop_blocks, get_unreviewed_files, load_state
-from claude_auto_review.state.store_write import log_event
+from claude_auto_review.runtime.helpers import log_event
 from claude_auto_review.stop.orchestration.finalize import finalize_review_stop
 from claude_auto_review.stop.orchestration.pending import resolve_pending_review
 
