@@ -78,9 +78,26 @@ def cleanup_stale_clients(project_root=None):
     if not clients_dir.is_dir():
         return []
 
+    # Canonicalize the clients directory once
+    try:
+        clients_dir_resolved = clients_dir.resolve()
+    except OSError:
+        return []
+
     removed = []
     for client_dir in clients_dir.iterdir():
         if not client_dir.is_dir() or not client_dir.name.startswith("client-"):
+            continue
+
+        # Guard against symlink/toctou: ensure resolved client_dir is a child of clients_dir
+        try:
+            client_dir_resolved = client_dir.resolve()
+        except OSError:
+            continue
+        try:
+            client_dir_resolved.relative_to(clients_dir_resolved)
+        except ValueError:
+            # client_dir resolves outside clients_dir — skip it (symlink escape)
             continue
 
         state_path = client_dir / "state.jsonl"

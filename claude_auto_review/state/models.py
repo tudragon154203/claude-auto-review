@@ -13,11 +13,17 @@ class EditRecord:
     type: Literal["edit"] = "edit"
 
     def to_dict(self) -> dict[str, Any]:
-        d = asdict(self)
-        if self.reviewId is None:
-            d.pop("reviewId")
-        if not self.deleted:
-            d.pop("deleted")
+        d = {
+            "timestamp": self.timestamp,
+            "type": self.type,
+            "file": self.file,
+            "hash": self.hash,
+            "reviewed": self.reviewed,
+        }
+        if self.reviewId is not None:
+            d["reviewId"] = self.reviewId
+        if self.deleted:
+            d["deleted"] = self.deleted
         return d
 
 
@@ -30,7 +36,10 @@ class StopBlockedRecord:
     type: Literal["stop_blocked"] = "stop_blocked"
 
     def to_dict(self) -> dict[str, Any]:
-        d = {"type": "stop_blocked", "timestamp": self.timestamp}
+        d = {
+            "timestamp": self.timestamp,
+            "type": self.type,
+        }
         if self.reason is not None:
             d["reason"] = self.reason
         if self.reviewId is not None:
@@ -51,7 +60,15 @@ class ReviewMetadata:
     type: Literal["review"] = "review"
 
     def to_dict(self) -> dict[str, Any]:
-        return asdict(self)
+        return {
+            "timestamp": self.timestamp,
+            "type": self.type,
+            "reviewId": self.reviewId,
+            "reviewPath": self.reviewPath,
+            "files": self.files,
+            "clientId": self.clientId,
+            "status": self.status,
+        }
 
 
 @dataclass(frozen=True)
@@ -66,10 +83,10 @@ class ReviewCompletedRecord:
 
     def to_dict(self) -> dict[str, Any]:
         d: dict[str, Any] = {
-            "type": "review_completed",
+            "timestamp": self.timestamp,
+            "type": self.type,
             "reviewId": self.reviewId,
             "files": self.files,
-            "timestamp": self.timestamp,
             "clientId": self.clientId,
         }
         if self.duration is not None:
@@ -94,8 +111,8 @@ class ClassificationRecord:
 
     def to_dict(self) -> dict[str, Any]:
         d: dict[str, Any] = {
-            "type": self.type,
             "timestamp": self.timestamp,
+            "type": self.type,
             "status": self.status,
             "reason": self.reason,
             "latencyMs": self.latencyMs,

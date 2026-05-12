@@ -1,4 +1,5 @@
 import json
+from pathlib import Path
 
 from claude_auto_review.paths import client_state_path, local_now_iso
 from claude_auto_review.runtime.setup import ensure_client_runtime
@@ -21,11 +22,19 @@ def _review_file_entries(entries):
     return [{"file": entry["file"], "hash": entry["hash"]} for entry in entries]
 
 
-def _review_state_entry(entries, review_id, review_path, client_id):
+def _review_state_entry(entries, review_id, review_path, client_id, project_root):
+    review_path = Path(review_path)
+    root = Path(project_root)
+    if review_path.is_absolute():
+        try:
+            review_path = review_path.relative_to(root)
+        except ValueError:
+            review_path = review_path.relative_to(root.resolve())
+    review_path = review_path.as_posix()
     return ReviewMetadata(
         timestamp=local_now_iso(),
         reviewId=review_id,
-        reviewPath=str(review_path),
+        reviewPath=review_path,
         files=_review_file_entries(entries),
         clientId=client_id,
     )
@@ -55,7 +64,7 @@ def append_state(event: StateEvent | dict, project_root=None, client_id=""):
 
 def append_review_started(entries, review_id, review_path, project_root=None, client_id=""):
     project_root, client_id = _write_context(project_root, client_id)
-    event = _review_state_entry(entries, review_id, review_path, client_id)
+    event = _review_state_entry(entries, review_id, review_path, client_id, project_root)
     _append_jsonl_state(event.to_dict(), project_root, client_id)
 
 
