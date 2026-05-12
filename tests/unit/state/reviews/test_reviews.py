@@ -1,6 +1,6 @@
 import unittest
 
-from claude_auto_review.state.reviews import is_review_complete, is_review_expired
+from claude_auto_review.state.reviews import is_review_clean, is_review_complete, is_review_expired
 
 from tests.unit.state.support import StateTestCase
 
@@ -48,6 +48,18 @@ class TestReviewCompletion(StateTestCase, unittest.TestCase):
         path = project_root / "review.md"
         path.write_text("## Verdict\nClean - no issues found.", encoding="utf-8")
         self.assertTrue(is_review_complete(path))
+
+    def test_is_review_clean_accepts_confirmed_clean_verdict(self):
+        project_root = self.temp_project()
+        path = project_root / "review.md"
+        path.write_text("## Verdict\nConfirmed (Clean) - no issues found.", encoding="utf-8")
+        self.assertTrue(is_review_clean(path))
+
+    def test_is_review_clean_rejects_not_clean_verdict(self):
+        project_root = self.temp_project()
+        path = project_root / "review.md"
+        path.write_text("## Verdict\nNot clean - fix src/app.ts.", encoding="utf-8")
+        self.assertFalse(is_review_clean(path))
 
     def test_returns_true_when_verdict_is_a_fixed_message(self):
         project_root = self.temp_project()

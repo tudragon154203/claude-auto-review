@@ -39,7 +39,8 @@ def main():
                 log_event(project_root, "post_tool_use_ignored_path", path=candidate)
                 continue
             if should_skip_file(file_path, settings):
-                log_event(project_root, "post_tool_use_skipped_file", file=file_path)
+                reason = "runtime" if file_path.startswith(".claude/claude-auto-review/") else "settings"
+                log_event(project_root, "post_tool_use_skipped_file", file=file_path, reason=reason)
                 continue
             file_hash = get_file_hash(file_path, project_root)
             if not file_hash:

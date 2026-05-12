@@ -1,4 +1,5 @@
 import json
+import re
 import socket
 from urllib import error, parse, request
 from claude_auto_review.stop.classifier.models import (
@@ -61,9 +62,9 @@ def _parse_classifier_label(response_json):
             and isinstance(block.get("text"), str)
         )
     )
-    label = text.strip().lower()
-    if label in {"complete", "incomplete", "unknown"}:
-        return label, "parsed_label"
+    matches = re.findall(r"\b(complete|incomplete|unknown)\b", text.lower())
+    if matches:
+        return matches[0], "parsed_label"
     return "unknown", "invalid_label"
 
 def call_classifier_api(message_text, base_url, api_key, started_at, timeout_seconds, urlopen=None):

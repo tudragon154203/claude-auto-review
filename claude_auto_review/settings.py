@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 
-from claude_auto_review.paths import get_project_root
+from claude_auto_review.paths import get_project_root, is_runtime_relative_path
 
 # Setting keys for easy reference
 SETTING_ENABLED = "enabled"
@@ -60,6 +60,8 @@ def resolve_rules_file_path(project_root, settings):
 
 def should_skip_file(file_path, settings=None):
     settings = settings or DEFAULT_SETTINGS
+    if is_runtime_relative_path(file_path):
+        return True
     ext = Path(file_path).suffix.lstrip(".").lower()
     include_extensions = [str(value).lstrip(".").lower() for value in settings.get(SETTING_INCLUDE_EXTS, [])]
     skip_extensions = [str(value).lstrip(".").lower() for value in settings.get(SETTING_SKIP_EXTS, [])]

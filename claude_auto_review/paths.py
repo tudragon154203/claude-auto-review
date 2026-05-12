@@ -73,6 +73,17 @@ def client_run_dir(project_root: Path, client_id: str) -> Path:
     return get_client_runtime_dir(project_root, client_id) / "run"
 
 
+def is_runtime_relative_path(file_path) -> bool:
+    if not file_path:
+        return False
+    candidate = Path(os.fspath(file_path))
+    try:
+        relative = candidate.relative_to(RUNTIME_DIR)
+    except ValueError:
+        return False
+    return bool(relative.parts)
+
+
 def normalize_relative_path(file_path, project_root=None):
     if not file_path:
         return None

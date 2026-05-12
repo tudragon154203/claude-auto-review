@@ -1,5 +1,6 @@
 from datetime import datetime
 from pathlib import Path
+import re
 
 from claude_auto_review.runtime.helpers import log_event
 
@@ -176,5 +177,8 @@ def is_review_clean(review_path):
     if "## Verdict" not in content:
         return False
     verdict = content.split("## Verdict", 1)[1].strip().lower()
-    # Use startswith for resilience to template wording variations
-    return verdict.startswith("clean")
+    if not verdict or verdict.startswith("not clean"):
+        return False
+    if verdict.startswith("clean"):
+        return True
+    return bool(re.match(r"^confirmed\s*\(\s*clean\s*\)(?:\s|$|[-:])", verdict))

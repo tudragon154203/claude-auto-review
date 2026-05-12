@@ -108,7 +108,7 @@ class TestLastAssistantMessageClassifier(StateTestCase, unittest.TestCase):
         self.assertEqual(seen["headers"]["Anthropic-version"], "2023-06-01")
         self.assertEqual(seen["headers"]["X-api-key"], "top-secret")
         self.assertEqual(seen["body"]["model"], CLASSIFIER_MODEL)
-        self.assertEqual(seen["body"]["max_tokens"], 1024)
+        self.assertEqual(seen["body"]["max_tokens"], 8)
         self.assertEqual(seen["body"]["temperature"], 0)
         self.assertEqual(seen["body"]["stop_sequences"], ["\n"])
         self.assertIn("exactly one lowercase label", seen["body"]["system"])
@@ -191,6 +191,19 @@ class TestLastAssistantMessageClassifier(StateTestCase, unittest.TestCase):
                 {"type": "text", "text": "complete"},
             ]
         }
+        result = classify_last_assistant_message(
+            self.project_root,
+            self.client_id,
+            {"last_assistant_message": "Message"},
+            self.settings,
+            env=self.env,
+            urlopen=lambda req, timeout: _FakeResponse(payload),
+        )
+        self.assertEqual(result.status, "complete")
+        self.assertEqual(result.reason, "parsed_label")
+
+    def test_accepts_label_with_extra_text(self):
+        payload = {"content": [{"type": "text", "text": "complete\nfinal answer"}]}
         result = classify_last_assistant_message(
             self.project_root,
             self.client_id,

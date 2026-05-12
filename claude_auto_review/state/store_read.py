@@ -2,7 +2,7 @@ import hashlib
 import json
 from pathlib import Path
 
-from claude_auto_review.paths import normalize_relative_path
+from claude_auto_review.paths import is_runtime_relative_path, normalize_relative_path
 from claude_auto_review.runtime.helpers import resolve_client_id, resolve_project_root
 
 
@@ -81,7 +81,7 @@ def get_unreviewed_files(state):
     return [
         entry
         for entry in latest_entries_by_file(state).values()
-        if not entry.get("reviewed") and not entry.get("deleted")
+        if not entry.get("reviewed") and not entry.get("deleted") and not is_runtime_relative_path(entry.get("file"))
     ]
 
 

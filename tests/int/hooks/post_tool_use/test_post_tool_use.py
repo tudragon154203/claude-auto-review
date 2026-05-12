@@ -57,6 +57,24 @@ class TestPostToolUseHook(HookTestCase, unittest.TestCase):
             self.assertEqual(post.returncode, 0)
             self.assertEqual(load_state(project_root, "test-session"), [])
 
+    def test_post_tool_use_ignores_runtime_review_files(self):
+        project_root = self.temp_project()
+        runtime_review = (
+            project_root
+            / ".claude"
+            / "claude-auto-review"
+            / "clients"
+            / "client-test-session"
+            / "reviews"
+            / "review-r1.md"
+        )
+        runtime_review.parent.mkdir(parents=True, exist_ok=True)
+        runtime_review.write_text("## Verdict\nPending.\n", encoding="utf-8")
+
+        post = self.run_python("hooks/post_tool_use.py", project_root, json.dumps({"file_path": str(runtime_review)}))
+        self.assertEqual(post.returncode, 0)
+        self.assertEqual(load_state(project_root, "test-session"), [])
+
     def test_fails_open_for_invalid_hook_input(self):
         project_root = self.temp_project()
         post = self.run_python("hooks/post_tool_use.py", project_root, "{not-json")
