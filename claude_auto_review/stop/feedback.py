@@ -42,26 +42,28 @@ def review_feedback_max_chars(settings):
         return DEFAULT_SETTINGS["reviewFeedbackMaxChars"]
 
 
-def read_review_feedback(review_path, max_chars=None):
+def read_review_feedback(review_path, max_chars=None, project_root=None):
     if max_chars is None:
         max_chars = DEFAULT_SETTINGS["reviewFeedbackMaxChars"]
     path = Path(review_path)
+    display = path.relative_to(project_root).as_posix() if project_root else str(path)
     if not path.is_file():
-        return f"Review file is missing: {path}"
+        return f"Review file is missing: {display}"
     content = path.read_text(encoding="utf-8", errors="replace")
     if len(content) <= max_chars:
         return content
     return (
         f"{content[:max_chars]}\n\n"
-        f"[Review truncated at {max_chars} characters. Read the full review at {path}.]"
+        f"[Review truncated at {max_chars} characters. Read the full review at {display}.]"
     )
 
 
-def build_review_findings_feedback(review_id, review_path, max_chars=None):
-    review_text = read_review_feedback(review_path, max_chars=max_chars)
+def build_review_findings_feedback(review_id, review_path, max_chars=None, project_root=None):
+    review_text = read_review_feedback(review_path, max_chars=max_chars, project_root=project_root)
+    display = Path(review_path).relative_to(project_root).as_posix() if project_root else review_path
     return (
         f"Claude Auto Review completed review {review_id} and found blocking findings.\n\n"
-        f"Review file: {review_path}\n\n"
+        f"Review file: {display}\n\n"
         "Act on the review below before stopping. Fix each Confirmed finding, "
         "or make a narrowly justified code change that renders it inapplicable. "
         "After making changes, try stopping again so the changed files are reviewed.\n\n"
@@ -72,7 +74,7 @@ def build_review_findings_feedback(review_id, review_path, max_chars=None):
 def block_completed_review_findings(project_root, client_id, review_id, review_path, unreviewed, settings):
     block_response(
         f"Claude Auto Review: Review {review_id} found issues to address.",
-        build_review_findings_feedback(review_id, review_path, review_feedback_max_chars(settings)),
+        build_review_findings_feedback(review_id, review_path, review_feedback_max_chars(settings), project_root=project_root),
     )
     append_state(
         StopBlockedRecord(
