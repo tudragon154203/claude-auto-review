@@ -228,10 +228,10 @@ class TestLastAssistantMessageClassifier(StateTestCase, unittest.TestCase):
                 urlopen=lambda req, timeout: _FakeResponse(payload),
             )
 
-        self.assertEqual(mock_log.call_args.kwargs["debug_response"], json.dumps(payload, separators=(",", ":")))
+        self.assertEqual(mock_log.call_args.kwargs["debugResponse"], json.dumps(payload, separators=(",", ":")))
         state = load_state(self.project_root, self.client_id)
         self.assertNotIn("debugResponse", state[-1])
-        self.assertNotIn("debug_response", state[-1])
+        self.assertNotIn("debugResponse", state[-1])
 
     def test_timeout_returns_error_without_raising(self):
         result = classify_last_assistant_message(
@@ -304,5 +304,5 @@ class TestLastAssistantMessageClassifier(StateTestCase, unittest.TestCase):
         self.assertEqual(result.status, "error")
         self.assertEqual(result.reason, "missing_base_url")
         state = load_state(self.project_root, self.client_id)
-        self.assertEqual(state[-1]["type"], "assistant_message_classification")
+        self.assertEqual(state[-1]["type"], "last_assistant_message_classified")
         self.assertNotIn("top-secret", json.dumps(state))

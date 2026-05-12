@@ -54,10 +54,10 @@ class TestLastAssistantMessageClassifierHook(HookTestCase, unittest.TestCase):
         self.assertEqual(result.returncode, 2)
         self.assertEqual(len(server.RequestHandlerClass.requests), 1)
         self.assertEqual(server.RequestHandlerClass.requests[0]["body"]["model"], CLASSIFIER_MODEL)
-        entries = [e for e in self._read_log_entries(project_root) if e.get("event") == "last_assistant_message_classified"]
+        entries = [e for e in self._read_log_entries(project_root) if e.get("type") == "last_assistant_message_classified"]
         self.assertEqual(entries[-1]["status"], "complete")
         self.assertEqual(entries[-1]["reason"], "parsed_label")
-        self.assertEqual(entries[-1]["base_url"], base_url)
+        self.assertEqual(entries[-1]["baseUrl"], base_url)
         self.assertNotIn("secret-key", json.dumps(entries[-1]))
 
     def test_stop_hook_logs_incomplete_classification(self):
@@ -83,7 +83,7 @@ class TestLastAssistantMessageClassifierHook(HookTestCase, unittest.TestCase):
             server.server_close()
 
         self.assertEqual(result.returncode, 2)
-        entries = [e for e in self._read_log_entries(project_root) if e.get("event") == "last_assistant_message_classified"]
+        entries = [e for e in self._read_log_entries(project_root) if e.get("type") == "last_assistant_message_classified"]
         self.assertEqual(entries[-1]["status"], "incomplete")
 
     def test_timeout_logs_error_and_existing_blocking_behavior_stays_intact(self):
@@ -116,6 +116,6 @@ class TestLastAssistantMessageClassifierHook(HookTestCase, unittest.TestCase):
             server.server_close()
 
         self.assertEqual(result.returncode, 2)
-        entries = [e for e in self._read_log_entries(project_root) if e.get("event") == "last_assistant_message_classified"]
+        entries = [e for e in self._read_log_entries(project_root) if e.get("type") == "last_assistant_message_classified"]
         self.assertEqual(entries[-1]["status"], "error")
         self.assertEqual(entries[-1]["reason"], "http_timeout")

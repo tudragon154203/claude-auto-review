@@ -16,7 +16,7 @@ def log_event(project_root, event_type, **kwargs):
     try:
         log_path = get_log_path(project_root)
         log_path.parent.mkdir(parents=True, exist_ok=True)
-        entry = {"timestamp": local_now_iso(), "event": event_type, **kwargs}
+        entry = {"timestamp": local_now_iso(), "type": event_type, **kwargs}
         with log_path.open("a", encoding="utf-8", newline="\n") as f:
             f.write(json.dumps(entry, separators=(",", ":")) + "\n")
     except OSError:

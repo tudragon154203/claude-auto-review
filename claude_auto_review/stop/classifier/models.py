@@ -1,6 +1,8 @@
 import time
-from dataclasses import asdict, dataclass
+from dataclasses import dataclass
+
 from claude_auto_review.paths import local_now_iso
+from claude_auto_review.state.models import ClassificationRecord
 
 CLASSIFIER_MODEL = "claude-3-5-haiku-20241022"
 CLASSIFIER_MAX_TOKENS = 8
@@ -26,28 +28,20 @@ class AssistantMessageClassificationResult:
     http_status: int | None = None
     debug_response: str | None = None
 
-    def as_event_fields(self):
-        fields = asdict(self)
-        if fields["http_status"] is None:
-            fields.pop("http_status")
-        if fields["debug_response"] is None:
-            fields.pop("debug_response")
-        return fields
+    def as_state_entry(self, include_debug=False):
+        return ClassificationRecord(
+            timestamp=local_now_iso(),
+            status=self.status,
+            reason=self.reason,
+            latencyMs=self.latency_ms,
+            messageChars=self.message_chars,
+            model=self.model,
+            baseUrl=self.base_url,
+            httpStatus=self.http_status,
+            debugResponse=self.debug_response if include_debug else None,
+        )
 
-    def as_state_entry(self):
-        entry = {
-            "type": "assistant_message_classification",
-            "timestamp": local_now_iso(),
-            "status": self.status,
-            "reason": self.reason,
-            "latencyMs": self.latency_ms,
-            "messageChars": self.message_chars,
-            "model": self.model,
-            "baseUrl": self.base_url,
-        }
-        if self.http_status is not None:
-            entry["httpStatus"] = self.http_status
-        return entry
+
 
 def result_factory(status, reason, started_at, message_chars, base_url="", http_status=None, debug_response=None):
     return AssistantMessageClassificationResult(

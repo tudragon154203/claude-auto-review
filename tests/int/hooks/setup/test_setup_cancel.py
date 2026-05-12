@@ -117,7 +117,7 @@ class TestSetupCancel(HookTestCase, unittest.TestCase):
         self.assertFalse((project_root / ".claude" / "claude-auto-review" / "clients" / "client-test-session" / "run").exists())
         self.assertFalse((project_root / ".claude" / "claude-auto-review" / "clients" / "client-test-session" / "reviews").exists())
         log_content = (project_root / ".claude" / "claude-auto-review" / "claude-auto-review.log").read_text(encoding="utf-8")
-        self.assertIn('"event":"cancel_completed"', log_content)
+        self.assertIn('"type":"cancel_completed"', log_content)
 
     def test_project_local_cancel_shim_runs(self):
         project_root = self.temp_project()

@@ -30,7 +30,7 @@ class TestStopHookClassifier(HookTestCase, unittest.TestCase):
         self.assertEqual(stop.returncode, 0)
         log_path = project_root / ".claude" / "claude-auto-review" / "claude-auto-review.log"
         if log_path.exists():
-            events = [e for e in self._read_log_entries(project_root) if e.get("event") == "last_assistant_message_classified"]
+            events = [e for e in self._read_log_entries(project_root) if e.get("type") == "last_assistant_message_classified"]
             self.assertEqual(events, [])
         else:
             self.assertFalse(log_path.exists())
@@ -47,7 +47,7 @@ class TestStopHookClassifier(HookTestCase, unittest.TestCase):
             use_fake_claude=False,
         )
         self.assertEqual(stop.returncode, 2)
-        events = [e for e in self._read_log_entries(project_root) if e.get("event") == "last_assistant_message_classified"]
+        events = [e for e in self._read_log_entries(project_root) if e.get("type") == "last_assistant_message_classified"]
         self.assertEqual(events[-1]["status"], "skipped")
         self.assertEqual(events[-1]["reason"], "missing_message")
 
@@ -64,7 +64,7 @@ class TestStopHookClassifier(HookTestCase, unittest.TestCase):
             use_fake_claude=False,
         )
         self.assertEqual(stop.returncode, 2)
-        events = [e for e in self._read_log_entries(project_root) if e.get("event") == "last_assistant_message_classified"]
+        events = [e for e in self._read_log_entries(project_root) if e.get("type") == "last_assistant_message_classified"]
         self.assertEqual(events[-1]["status"], "error")
         self.assertEqual(events[-1]["reason"], "missing_api_key")
         self.assertNotIn("x-api-key", json.dumps(events[-1]).lower())

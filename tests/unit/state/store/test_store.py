@@ -44,7 +44,7 @@ class TestStateStore(StateTestCase, unittest.TestCase):
         log_path = get_log_path(project_root)
         self.assertTrue(log_path.exists())
         content = log_path.read_text(encoding="utf-8")
-        self.assertIn('"event":"test_event"', content)
+        self.assertIn('"type":"test_event"', content)
 
     def test_log_event_appends_to_existing_log(self):
         project_root = self.temp_project()

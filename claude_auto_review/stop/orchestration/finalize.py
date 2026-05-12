@@ -4,7 +4,8 @@ from claude_auto_review.paths import local_now_iso
 from claude_auto_review.state.reviews import is_review_clean, is_review_complete
 from claude_auto_review.review.completion import apply_completed_review
 from claude_auto_review.settings import SETTING_CLASSIFIER_ENABLED, SETTING_REVIEWER_TIMEOUT
-from claude_auto_review.state.store_write import append_state, log_event
+from claude_auto_review.state.models import StopBlockedRecord
+from claude_auto_review.state.store_write import append_state
 from claude_auto_review.stop.reviews.autocomplete import attempt_stop_autocomplete
 from claude_auto_review.stop.feedback import (
     block_completed_review_findings,
@@ -68,18 +69,22 @@ def finalize_review_stop(project_root, client_id, resolution, payload, settings)
             return exit_code
 
         files_str = build_unreviewed_files_string(unreviewed)
+        review_path_rel = review_path.relative_to(project_root).as_posix()
         block_response(
             f"Claude Auto Review: Review {review_id} created for {files_str}.",
             (
-                f"Review file created at:\n  {review_path}\n\n"
+                f"Review file created at:\n  {review_path_rel}\n\n"
                 "Go through each finding in the generated file and set its verdict "
                 "(Confirmed, Skipped). Once all findings are resolved, "
                 "stopping will be allowed."
             ),
         )
-        log_event(project_root, "stop_blocked", files=[entry["file"] for entry in unreviewed])
         append_state(
-            {"type": "stop_blocked", "reason": "review_pending", "timestamp": local_now_iso()},
+            StopBlockedRecord(
+                timestamp=local_now_iso(),
+                reason="review_pending",
+                files=[entry["file"] for entry in unreviewed],
+            ),
             project_root,
             client_id=client_id,
         )

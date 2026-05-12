@@ -11,7 +11,7 @@ from claude_auto_review.state.store_read import load_state
 
 
 class EndToEndLastAssistantMessageTests(EndToEndTestCase):
-    def test_stop_hook_e2e_logs_last_assistant_message_classification_invalid_label(self):
+    def test_stop_hook_e2e_logs_last_last_assistant_message_classified_invalid_label(self):
         project_root = self.temp_project()
         (project_root / "src" / "app.ts").write_text("export const value = 1;\n", encoding="utf-8")
         self.track(project_root, "src/app.ts")
@@ -53,16 +53,16 @@ class EndToEndLastAssistantMessageTests(EndToEndTestCase):
         self.assertEqual(server.RequestHandlerClass.requests[0]["body"]["model"], CLASSIFIER_MODEL)
 
         state = load_state(project_root, "test-session")
-        classifier_entries = [entry for entry in state if entry.get("type") == "assistant_message_classification"]
+        classifier_entries = [entry for entry in state if entry.get("type") == "last_assistant_message_classified"]
         self.assertEqual(len(classifier_entries), 1)
         self.assertEqual(classifier_entries[0]["status"], "unknown")
         self.assertEqual(classifier_entries[0]["reason"], "invalid_label")
         self.assertEqual(classifier_entries[0]["baseUrl"], base_url)
 
-        log_entries = [entry for entry in self.read_log_entries(project_root) if entry.get("event") == "last_assistant_message_classified"]
+        log_entries = [entry for entry in self.read_log_entries(project_root) if entry.get("type") == "last_assistant_message_classified"]
         self.assertEqual(len(log_entries), 1)
         self.assertEqual(log_entries[0]["status"], "unknown")
         self.assertEqual(log_entries[0]["reason"], "invalid_label")
-        self.assertEqual(log_entries[0]["base_url"], base_url)
-        self.assertEqual(json.loads(log_entries[0]["debug_response"]), classifier_response)
+        self.assertEqual(log_entries[0]["baseUrl"], base_url)
+        self.assertEqual(json.loads(log_entries[0]["debugResponse"]), classifier_response)
         self.assertNotIn("secret-key", json.dumps(log_entries[0]))

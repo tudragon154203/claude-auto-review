@@ -35,7 +35,7 @@ class IntegrationRuntimeTests(IntegrationTestCase):
         self.assertTrue(log_path.exists())
         content = log_path.read_text(encoding="utf-8")
         entry = json.loads(content.strip().split("\n")[-1])
-        self.assertEqual(entry["event"], "test_event")
+        self.assertEqual(entry["type"], "test_event")
         self.assertEqual(entry["foo"], "bar")
         self.assertEqual(entry["count"], 42)
         self.assertIn("timestamp", entry)
@@ -88,11 +88,11 @@ class IntegrationRuntimeTests(IntegrationTestCase):
 
         self.assertEqual(result.status, "complete")
         state = load_state(project_root, client_id)
-        self.assertEqual(state[-1]["type"], "assistant_message_classification")
+        self.assertEqual(state[-1]["type"], "last_assistant_message_classified")
         self.assertEqual(state[-1]["status"], "complete")
         self.assertEqual(consecutive_stop_blocks(state), 0)
         log_entry = json.loads(get_log_path(project_root).read_text(encoding="utf-8").splitlines()[-1])
-        self.assertEqual(log_entry["event"], "last_assistant_message_classified")
+        self.assertEqual(log_entry["type"], "last_assistant_message_classified")
         self.assertNotIn("secret-key", json.dumps(log_entry))
 
     def test_cancel_runtime_removes_client_artifacts(self):

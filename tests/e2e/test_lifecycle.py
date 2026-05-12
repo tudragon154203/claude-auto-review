@@ -167,6 +167,9 @@ class EndToEndLifecycleTests(EndToEndTestCase):
         parsed = json.loads(stop.stdout)
         self.assertEqual(parsed["decision"], "block")
         self.assertIn("Review file created at:", parsed["reason"])
+        rel_segment = ".claude/claude-auto-review/clients"
+        self.assertIn(rel_segment, parsed["reason"])
+        self.assertNotIn(str(project_root), parsed["reason"])
         self.assertIn("src/app.ts", parsed["systemMessage"])
 
     def test_setup_idempotent_e2e(self):
