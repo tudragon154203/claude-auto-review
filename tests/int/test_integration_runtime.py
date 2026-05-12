@@ -8,7 +8,7 @@ from tests.int.support import IntegrationTestCase, REPO_ROOT, _FakeResponse
 from claude_auto_review.paths import get_log_path
 from claude_auto_review.runtime.cleanup import cancel_runtime
 from claude_auto_review.runtime.setup import ensure_client_runtime, ensure_project_settings, ensure_runtime
-from claude_auto_review.settings import load_settings
+from claude_auto_review.settings import DEFAULT_SETTINGS, DEFAULT_TIMEOUT_SECONDS, load_settings
 from claude_auto_review.state.store_read import consecutive_stop_blocks, load_state
 from claude_auto_review.state.store_write import append_state, log_event
 from claude_auto_review.stop.classifier.last_assistant_message import classify_last_assistant_message
@@ -67,7 +67,7 @@ class IntegrationRuntimeTests(IntegrationTestCase):
         self.assertEqual(settings["customKey"], "value")
         self.assertEqual(settings["reviewerTimeoutSeconds"], 600)
         self.assertTrue(settings["lastAssistantMessageClassifierEnabled"])
-        self.assertEqual(settings["lastAssistantMessageClassifierTimeoutSeconds"], 10)
+        self.assertEqual(settings["lastAssistantMessageClassifierTimeoutSeconds"], DEFAULT_TIMEOUT_SECONDS)
 
     def test_classifier_appends_separate_state_entry_and_log(self):
         project_root = self.temp_project()

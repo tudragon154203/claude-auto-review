@@ -4,7 +4,7 @@ from claude_auto_review.paths import local_now_iso
 
 CLASSIFIER_MODEL = "claude-3-5-haiku-20241022"
 CLASSIFIER_MAX_TOKENS = 1024
-DEFAULT_TIMEOUT_SECONDS = 10
+DEFAULT_TIMEOUT_SECONDS = 20
 CLASSIFICATION_EVENT = "last_assistant_message_classified"
 
 _SYSTEM_PROMPT = (

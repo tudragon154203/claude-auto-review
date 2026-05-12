@@ -76,7 +76,7 @@ class TestLastAssistantMessageClassifier(StateTestCase, unittest.TestCase):
         self.client_id = "classifier-client"
         self.settings = {
             "lastAssistantMessageClassifierEnabled": True,
-            "lastAssistantMessageClassifierTimeoutSeconds": 10,
+            "lastAssistantMessageClassifierTimeoutSeconds": DEFAULT_TIMEOUT_SECONDS,
         }
         self.env = {
             "ANTHROPIC_BASE_URL": "http://127.0.0.1:13456",
@@ -104,7 +104,7 @@ class TestLastAssistantMessageClassifier(StateTestCase, unittest.TestCase):
 
         self.assertEqual(result.status, "complete")
         self.assertEqual(seen["url"], "http://127.0.0.1:13456/v1/messages")
-        self.assertEqual(seen["timeout"], 10.0)
+        self.assertEqual(seen["timeout"], DEFAULT_TIMEOUT_SECONDS)
         self.assertEqual(seen["headers"]["Anthropic-version"], "2023-06-01")
         self.assertEqual(seen["headers"]["X-api-key"], "top-secret")
         self.assertEqual(seen["body"]["model"], CLASSIFIER_MODEL)
@@ -154,7 +154,7 @@ class TestLastAssistantMessageClassifier(StateTestCase, unittest.TestCase):
             urlopen=fake_urlopen,
         )
         self.assertEqual(result.status, "complete")
-        self.assertEqual(seen["timeout"], float(DEFAULT_TIMEOUT_SECONDS))
+        self.assertEqual(seen["timeout"], DEFAULT_TIMEOUT_SECONDS)
 
     def test_accepts_exact_labels(self):
         for label in ("complete", "incomplete", "unknown"):

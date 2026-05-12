@@ -2,7 +2,7 @@ import json
 import unittest
 
 from claude_auto_review.runtime.setup import ensure_project_settings
-from claude_auto_review.settings import DEFAULT_SETTINGS, load_settings, should_skip_file
+from claude_auto_review.settings import DEFAULT_SETTINGS, DEFAULT_TIMEOUT_SECONDS, load_settings, should_skip_file
 from claude_auto_review.settings import resolve_rules_file_path
 
 from tests.unit.state.support import StateTestCase
@@ -17,7 +17,7 @@ class TestSettings(StateTestCase, unittest.TestCase):
         self.assertEqual(result["reviewerTimeoutSeconds"], 600)
         self.assertEqual(result["reviewFeedbackMaxChars"], 9000)
         self.assertTrue(result["lastAssistantMessageClassifierEnabled"])
-        self.assertEqual(result["lastAssistantMessageClassifierTimeoutSeconds"], 10)
+        self.assertEqual(result["lastAssistantMessageClassifierTimeoutSeconds"], DEFAULT_TIMEOUT_SECONDS)
 
     def test_load_settings_merges_project_settings(self):
         project_root = self.temp_project()
