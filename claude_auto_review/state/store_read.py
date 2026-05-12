@@ -10,6 +10,48 @@ def _timestamp_value(entry):
     return entry.get("timestamp", "")
 
 
+def _is_edit_entry(entry):
+    return isinstance(entry, dict) and entry.get("type") == "edit" and entry.get("file") and entry.get("hash")
+
+
+def _edit_entry_key(entry):
+    if not _is_edit_entry(entry):
+        return None
+    return entry["file"], entry["hash"]
+
+
+def _append_path_candidate(candidates, value):
+    if isinstance(value, str) and value.strip():
+        candidates.append(value)
+
+
+def _path_candidates_from_mapping(mapping):
+    candidates = []
+    if not isinstance(mapping, dict):
+        return candidates
+
+    for key in ("file_path", "path", "filePath"):
+        _append_path_candidate(candidates, mapping.get(key))
+
+    edits = mapping.get("edits")
+    if isinstance(edits, list):
+        for edit in edits:
+            if isinstance(edit, dict):
+                for key in ("file_path", "path", "filePath"):
+                    _append_path_candidate(candidates, edit.get(key))
+    return candidates
+
+
+def _unique_strings(values):
+    seen = set()
+    unique = []
+    for value in values:
+        if value not in seen:
+            seen.add(value)
+            unique.append(value)
+    return unique
+
+
 def read_jsonl_records(path):
     path = Path(path)
     if not path.exists():
@@ -49,27 +91,24 @@ def load_state(project_root=None, client_id=""):
 def latest_entries_by_file(state):
     latest = {}
     for entry in state:
-        if not isinstance(entry, dict):
+        key = _edit_entry_key(entry)
+        if key is None:
             continue
-        if entry.get("type") != "edit" or not entry.get("file") or not entry.get("hash"):
-            continue
-        current = latest.get(entry["file"])
+        file_path, _ = key
+        current = latest.get(file_path)
         if current is None or _timestamp_value(entry) >= _timestamp_value(current):
-            latest[entry["file"]] = entry
+            latest[file_path] = entry
     return latest
 
 
 def reviewed_hashes_by_file(state):
     reviewed = {}
     for entry in state:
-        if (
-            isinstance(entry, dict)
-            and entry.get("type") == "edit"
-            and entry.get("file")
-            and entry.get("hash")
-            and entry.get("reviewed")
-        ):
-            reviewed.setdefault(entry["file"], set()).add(entry["hash"])
+        key = _edit_entry_key(entry)
+        if key is None or not entry.get("reviewed"):
+            continue
+        file_path, file_hash = key
+        reviewed.setdefault(file_path, set()).add(file_hash)
     return reviewed
 
 
@@ -88,9 +127,7 @@ def get_unreviewed_files(state):
 def consecutive_stop_blocks(state):
     last_reviewed_idx = -1
     for idx, entry in enumerate(state):
-        if not isinstance(entry, dict):
-            continue
-        if entry.get("type") == "edit" and entry.get("reviewed", False):
+        if _is_edit_entry(entry) and entry.get("reviewed", False):
             last_reviewed_idx = idx
 
     count = 0
@@ -101,29 +138,6 @@ def consecutive_stop_blocks(state):
 
 
 def extract_file_paths_from_hook_input(payload):
-    candidates = []
     tool_input = payload.get("tool_input", payload) if isinstance(payload, dict) else {}
-
-    def add(value):
-        if isinstance(value, str) and value.strip():
-            candidates.append(value)
-
-    if isinstance(tool_input, dict):
-        add(tool_input.get("file_path"))
-        add(tool_input.get("path"))
-        add(tool_input.get("filePath"))
-        edits = tool_input.get("edits")
-        if isinstance(edits, list):
-            for edit in edits:
-                if isinstance(edit, dict):
-                    add(edit.get("file_path"))
-                    add(edit.get("path"))
-                    add(edit.get("filePath"))
-
-    seen = set()
-    unique = []
-    for candidate in candidates:
-        if candidate not in seen:
-            seen.add(candidate)
-            unique.append(candidate)
-    return unique
+    candidates = _path_candidates_from_mapping(tool_input)
+    return _unique_strings(candidates)

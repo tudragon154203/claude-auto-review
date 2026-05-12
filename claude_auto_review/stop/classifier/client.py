@@ -50,6 +50,8 @@ def _build_request_body(message_text):
 
 
 def _parse_classifier_label(response_json):
+    if not isinstance(response_json, dict):
+        return "unknown", "bad_response"
     content = response_json.get("content")
     if not isinstance(content, list):
         return "unknown", "bad_response"
@@ -66,6 +68,7 @@ def _parse_classifier_label(response_json):
     if matches:
         return matches[0], "parsed_label"
     return "unknown", "invalid_label"
+
 
 def call_classifier_api(message_text, base_url, api_key, started_at, timeout_seconds, urlopen=None):
     message_chars = len(message_text)
@@ -85,12 +88,7 @@ def call_classifier_api(message_text, base_url, api_key, started_at, timeout_sec
 
     try:
         with urlopen(req, timeout=timeout_seconds) as response:
-            response_data = json.loads(response.read().decode("utf-8"))
-            label, reason = _parse_classifier_label(response_data)
-            debug_response = None
-            if label == "unknown":
-                debug_response = json.dumps(response_data, ensure_ascii=False, separators=(",", ":"))
-            return result_factory(label, reason, started_at, message_chars, base_url=base_url, debug_response=debug_response)
+            response_bytes = response.read()
     except error.HTTPError as exc:
         return result_factory("error", "http_error", started_at, message_chars, base_url=base_url, http_status=exc.code)
     except (socket.timeout, TimeoutError):
@@ -101,8 +99,17 @@ def call_classifier_api(message_text, base_url, api_key, started_at, timeout_sec
             return result_factory("error", "http_timeout", started_at, message_chars, base_url=base_url)
         else:
             return result_factory("error", "http_error", started_at, message_chars, base_url=base_url)
-    except json.JSONDecodeError:
-        return result_factory("error", "bad_response", started_at, message_chars, base_url=base_url)
-    except Exception:
+    except (OSError, RuntimeError):
         return result_factory("error", "http_error", started_at, message_chars, base_url=base_url)
+
+    try:
+        response_data = json.loads(response_bytes.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError, TypeError, ValueError):
+        return result_factory("error", "bad_response", started_at, message_chars, base_url=base_url)
+
+    label, reason = _parse_classifier_label(response_data)
+    debug_response = None
+    if label == "unknown":
+        debug_response = json.dumps(response_data, ensure_ascii=False, separators=(",", ":"))
+    return result_factory(label, reason, started_at, message_chars, base_url=base_url, debug_response=debug_response)
 

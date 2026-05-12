@@ -15,9 +15,36 @@ def _pending_review_entries(state):
             yield entry
 
 
-def _pending_review_overlaps(state, entries):
+def _sorted_by_timestamp_desc(entries):
+    return sorted(entries, key=lambda entry: entry.get("timestamp", ""), reverse=True)
+
+
+def _review_files(review_entry):
+    return review_entry.get("files", [])
+
+
+def _expired_review_files(review_entry):
+    return [f.get("file", "") for f in _review_files(review_entry) if isinstance(f, dict)]
+
+
+def _log_expired_review(project_root, review_entry):
+    log_event(
+        project_root,
+        "stop_review_expired",
+        review_id=review_entry.get("reviewId", ""),
+        files=_expired_review_files(review_entry),
+    )
+
+
+def _pending_review_match_info(state, entries, project_root=None, timeout_hours=0):
     needed = entry_file_hash_pairs(entries)
+    if not needed:
+        return
+
     for entry in _pending_review_entries(state):
+        if timeout_hours > 0 and is_review_expired(entry, timeout_hours):
+            _log_expired_review(project_root, entry)
+            continue
         covered = review_file_hash_pairs(entry)
         yield entry, covered, needed & covered
 
@@ -31,7 +58,7 @@ def entry_file_hash_pairs(entries):
 
 
 def review_file_hash_pairs(review_entry):
-    return entry_file_hash_pairs(review_entry.get("files", []))
+    return entry_file_hash_pairs(_review_files(review_entry))
 
 
 def is_review_expired(review_entry, timeout_hours):
@@ -60,10 +87,10 @@ def is_review_expired(review_entry, timeout_hours):
 def pending_reviews_for_entries(state, entries):
     matches = []
     needed = entry_file_hash_pairs(entries)
-    for entry, covered, _ in _pending_review_overlaps(state, entries):
+    for entry, covered, _ in _pending_review_match_info(state, entries):
         if needed and needed.issubset(covered):
             matches.append(entry)
-    return sorted(matches, key=lambda e: e.get("timestamp", ""), reverse=True)
+    return _sorted_by_timestamp_desc(matches)
 
 
 def pending_reviews_exactly_matching_entries(state, entries, project_root=None, timeout_hours=0):
@@ -71,18 +98,10 @@ def pending_reviews_exactly_matching_entries(state, entries, project_root=None, 
     needed = entry_file_hash_pairs(entries)
     if not needed:
         return matches
-    for entry in _pending_review_entries(state):
-        if timeout_hours > 0 and is_review_expired(entry, timeout_hours):
-            log_event(
-                project_root,
-                "stop_review_expired",
-                review_id=entry.get("reviewId", ""),
-                files=[f.get("file", "") for f in entry.get("files", []) if isinstance(f, dict)],
-            )
-            continue
+    for entry, covered, _ in _pending_review_match_info(state, entries, project_root=project_root, timeout_hours=timeout_hours):
         if review_file_hash_pairs(entry) == needed:
             matches.append(entry)
-    return sorted(matches, key=lambda e: e.get("timestamp", ""), reverse=True)
+    return _sorted_by_timestamp_desc(matches)
 
 
 def best_pending_review_exactly_matching_entries(state, entries, project_root=None, timeout_hours=0):
@@ -103,15 +122,7 @@ def best_pending_review_covering_entries(state, entries, project_root=None, time
         return None
 
     matches = []
-    for entry, covered, overlap in _pending_review_overlaps(state, entries):
-        if timeout_hours > 0 and is_review_expired(entry, timeout_hours):
-            log_event(
-                project_root,
-                "stop_review_expired",
-                review_id=entry.get("reviewId", ""),
-                files=[f.get("file", "") for f in entry.get("files", []) if isinstance(f, dict)],
-            )
-            continue
+    for entry, covered, overlap in _pending_review_match_info(state, entries, project_root=project_root, timeout_hours=timeout_hours):
         if needed.issubset(covered):
             matches.append({"review": entry, "overlap_count": len(overlap)})
 
@@ -129,15 +140,7 @@ def pending_review_candidates_for_entries(state, entries, project_root=None, tim
     - higher overlap wins, then newer timestamp wins
     """
     candidates = []
-    for entry, _, overlap in _pending_review_overlaps(state, entries):
-        if timeout_hours > 0 and is_review_expired(entry, timeout_hours):
-            log_event(
-                project_root,
-                "stop_review_expired",
-                review_id=entry.get("reviewId", ""),
-                files=[f.get("file", "") for f in entry.get("files", []) if isinstance(f, dict)],
-            )
-            continue
+    for entry, _, overlap in _pending_review_match_info(state, entries, project_root=project_root, timeout_hours=timeout_hours):
         if overlap:
             candidates.append({"review": entry, "overlap_count": len(overlap)})
     return sorted(candidates, key=lambda item: (item["overlap_count"], item["review"].get("timestamp", "")), reverse=True)
@@ -150,14 +153,21 @@ def best_pending_review_for_entries(state, entries, project_root=None, timeout_h
     return candidates[0]["review"]
 
 
-def is_review_complete(review_path):
+def _review_verdict_text(review_path):
     path = Path(review_path)
     if not path.is_file():
-        return False
+        return None
     content = path.read_text(encoding="utf-8", errors="replace")
     if "## Verdict" not in content:
-        return False
+        return None
     verdict = content.split("## Verdict", 1)[1].strip()
+    if not verdict:
+        return None
+    return verdict
+
+
+def is_review_complete(review_path):
+    verdict = _review_verdict_text(review_path)
     if not verdict:
         return False
     return verdict.lower() not in ("pending", "pending.")
@@ -170,14 +180,11 @@ def is_review_clean(review_path):
     with the verdict template in agents/reviewer.md. Template changes may require
     updating this check.
     """
-    path = Path(review_path)
-    if not path.is_file():
+    verdict = _review_verdict_text(review_path)
+    if not verdict:
         return False
-    content = path.read_text(encoding="utf-8", errors="replace")
-    if "## Verdict" not in content:
-        return False
-    verdict = content.split("## Verdict", 1)[1].strip().lower()
-    if not verdict or verdict.startswith("not clean"):
+    verdict = verdict.lower()
+    if verdict.startswith("not clean"):
         return False
     if verdict.startswith("clean"):
         return True

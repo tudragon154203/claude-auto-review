@@ -2,7 +2,7 @@ import shutil
 
 from claude_auto_review.paths import RUNTIME_DIR, client_state_path, get_client_runtime_dir
 from claude_auto_review.state.reviews import is_review_expired
-from claude_auto_review.runtime.helpers import log_event, resolve_client_id, resolve_project_root
+from claude_auto_review.runtime.helpers import log_event, log_failure, resolve_client_id, resolve_project_root
 from claude_auto_review.state.store_read import read_jsonl_records
 from claude_auto_review.settings import load_settings
 
@@ -34,13 +34,23 @@ def cleanup_expired_pending_reviews(project_root=None, client_id=""):
         entries.append(line)
 
     if removed > 0:
-        with state_path.open("w", encoding="utf-8", newline="\n") as handle:
-            handle.write("\n".join(entries) + "\n")
+        try:
+            with state_path.open("w", encoding="utf-8", newline="\n") as handle:
+                handle.write("\n".join(entries) + "\n")
+        except OSError as error:
+            log_failure(
+                project_root,
+                "runtime_cleanup_failed",
+                error,
+                operation="rewrite_state",
+                target=str(state_path),
+            )
+            return 0
         log_event(project_root, "expired_reviews_cleaned", count=removed)
     return removed
 
 
-def _remove_tree(target):
+def _remove_tree(target, project_root=None):
     try:
         if target.is_dir():
             shutil.rmtree(target)
@@ -49,8 +59,21 @@ def _remove_tree(target):
             target.unlink()
             return True
         return False
-    except OSError:
+    except OSError as error:
+        if project_root is not None:
+            log_failure(project_root, "runtime_cleanup_failed", error, operation="remove_tree", target=str(target))
         return False
+
+
+def _remove_empty_runtime_dir(runtime, project_root=None):
+    try:
+        if runtime.exists() and not any(runtime.iterdir()):
+            runtime.rmdir()
+            return True
+    except OSError as error:
+        if project_root is not None:
+            log_failure(project_root, "runtime_cleanup_failed", error, operation="rmdir", target=str(runtime))
+    return False
 
 
 def cancel_runtime(project_root=None, client_id=""):
@@ -58,7 +81,7 @@ def cancel_runtime(project_root=None, client_id=""):
     removed = []
     if client_id:
         client_dir = get_client_runtime_dir(project_root, client_id)
-        if _remove_tree(client_dir):
+        if _remove_tree(client_dir, project_root=project_root):
             removed.append(client_dir)
         return removed
     runtime = project_root / RUNTIME_DIR
@@ -68,14 +91,10 @@ def cancel_runtime(project_root=None, client_id=""):
             runtime / "reviews",
             runtime / "clients",
         ]:
-            if _remove_tree(target):
+            if _remove_tree(target, project_root=project_root):
                 removed.append(target)
-        try:
-            if runtime.exists() and not any(runtime.iterdir()):
-                runtime.rmdir()
-                removed.append(runtime)
-        except OSError:
-            pass
+        if _remove_empty_runtime_dir(runtime, project_root=project_root):
+            removed.append(runtime)
     return removed
 
 
@@ -84,7 +103,7 @@ def cancel_session(project_root=None, client_id=""):
     client_id = resolve_client_id(client_id)
     client_dir = get_client_runtime_dir(project_root, client_id)
     removed = []
-    if _remove_tree(client_dir):
+    if _remove_tree(client_dir, project_root=project_root):
         removed.append(client_dir)
         return removed
     return []

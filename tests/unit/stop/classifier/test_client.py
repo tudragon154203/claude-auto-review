@@ -42,6 +42,11 @@ class TestClassifierClient(unittest.TestCase):
         self.assertEqual(label, "complete")
         self.assertEqual(reason, "parsed_label")
 
+    def test_parse_classifier_label_rejects_non_objects(self):
+        label, reason = _parse_classifier_label(["not", "a", "dict"])
+        self.assertEqual(label, "unknown")
+        self.assertEqual(reason, "bad_response")
+
     def test_call_classifier_api_maps_http_and_timeout_errors(self):
         started_at = 0.0
 
@@ -60,7 +65,7 @@ class TestClassifierClient(unittest.TestCase):
         self.assertEqual(result.status, "error")
         self.assertEqual(result.reason, "http_timeout")
 
-    def test_call_classifier_api_handles_bad_json_and_unexpected_exceptions(self):
+    def test_call_classifier_api_handles_bad_json_malformed_shape_and_unexpected_exceptions(self):
         started_at = 0.0
 
         def bad_json(_req, timeout):
@@ -68,6 +73,13 @@ class TestClassifierClient(unittest.TestCase):
 
         result = call_classifier_api("message", "http://example.test", "key", started_at, 5, urlopen=bad_json)
         self.assertEqual(result.status, "error")
+        self.assertEqual(result.reason, "bad_response")
+
+        def malformed_shape(_req, timeout):
+            return _FakeResponse(["not", "an", "object"])
+
+        result = call_classifier_api("message", "http://example.test", "key", started_at, 5, urlopen=malformed_shape)
+        self.assertEqual(result.status, "unknown")
         self.assertEqual(result.reason, "bad_response")
 
         def boom(_req, timeout):

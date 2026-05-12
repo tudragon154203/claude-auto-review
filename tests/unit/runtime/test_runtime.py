@@ -94,9 +94,41 @@ class TestRuntime(StateTestCase, unittest.TestCase):
 
     def test_remove_tree_oserror_suppressed(self):
         from claude_auto_review.runtime.cleanup import _remove_tree
-        with patch("claude_auto_review.runtime.cleanup.shutil.rmtree", side_effect=OSError("no perms")):
-            result = _remove_tree(Path("/fake/dir"))
+        project_root = self.temp_project()
+        target = project_root / "fake-dir"
+        target.mkdir()
+        with (
+            patch("claude_auto_review.runtime.cleanup.shutil.rmtree", side_effect=OSError("no perms")),
+            patch("claude_auto_review.runtime.cleanup.log_failure") as mock_log,
+        ):
+            result = _remove_tree(target, project_root=project_root)
             self.assertFalse(result)
+            mock_log.assert_called_once()
+            self.assertEqual(mock_log.call_args.args[1], "runtime_cleanup_failed")
+            self.assertEqual(mock_log.call_args.kwargs["operation"], "remove_tree")
+            self.assertEqual(mock_log.call_args.kwargs["target"], str(target))
+
+    def test_cancel_runtime_logs_failed_runtime_dir_removal(self):
+        project_root = self.temp_project()
+        runtime_dir = project_root / ".claude" / "claude-auto-review"
+        for child in ("run", "reviews", "clients"):
+            (runtime_dir / child).mkdir(parents=True, exist_ok=True)
+
+        with (
+            patch("pathlib.Path.rmdir", side_effect=OSError("busy")),
+            patch("claude_auto_review.runtime.cleanup.log_failure") as mock_log,
+        ):
+            removed = cancel_runtime(project_root)
+
+        self.assertIn(runtime_dir / "run", removed)
+        self.assertIn(runtime_dir / "reviews", removed)
+        self.assertIn(runtime_dir / "clients", removed)
+        self.assertNotIn(runtime_dir, removed)
+        self.assertTrue(runtime_dir.exists())
+        mock_log.assert_called_once()
+        self.assertEqual(mock_log.call_args.args[1], "runtime_cleanup_failed")
+        self.assertEqual(mock_log.call_args.kwargs["operation"], "rmdir")
+        self.assertEqual(mock_log.call_args.kwargs["target"], str(runtime_dir))
 
     def test_remove_tree_unlink_file(self):
         from claude_auto_review.runtime.cleanup import _remove_tree
@@ -151,5 +183,40 @@ class TestRuntime(StateTestCase, unittest.TestCase):
         content = state_path.read_text(encoding="utf-8").splitlines()
         self.assertIn("not-json", content)
         self.assertEqual(len(load_state(project_root, client_id)), 1)
+
+    def test_cleanup_expired_pending_reviews_logs_write_failure_and_fails_open(self):
+        from datetime import datetime, timedelta
+        from pathlib import Path
+
+        project_root = self.temp_project()
+        client_id = "cleanup-write-failure"
+        ensure_client_runtime(project_root, client_id)
+        state_path = client_state_path(project_root, client_id)
+        expired_time = (datetime.now().astimezone() - timedelta(hours=2)).isoformat()
+        state_path.write_text(
+            '{"type":"review","reviewId":"expired","reviewPath":"review.md","timestamp":"'
+            + expired_time
+            + '","status":"pending","files":[{"file":"a.ts","hash":"1"}]}\n',
+            encoding="utf-8",
+        )
+
+        original_open = Path.open
+
+        def fail_on_state_write(self, *args, **kwargs):
+            if self == state_path and args and args[0] == "w":
+                raise OSError("disk full")
+            return original_open(self, *args, **kwargs)
+
+        with (
+            patch("pathlib.Path.open", new=fail_on_state_write),
+            patch("claude_auto_review.runtime.cleanup.log_failure") as mock_log,
+        ):
+            removed = cleanup_expired_pending_reviews(project_root, client_id=client_id)
+
+        self.assertEqual(removed, 0)
+        mock_log.assert_called_once()
+        self.assertEqual(mock_log.call_args.args[1], "runtime_cleanup_failed")
+        self.assertEqual(mock_log.call_args.kwargs["operation"], "rewrite_state")
+        self.assertEqual(mock_log.call_args.kwargs["target"], str(state_path))
 
 
