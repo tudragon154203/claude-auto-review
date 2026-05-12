@@ -65,6 +65,37 @@ def pending_reviews_for_entries(state, entries):
     return sorted(matches, key=lambda e: e.get("timestamp", ""), reverse=True)
 
 
+def pending_reviews_exactly_matching_entries(state, entries, project_root=None, timeout_hours=0):
+    matches = []
+    needed = entry_file_hash_pairs(entries)
+    if not needed:
+        return matches
+    for entry in _pending_review_entries(state):
+        if timeout_hours > 0 and is_review_expired(entry, timeout_hours):
+            log_event(
+                project_root,
+                "stop_review_expired",
+                review_id=entry.get("reviewId", ""),
+                files=[f.get("file", "") for f in entry.get("files", []) if isinstance(f, dict)],
+            )
+            continue
+        if review_file_hash_pairs(entry) == needed:
+            matches.append(entry)
+    return sorted(matches, key=lambda e: e.get("timestamp", ""), reverse=True)
+
+
+def best_pending_review_exactly_matching_entries(state, entries, project_root=None, timeout_hours=0):
+    matches = pending_reviews_exactly_matching_entries(
+        state,
+        entries,
+        project_root=project_root,
+        timeout_hours=timeout_hours,
+    )
+    if not matches:
+        return None
+    return matches[0]
+
+
 def best_pending_review_covering_entries(state, entries, project_root=None, timeout_hours=0):
     needed = entry_file_hash_pairs(entries)
     if not needed:

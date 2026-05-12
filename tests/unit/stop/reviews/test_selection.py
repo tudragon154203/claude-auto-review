@@ -43,6 +43,22 @@ class TestSelection(unittest.TestCase):
 
         self.assertIsNone(best)
 
+    def test_find_pending_review_for_files_rejects_superset_stale_match(self):
+        state = [
+            {
+                "type": "review",
+                "status": "pending",
+                "reviewId": "stale",
+                "timestamp": "2026-05-11T10:00:00+07:00",
+                "files": [{"file": "a.ts", "hash": "a"}, {"file": "b.ts", "hash": "b"}],
+            },
+        ]
+        entries = [{"file": "a.ts", "hash": "a"}]
+
+        best = find_pending_review_for_files(state, entries, project_root=None)
+
+        self.assertIsNone(best)
+
     def test_get_entries_covered_by_review_uses_latest_state_entry(self):
         review_entry = {"files": [{"file": "src/app.ts", "hash": "22222222"}]}
         state_entries = [

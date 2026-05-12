@@ -1,9 +1,10 @@
 {
   "name": "claude-auto-review",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Post-edit review loop for Claude Code: automatically reviews changed files before Claude stops.",
   "author": "claude-auto-review",
   "license": "MIT",
+  "tags": ["stable"],
   "commands": ["claude-auto-review", "cancel-claude-auto-review"],
   "hooks": {
     "PostToolUse": [

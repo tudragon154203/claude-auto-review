@@ -156,3 +156,39 @@ class TestStopHookOverlap(HookTestCase, unittest.TestCase):
         self.assertNotEqual(latest_review["reviewId"], "stale")
         self.assertIn({"file": "src/a.ts", "hash": latest_hash_a}, latest_review["files"])
         self.assertIn({"file": "src/b.ts", "hash": hash_b}, latest_review["files"])
+
+    def test_stop_hook_rebuilds_review_when_next_pass_unreviewed_set_shrinks(self):
+        project_root = self.temp_project()
+        file_a = project_root / "src" / "a.ts"
+        file_b = project_root / "src" / "b.ts"
+        file_a.write_text("export const a = 1;\n", encoding="utf-8")
+        file_b.write_text("export const b = 1;\n", encoding="utf-8")
+        self.run_python("hooks/post_tool_use.py", project_root, json.dumps({"file_path": "src/a.ts"}))
+        self.run_python("hooks/post_tool_use.py", project_root, json.dumps({"file_path": "src/b.ts"}))
+
+        first_stop = self.run_python("hooks/stop_hook.py", project_root, env_overrides={"PATH": ""}, use_fake_claude=False)
+        self.assertEqual(first_stop.returncode, 2)
+
+        state = load_state(project_root, "test-session")
+        current_entries = {entry["file"]: entry for entry in state if entry.get("type") == "edit" and not entry.get("reviewed")}
+        append_state(
+            {
+                "type": "edit",
+                "file": "src/b.ts",
+                "hash": current_entries["src/b.ts"]["hash"],
+                "timestamp": datetime.now().astimezone().isoformat(),
+                "reviewed": True,
+                "reviewId": "manual-pass-1",
+            },
+            project_root,
+            client_id="test-session",
+        )
+
+        second_stop = self.run_python("hooks/stop_hook.py", project_root, env_overrides={"PATH": ""}, use_fake_claude=False)
+
+        self.assertEqual(second_stop.returncode, 2)
+        reviews = [e for e in load_state(project_root, "test-session") if e.get("type") == "review"]
+        self.assertEqual(len(reviews), 2)
+        latest_review = reviews[-1]
+        self.assertEqual(latest_review["files"], [{"file": "src/a.ts", "hash": current_entries["src/a.ts"]["hash"]}])
+        self.assertIn("Review " + latest_review["reviewId"], json.loads(second_stop.stdout)["systemMessage"])

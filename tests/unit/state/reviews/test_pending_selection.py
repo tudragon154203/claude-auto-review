@@ -5,9 +5,11 @@ from pathlib import Path
 from unittest.mock import patch
 
 from claude_auto_review.state.reviews import (
+    best_pending_review_exactly_matching_entries,
     best_pending_review_for_entries,
     entry_file_hash_pairs,
     is_review_clean,
+    pending_reviews_exactly_matching_entries,
     pending_review_candidates_for_entries,
     pending_reviews_for_entries,
     review_file_hash_pairs,
@@ -119,6 +121,34 @@ class TestPendingReviewSelection(unittest.TestCase):
 
         self.assertEqual(best["reviewId"], "best")
 
+    def test_pending_reviews_exactly_matching_entries_rejects_superset_review(self):
+        state = [
+            {
+                "type": "review",
+                "status": "pending",
+                "reviewId": "superset",
+                "timestamp": "2026-05-11T11:00:00+07:00",
+                "files": [
+                    {"file": "a.ts", "hash": "1"},
+                    {"file": "b.ts", "hash": "2"},
+                ],
+            },
+            {
+                "type": "review",
+                "status": "pending",
+                "reviewId": "exact",
+                "timestamp": "2026-05-11T12:00:00+07:00",
+                "files": [{"file": "a.ts", "hash": "1"}],
+            },
+        ]
+        entries = [{"file": "a.ts", "hash": "1"}]
+
+        matches = pending_reviews_exactly_matching_entries(state, entries)
+        best = best_pending_review_exactly_matching_entries(state, entries)
+
+        self.assertEqual([entry["reviewId"] for entry in matches], ["exact"])
+        self.assertEqual(best["reviewId"], "exact")
+
     def test_is_review_clean_checks_verdict_prefix(self):
         project_root = Path(tempfile.mkdtemp(prefix="claude-auto-review-reviews-"))
         review_path = project_root / "review.md"
@@ -127,4 +157,3 @@ class TestPendingReviewSelection(unittest.TestCase):
 
         review_path.write_text("## Verdict\nNeeds more work.\n", encoding="utf-8")
         self.assertFalse(is_review_clean(review_path))
-
