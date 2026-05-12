@@ -12,4 +12,6 @@ __pycache__/
 repomix-*
 .memsearch/
 .claude/claude-auto-review/
+AGENTS.md
+CLAUDE.md
 bash.exe.stackdump
