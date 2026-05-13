@@ -1,5 +1,6 @@
 from claude_auto_review.runtime.helpers import log_event
 from claude_auto_review.state.review_expiry import is_review_expired
+from claude_auto_review.state.store_read import latest_review_entries_by_id
 
 
 def _is_pending_review_entry(entry):
@@ -36,7 +37,7 @@ def _pending_review_match_info(state, entries, project_root=None, timeout_hours=
     if not needed:
         return
 
-    for entry in state:
+    for entry in latest_review_entries_by_id(state).values():
         if not _is_pending_review_entry(entry):
             continue
         if timeout_hours > 0 and is_review_expired(entry, timeout_hours):

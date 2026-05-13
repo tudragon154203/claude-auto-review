@@ -149,6 +149,29 @@ class TestPendingReviewSelection(unittest.TestCase):
         self.assertEqual([entry["reviewId"] for entry in matches], ["exact"])
         self.assertEqual(best["reviewId"], "exact")
 
+    def test_pending_reviews_ignore_review_ids_completed_later(self):
+        state = [
+            {
+                "type": "review",
+                "status": "pending",
+                "reviewId": "x",
+                "timestamp": "2026-05-11T11:00:00+07:00",
+                "files": [{"file": "a.ts", "hash": "1"}],
+            },
+            {
+                "type": "review",
+                "status": "completed",
+                "reviewId": "x",
+                "timestamp": "2026-05-11T11:01:00+07:00",
+                "files": [{"file": "a.ts", "hash": "1"}],
+            },
+        ]
+        entries = [{"file": "a.ts", "hash": "1"}]
+
+        matches = pending_reviews_for_entries(state, entries)
+
+        self.assertEqual(matches, [])
+
     def test_is_review_clean_checks_verdict_prefix(self):
         project_root = Path(tempfile.mkdtemp(prefix="claude-auto-review-reviews-"))
         review_path = project_root / "review.md"

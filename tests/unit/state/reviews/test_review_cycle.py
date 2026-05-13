@@ -2,7 +2,7 @@ import unittest
 
 from claude_auto_review.runtime.setup import ensure_client_runtime, ensure_runtime
 from claude_auto_review.state.reviews import pending_reviews_for_entries
-from claude_auto_review.state.store_read import load_state, was_hash_reviewed
+from claude_auto_review.state.store_read import latest_review_entries_by_id, load_state, was_hash_reviewed
 from claude_auto_review.state.store_write import append_review_started, mark_files_reviewed
 
 from tests.unit.state.support import StateTestCase
@@ -39,6 +39,23 @@ class TestReviewCycle(StateTestCase, unittest.TestCase):
         result = pending_reviews_for_entries(state, entries)
         self.assertEqual(result, [])
 
+    def test_pending_reviews_for_entries_uses_latest_review_status(self):
+        state = [
+            {"type": "review", "reviewId": "x", "status": "pending", "timestamp": "2026-05-05T08:00:00+07:00", "files": [{"file": "a.ts", "hash": "1"}]},
+            {"type": "review", "reviewId": "x", "status": "completed", "timestamp": "2026-05-05T08:01:00+07:00", "files": [{"file": "a.ts", "hash": "1"}]},
+        ]
+        entries = [{"file": "a.ts", "hash": "1"}]
+        result = pending_reviews_for_entries(state, entries)
+        self.assertEqual(result, [])
+
+    def test_latest_review_entries_by_id_prefers_chronological_timestamp(self):
+        state = [
+            {"type": "review", "reviewId": "x", "status": "pending", "timestamp": "2026-05-05T08:00:00+07:00"},
+            {"type": "review", "reviewId": "x", "status": "completed", "timestamp": "2026-05-05T02:30:00+00:00"},
+        ]
+        latest = latest_review_entries_by_id(state)
+        self.assertEqual(latest["x"]["status"], "completed")
+
     def test_append_review_started_without_client_id_auto_generates(self):
         project_root = self.temp_project()
         ensure_client_runtime(project_root, "auto-id")
@@ -46,5 +63,3 @@ class TestReviewCycle(StateTestCase, unittest.TestCase):
         append_review_started(entries, "rev-auto", "review.md", project_root, client_id="auto-id")
         state = load_state(project_root, "auto-id")
         self.assertTrue(any(e.get("reviewId") == "rev-auto" for e in state))
-
-

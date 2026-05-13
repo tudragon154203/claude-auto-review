@@ -4,10 +4,21 @@ from pathlib import Path
 
 from claude_auto_review.paths import is_runtime_relative_path, normalize_relative_path
 from claude_auto_review.runtime.helpers import resolve_client_id, resolve_project_root
+from claude_auto_review.utils.datetime_utils import parse_iso_timestamp
 
 
 def _timestamp_value(entry):
     return entry.get("timestamp", "")
+
+
+def _timestamp_sort_key(entry):
+    timestamp = _timestamp_value(entry)
+    if not timestamp:
+        return (0, "")
+    try:
+        return (1, parse_iso_timestamp(timestamp))
+    except (TypeError, ValueError):
+        return (0, timestamp)
 
 
 def _is_edit_entry(entry):
@@ -64,8 +75,22 @@ def latest_entries_by_file(state):
             continue
         file_path, _ = key
         current = latest.get(file_path)
-        if current is None or _timestamp_value(entry) >= _timestamp_value(current):
+        if current is None or _timestamp_sort_key(entry) >= _timestamp_sort_key(current):
             latest[file_path] = entry
+    return latest
+
+
+def latest_review_entries_by_id(state):
+    latest = {}
+    for entry in state:
+        if not isinstance(entry, dict) or entry.get("type") != "review":
+            continue
+        review_id = entry.get("reviewId")
+        if not review_id:
+            continue
+        current = latest.get(review_id)
+        if current is None or _timestamp_sort_key(entry) >= _timestamp_sort_key(current):
+            latest[review_id] = entry
     return latest
 
 

@@ -60,6 +60,14 @@ class TestStateStore(StateTestCase, unittest.TestCase):
         result = latest_entries_by_file(state)
         self.assertEqual(result["a.ts"]["hash"], "2")
 
+    def test_latest_entries_by_file_orders_mixed_timezones_chronologically(self):
+        state = [
+            {"type": "edit", "file": "a.ts", "hash": "older", "timestamp": "2026-05-05T08:00:00+07:00"},
+            {"type": "edit", "file": "a.ts", "hash": "newer", "timestamp": "2026-05-05T02:30:00+00:00"},
+        ]
+        result = latest_entries_by_file(state)
+        self.assertEqual(result["a.ts"]["hash"], "newer")
+
     def test_latest_entries_by_file_skips_non_edit_entries(self):
         state = [{"type": "review", "reviewId": "x"}, {"type": "edit", "file": "b.ts", "hash": "1"}]
         result = latest_entries_by_file(state)
@@ -105,5 +113,4 @@ class TestStateStore(StateTestCase, unittest.TestCase):
         )
         state = load_state(project_root, client_id)
         self.assertEqual(len(state), 2)
-
 

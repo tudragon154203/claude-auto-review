@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Any
 
 from claude_auto_review.paths import local_now_iso
-from claude_auto_review.state.models import ReviewCompletedRecord, StopBlockedRecord
+from claude_auto_review.state.models import ReviewCompletedRecord, ReviewMetadata, StopBlockedRecord
 from claude_auto_review.state.store_read import get_unreviewed_files, load_state
 from claude_auto_review.state.store_write import append_state, mark_files_reviewed
 
@@ -70,6 +70,25 @@ def _review_completed_entry(
     )
 
 
+def _review_status_completed_entry(
+    review_id: str,
+    state: list[dict[str, Any]],
+    timestamp: str,
+    client_id: str,
+) -> ReviewMetadata | None:
+    review = _review_entry_for_id(state, review_id)
+    if not review:
+        return None
+    return ReviewMetadata(
+        timestamp=timestamp,
+        reviewId=review_id,
+        reviewPath=review.get("reviewPath", ""),
+        files=review.get("files", []),
+        clientId=client_id or review.get("clientId", ""),
+        status="completed",
+    )
+
+
 def apply_completed_review(
     project_root: Path,
     client_id: str,
@@ -79,6 +98,9 @@ def apply_completed_review(
     validated_entries = _validate_covered_entries(covered_entries)
     state_before = load_state(project_root, client_id)
     timestamp = local_now_iso()
+    completed_review = _review_status_completed_entry(review_id, state_before, timestamp, client_id)
+    if completed_review is not None:
+        append_state(completed_review, project_root, client_id=client_id)
     append_state(
         _review_completed_entry(review_id, validated_entries, state_before, timestamp, client_id),
         project_root,

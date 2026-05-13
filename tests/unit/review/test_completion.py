@@ -23,10 +23,13 @@ class TestCompletion(unittest.TestCase):
     def test_apply_completed_review_with_remaining_files(self, mock_load, mock_unreviewed, mock_append, mock_mark):
         remaining = apply_completed_review(Path("/fake"), "cid", "rid", [])
         self.assertTrue(len(remaining) > 0)
-        self.assertEqual(mock_append.call_count, 2)
-        record = mock_append.call_args_list[0].args[0]
+        self.assertEqual(mock_append.call_count, 3)
+        completed_status = mock_append.call_args_list[0].args[0]
+        self.assertEqual(completed_status.type, "review")
+        self.assertEqual(completed_status.status, "completed")
+        record = mock_append.call_args_list[1].args[0]
         self.assertEqual(record.type, "review_completed")
-        blocked = mock_append.call_args_list[1].args[0]
+        blocked = mock_append.call_args_list[2].args[0]
         self.assertEqual(blocked.type, "stop_blocked")
         self.assertEqual(blocked.reason, "partial_review")
         mock_mark.assert_called_once()
@@ -45,8 +48,9 @@ class TestCompletion(unittest.TestCase):
     def test_apply_completed_review_no_remaining(self, mock_load, mock_unreviewed, mock_append, mock_mark):
         remaining = apply_completed_review(Path("/fake"), "cid", "rid", [])
         self.assertEqual(remaining, [])
-        mock_append.assert_called_once()
-        self.assertEqual(mock_append.call_args.args[0].type, "review_completed")
+        self.assertEqual(mock_append.call_count, 2)
+        self.assertEqual(mock_append.call_args_list[0].args[0].status, "completed")
+        self.assertEqual(mock_append.call_args_list[1].args[0].type, "review_completed")
         mock_mark.assert_called_once()
 
     def test_apply_completed_review_raises_on_missing_hash(self):

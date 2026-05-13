@@ -219,4 +219,37 @@ class TestRuntime(StateTestCase, unittest.TestCase):
         self.assertEqual(mock_log.call_args.kwargs["operation"], "rewrite_state")
         self.assertEqual(mock_log.call_args.kwargs["target"], str(state_path))
 
+    def test_cleanup_expired_pending_reviews_keeps_reviews_completed_later(self):
+        from datetime import datetime, timedelta
+
+        project_root = self.temp_project()
+        client_id = "cleanup-completed-review"
+        ensure_client_runtime(project_root, client_id)
+        state_path = client_state_path(project_root, client_id)
+        expired_time = (datetime.now().astimezone() - timedelta(hours=2)).isoformat()
+        completed_time = datetime.now().astimezone().isoformat()
+        state_path.write_text(
+            "\n".join(
+                [
+                    '{"type":"review","reviewId":"rid","reviewPath":"review.md","timestamp":"'
+                    + expired_time
+                    + '","status":"pending","files":[{"file":"a.ts","hash":"1"}],"clientId":"'
+                    + client_id
+                    + '"}',
+                    '{"type":"review","reviewId":"rid","reviewPath":"review.md","timestamp":"'
+                    + completed_time
+                    + '","status":"completed","files":[{"file":"a.ts","hash":"1"}],"clientId":"'
+                    + client_id
+                    + '"}',
+                ]
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+
+        removed = cleanup_expired_pending_reviews(project_root, client_id=client_id)
+
+        self.assertEqual(removed, 0)
+        self.assertEqual(len(load_state(project_root, client_id)), 2)
+
 
