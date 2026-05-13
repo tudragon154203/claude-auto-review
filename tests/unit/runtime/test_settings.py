@@ -55,11 +55,18 @@ class TestSettings(StateTestCase, unittest.TestCase):
         settings = {"includeExtensions": ["py"], "skipExtensions": []}
         self.assertTrue(should_skip_file("script.ts", settings))
 
-    def test_resolve_rules_file_path_uses_project_runtime_rules_for_relative_paths(self):
+    def test_resolve_rules_file_path_uses_project_relative_path_when_configured(self):
         project_root = self.temp_project()
         settings = {"rulesFile": "relative/rules.md"}
         self.assertEqual(
             resolve_rules_file_path(project_root, settings),
+            project_root / "relative" / "rules.md",
+        )
+
+    def test_resolve_rules_file_path_defaults_to_runtime_rules(self):
+        project_root = self.temp_project()
+        self.assertEqual(
+            resolve_rules_file_path(project_root, {}),
             project_root / ".claude" / "claude-auto-review" / "rules.md",
         )
 

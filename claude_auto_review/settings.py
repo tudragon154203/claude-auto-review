@@ -54,10 +54,11 @@ def load_settings(project_root=None):
 
 
 def resolve_rules_file_path(project_root, settings):
-    rules_path = Path(settings.get(SETTING_RULES_FILE, ""))
-    if not rules_path.is_absolute():
-        rules_path = Path(project_root) / ".claude" / "claude-auto-review" / "rules.md"
-    return rules_path
+    rules_value = settings.get(SETTING_RULES_FILE, DEFAULT_SETTINGS[SETTING_RULES_FILE])
+    rules_path = Path(rules_value)
+    if rules_path.is_absolute():
+        return rules_path
+    return Path(project_root) / rules_path
 
 
 def should_skip_file(file_path, settings=None):

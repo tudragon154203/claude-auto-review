@@ -18,6 +18,11 @@ class TestPathUtils(StateTestCase, unittest.TestCase):
         target = project_root / "src" / "app.ts"
         self.assertEqual(normalize_relative_path(f"file://{target}", project_root), "src/app.ts")
 
+    def test_normalizes_canonical_file_url_paths_inside_project_root(self):
+        project_root = self.temp_project()
+        target = (project_root / "src" / "app.ts").resolve().as_posix()
+        self.assertEqual(normalize_relative_path(f"file:///{target}", project_root), "src/app.ts")
+
     def test_rejects_relative_path_traversal_outside_project_root(self):
         project_root = self.temp_project()
         self.assertIsNone(normalize_relative_path("../outside.ts", project_root))

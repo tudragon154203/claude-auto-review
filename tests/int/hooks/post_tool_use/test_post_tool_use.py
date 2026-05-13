@@ -33,6 +33,17 @@ class TestPostToolUseHook(HookTestCase, unittest.TestCase):
         self.assertEqual(post.returncode, 0)
         self.assertEqual(load_state(project_root, "test-session")[0]["file"], "src/app.ts")
 
+    def test_post_tool_use_accepts_canonical_file_uris(self):
+        project_root = self.temp_project()
+        target = (project_root / "src" / "app.ts").resolve()
+        target.write_text("export const value = 1;\n", encoding="utf-8")
+
+        post = self.run_python("hooks/post_tool_use.py", project_root, json.dumps({"file_path": f"file:///{target.as_posix()}"}))
+        self.assertEqual(post.returncode, 0)
+        state = load_state(project_root, "test-session")
+        self.assertEqual(state[0]["file"], "src/app.ts")
+        self.assertNotEqual(state[0]["hash"], "__deleted__")
+
     def test_post_tool_use_tracks_removed_file_and_stop_hook_allows(self):
         project_root = self.temp_project()
         payload = {"tool_name": "Remove", "tool_input": {"file_path": "src/deleted.ts"}}
