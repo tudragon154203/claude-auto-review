@@ -9,6 +9,7 @@ sys.path.insert(0, str(REPO_ROOT))
 from claude_auto_review.state.store_read import load_state  # noqa: E402
 from claude_auto_review.state.store_write import append_state  # noqa: E402
 from tests.int.hooks.support import HookTestCase  # noqa: E402
+from tests.support import client_dir  # noqa: E402
 
 
 class TestStopHookOverlap(HookTestCase, unittest.TestCase):
@@ -23,7 +24,7 @@ class TestStopHookOverlap(HookTestCase, unittest.TestCase):
         hash_a = [e["hash"] for e in edits if e.get("file") == "src/a.ts"][-1]
         hash_b = [e["hash"] for e in edits if e.get("file") == "src/b.ts"][-1]
 
-        review_dir = project_root / ".claude" / "claude-auto-review" / "clients" / "client-test-session" / "reviews"
+        review_dir = client_dir(project_root) / "reviews"
         review_dir.mkdir(parents=True, exist_ok=True)
         path_high = review_dir / "review-high.md"
         path_new = review_dir / "review-newer.md"
@@ -73,7 +74,7 @@ class TestStopHookOverlap(HookTestCase, unittest.TestCase):
         self.run_python("hooks/post_tool_use.py", project_root, json.dumps({"file_path": "src/app.ts"}))
 
         current_hash = load_state(project_root, "test-session")[-1]["hash"]
-        review_dir = project_root / ".claude" / "claude-auto-review" / "clients" / "client-test-session" / "reviews"
+        review_dir = client_dir(project_root) / "reviews"
         review_dir.mkdir(parents=True, exist_ok=True)
         old_path = review_dir / "review-old.md"
         new_path = review_dir / "review-new.md"
@@ -125,7 +126,7 @@ class TestStopHookOverlap(HookTestCase, unittest.TestCase):
         old_hash_a = [e["hash"] for e in edits if e.get("file") == "src/a.ts"][-1]
         hash_b = [e["hash"] for e in edits if e.get("file") == "src/b.ts"][-1]
 
-        review_dir = project_root / ".claude" / "claude-auto-review" / "clients" / "client-test-session" / "reviews"
+        review_dir = client_dir(project_root) / "reviews"
         review_dir.mkdir(parents=True, exist_ok=True)
         stale_path = review_dir / "review-stale.md"
         stale_path.write_text("## Verdict\n\nNot clean - fix a.ts.\n", encoding="utf-8")
