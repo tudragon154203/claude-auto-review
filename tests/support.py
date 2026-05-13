@@ -8,6 +8,18 @@ import time
 from http.server import BaseHTTPRequestHandler
 from pathlib import Path
 
+from claude_auto_review.paths import get_client_runtime_dir
+
+
+def client_dir(project_root, client_id="test-session"):
+    """Return the actual client directory path, resolving any timestamp prefix."""
+    return get_client_runtime_dir(Path(project_root), client_id)
+
+
+def client_relpath(project_root, client_id="test-session"):
+    """Return the relative client directory path for state entries."""
+    return str(client_dir(project_root, client_id).relative_to(Path(project_root)))
+
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
 
@@ -40,7 +52,18 @@ class SubprocessMixin:
         env_overrides=None,
         use_fake_claude=None,
         timeout=None,
+        stdin_session_id_payload=None,
     ):
+        stdin_session_id = None
+        if isinstance(stdin_session_id_payload, dict):
+            stdin_session_id = stdin_session_id_payload.get("session_id")
+        elif isinstance(stdin_session_id_payload, str):
+            stdin_session_id = stdin_session_id_payload
+
+        from claude_auto_review.paths import get_client_id as _get_client_id
+
+        prefixed_client_id = _get_client_id(stdin_session_id=stdin_session_id or client_id)
+
         env = {
             **os.environ,
             "CLAUDE_PROJECT_DIR": str(project_root),
@@ -60,7 +83,7 @@ class SubprocessMixin:
                 / ".claude"
                 / "claude-auto-review"
                 / "clients"
-                / f"client-{client_id}"
+                / f"client-{prefixed_client_id}"
                 / "run"
                 / "claude-cli-args.json"
             )
@@ -150,4 +173,3 @@ def make_classifier_handler(response_label="complete", response_delay=0, respons
             return
 
     return _ClassifierHandler
-

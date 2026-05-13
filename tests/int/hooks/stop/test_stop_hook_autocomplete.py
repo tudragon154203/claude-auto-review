@@ -9,6 +9,7 @@ sys.path.insert(0, str(REPO_ROOT))
 
 from claude_auto_review.state.reviews import is_review_complete  # noqa: E402
 from tests.int.hooks.support import HookTestCase  # noqa: E402
+from tests.support import client_dir  # noqa: E402
 
 
 class TestStopHookAutocomplete(HookTestCase, unittest.TestCase):
@@ -31,7 +32,7 @@ class TestStopHookAutocomplete(HookTestCase, unittest.TestCase):
         self.assertEqual(stop.returncode, 0, f"stop should succeed; stdout={stop.stdout[:200]}; stderr={stop.stderr[:200]}")
         self.assertEqual(stop.stdout.strip(), "")
 
-        review_dir = project_root / ".claude" / "claude-auto-review" / "clients" / "client-test-session" / "reviews"
+        review_dir = client_dir(project_root) / "reviews"
         review_path = sorted(review_dir.glob("review-*.md"))[-1]
         content = review_path.read_text(encoding="utf-8")
         self.assertIn("## Verdict", content)

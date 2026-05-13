@@ -1,7 +1,7 @@
 import tempfile
 from pathlib import Path
 
-from tests.support import SubprocessMixin, TempProjectMixin
+from tests.support import SubprocessMixin, TempProjectMixin, client_dir
 
 
 class HookTestCase(TempProjectMixin, SubprocessMixin):
@@ -21,14 +21,7 @@ class HookTestCase(TempProjectMixin, SubprocessMixin):
         client_id="test-session",
     ):
         review_path = sorted(
-            (
-                project_root
-                / ".claude"
-                / "claude-auto-review"
-                / "clients"
-                / f"client-{client_id}"
-                / "reviews"
-            ).glob("review-*.md")
+            (client_dir(project_root, client_id) / "reviews").glob("review-*.md")
         )[-1]
         content = review_path.read_text(encoding="utf-8")
         content = content.replace("Pending. Claude must complete this review from", "Completed review from")

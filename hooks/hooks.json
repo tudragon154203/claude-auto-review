@@ -2,7 +2,7 @@
   "hooks": {
     "PostToolUse": [
       {
-        "matcher": "Write|Edit|MultiEdit|Delete|Remove",
+        "matcher": "Write|Edit|MultiEdit|Delete|Remove|Bash|PowerShell",
         "hooks": [
           {
             "type": "command",

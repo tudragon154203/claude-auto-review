@@ -9,6 +9,7 @@ sys.path.insert(0, str(REPO_ROOT))
 from claude_auto_review.state.store_read import load_state  # noqa: E402
 from claude_auto_review.state.store_write import append_state  # noqa: E402
 from tests.int.hooks.support import HookTestCase  # noqa: E402
+from tests.support import client_relpath  # noqa: E402
 
 
 class TestStopHookExpiration(HookTestCase, unittest.TestCase):
@@ -24,7 +25,7 @@ class TestStopHookExpiration(HookTestCase, unittest.TestCase):
             {
                 "type": "review",
                 "reviewId": "expired-payload",
-                "reviewPath": ".claude/claude-auto-review/clients/client-payload-session/reviews/review-expired.md",
+                "reviewPath": client_relpath(project_root, "payload-session") + "/reviews/review-expired.md",
                 "timestamp": old_time,
                 "status": "pending",
                 "files": [{"file": "src/app.ts", "hash": "testhash"}],
@@ -38,6 +39,7 @@ class TestStopHookExpiration(HookTestCase, unittest.TestCase):
             project_root,
             payload,
             client_id="env-session",
+            stdin_session_id_payload={"session_id": "payload-session"},
             env_overrides={"PATH": ""},
             use_fake_claude=False,
         )
@@ -70,7 +72,7 @@ class TestStopHookExpiration(HookTestCase, unittest.TestCase):
             {
                 "type": "review",
                 "reviewId": "rev-expired",
-                "reviewPath": ".claude/claude-auto-review/clients/client-test-session/reviews/review-expired.md",
+                "reviewPath": client_relpath(project_root) + "/reviews/review-expired.md",
                 "timestamp": old_time,
                 "status": "pending",
                 "files": [{"file": "src/app.ts", "hash": "testhash"}],
@@ -105,7 +107,7 @@ class TestStopHookExpiration(HookTestCase, unittest.TestCase):
             {
                 "type": "review",
                 "reviewId": "rev-custom-timeout",
-                "reviewPath": ".claude/claude-auto-review/clients/client-test-session/reviews/review-custom.md",
+                "reviewPath": client_relpath(project_root) + "/reviews/review-custom.md",
                 "timestamp": old_time,
                 "status": "pending",
                 "files": [{"file": "src/app.ts", "hash": "testhash"}],
@@ -120,4 +122,3 @@ class TestStopHookExpiration(HookTestCase, unittest.TestCase):
         state_after = load_state(project_root, client_id="test-session")
         expired_ids = [e.get("reviewId") for e in state_after if e.get("type") == "review" and e.get("status") == "pending"]
         self.assertIn("rev-custom-timeout", expired_ids, "Stop hook should not remove expired reviews")
-

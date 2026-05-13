@@ -7,6 +7,7 @@ REPO_ROOT = Path(__file__).resolve().parents[4]
 sys.path.insert(0, str(REPO_ROOT))
 from claude_auto_review.state.store_read import load_state  # noqa: E402
 from tests.int.hooks.support import HookTestCase  # noqa: E402
+from tests.support import client_dir  # noqa: E402
 
 
 class TestStopHookLifecycle(HookTestCase, unittest.TestCase):
@@ -19,15 +20,16 @@ class TestStopHookLifecycle(HookTestCase, unittest.TestCase):
         self.assertEqual(stop.returncode, 0)
         self.assertEqual(stop.stdout.strip(), "")
 
-        run_files = list((project_root / ".claude" / "claude-auto-review" / "clients" / "client-test-session" / "run").iterdir())
+        _cd = client_dir(project_root)
+        run_files = list((_cd / "run").iterdir())
         self.assertGreaterEqual(len(run_files), 1)
         self.assertEqual(
-            len(list((project_root / ".claude" / "claude-auto-review" / "clients" / "client-test-session" / "reviews").iterdir())),
+            len(list((_cd / "reviews").iterdir())),
             1,
         )
 
         review_path = sorted(
-            (project_root / ".claude" / "claude-auto-review" / "clients" / "client-test-session" / "reviews").glob("review-*.md")
+            (_cd / "reviews").glob("review-*.md")
         )[-1]
         content = review_path.read_text(encoding="utf-8")
         self.assertIn("Clean - no issues found. Claude may stop.", content)
@@ -106,10 +108,10 @@ class TestStopHookLifecycle(HookTestCase, unittest.TestCase):
         parsed = json.loads(stop1.stdout)
         self.assertEqual(parsed["decision"], "block")
 
-        client_dir = project_root / ".claude" / "claude-auto-review" / "clients" / "client-test-session"
-        reviews = list((client_dir / "reviews").glob("review-*.md"))
+        _cd = client_dir(project_root)
+        reviews = list((_cd / "reviews").glob("review-*.md"))
         self.assertEqual(len(reviews), 1, "Stop hook should have already created a review")
-        prompts = list((client_dir / "run").glob("*-prompt.md"))
+        prompts = list((_cd / "run").glob("*-prompt.md"))
         self.assertEqual(len(prompts), 1, "Stop hook should have already created a prompt")
 
         stop2 = self.run_python(

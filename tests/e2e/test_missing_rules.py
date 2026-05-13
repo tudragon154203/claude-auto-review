@@ -39,8 +39,10 @@ class EndToEndMissingRulesTests(EndToEndTestCase):
 
         stop = self.stop(project_root, use_fake_claude=False, env_overrides={"PATH": ""})
 
-        client_dir = project_root / ".claude" / "claude-auto-review" / "clients" / "client-test-session"
-        prompts = sorted((client_dir / "run").glob("review-*-prompt.md"))
+        clients_dir = project_root / ".claude" / "claude-auto-review" / "clients"
+        client_dirs = sorted(d for d in clients_dir.iterdir() if d.is_dir() and d.name.startswith("client-"))
+        self.assertTrue(len(client_dirs) > 0, "Expected at least one client directory")
+        prompts = sorted((client_dirs[0] / "run").glob("review-*-prompt.md"))
         self.assertTrue(len(prompts) > 0, "Expected at least one prompt file")
 
         prompt_content = prompts[-1].read_text(encoding="utf-8")

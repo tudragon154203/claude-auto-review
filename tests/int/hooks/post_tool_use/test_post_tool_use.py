@@ -70,12 +70,11 @@ class TestPostToolUseHook(HookTestCase, unittest.TestCase):
 
     def test_post_tool_use_ignores_runtime_review_files(self):
         project_root = self.temp_project()
+        from claude_auto_review.paths import get_client_runtime_dir, get_client_id
+
+        cid = get_client_id(stdin_session_id="test-session")
         runtime_review = (
-            project_root
-            / ".claude"
-            / "claude-auto-review"
-            / "clients"
-            / "client-test-session"
+            get_client_runtime_dir(project_root, cid)
             / "reviews"
             / "review-r1.md"
         )

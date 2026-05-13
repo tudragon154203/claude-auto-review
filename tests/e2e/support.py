@@ -6,7 +6,7 @@ import unittest
 from http.server import HTTPServer
 from pathlib import Path
 
-from tests.support import SubprocessMixin, TempProjectMixin, make_classifier_handler
+from tests.support import SubprocessMixin, TempProjectMixin, client_dir, make_classifier_handler
 
 
 class _ThreadedHTTPServer(socketserver.ThreadingMixIn, HTTPServer):
