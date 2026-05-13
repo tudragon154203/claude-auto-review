@@ -79,7 +79,7 @@ def main():
         client_id = get_client_id()
         return _run_review_prompt(project_root, client_id)
 
-    return run_fail_open(_run, on_error=lambda error: _log_failure(project_root, error))
+    return run_fail_open(_run, on_error=lambda error: _log_failure(project_root, error), fallback=1)
 
 
 if __name__ == "__main__":

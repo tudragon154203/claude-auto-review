@@ -12,8 +12,8 @@ from claude_auto_review.review.prompt_flow import (
 
 
 class TestReviewPromptFlow(unittest.TestCase):
-    def test_review_id_from_timestamp_strips_non_digits(self):
-        self.assertEqual(_review_id_from_timestamp("2026-05-11T12:34:56+07:00"), "rev-20260511123456")
+    def test_review_id_from_timestamp_includes_microseconds(self):
+        self.assertEqual(_review_id_from_timestamp("2026-05-11T12:34:56+07:00"), "rev-20260511123456000000")
 
     def test_review_prompt_paths_place_files_under_expected_directories(self):
         project_root = Path(tempfile.mkdtemp(prefix="claude-auto-review-prompt-flow-"))
@@ -48,7 +48,7 @@ class TestReviewPromptFlow(unittest.TestCase):
                 {"rulesFile": str(review_rules)},
             )
 
-        self.assertEqual(artifacts.review_id, "rev-20260511123456")
+        self.assertEqual(artifacts.review_id, "rev-20260511123456000000")
         self.assertEqual(artifacts.files, ["src/app.ts"])
         self.assertTrue(artifacts.prompt_path.exists())
         self.assertTrue(artifacts.review_path.exists())

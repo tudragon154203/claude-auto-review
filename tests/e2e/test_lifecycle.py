@@ -1,6 +1,5 @@
 import json
 import sys
-import time
 from pathlib import Path
 
 from tests.e2e.support import EndToEndTestCase
@@ -146,8 +145,6 @@ class EndToEndLifecycleTests(EndToEndTestCase):
         self.track(project_root, "src/a.ts")
         self.review(project_root)
         self.complete_review(project_root)
-
-        time.sleep(1.1)
 
         (project_root / "src" / "b.ts").write_text("b2\n", encoding="utf-8")
         self.track(project_root, "src/b.ts")

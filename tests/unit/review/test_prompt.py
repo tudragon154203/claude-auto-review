@@ -78,7 +78,7 @@ class TestReviewPrompt(unittest.TestCase):
     @patch("claude_auto_review.review.prompt.load_settings", side_effect=RuntimeError("boom"))
     def test_main_catches_exception_and_logs(self, mock_settings, mock_shim, mock_ensure, mock_root, mock_client_id, mock_fail):
         result = main()
-        self.assertEqual(result, 0)
+        self.assertEqual(result, 1)
         mock_fail.assert_called_once()
 
 

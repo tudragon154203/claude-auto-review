@@ -10,6 +10,7 @@ from claude_auto_review.review.generation import (
     read_if_exists,
 )
 from claude_auto_review.settings import resolve_rules_file_path
+from claude_auto_review.utils.datetime_utils import parse_iso_timestamp
 
 
 @dataclass(frozen=True)
@@ -21,7 +22,11 @@ class ReviewPromptArtifacts:
 
 
 def _review_id_from_timestamp(timestamp):
-    return "rev-" + "".join(ch for ch in timestamp if ch.isdigit())[:14]
+    try:
+        parsed = parse_iso_timestamp(timestamp)
+    except (TypeError, ValueError):
+        return "rev-" + "".join(ch for ch in timestamp if ch.isdigit())
+    return "rev-" + parsed.strftime("%Y%m%d%H%M%S%f")
 
 
 def _review_prompt_paths(project_root, client_id, review_id):
