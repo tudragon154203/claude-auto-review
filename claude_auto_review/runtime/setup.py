@@ -1,4 +1,5 @@
 import json
+import shlex
 import shutil
 from pathlib import Path
 
@@ -13,6 +14,8 @@ from claude_auto_review.paths import (
 from claude_auto_review.runtime.helpers import resolve_project_root
 from claude_auto_review.settings import DEFAULT_SETTINGS, _load_settings_document, _settings_path
 
+PLUGIN_SCRIPTS = frozenset(["post_tool_use.py", "stop_hook.py", "session_end.py"])
+
 
 def _load_hooks_document(plugin_root):
     hooks_path = Path(plugin_root) / "hooks" / "hooks.json"
@@ -23,17 +26,73 @@ def _load_hooks_document(plugin_root):
     return data if isinstance(data, dict) else {}
 
 
+def _plugin_script_from_command(cmd):
+    """Return the plugin script basename if cmd ends with one, else None."""
+    if not cmd:
+        return None
+    try:
+        parts = shlex.split(cmd, posix=False)
+    except ValueError:
+        parts = cmd.split()
+    if not parts:
+        return None
+    basename = Path(parts[-1].strip("'\"")).name
+    return basename if basename in PLUGIN_SCRIPTS else None
+
+
+def _is_plugin_hook(item):
+    """Check if a hook item belongs to this plugin by exact script basename match."""
+    if not isinstance(item, dict):
+        return False
+    hooks = item.get("hooks", [])
+    if not isinstance(hooks, list):
+        return False
+    return any(_plugin_script_from_command(h.get("command", "")) for h in hooks if isinstance(h, dict))
+
+
+def _get_plugin_script_name(item):
+    """Identify which specific plugin script this hook uses."""
+    hooks = item.get("hooks", [])
+    for h in hooks:
+        if not isinstance(h, dict):
+            continue
+        name = _plugin_script_from_command(h.get("command", ""))
+        if name:
+            return name
+    return None
+
+
 def _merge_unique_list(existing_items, desired_items):
-    merged = list(existing_items) if isinstance(existing_items, list) else []
-    seen = {
-        json.dumps(item, sort_keys=True, ensure_ascii=False)
-        for item in merged
-    }
-    for item in desired_items if isinstance(desired_items, list) else []:
-        marker = json.dumps(item, sort_keys=True, ensure_ascii=False)
-        if marker not in seen:
+    existing = list(existing_items) if isinstance(existing_items, list) else []
+    desired = list(desired_items) if isinstance(desired_items, list) else []
+
+    seen = set()
+
+    def _seen_key(item):
+        if isinstance(item, dict) and _is_plugin_hook(item):
+            return ("__plugin__", _get_plugin_script_name(item))
+        return ("__plain__", json.dumps(item, sort_keys=True, ensure_ascii=False))
+
+    # Build merged list preserving order: existing items first, then new desired items
+    merged = []
+    for item in existing:
+        key = _seen_key(item)
+        if key not in seen:
             merged.append(item)
-            seen.add(marker)
+            seen.add(key)
+
+    for item in desired:
+        key = _seen_key(item)
+        if key not in seen:
+            merged.append(item)
+            seen.add(key)
+        elif key[0] == "__plugin__":
+            # Replace existing plugin hook with desired version
+            for i, m in enumerate(merged):
+                if _seen_key(m) == key:
+                    merged[i] = item
+                    break
+
     return merged
 
 

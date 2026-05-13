@@ -131,6 +131,99 @@ class TestSettings(StateTestCase, unittest.TestCase):
             "python hooks/stop_hook.py",
         )
 
+    def test_ensure_project_settings_is_idempotent_even_if_timeout_changes(self):
+        project_root = self.temp_project()
+        settings_path = project_root / ".claude" / "settings.json"
+        settings_path.parent.mkdir(parents=True, exist_ok=True)
+
+        # Initial install
+        ensure_project_settings(project_root)
+        settings = json.loads(settings_path.read_text(encoding="utf-8"))
+        self.assertEqual(len(settings["hooks"]["Stop"]), 1)
+        self.assertEqual(settings["hooks"]["Stop"][0]["hooks"][0]["timeout"], 660)
+
+        # Modify timeout manually
+        settings["hooks"]["Stop"][0]["hooks"][0]["timeout"] = 999
+        settings_path.write_text(json.dumps(settings), encoding="utf-8")
+
+        # Re-install
+        ensure_project_settings(project_root)
+        settings = json.loads(settings_path.read_text(encoding="utf-8"))
+
+        # Should still only have 1 entry (updated, not duplicated)
+        self.assertEqual(len(settings["hooks"]["Stop"]), 1)
+        self.assertEqual(settings["hooks"]["Stop"][0]["hooks"][0]["timeout"], 660)
+
+    def test_ensure_project_settings_deduplicates_existing_plugin_hooks(self):
+        project_root = self.temp_project()
+        settings_path = project_root / ".claude" / "settings.json"
+        settings_path.parent.mkdir(parents=True, exist_ok=True)
+
+        # Pre-populate settings with duplicate plugin hooks
+        initial = {
+            "hooks": {
+                "Stop": [
+                    {
+                        "hooks": [
+                            {
+                                "type": "command",
+                                "command": "python hooks/stop_hook.py",
+                                "timeout": 660,
+                                "statusMessage": "Claude Auto Review: checking review state…",
+                            }
+                        ]
+                    },
+                    {
+                        "hooks": [
+                            {
+                                "type": "command",
+                                "command": "python hooks/stop_hook.py",
+                                "timeout": 660,
+                                "statusMessage": "Claude Auto Review: checking review state…",
+                            }
+                        ]
+                    },
+                ]
+            }
+        }
+        settings_path.write_text(json.dumps(initial), encoding="utf-8")
+
+        # Re-run install
+        ensure_project_settings(project_root)
+        settings = json.loads(settings_path.read_text(encoding="utf-8"))
+
+        # Should collapse to a single Stop plugin hook (non-plugin preserved)
+        self.assertEqual(len(settings["hooks"]["Stop"]), 1)
+        self.assertEqual(settings["hooks"]["Stop"][0]["hooks"][0]["command"], "python hooks/stop_hook.py")
+
+    def test_ensure_project_settings_treats_quoted_plugin_command_as_same_hook(self):
+        project_root = self.temp_project()
+        settings_path = project_root / ".claude" / "settings.json"
+        settings_path.parent.mkdir(parents=True, exist_ok=True)
+
+        initial = {
+            "hooks": {
+                "Stop": [
+                    {
+                        "hooks": [
+                            {
+                                "type": "command",
+                                "command": 'python "hooks/stop_hook.py"',
+                                "timeout": 660,
+                            }
+                        ]
+                    }
+                ]
+            }
+        }
+        settings_path.write_text(json.dumps(initial), encoding="utf-8")
+
+        ensure_project_settings(project_root)
+        settings = json.loads(settings_path.read_text(encoding="utf-8"))
+
+        self.assertEqual(len(settings["hooks"]["Stop"]), 1)
+        self.assertEqual(settings["hooks"]["Stop"][0]["hooks"][0]["command"], "python hooks/stop_hook.py")
+
     def test_ensure_project_settings_handles_non_dict_json(self):
         project_root = self.temp_project()
         settings_path = project_root / ".claude" / "settings.json"
