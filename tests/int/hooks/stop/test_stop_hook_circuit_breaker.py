@@ -77,3 +77,16 @@ class TestStopHookCircuitBreaker(HookTestCase, unittest.TestCase):
             "Circuit breaker with maxStopPasses=2 should trip on third consecutive block",
         )
 
+    def test_stop_hook_invalid_numeric_settings_fall_back_instead_of_failing_open(self):
+        project_root = self.temp_project()
+        (project_root / ".claude").mkdir()
+        (project_root / ".claude" / "settings.json").write_text(
+            json.dumps({"claude-auto-review": {"maxStopPasses": "bad", "pendingReviewTimeoutHours": "bad"}}),
+            encoding="utf-8",
+        )
+        (project_root / "src" / "app.ts").write_text("export const value = 1;\n", encoding="utf-8")
+
+        self.run_python("hooks/post_tool_use.py", project_root, json.dumps({"file_path": "src/app.ts"}))
+        stop = self.run_python("hooks/stop_hook.py", project_root, env_overrides={"PATH": ""}, use_fake_claude=False)
+
+        self.assertEqual(stop.returncode, 2, "Malformed numeric settings should not allow stop with unreviewed changes")

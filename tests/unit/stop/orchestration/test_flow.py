@@ -162,3 +162,31 @@ class TestRunStopFlow(unittest.TestCase):
 
         self.assertEqual(result, 2)
         mock_finalize.assert_called_once()
+
+    @patch("claude_auto_review.stop.orchestration.flow.resolve_pending_review")
+    @patch("claude_auto_review.stop.orchestration.flow.consecutive_stop_blocks", return_value=0)
+    @patch("claude_auto_review.stop.orchestration.flow.get_unreviewed_files", return_value=[{"file": "a.ts", "hash": "1"}])
+    @patch("claude_auto_review.stop.orchestration.flow.load_state", return_value=[{"type": "edit", "file": "a.ts", "hash": "1", "reviewed": False}])
+    @patch("claude_auto_review.stop.orchestration.flow.ensure_client_runtime")
+    @patch("claude_auto_review.stop.orchestration.flow.load_settings")
+    def test_invalid_numeric_settings_fall_back_to_defaults(
+        self,
+        mock_settings,
+        mock_runtime,
+        mock_state,
+        mock_unreviewed,
+        mock_blocks,
+        mock_resolve,
+    ):
+        mock_settings.return_value = {
+            "enabled": True,
+            "pendingReviewTimeoutHours": "not-a-number",
+            "maxStopPasses": "also-bad",
+        }
+        mock_resolve.return_value.is_terminal = True
+        mock_resolve.return_value.exit_code = 2
+
+        result = run_stop_flow(Path("/fake"), {"session_id": "sid"})
+
+        self.assertEqual(result, 2)
+        self.assertEqual(mock_resolve.call_args.args[5], 1.0)
