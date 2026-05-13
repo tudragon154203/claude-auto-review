@@ -21,7 +21,7 @@ DEFAULT_TIMEOUT_SECONDS = 20
 # Default settings for the plugin
 DEFAULT_SETTINGS = {
     SETTING_ENABLED: True,
-    SETTING_RULES_FILE: str(Path(".claude") / "claude-auto-review" / "rules.md"),
+    SETTING_RULES_FILE: str(Path(".claude") / "claude-auto-review" / "review-rules.md"),
     SETTING_INCLUDE_EXTS: [],
     SETTING_SKIP_EXTS: [],
     SETTING_MAX_STOP_PASSES: 3,

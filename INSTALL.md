@@ -19,7 +19,7 @@ Replace `/path/to/claude-auto-review` with the actual location of this repo on y
 **What it does** (all changes are inside the target project):
 
 1. Creates `.claude/claude-auto-review/` with `scripts/`, `agents/`, and `clients/` subdirectories (`clients/*/reviews/` and `clients/*/run/` are created lazily per session).
-2. Copies default review rules from the plugin into `.claude/claude-auto-review/rules.md`.
+2. Copies default review rules from the plugin into `.claude/claude-auto-review/review-rules.md`.
 3. Writes runtime shims under `scripts/` that delegate back to the plugin source.
 4. Copies `agents/reviewer.md` into `.claude/claude-auto-review/agents/` (overwrites if content differs from the plugin source).
 5. Adds hook definitions (`PostToolUse`, `Stop`, `SessionEnd`) to `.claude/settings.json` (additive - existing settings are preserved).

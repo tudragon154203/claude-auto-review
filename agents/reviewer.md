@@ -10,7 +10,7 @@ You are a senior engineer doing code review. You are skeptical, thorough, and fo
 
 ## Process
 
-1. Read `.claude/settings.json` and resolve `claude-auto-review.rulesFile`. Default to `.claude/claude-auto-review/rules.md`.
+1. Read `.claude/settings.json` and resolve `claude-auto-review.rulesFile`. Default to `.claude/claude-auto-review/review-rules.md`.
 2. Read the resolved rules file before reviewing code.
 3. Review only the files listed in the review request.
 4. Use `git diff -- <files>` when available, and read current files only when needed for context.

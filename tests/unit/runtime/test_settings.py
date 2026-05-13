@@ -67,7 +67,7 @@ class TestSettings(StateTestCase, unittest.TestCase):
         project_root = self.temp_project()
         self.assertEqual(
             resolve_rules_file_path(project_root, {}),
-            project_root / ".claude" / "claude-auto-review" / "rules.md",
+            project_root / ".claude" / "claude-auto-review" / "review-rules.md",
         )
 
     def test_ensure_project_settings_creates_settings_file(self):

@@ -176,6 +176,6 @@ class EndToEndLifecycleTests(EndToEndTestCase):
         self.assertEqual(self.run_python("claude_auto_review/install/setup_cli.py", project_root).returncode, 0)
 
         self.assertTrue((project_root / ".claude" / "claude-auto-review" / "scripts" / "review_prompt.py").exists())
-        self.assertTrue((project_root / ".claude" / "claude-auto-review" / "rules.md").exists())
+        self.assertTrue((project_root / ".claude" / "claude-auto-review" / "review-rules.md").exists())
         settings = json.loads((project_root / ".claude" / "settings.json").read_text(encoding="utf-8"))
         self.assertIn("claude-auto-review", settings)

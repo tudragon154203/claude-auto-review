@@ -31,7 +31,7 @@ class TestReviewPromptFlow(unittest.TestCase):
     def test_create_review_prompt_files_writes_prompt_and_review_files(self):
         project_root = Path(tempfile.mkdtemp(prefix="claude-auto-review-prompt-flow-"))
         client_id = "client-a"
-        review_rules = project_root / ".claude" / "claude-auto-review" / "rules.md"
+        review_rules = project_root / ".claude" / "claude-auto-review" / "review-rules.md"
         review_rules.parent.mkdir(parents=True, exist_ok=True)
         review_rules.write_text("Project rules.\n", encoding="utf-8")
 

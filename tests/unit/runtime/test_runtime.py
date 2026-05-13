@@ -29,7 +29,7 @@ class TestRuntime(StateTestCase, unittest.TestCase):
         fake_plugin = self.temp_project()
         # No rules/review-rules.md in fake_plugin
         ensure_runtime(project_root, plugin_root=fake_plugin)
-        rules_path = project_root / ".claude" / "claude-auto-review" / "rules.md"
+        rules_path = project_root / ".claude" / "claude-auto-review" / "review-rules.md"
         self.assertTrue(rules_path.exists())
         content = rules_path.read_text(encoding="utf-8")
         self.assertIn("Review semantic correctness", content)

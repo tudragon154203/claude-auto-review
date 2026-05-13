@@ -20,7 +20,7 @@ class TestSetupCancel(HookTestCase, unittest.TestCase):
         self.assertTrue((project_root / ".claude" / "claude-auto-review" / "scripts" / "review_prompt.py").exists())
         self.assertTrue((project_root / ".claude" / "claude-auto-review" / "scripts" / "cancel_claude_auto_review.py").exists())
         self.assertTrue((project_root / ".claude" / "claude-auto-review" / "agents" / "reviewer.md").exists())
-        self.assertTrue((project_root / ".claude" / "claude-auto-review" / "rules.md").exists())
+        self.assertTrue((project_root / ".claude" / "claude-auto-review" / "review-rules.md").exists())
         self.assertNotIn(".claude/claude-auto-review/state.jsonl", (project_root / ".gitignore").read_text(encoding="utf-8"))
         self.assertIn(".claude/claude-auto-review/", (project_root / ".gitignore").read_text(encoding="utf-8"))
         settings = json.loads((project_root / ".claude" / "settings.json").read_text(encoding="utf-8"))

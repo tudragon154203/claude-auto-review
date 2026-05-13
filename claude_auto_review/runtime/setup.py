@@ -61,7 +61,7 @@ def ensure_runtime(project_root=None, plugin_root=None):
     state_path = project_root / STATE_RELATIVE_PATH
     state_path.parent.mkdir(parents=True, exist_ok=True)
 
-    rules_path = base_dir / "rules.md"
+    rules_path = base_dir / "review-rules.md"
     if not rules_path.exists():
         default_rules_path = plugin_root / "rules" / "review-rules.md"
         if default_rules_path.exists():

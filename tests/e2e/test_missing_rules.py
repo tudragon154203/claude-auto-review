@@ -12,7 +12,7 @@ class EndToEndMissingRulesTests(EndToEndTestCase):
         self.track(project_root, "src/app.ts")
 
         # Ensure no rules file exists
-        rules_path = project_root / ".claude" / "claude-auto-review" / "rules.md"
+        rules_path = project_root / ".claude" / "claude-auto-review" / "review-rules.md"
         self.assertFalse(rules_path.exists())
 
         stop = self.stop(project_root)
@@ -22,7 +22,7 @@ class EndToEndMissingRulesTests(EndToEndTestCase):
         project_root = self.temp_project()
         (project_root / "src" / "app.ts").write_text("const x = 1;\n", encoding="utf-8")
 
-        rules_path = project_root / ".claude" / "claude-auto-review" / "rules.md"
+        rules_path = project_root / ".claude" / "claude-auto-review" / "review-rules.md"
         rules_path.parent.mkdir(parents=True, exist_ok=True)
         rules_path.write_text("", encoding="utf-8")
 

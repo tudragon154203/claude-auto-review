@@ -71,7 +71,7 @@ class TestReviewPrompt(HookTestCase, unittest.TestCase):
         target = project_root / "src" / "app.ts"
         target.write_text("export const value = 1;\n", encoding="utf-8")
         self.run_python("hooks/post_tool_use.py", project_root, json.dumps({"file_path": "src/app.ts"}))
-        rules_path = project_root / ".claude" / "claude-auto-review" / "rules.md"
+        rules_path = project_root / ".claude" / "claude-auto-review" / "review-rules.md"
         rules_path.write_text("# Custom Rules\n\n- Custom auth rule must appear.\n", encoding="utf-8")
 
         review = self.run_python("claude_auto_review/review/prompt.py", project_root)
