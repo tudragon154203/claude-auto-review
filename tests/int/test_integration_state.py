@@ -1,5 +1,6 @@
 from tests.int.support import IntegrationTestCase
 
+from claude_auto_review.state.models import EditRecord, ReviewMetadata, StopBlockedRecord
 from claude_auto_review.paths import local_now_iso
 from claude_auto_review.runtime.setup import ensure_client_runtime
 from claude_auto_review.state.reviews import pending_reviews_for_entries
@@ -13,17 +14,16 @@ class IntegrationStateTests(IntegrationTestCase):
         client_id = "review-cycle"
         ensure_client_runtime(project_root, client_id)
 
-        entry = {
-            "type": "edit",
-            "file": "src/main.ts",
-            "hash": "abc123",
-            "timestamp": local_now_iso(),
-            "reviewed": False,
-        }
+        entry = EditRecord(
+            timestamp=local_now_iso(),
+            file="src/main.ts",
+            hash="abc123",
+            reviewed=False,
+        )
         append_state(entry, project_root, client_id=client_id)
 
         state = load_state(project_root, client_id)
-        entries = [e for e in state if e.get("type") == "edit"]
+        entries = [e for e in state if isinstance(e, EditRecord)]
         self.assertEqual(len(entries), 1)
 
         append_review_started(entries, "rev-001", "reviews/rev-001.md", project_root, client_id=client_id)
@@ -34,7 +34,7 @@ class IntegrationStateTests(IntegrationTestCase):
 
         reviews = pending_reviews_for_entries(state, entries)
         self.assertEqual(len(reviews), 1)
-        self.assertEqual(reviews[0]["reviewId"], "rev-001")
+        self.assertEqual(reviews[0].reviewId, "rev-001")
 
     def test_mark_files_reviewed_cross_function_consistency(self):
         project_root = self.temp_project()
@@ -43,13 +43,7 @@ class IntegrationStateTests(IntegrationTestCase):
 
         for file, h in [("a.ts", "h1"), ("b.ts", "h2"), ("c.ts", "h3")]:
             append_state(
-                {
-                    "type": "edit",
-                    "file": file,
-                    "hash": h,
-                    "timestamp": local_now_iso(),
-                    "reviewed": False,
-                },
+                EditRecord(timestamp=local_now_iso(), file=file, hash=h, reviewed=False),
                 project_root,
                 client_id=client_id,
             )
@@ -57,7 +51,12 @@ class IntegrationStateTests(IntegrationTestCase):
         state = load_state(project_root, client_id)
         self.assertEqual(len(get_unreviewed_files(state)), 3)
 
-        mark_files_reviewed([{"file": "b.ts", "hash": "h2"}], "rev-001", project_root, client_id=client_id)
+        mark_files_reviewed(
+            [EditRecord(timestamp=local_now_iso(), file="b.ts", hash="h2", reviewed=False)],
+            "rev-001",
+            project_root,
+            client_id=client_id,
+        )
 
         state = load_state(project_root, client_id)
         self.assertTrue(was_hash_reviewed(state, "b.ts", "h2"))
@@ -66,7 +65,7 @@ class IntegrationStateTests(IntegrationTestCase):
 
         unreviewed = get_unreviewed_files(state)
         self.assertEqual(len(unreviewed), 2)
-        unreviewed_files = {e["file"] for e in unreviewed}
+        unreviewed_files = {e.file for e in unreviewed}
         self.assertIn("a.ts", unreviewed_files)
         self.assertIn("c.ts", unreviewed_files)
 
@@ -76,12 +75,12 @@ class IntegrationStateTests(IntegrationTestCase):
         ensure_client_runtime(project_root, "bob")
 
         append_state(
-            {"type": "edit", "file": "alice.txt", "hash": "1111", "timestamp": local_now_iso(), "reviewed": False},
+            EditRecord(timestamp=local_now_iso(), file="alice.txt", hash="1111", reviewed=False),
             project_root,
             client_id="alice",
         )
         append_state(
-            {"type": "edit", "file": "bob.txt", "hash": "2222", "timestamp": local_now_iso(), "reviewed": False},
+            EditRecord(timestamp=local_now_iso(), file="bob.txt", hash="2222", reviewed=False),
             project_root,
             client_id="bob",
         )
@@ -89,8 +88,8 @@ class IntegrationStateTests(IntegrationTestCase):
         state_a = load_state(project_root, "alice")
         state_b = load_state(project_root, "bob")
 
-        files_a = {e["file"] for e in state_a if e.get("type") == "edit"}
-        files_b = {e["file"] for e in state_b if e.get("type") == "edit"}
+        files_a = {e.file for e in state_a if isinstance(e, EditRecord)}
+        files_b = {e.file for e in state_b if isinstance(e, EditRecord)}
 
         self.assertIn("alice.txt", files_a)
         self.assertNotIn("bob.txt", files_a)
@@ -102,14 +101,23 @@ class IntegrationStateTests(IntegrationTestCase):
         client_id = "stop-blocks-reset"
         ensure_client_runtime(project_root, client_id)
 
-        append_state({"type": "edit", "file": "a.ts", "hash": "h1", "timestamp": local_now_iso(), "reviewed": False}, project_root, client_id=client_id)
+        append_state(
+            EditRecord(timestamp=local_now_iso(), file="a.ts", hash="h1", reviewed=False),
+            project_root, client_id=client_id
+        )
         for _ in range(3):
-            append_state({"type": "stop_blocked", "reason": "x", "timestamp": local_now_iso()}, project_root, client_id=client_id)
+            append_state(
+            StopBlockedRecord(timestamp=local_now_iso(), reason="x"),
+            project_root, client_id=client_id
+        )
 
         state = load_state(project_root, client_id)
         self.assertEqual(consecutive_stop_blocks(state), 3)
 
-        append_state({"type": "edit", "file": "a.ts", "hash": "h1", "timestamp": local_now_iso(), "reviewed": True, "reviewId": "r1"}, project_root, client_id=client_id)
+        append_state(
+            EditRecord(timestamp=local_now_iso(), file="a.ts", hash="h1", reviewed=True, reviewId="r1"),
+            project_root, client_id=client_id
+        )
         state = load_state(project_root, client_id)
         self.assertEqual(consecutive_stop_blocks(state), 0)
 
@@ -118,13 +126,12 @@ class IntegrationStateTests(IntegrationTestCase):
         client_id = "review-state"
         ensure_client_runtime(project_root, client_id)
 
-        entries = [{"file": "f1.ts", "hash": "a"}, {"file": "f2.ts", "hash": "b"}]
+        entries = [
+            EditRecord(timestamp=local_now_iso(), file="f1.ts", hash="a", reviewed=False),
+            EditRecord(timestamp=local_now_iso(), file="f2.ts", hash="b", reviewed=False),
+        ]
         for e in entries:
-            append_state(
-                {"type": "edit", "file": e["file"], "hash": e["hash"], "timestamp": local_now_iso(), "reviewed": False},
-                project_root,
-                client_id=client_id,
-            )
+            append_state(e, project_root, client_id=client_id)
 
         state_before = load_state(project_root, client_id)
         pending = pending_reviews_for_entries(state_before, state_before)
@@ -133,7 +140,7 @@ class IntegrationStateTests(IntegrationTestCase):
         append_review_started(entries, "rev-01", "reviews/rev-01.md", project_root, client_id=client_id)
 
         state_after = load_state(project_root, client_id)
-        edit_entries = [e for e in state_after if e.get("type") == "edit"]
+        edit_entries = [e for e in state_after if isinstance(e, EditRecord)]
         pending = pending_reviews_for_entries(state_after, edit_entries)
         self.assertEqual(len(pending), 1)
-        self.assertEqual(pending[0]["reviewId"], "rev-01")
+        self.assertEqual(pending[0].reviewId, "rev-01")

@@ -3,7 +3,23 @@ import unittest
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
+from claude_auto_review.state.models import EditRecord, ReviewMetadata
 from claude_auto_review.stop.orchestration.pending import resolve_pending_review
+
+
+def _mk_edit(file: str = "a.ts", hash: str = "1") -> EditRecord:
+    return EditRecord(timestamp="2026-05-11T10:00:00+07:00", file=file, hash=hash)
+
+
+def _mk_review(reviewId: str = "r1") -> ReviewMetadata:
+    return ReviewMetadata(
+        timestamp="2026-05-11T10:00:00+07:00",
+        reviewId=reviewId,
+        reviewPath="/fake/r.md",
+        files=[],
+        clientId="c",
+        status="pending",
+    )
 
 
 class TestResolvePendingReview(unittest.TestCase):
@@ -12,7 +28,7 @@ class TestResolvePendingReview(unittest.TestCase):
         "client_id": "c",
         "payload": {},
         "state": [],
-        "unreviewed": [{"file": "a.ts", "hash": "1"}],
+        "unreviewed": [_mk_edit()],
         "timeout_hours": 1,
         "review_prompt_script": Path("/fake/script"),
     }
@@ -48,7 +64,7 @@ class TestResolvePendingReview(unittest.TestCase):
 
     @patch("claude_auto_review.stop.orchestration.pending.find_pending_review_for_files")
     def test_existing_pending_review_returns_review(self, mock_find):
-        review = {"reviewId": "r1", "reviewPath": "/fake/r.md"}
+        review = _mk_review("r1")
         mock_find.return_value = review
         result = resolve_pending_review(**self.base_kwargs)
         self.assertEqual(result.review, review)
@@ -58,10 +74,10 @@ class TestResolvePendingReview(unittest.TestCase):
     @patch("claude_auto_review.stop.orchestration.pending._reload_client_state")
     @patch("claude_auto_review.stop.orchestration.pending._run_review_prompt")
     def test_new_pending_review_returns_review(self, mock_run, mock_reload, mock_find):
-        review = {"reviewId": "r1", "reviewPath": "/fake/r.md"}
+        review = _mk_review("r1")
         mock_find.return_value = review
         mock_run.return_value = MagicMock(stdout="", stderr="", returncode=0)
-        mock_reload.return_value = ([{"type": "edit"}], [{"file": "a.ts", "hash": "1"}])
+        mock_reload.return_value = ([_mk_edit()], [_mk_edit()])
         result = resolve_pending_review(**self.base_kwargs)
         self.assertEqual(result.review, review)
 
@@ -71,7 +87,7 @@ class TestResolvePendingReview(unittest.TestCase):
     def test_payload_session_id_passed_to_env(self, mock_find, mock_run, mock_reload):
         mock_find.return_value = None
         mock_run.return_value = MagicMock(stdout="", stderr="", returncode=0)
-        mock_reload.return_value = ([{"type": "edit", "file": "a.ts", "hash": "1"}], [{"file": "a.ts", "hash": "1"}])
+        mock_reload.return_value = ([_mk_edit()], [_mk_edit()])
         result = resolve_pending_review(
             **dict(self.base_kwargs, payload={"session_id": "sid-123"})
         )
@@ -85,7 +101,7 @@ class TestResolvePendingReview(unittest.TestCase):
     def test_missing_review_after_prompt_blocks_failure(self, mock_run, mock_reload, mock_find, mock_block):
         mock_find.side_effect = [None, None]
         mock_run.return_value = MagicMock(stdout="review output", stderr="", returncode=0)
-        mock_reload.return_value = ([{"type": "edit"}], [{"file": "a.ts", "hash": "1"}])
+        mock_reload.return_value = ([_mk_edit()], [_mk_edit()])
 
         result = resolve_pending_review(**self.base_kwargs)
 

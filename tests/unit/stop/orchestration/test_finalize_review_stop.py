@@ -2,14 +2,26 @@ import unittest
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
+from claude_auto_review.state.models import EditRecord, ReviewMetadata
 from claude_auto_review.stop.orchestration.resolution import StopFlowResolution
 from claude_auto_review.stop.orchestration.finalize import finalize_review_stop
+
+
+def _mk_review(reviewId: str = "r1") -> ReviewMetadata:
+    return ReviewMetadata(
+        timestamp="2026-05-11T10:00:00+07:00",
+        reviewId=reviewId,
+        reviewPath="/fake/r.md",
+        files=[],
+        clientId="c",
+        status="pending",
+    )
 
 
 class TestFinalizeReviewStop(unittest.TestCase):
     resolution = StopFlowResolution(
         state=[], unreviewed=[],
-        review={"reviewId": "r1", "reviewPath": "/fake/r.md"},
+        review=_mk_review("r1"),
     )
 
     @patch("claude_auto_review.stop.orchestration.finalize.classify_last_assistant_message")
@@ -26,11 +38,11 @@ class TestFinalizeReviewStop(unittest.TestCase):
     @patch("claude_auto_review.stop.orchestration.finalize.get_entries_covered_by_review", return_value=[])
     @patch("claude_auto_review.stop.orchestration.finalize.is_review_clean", return_value=True)
     @patch("claude_auto_review.stop.orchestration.finalize.is_review_complete", return_value=True)
-    @patch("claude_auto_review.stop.orchestration.finalize.apply_completed_review", return_value=[{"file": "still.ts"}])
+    @patch("claude_auto_review.stop.orchestration.finalize.apply_completed_review", return_value=[EditRecord(timestamp="t", file="still.ts", hash="1")])
     def test_completed_with_remaining_returns_2(self, mock_apply, mock_complete, mock_clean, mock_covered, mock_classify):
         resolution = StopFlowResolution(
-            state=[], unreviewed=[{"file": "still.ts", "hash": "1"}],
-            review={"reviewId": "r1", "reviewPath": "/fake/r.md"},
+            state=[], unreviewed=[EditRecord(timestamp="t", file="still.ts", hash="1")],
+            review=_mk_review("r1"),
         )
         result = finalize_review_stop(Path("/fake"), "c", resolution, {"last_assistant_message": "done"}, {"lastAssistantMessageClassifierEnabled": True})
         self.assertEqual(result, 2)

@@ -6,6 +6,7 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[4]
 sys.path.insert(0, str(REPO_ROOT))
+from claude_auto_review.state.models import ReviewMetadata  # noqa: E402
 from claude_auto_review.state.store_read import load_state  # noqa: E402
 from claude_auto_review.state.store_write import append_state  # noqa: E402
 from tests.int.hooks.support import HookTestCase  # noqa: E402
@@ -22,14 +23,14 @@ class TestStopHookExpiration(HookTestCase, unittest.TestCase):
 
         old_time = (datetime.now().astimezone() - timedelta(hours=2)).isoformat()
         append_state(
-            {
-                "type": "review",
-                "reviewId": "expired-payload",
-                "reviewPath": client_relpath(project_root, "payload-session") + "/reviews/review-expired.md",
-                "timestamp": old_time,
-                "status": "pending",
-                "files": [{"file": "src/app.ts", "hash": "testhash"}],
-            },
+            ReviewMetadata(
+                timestamp=old_time,
+                reviewId="expired-payload",
+                reviewPath=client_relpath(project_root, "payload-session") + "/reviews/review-expired.md",
+                status="pending",
+                files=[{"file": "src/app.ts", "hash": "testhash"}],
+                clientId="payload-session",
+            ),
             project_root,
             client_id="payload-session",
         )
@@ -69,14 +70,14 @@ class TestStopHookExpiration(HookTestCase, unittest.TestCase):
 
         old_time = (datetime.now().astimezone() - timedelta(hours=2)).isoformat()
         append_state(
-            {
-                "type": "review",
-                "reviewId": "rev-expired",
-                "reviewPath": client_relpath(project_root) + "/reviews/review-expired.md",
-                "timestamp": old_time,
-                "status": "pending",
-                "files": [{"file": "src/app.ts", "hash": "testhash"}],
-            },
+            ReviewMetadata(
+                timestamp=old_time,
+                reviewId="rev-expired",
+                reviewPath=client_relpath(project_root) + "/reviews/review-expired.md",
+                status="pending",
+                files=[{"file": "src/app.ts", "hash": "testhash"}],
+                clientId="test-session",
+            ),
             project_root,
             client_id="test-session",
         )
@@ -104,14 +105,14 @@ class TestStopHookExpiration(HookTestCase, unittest.TestCase):
 
         old_time = (datetime.now().astimezone() - timedelta(minutes=1)).isoformat()
         append_state(
-            {
-                "type": "review",
-                "reviewId": "rev-custom-timeout",
-                "reviewPath": client_relpath(project_root) + "/reviews/review-custom.md",
-                "timestamp": old_time,
-                "status": "pending",
-                "files": [{"file": "src/app.ts", "hash": "testhash"}],
-            },
+            ReviewMetadata(
+                timestamp=old_time,
+                reviewId="rev-custom-timeout",
+                reviewPath=client_relpath(project_root) + "/reviews/review-custom.md",
+                status="pending",
+                files=[{"file": "src/app.ts", "hash": "testhash"}],
+                clientId="test-session",
+            ),
             project_root,
             client_id="test-session",
         )

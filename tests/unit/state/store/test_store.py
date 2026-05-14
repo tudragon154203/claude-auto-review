@@ -1,9 +1,10 @@
 import unittest
 
 from claude_auto_review.paths import client_state_path, get_log_path, local_now_iso
-from claude_auto_review.runtime.setup import ensure_client_runtime, ensure_runtime
-from claude_auto_review.state.store_read import get_unreviewed_files, latest_entries_by_file, load_state, reviewed_hashes_by_file, was_hash_reviewed
 from claude_auto_review.runtime.helpers import log_event
+from claude_auto_review.runtime.setup import ensure_client_runtime, ensure_runtime
+from claude_auto_review.state.models import ClassificationRecord, EditRecord, StopBlockedRecord
+from claude_auto_review.state.store_read import get_unreviewed_files, latest_entries_by_file, load_state, reviewed_hashes_by_file, was_hash_reviewed
 from claude_auto_review.state.store_write import append_state
 
 from tests.unit.state.support import StateTestCase
@@ -14,11 +15,11 @@ class TestStateStore(StateTestCase, unittest.TestCase):
     def test_loads_latest_unreviewed_file_entries(self):
         project_root = self.temp_project()
         ensure_runtime(project_root)
-        append_state({"type": "edit", "file": "a.ts", "hash": "11111111", "timestamp": "2026-05-05T08:00:00+07:00", "reviewed": False}, project_root)
-        append_state({"type": "edit", "file": "a.ts", "hash": "22222222", "timestamp": "2026-05-05T09:00:00+07:00", "reviewed": True, "reviewId": "rev-1"}, project_root)
-        append_state({"type": "edit", "file": "b.ts", "hash": "33333333", "timestamp": "2026-05-05T10:00:00+07:00", "reviewed": False}, project_root)
+        append_state(EditRecord(timestamp="2026-05-05T08:00:00+07:00", file="a.ts", hash="11111111"), project_root)
+        append_state(EditRecord(timestamp="2026-05-05T09:00:00+07:00", file="a.ts", hash="22222222", reviewed=True, reviewId="rev-1"), project_root)
+        append_state(EditRecord(timestamp="2026-05-05T10:00:00+07:00", file="b.ts", hash="33333333"), project_root)
 
-        self.assertEqual(get_unreviewed_files(load_state(project_root))[0]["file"], "b.ts")
+        self.assertEqual(get_unreviewed_files(load_state(project_root))[0].file, "b.ts")
 
     def test_ignores_corrupt_state_lines(self):
         project_root = self.temp_project()
@@ -56,46 +57,64 @@ class TestStateStore(StateTestCase, unittest.TestCase):
         self.assertEqual(len(lines), 2)
 
     def test_latest_entries_by_file_handles_missing_timestamp(self):
-        state = [{"type": "edit", "file": "a.ts", "hash": "1"}, {"type": "edit", "file": "a.ts", "hash": "2"}]
+        state = [
+            EditRecord(timestamp="2026-05-05T08:00:00+07:00", file="a.ts", hash="1"),
+            EditRecord(timestamp="2026-05-05T09:00:00+07:00", file="a.ts", hash="2"),
+        ]
         result = latest_entries_by_file(state)
-        self.assertEqual(result["a.ts"]["hash"], "2")
+        self.assertEqual(result["a.ts"].hash, "2")
 
     def test_latest_entries_by_file_orders_mixed_timezones_chronologically(self):
         state = [
-            {"type": "edit", "file": "a.ts", "hash": "older", "timestamp": "2026-05-05T08:00:00+07:00"},
-            {"type": "edit", "file": "a.ts", "hash": "newer", "timestamp": "2026-05-05T02:30:00+00:00"},
+            EditRecord(timestamp="2026-05-05T08:00:00+07:00", file="a.ts", hash="older"),
+            EditRecord(timestamp="2026-05-05T02:30:00+00:00", file="a.ts", hash="newer"),
         ]
         result = latest_entries_by_file(state)
-        self.assertEqual(result["a.ts"]["hash"], "newer")
+        self.assertEqual(result["a.ts"].hash, "newer")
 
     def test_latest_entries_by_file_skips_non_edit_entries(self):
-        state = [{"type": "review", "reviewId": "x"}, {"type": "edit", "file": "b.ts", "hash": "1"}]
+        state = [
+            ClassificationRecord(
+                timestamp="2026-05-05T08:00:00+07:00",
+                status="complete",
+                reason="ok",
+                latencyMs=10,
+                messageChars=42,
+                model="haiku",
+                baseUrl="https://example.test",
+            ),
+            EditRecord(timestamp="2026-05-05T09:00:00+07:00", file="b.ts", hash="1"),
+        ]
         result = latest_entries_by_file(state)
         self.assertIn("b.ts", result)
         self.assertNotIn("review", result)
 
     def test_reviewed_hashes_by_file_returns_multiple_hashes_per_file(self):
         state = [
-            {"type": "edit", "file": "a.ts", "hash": "1", "reviewed": True},
-            {"type": "edit", "file": "a.ts", "hash": "2", "reviewed": True},
-            {"type": "edit", "file": "b.ts", "hash": "3", "reviewed": False},
+            EditRecord(timestamp="2026-05-05T08:00:00+07:00", file="a.ts", hash="1", reviewed=True),
+            EditRecord(timestamp="2026-05-05T09:00:00+07:00", file="a.ts", hash="2", reviewed=True),
+            EditRecord(timestamp="2026-05-05T10:00:00+07:00", file="b.ts", hash="3"),
         ]
         result = reviewed_hashes_by_file(state)
         self.assertEqual(result["a.ts"], {"1", "2"})
         self.assertNotIn("b.ts", result)
 
     def test_was_hash_reviewed_true(self):
-        state = [{"type": "edit", "file": "a.ts", "hash": "abc123", "reviewed": True}]
+        state = [EditRecord(timestamp="2026-05-05T08:00:00+07:00", file="a.ts", hash="abc123", reviewed=True)]
         self.assertTrue(was_hash_reviewed(state, "a.ts", "abc123"))
 
     def test_was_hash_reviewed_false(self):
-        state = [{"type": "edit", "file": "a.ts", "hash": "abc123", "reviewed": False}]
+        state = [EditRecord(timestamp="2026-05-05T08:00:00+07:00", file="a.ts", hash="abc123")]
         self.assertFalse(was_hash_reviewed(state, "a.ts", "abc123"))
 
     def test_latest_entries_by_file_skips_non_dict_entries(self):
-        state = [None, "string", {"type": "edit", "file": "a.ts", "hash": "1"}]
+        state = [
+            None,
+            "string",
+            EditRecord(timestamp="2026-05-05T08:00:00+07:00", file="a.ts", hash="1"),
+        ]
         result = latest_entries_by_file(state)
-        self.assertEqual(result["a.ts"]["hash"], "1")
+        self.assertEqual(result["a.ts"].hash, "1")
 
     def test_load_state_returns_empty_for_missing_file(self):
         project_root = self.temp_project()

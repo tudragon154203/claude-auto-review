@@ -7,6 +7,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[4]
 sys.path.insert(0, str(REPO_ROOT))
 
+from claude_auto_review.state.models import EditRecord  # noqa: E402
 from claude_auto_review.state.store_write import append_state  # noqa: E402
 from tests.int.hooks.support import HookTestCase  # noqa: E402
 from tests.support import client_dir  # noqa: E402
@@ -83,13 +84,12 @@ class TestReviewPrompt(HookTestCase, unittest.TestCase):
     def test_review_prompt_describes_deleted_tracked_file(self):
         project_root = self.temp_project()
         append_state(
-            {
-                "type": "edit",
-                "file": "src/deleted.ts",
-                "hash": "deadbeef",
-                "timestamp": "2026-05-05T08:00:00+07:00",
-                "reviewed": False,
-            },
+            EditRecord(
+                timestamp="2026-05-05T08:00:00+07:00",
+                file="src/deleted.ts",
+                hash="deadbeef",
+                reviewed=False,
+            ),
             project_root,
             client_id="test-session",
         )

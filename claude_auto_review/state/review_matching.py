@@ -1,35 +1,43 @@
+from __future__ import annotations
+
+from typing import Sequence
+
 from claude_auto_review.runtime.helpers import log_event
+from claude_auto_review.state.models import EditRecord, ReviewMetadata, StateEvent
 from claude_auto_review.state.review_expiry import is_review_expired
 from claude_auto_review.state.store_read import latest_review_entries_by_id
 
 
-def _is_pending_review_entry(entry):
-    return isinstance(entry, dict) and entry.get("type") == "review" and entry.get("status") == "pending"
+def _is_pending_review_entry(entry: StateEvent) -> bool:
+    return isinstance(entry, ReviewMetadata) and entry.status == "pending"
 
 
-def _sorted_by_timestamp_desc(entries):
-    return sorted(entries, key=lambda entry: entry.get("timestamp", ""), reverse=True)
+def _sorted_by_timestamp_desc(entries: Sequence[ReviewMetadata]) -> list[ReviewMetadata]:
+    return sorted(entries, key=lambda entry: entry.timestamp, reverse=True)
 
 
-def _log_expired_review(project_root, review_entry):
+def _log_expired_review(project_root, review_entry: ReviewMetadata):
     log_event(
         project_root,
         "stop_review_expired",
-        review_id=review_entry.get("reviewId", ""),
-        files=[f.get("file", "") for f in review_entry.get("files", []) if isinstance(f, dict)],
+        review_id=review_entry.reviewId,
+        files=[f.get("file", "") for f in review_entry.files if isinstance(f, dict)],
     )
 
 
-def entry_file_hash_pairs(entries):
+def entry_file_hash_pairs(entries: Sequence[EditRecord | dict]) -> set[tuple[str, str]]:
     return {
-        (entry.get("file"), entry.get("hash"))
+        (entry.file, entry.hash)
+        if isinstance(entry, EditRecord)
+        else (entry.get("file"), entry.get("hash"))
         for entry in entries
-        if isinstance(entry, dict) and entry.get("file") and entry.get("hash")
+        if (isinstance(entry, EditRecord) and entry.file and entry.hash)
+        or (isinstance(entry, dict) and entry.get("file") and entry.get("hash"))
     }
 
 
-def review_file_hash_pairs(review_entry):
-    return entry_file_hash_pairs(review_entry.get("files", []))
+def review_file_hash_pairs(review_entry: ReviewMetadata) -> set[tuple[str, str]]:
+    return entry_file_hash_pairs(review_entry.files)
 
 
 def _pending_review_match_info(state, entries, project_root=None, timeout_hours=0):
@@ -91,7 +99,7 @@ def best_pending_review_covering_entries(state, entries, project_root=None, time
 
     if not matches:
         return None
-    return sorted(matches, key=lambda item: (item["overlap_count"], item["review"].get("timestamp", "")), reverse=True)[0]["review"]
+    return sorted(matches, key=lambda item: (item["overlap_count"], item["review"].timestamp), reverse=True)[0]["review"]
 
 
 def pending_review_candidates_for_entries(state, entries, project_root=None, timeout_hours=0):
@@ -106,7 +114,7 @@ def pending_review_candidates_for_entries(state, entries, project_root=None, tim
     for entry, _, overlap in _pending_review_match_info(state, entries, project_root=project_root, timeout_hours=timeout_hours):
         if overlap:
             candidates.append({"review": entry, "overlap_count": len(overlap)})
-    return sorted(candidates, key=lambda item: (item["overlap_count"], item["review"].get("timestamp", "")), reverse=True)
+    return sorted(candidates, key=lambda item: (item["overlap_count"], item["review"].timestamp), reverse=True)
 
 
 def best_pending_review_for_entries(state, entries, project_root=None, timeout_hours=0):

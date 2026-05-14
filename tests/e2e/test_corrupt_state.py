@@ -39,7 +39,7 @@ class EndToEndCorruptStateTests(EndToEndTestCase):
 
         state = load_state(project_root, "test-session")
         self.assertEqual(len(state), 1)
-        self.assertEqual(state[0]["file"], "src/app.ts")
+        self.assertEqual(state[0].file, "src/app.ts")
 
     def test_missing_state_file_allows_stop(self):
         project_root = self.temp_project()

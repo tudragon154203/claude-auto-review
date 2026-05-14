@@ -9,6 +9,7 @@ import shutil
 REPO_ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(REPO_ROOT))
 
+from claude_auto_review.state.models import EditRecord  # noqa: E402
 from claude_auto_review.runtime.setup import ensure_client_runtime  # noqa: E402
 from claude_auto_review.runtime.cleanup import cleanup_stale_clients  # noqa: E402
 from claude_auto_review.state.store_write import append_state  # noqa: E402
@@ -25,7 +26,7 @@ class TestStaleCleanup(HookTestCase, unittest.TestCase):
         # Mock stale session with old timestamp
         stale_time = (datetime.now().astimezone() - timedelta(hours=50)).isoformat()
         append_state(
-            {"type": "edit", "file": "test.txt", "hash": "123", "timestamp": stale_time},
+            EditRecord(timestamp=stale_time, file="test.txt", hash="123"),
             project_root,
             client_id="stale-session",
         )
@@ -33,7 +34,7 @@ class TestStaleCleanup(HookTestCase, unittest.TestCase):
         # Mock fresh session with recent timestamp
         fresh_time = (datetime.now().astimezone() - timedelta(hours=10)).isoformat()
         append_state(
-            {"type": "edit", "file": "test.txt", "hash": "456", "timestamp": fresh_time},
+            EditRecord(timestamp=fresh_time, file="test.txt", hash="456"),
             project_root,
             client_id="fresh-session",
         )
@@ -74,7 +75,7 @@ class TestStaleCleanup(HookTestCase, unittest.TestCase):
 
         stale_time = (datetime.now().astimezone() - timedelta(hours=50)).isoformat()
         append_state(
-            {"type": "edit", "file": "test.txt", "hash": "123", "timestamp": stale_time},
+            EditRecord(timestamp=stale_time, file="test.txt", hash="123"),
             project_root,
             client_id="other-stale-session",
         )

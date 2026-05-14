@@ -25,8 +25,8 @@ def finalize_review_stop(project_root, client_id, resolution, payload, settings)
     unreviewed = resolution.unreviewed
     review = resolution.review
     covered_entries = get_entries_covered_by_review(review, state)
-    review_id = review.get("reviewId", "")
-    review_path = Path(project_root) / review.get("reviewPath", "")
+    review_id = review.reviewId
+    review_path = Path(project_root) / review.reviewPath
     prompt_file = _review_prompt_path(project_root, client_id, review_id)
     reviewer_timeout_seconds = settings.get(SETTING_REVIEWER_TIMEOUT, 600)
 

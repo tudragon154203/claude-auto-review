@@ -8,6 +8,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[4]
 sys.path.insert(0, str(REPO_ROOT))
 
+from claude_auto_review.state.models import EditRecord  # noqa: E402
 from claude_auto_review.state.store_write import append_state  # noqa: E402
 from tests.int.hooks.support import HookTestCase  # noqa: E402
 
@@ -123,13 +124,12 @@ class TestSetupCancel(HookTestCase, unittest.TestCase):
         project_root = self.temp_project()
         self.run_python("claude_auto_review/install/setup_cli.py", project_root)
         append_state(
-            {
-                "type": "edit",
-                "file": "src/app.ts",
-                "hash": "deadbeef",
-                "timestamp": "2026-05-05T08:00:00+07:00",
-                "reviewed": False,
-            },
+            EditRecord(
+                timestamp="2026-05-05T08:00:00+07:00",
+                file="src/app.ts",
+                hash="deadbeef",
+                reviewed=False,
+            ),
             project_root,
             client_id="test-session",
         )

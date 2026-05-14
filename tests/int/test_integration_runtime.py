@@ -12,6 +12,7 @@ from claude_auto_review.runtime.setup import ensure_client_runtime, ensure_proje
 from claude_auto_review.settings import DEFAULT_SETTINGS, DEFAULT_TIMEOUT_SECONDS, load_settings
 from claude_auto_review.state.store_read import consecutive_stop_blocks, load_state
 from claude_auto_review.runtime.helpers import log_event
+from claude_auto_review.state.models import EditRecord
 from claude_auto_review.state.store_write import append_state
 from claude_auto_review.stop.classifier.last_assistant_message import classify_last_assistant_message
 
@@ -90,8 +91,8 @@ class IntegrationRuntimeTests(IntegrationTestCase):
 
         self.assertEqual(result.status, "complete")
         state = load_state(project_root, client_id)
-        self.assertEqual(state[-1]["type"], "last_assistant_message_classified")
-        self.assertEqual(state[-1]["status"], "complete")
+        self.assertEqual(state[-1].type, "last_assistant_message_classified")
+        self.assertEqual(state[-1].status, "complete")
         self.assertEqual(consecutive_stop_blocks(state), 0)
         log_entry = json.loads(get_log_path(project_root).read_text(encoding="utf-8").splitlines()[-1])
         self.assertEqual(log_entry["type"], "last_assistant_message_classified")
@@ -103,13 +104,12 @@ class IntegrationRuntimeTests(IntegrationTestCase):
         ensure_client_runtime(project_root, client_id)
 
         append_state(
-            {
-                "type": "edit",
-                "file": "x.ts",
-                "hash": "deadbeef",
-                "timestamp": datetime.now().astimezone().isoformat(),
-                "reviewed": False,
-            },
+            EditRecord(
+                timestamp=datetime.now().astimezone().isoformat(),
+                file="x.ts",
+                hash="deadbeef",
+                reviewed=False,
+            ),
             project_root,
             client_id=client_id,
         )

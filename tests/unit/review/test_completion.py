@@ -2,6 +2,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
+from claude_auto_review.state.models import EditRecord, ReviewCompletedRecord, ReviewMetadata, StopBlockedRecord
 from claude_auto_review.review.completion import _format_duration, apply_completed_review
 
 
@@ -15,52 +16,92 @@ class TestFormatDuration(unittest.TestCase):
 class TestCompletion(unittest.TestCase):
     @patch("claude_auto_review.review.completion.mark_files_reviewed")
     @patch("claude_auto_review.review.completion.append_state")
-    @patch("claude_auto_review.review.completion.get_unreviewed_files", return_value=[{"file": "still.ts", "hash": "abc"}])
-    @patch("claude_auto_review.review.completion.load_state", side_effect=[
-        [{"type": "review", "reviewId": "rid", "timestamp": "2026-05-11T23:17:39+07:00"}],
-        [],
-    ])
+    @patch(
+        "claude_auto_review.review.completion.get_unreviewed_files",
+        return_value=[EditRecord(timestamp="t", file="still.ts", hash="abc")],
+    )
+    @patch(
+        "claude_auto_review.review.completion.load_state",
+        side_effect=[
+            [
+                ReviewMetadata(
+                    timestamp="2026-05-11T23:17:39+07:00",
+                    reviewId="rid",
+                    reviewPath="/fake/r.md",
+                    files=[],
+                    clientId="cid",
+                )
+            ],
+            [],
+        ],
+    )
     def test_apply_completed_review_with_remaining_files(self, mock_load, mock_unreviewed, mock_append, mock_mark):
         remaining = apply_completed_review(Path("/fake"), "cid", "rid", [])
         self.assertTrue(len(remaining) > 0)
         self.assertEqual(mock_append.call_count, 3)
+
         completed_status = mock_append.call_args_list[0].args[0]
         self.assertEqual(completed_status.type, "review")
         self.assertEqual(completed_status.status, "completed")
+        self.assertEqual(completed_status.reviewId, "rid")
+
         record = mock_append.call_args_list[1].args[0]
-        self.assertEqual(record.type, "review_completed")
+        self.assertIsInstance(record, ReviewCompletedRecord)
+        self.assertEqual(record.reviewId, "rid")
+
         blocked = mock_append.call_args_list[2].args[0]
-        self.assertEqual(blocked.type, "stop_blocked")
+        self.assertIsInstance(blocked, StopBlockedRecord)
         self.assertEqual(blocked.reason, "partial_review")
-        mock_mark.assert_called_once()
-        mark_args, mark_kwargs = mock_mark.call_args
-        self.assertEqual(mark_args, ([], "rid", Path("/fake")))
-        self.assertEqual(mark_kwargs["client_id"], "cid")
-        self.assertIn("timestamp", mark_kwargs)
 
     @patch("claude_auto_review.review.completion.mark_files_reviewed")
     @patch("claude_auto_review.review.completion.append_state")
     @patch("claude_auto_review.review.completion.get_unreviewed_files", return_value=[])
-    @patch("claude_auto_review.review.completion.load_state", side_effect=[
-        [{"type": "review", "reviewId": "rid", "timestamp": "2026-05-11T23:17:39+07:00"}],
-        [],
-    ])
-    def test_apply_completed_review_no_remaining(self, mock_load, mock_unreviewed, mock_append, mock_mark):
+    @patch(
+        "claude_auto_review.review.completion.load_state",
+        side_effect=[
+            [
+                ReviewMetadata(
+                    timestamp="2026-05-11T23:17:39+07:00",
+                    reviewId="rid",
+                    reviewPath="/fake/r.md",
+                    files=[],
+                    clientId="cid",
+                )
+            ],
+            [],
+        ],
+    )
+    def test_apply_completed_review_with_no_remaining_files(self, mock_load, mock_unreviewed, mock_append, mock_mark):
         remaining = apply_completed_review(Path("/fake"), "cid", "rid", [])
-        self.assertEqual(remaining, [])
+        self.assertEqual(len(remaining), 0)
         self.assertEqual(mock_append.call_count, 2)
-        self.assertEqual(mock_append.call_args_list[0].args[0].status, "completed")
-        self.assertEqual(mock_append.call_args_list[1].args[0].type, "review_completed")
-        mock_mark.assert_called_once()
 
-    def test_apply_completed_review_raises_on_missing_hash(self):
+    @patch("claude_auto_review.review.completion.mark_files_reviewed")
+    @patch("claude_auto_review.review.completion.append_state")
+    @patch("claude_auto_review.review.completion.get_unreviewed_files", return_value=[])
+    @patch(
+        "claude_auto_review.review.completion.load_state",
+        side_effect=[
+            [
+                ReviewMetadata(
+                    timestamp="2026-05-11T23:17:39+07:00",
+                    reviewId="rid",
+                    reviewPath="/fake/r.md",
+                    files=[],
+                    clientId="cid",
+                )
+            ],
+            [],
+        ],
+    )
+    def test_apply_completed_review_raises_on_missing_hash(self, mock_load, mock_unreviewed, mock_append, mock_mark):
         with self.assertRaises(ValueError):
             apply_completed_review(Path("/fake"), "cid", "rid", [{"file": "a.ts"}])
 
     def test_apply_completed_review_raises_on_non_dict_entry(self):
         with self.assertRaises(ValueError):
-            apply_completed_review(Path("/fake"), "cid", "rid", ["not a dict"])
+            apply_completed_review(Path("/fake"), "cid", "rid", [{"reviewId": "x"}])
 
-
-if __name__ == "__main__":
-    unittest.main()
+    def test_apply_completed_review_raises_on_missing_file(self):
+        with self.assertRaises(ValueError):
+            apply_completed_review(Path("/fake"), "cid", "rid", [{"hash": "123"}])

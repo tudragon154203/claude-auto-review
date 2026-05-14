@@ -6,6 +6,7 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[4]
 sys.path.insert(0, str(REPO_ROOT))
+from claude_auto_review.state.models import EditRecord, ReviewMetadata  # noqa: E402
 from claude_auto_review.state.store_read import load_state  # noqa: E402
 from claude_auto_review.state.store_write import append_state  # noqa: E402
 from tests.int.hooks.support import HookTestCase  # noqa: E402
@@ -36,29 +37,29 @@ class TestStopHookOverlap(HookTestCase, unittest.TestCase):
         ts_new = (base + timedelta(seconds=1)).isoformat()
 
         append_state(
-            {
-                "type": "review",
-                "reviewId": "high-overlap",
-                "reviewPath": path_high.relative_to(project_root).as_posix(),
-                "timestamp": ts_old,
-                "status": "pending",
-                "files": [
+            ReviewMetadata(
+                timestamp=ts_old,
+                reviewId="high-overlap",
+                reviewPath=path_high.relative_to(project_root).as_posix(),
+                status="pending",
+                files=[
                     {"file": "src/a.ts", "hash": hash_a},
                     {"file": "src/b.ts", "hash": hash_b},
                 ],
-            },
+                clientId="test-session",
+            ),
             project_root,
             client_id="test-session",
         )
         append_state(
-            {
-                "type": "review",
-                "reviewId": "newer-low-overlap",
-                "reviewPath": path_new.relative_to(project_root).as_posix(),
-                "timestamp": ts_new,
-                "status": "pending",
-                "files": [{"file": "src/a.ts", "hash": hash_a}],
-            },
+            ReviewMetadata(
+                timestamp=ts_new,
+                reviewId="newer-low-overlap",
+                reviewPath=path_new.relative_to(project_root).as_posix(),
+                status="pending",
+                files=[{"file": "src/a.ts", "hash": hash_a}],
+                clientId="test-session",
+            ),
             project_root,
             client_id="test-session",
         )
@@ -85,26 +86,26 @@ class TestStopHookOverlap(HookTestCase, unittest.TestCase):
         ts_old = base.isoformat()
         ts_new = (base + timedelta(seconds=1)).isoformat()
         append_state(
-            {
-                "type": "review",
-                "reviewId": "old",
-                "reviewPath": old_path.relative_to(project_root).as_posix(),
-                "timestamp": ts_old,
-                "status": "pending",
-                "files": [{"file": "src/app.ts", "hash": current_hash}],
-            },
+            ReviewMetadata(
+                timestamp=ts_old,
+                reviewId="old",
+                reviewPath=old_path.relative_to(project_root).as_posix(),
+                status="pending",
+                files=[{"file": "src/app.ts", "hash": current_hash}],
+                clientId="test-session",
+            ),
             project_root,
             client_id="test-session",
         )
         append_state(
-            {
-                "type": "review",
-                "reviewId": "new",
-                "reviewPath": new_path.relative_to(project_root).as_posix(),
-                "timestamp": ts_new,
-                "status": "pending",
-                "files": [{"file": "src/app.ts", "hash": current_hash}],
-            },
+            ReviewMetadata(
+                timestamp=ts_new,
+                reviewId="new",
+                reviewPath=new_path.relative_to(project_root).as_posix(),
+                status="pending",
+                files=[{"file": "src/app.ts", "hash": current_hash}],
+                clientId="test-session",
+            ),
             project_root,
             client_id="test-session",
         )
@@ -131,14 +132,14 @@ class TestStopHookOverlap(HookTestCase, unittest.TestCase):
         stale_path = review_dir / "review-stale.md"
         stale_path.write_text("## Verdict\n\nNot clean - fix a.ts.\n", encoding="utf-8")
         append_state(
-            {
-                "type": "review",
-                "reviewId": "stale",
-                "reviewPath": stale_path.relative_to(project_root).as_posix(),
-                "timestamp": datetime.now().astimezone().isoformat(),
-                "status": "pending",
-                "files": [{"file": "src/a.ts", "hash": old_hash_a}, {"file": "src/b.ts", "hash": hash_b}],
-            },
+            ReviewMetadata(
+                timestamp=datetime.now().astimezone().isoformat(),
+                reviewId="stale",
+                reviewPath=stale_path.relative_to(project_root).as_posix(),
+                status="pending",
+                files=[{"file": "src/a.ts", "hash": old_hash_a}, {"file": "src/b.ts", "hash": hash_b}],
+                clientId="test-session",
+            ),
             project_root,
             client_id="test-session",
         )
@@ -173,14 +174,13 @@ class TestStopHookOverlap(HookTestCase, unittest.TestCase):
         state = load_state(project_root, "test-session")
         current_entries = {entry["file"]: entry for entry in state if entry.get("type") == "edit" and not entry.get("reviewed")}
         append_state(
-            {
-                "type": "edit",
-                "file": "src/b.ts",
-                "hash": current_entries["src/b.ts"]["hash"],
-                "timestamp": datetime.now().astimezone().isoformat(),
-                "reviewed": True,
-                "reviewId": "manual-pass-1",
-            },
+            EditRecord(
+                timestamp=datetime.now().astimezone().isoformat(),
+                file="src/b.ts",
+                hash=current_entries["src/b.ts"]["hash"],
+                reviewed=True,
+                reviewId="manual-pass-1",
+            ),
             project_root,
             client_id="test-session",
         )

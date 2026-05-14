@@ -9,6 +9,7 @@ from claude_auto_review.paths import DELETED_FILE_HASH, get_client_id, get_proje
 from claude_auto_review.runtime.setup import ensure_client_runtime
 from claude_auto_review.settings import load_settings, should_skip_file
 from claude_auto_review.state.hook_input import extract_file_paths_from_hook_input
+from claude_auto_review.state.models import EditRecord
 from claude_auto_review.state.store_read import (
     get_file_hash,
     load_state,
@@ -45,14 +46,13 @@ def _run_post_tool_use():
         file_hash = get_file_hash(file_path, project_root)
         if not file_hash:
             append_state(
-                {
-                    "type": "edit",
-                    "file": file_path,
-                    "hash": DELETED_FILE_HASH,
-                    "timestamp": timestamp,
-                    "reviewed": False,
-                    "deleted": True,
-                },
+                EditRecord(
+                    timestamp=timestamp,
+                    file=file_path,
+                    hash=DELETED_FILE_HASH,
+                    reviewed=False,
+                    deleted=True,
+                ),
                 project_root,
                 client_id=client_id,
             )
@@ -60,16 +60,15 @@ def _run_post_tool_use():
             continue
         reviewed = was_hash_reviewed(state, file_path, file_hash)
         append_state(
-            {
-                "type": "edit",
-                "file": file_path,
-                "hash": file_hash,
-                "timestamp": timestamp,
-                "reviewed": reviewed,
-            },
-            project_root,
-            client_id=client_id,
-        )
+                EditRecord(
+                    timestamp=timestamp,
+                    file=file_path,
+                    hash=file_hash,
+                    reviewed=reviewed,
+                ),
+                project_root,
+                client_id=client_id,
+            )
         log_event(project_root, "file_tracked", file=file_path, hash=file_hash, reviewed=reviewed)
     return 0
 

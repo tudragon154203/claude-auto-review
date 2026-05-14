@@ -5,14 +5,14 @@ from pathlib import Path
 from typing import Any
 
 from claude_auto_review.paths import local_now_iso
-from claude_auto_review.state.models import ReviewCompletedRecord, ReviewMetadata, StopBlockedRecord
+from claude_auto_review.state.models import EditRecord, ReviewCompletedRecord, ReviewMetadata, StopBlockedRecord, StateEvent
 from claude_auto_review.state.store_read import get_unreviewed_files, load_state
 from claude_auto_review.state.store_write import append_state, mark_files_reviewed
 
 
-def _review_entry_for_id(state: list[dict[str, Any]], review_id: str) -> dict[str, Any] | None:
+def _review_entry_for_id(state: list[StateEvent], review_id: str) -> ReviewMetadata | None:
     for entry in reversed(state):
-        if isinstance(entry, dict) and entry.get("type") == "review" and entry.get("reviewId") == review_id:
+        if isinstance(entry, ReviewMetadata) and entry.reviewId == review_id:
             return entry
     return None
 
@@ -29,7 +29,7 @@ def _duration_seconds(start_timestamp: str | None, end_timestamp: str) -> float 
 
 
 def _format_duration(seconds: float) -> str:
-    total_seconds = max(0, int(round(seconds)))
+    total_seconds = max(0, round(seconds))
     hours, remainder = divmod(total_seconds, 3600)
     minutes, seconds = divmod(remainder, 60)
     parts: list[str] = []
@@ -42,49 +42,53 @@ def _format_duration(seconds: float) -> str:
     return " ".join(parts)
 
 
-def _validate_covered_entries(covered_entries: list[dict[str, str]]) -> list[dict[str, str]]:
-    validated: list[dict[str, str]] = []
+def _validate_covered_entries(covered_entries: list[dict[str, str]] | list[EditRecord]) -> list[EditRecord]:
+    validated: list[EditRecord] = []
     for item in covered_entries:
+        if isinstance(item, EditRecord):
+            validated.append(item)
+            continue
         if not isinstance(item, dict) or "file" not in item or "hash" not in item:
-            raise ValueError(f"covered_entries item missing 'file' or 'hash': {item!r}")
-        validated.append({"file": item["file"], "hash": item["hash"]})
+            raise ValueError("covered_entries must contain file/hash dicts")
+        validated.append(
+            EditRecord(
+                timestamp=item.get("timestamp", ""),
+                file=item["file"],
+                hash=item["hash"],
+                reviewed=bool(item.get("reviewed", False)),
+                deleted=bool(item.get("deleted", False)),
+                reviewId=item.get("reviewId"),
+            )
+        )
     return validated
 
 
 def _review_completed_entry(
     review_id: str,
-    covered_entries: list[dict[str, str]],
-    state: list[dict[str, Any]],
+    validated_entries: list[EditRecord],
+    state_before: list[StateEvent],
     timestamp: str,
     client_id: str,
 ) -> ReviewCompletedRecord:
-    review = _review_entry_for_id(state, review_id)
-    duration = _duration_seconds(review.get("timestamp") if review else None, timestamp)
+    review = _review_entry_for_id(state_before, review_id)
+    duration = _duration_seconds(review.timestamp if review else None, timestamp)
     return ReviewCompletedRecord(
         timestamp=timestamp,
         reviewId=review_id,
-        files=[{"file": item["file"], "hash": item["hash"]} for item in covered_entries],
+        files=[{"file": entry.file, "hash": entry.hash} for entry in validated_entries],
         clientId=client_id,
         duration=_format_duration(duration) if duration is not None else None,
         durationSeconds=duration,
     )
 
 
-def _review_status_completed_entry(
-    review_id: str,
-    state: list[dict[str, Any]],
-    timestamp: str,
-    client_id: str,
-) -> ReviewMetadata | None:
-    review = _review_entry_for_id(state, review_id)
-    if not review:
-        return None
+def _review_status_completed_entry(review_id: str, client_id: str) -> ReviewMetadata:
     return ReviewMetadata(
-        timestamp=timestamp,
+        timestamp=local_now_iso(),
         reviewId=review_id,
-        reviewPath=review.get("reviewPath", ""),
-        files=review.get("files", []),
-        clientId=client_id or review.get("clientId", ""),
+        reviewPath="",
+        files=[],
+        clientId=client_id,
         status="completed",
     )
 
@@ -93,14 +97,13 @@ def apply_completed_review(
     project_root: Path,
     client_id: str,
     review_id: str,
-    covered_entries: list[dict[str, str]],
-) -> list[dict[str, Any]]:
+    covered_entries: list[dict[str, str]] | list[EditRecord],
+) -> list[EditRecord]:
     validated_entries = _validate_covered_entries(covered_entries)
     state_before = load_state(project_root, client_id)
     timestamp = local_now_iso()
-    completed_review = _review_status_completed_entry(review_id, state_before, timestamp, client_id)
-    if completed_review is not None:
-        append_state(completed_review, project_root, client_id=client_id)
+    completed_review = _review_status_completed_entry(review_id, client_id)
+    append_state(completed_review, project_root, client_id=client_id)
     append_state(
         _review_completed_entry(review_id, validated_entries, state_before, timestamp, client_id),
         project_root,
@@ -110,7 +113,12 @@ def apply_completed_review(
     remaining = get_unreviewed_files(load_state(project_root, client_id))
     if remaining:
         append_state(
-            StopBlockedRecord(timestamp=local_now_iso(), reason="partial_review", reviewId=review_id, files=[e["file"] for e in remaining]),
+            StopBlockedRecord(
+                timestamp=local_now_iso(),
+                reason="partial_review",
+                reviewId=review_id,
+                files=[e.file for e in remaining],
+            ),
             project_root,
             client_id=client_id,
         )

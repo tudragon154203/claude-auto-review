@@ -60,4 +60,3 @@ def resolve_pending_review(project_root, client_id, payload, state, unreviewed, 
         return StopFlowResolution(state=state, unreviewed=unreviewed, exit_code=2)
 
     return _resolve_prompted_review(project_root, client_id, timeout_hours, files_str, result)
-

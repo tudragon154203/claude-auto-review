@@ -2,13 +2,17 @@ from pathlib import Path
 
 from claude_auto_review.paths import local_now_iso
 from claude_auto_review.settings import DEFAULT_SETTINGS
-from claude_auto_review.state.models import StopBlockedRecord
+from claude_auto_review.state.models import EditRecord, StopBlockedRecord
 from claude_auto_review.state.store_write import append_state
 from claude_auto_review.stop.response import block_response
 
 
+def _file_of(entry):
+    return entry.file if isinstance(entry, EditRecord) else entry["file"]
+
+
 def build_unreviewed_files_string(unreviewed_entries):
-    return ", ".join(entry["file"] for entry in unreviewed_entries)
+    return ", ".join(_file_of(entry) for entry in unreviewed_entries)
 
 
 def build_review_completion_prompt(review_path):
@@ -66,7 +70,7 @@ def block_completed_review_findings(project_root, client_id, review_id, review_p
             timestamp=local_now_iso(),
             reason="review_findings",
             reviewId=review_id,
-            files=[entry["file"] for entry in unreviewed],
+            files=[_file_of(entry) for entry in unreviewed],
         ),
         project_root,
         client_id=client_id,

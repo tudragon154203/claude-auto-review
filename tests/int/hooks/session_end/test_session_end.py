@@ -8,6 +8,7 @@ REPO_ROOT = Path(__file__).resolve().parents[4]
 sys.path.insert(0, str(REPO_ROOT))
 
 from claude_auto_review.runtime.setup import ensure_client_runtime  # noqa: E402
+from claude_auto_review.state.models import ReviewMetadata  # noqa: E402
 from claude_auto_review.state.store_read import load_state  # noqa: E402
 from claude_auto_review.state.store_write import append_state  # noqa: E402
 from tests.int.hooks.support import HookTestCase  # noqa: E402
@@ -142,14 +143,14 @@ class TestSessionEndHook(HookTestCase, unittest.TestCase):
         ensure_client_runtime(project_root, "test-session")
         old_time = (datetime.now().astimezone() - timedelta(hours=2)).isoformat()
         append_state(
-            {
-                "type": "review",
-                "reviewId": "rev-expired",
-                "reviewPath": ".claude/claude-auto-review/clients/client-test-session/reviews/review-expired.md",
-                "timestamp": old_time,
-                "status": "pending",
-                "files": [{"file": "src/app.ts", "hash": "deadbeef"}],
-            },
+            ReviewMetadata(
+                timestamp=old_time,
+                reviewId="rev-expired",
+                reviewPath=".claude/claude-auto-review/clients/client-test-session/reviews/review-expired.md",
+                status="pending",
+                files=[{"file": "src/app.ts", "hash": "deadbeef"}],
+                clientId="test-session",
+            ),
             project_root,
             client_id="test-session",
         )
@@ -166,14 +167,14 @@ class TestSessionEndHook(HookTestCase, unittest.TestCase):
         ensure_client_runtime(project_root, "payload-session")
         old_time = (datetime.now().astimezone() - timedelta(hours=2)).isoformat()
         append_state(
-            {
-                "type": "review",
-                "reviewId": "rev-expired-payload",
-                "reviewPath": ".claude/claude-auto-review/clients/client-payload-session/reviews/review-expired.md",
-                "timestamp": old_time,
-                "status": "pending",
-                "files": [{"file": "src/app.ts", "hash": "deadbeef"}],
-            },
+            ReviewMetadata(
+                timestamp=old_time,
+                reviewId="rev-expired-payload",
+                reviewPath=".claude/claude-auto-review/clients/client-payload-session/reviews/review-expired.md",
+                status="pending",
+                files=[{"file": "src/app.ts", "hash": "deadbeef"}],
+                clientId="payload-session",
+            ),
             project_root,
             client_id="payload-session",
         )

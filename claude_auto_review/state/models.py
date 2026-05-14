@@ -3,7 +3,19 @@ from typing import Literal, Optional, Any
 
 
 @dataclass(frozen=True)
-class EditRecord:
+class DictLikeModel:
+    def __getitem__(self, key: str) -> Any:
+        try:
+            return getattr(self, key)
+        except AttributeError:
+            raise KeyError(key)
+
+    def get(self, key: str, default: Any = None) -> Any:
+        return getattr(self, key, default)
+
+
+@dataclass(frozen=True)
+class EditRecord(DictLikeModel):
     timestamp: str
     file: str
     hash: str
@@ -28,7 +40,7 @@ class EditRecord:
 
 
 @dataclass(frozen=True)
-class StopBlockedRecord:
+class StopBlockedRecord(DictLikeModel):
     timestamp: str
     reason: Optional[str] = None
     reviewId: Optional[str] = None
@@ -50,7 +62,7 @@ class StopBlockedRecord:
 
 
 @dataclass(frozen=True)
-class ReviewMetadata:
+class ReviewMetadata(DictLikeModel):
     timestamp: str
     reviewId: str
     reviewPath: str
@@ -72,7 +84,7 @@ class ReviewMetadata:
 
 
 @dataclass(frozen=True)
-class ReviewCompletedRecord:
+class ReviewCompletedRecord(DictLikeModel):
     timestamp: str
     reviewId: str
     files: list[dict[str, str]]
@@ -97,7 +109,7 @@ class ReviewCompletedRecord:
 
 
 @dataclass(frozen=True)
-class ClassificationRecord:
+class ClassificationRecord(DictLikeModel):
     timestamp: str
     status: str
     reason: str
@@ -129,3 +141,59 @@ class ClassificationRecord:
 
 # Union of all state event types for type annotations
 StateEvent = EditRecord | StopBlockedRecord | ReviewMetadata | ReviewCompletedRecord | ClassificationRecord
+
+_PARSERS = {
+    "edit": lambda d: EditRecord(
+        timestamp=d.get("timestamp", ""),
+        file=d.get("file", ""),
+        hash=d.get("hash", ""),
+        reviewed=d.get("reviewed", False),
+        deleted=d.get("deleted", False),
+        reviewId=d.get("reviewId"),
+    ),
+    "stop_blocked": lambda d: StopBlockedRecord(
+        timestamp=d.get("timestamp", ""),
+        reason=d.get("reason"),
+        reviewId=d.get("reviewId"),
+        files=d.get("files"),
+    ),
+    "review": lambda d: ReviewMetadata(
+        timestamp=d.get("timestamp", ""),
+        reviewId=d.get("reviewId", ""),
+        reviewPath=d.get("reviewPath", ""),
+        files=d.get("files", []),
+        clientId=d.get("clientId", ""),
+        status=d.get("status", "pending"),
+    ),
+    "review_completed": lambda d: ReviewCompletedRecord(
+        timestamp=d.get("timestamp", ""),
+        reviewId=d.get("reviewId", ""),
+        files=d.get("files", []),
+        clientId=d.get("clientId", ""),
+        duration=d.get("duration"),
+        durationSeconds=d.get("durationSeconds"),
+    ),
+    "last_assistant_message_classified": lambda d: ClassificationRecord(
+        timestamp=d.get("timestamp", ""),
+        status=d.get("status", ""),
+        reason=d.get("reason", ""),
+        latencyMs=d.get("latencyMs", 0),
+        messageChars=d.get("messageChars", 0),
+        model=d.get("model", ""),
+        baseUrl=d.get("baseUrl", ""),
+        httpStatus=d.get("httpStatus"),
+        debugResponse=d.get("debugResponse"),
+    ),
+}
+
+
+def parse_event(raw: dict[str, Any]) -> StateEvent | None:
+    if not isinstance(raw, dict):
+        return None
+    parser = _PARSERS.get(raw.get("type"))
+    if parser is None:
+        return None
+    try:
+        return parser(raw)
+    except (TypeError, KeyError):
+        return None
