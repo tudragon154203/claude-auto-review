@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Sequence
 
-from claude_auto_review.runtime.helpers import log_event
+from claude_auto_review.runtime.events import log_event
 from claude_auto_review.state.models import EditRecord, ReviewFileRecord, ReviewMetadata, StateEvent
 from claude_auto_review.state.review_expiry import is_review_expired
 from claude_auto_review.state.store_read import latest_review_entries_by_id

@@ -13,7 +13,7 @@ ensure_repo_root_on_path()
 from claude_auto_review.paths import get_project_root
 from claude_auto_review.install.installer import copy_if_changed, ensure_gitignore_entries, write_runtime_shims
 from claude_auto_review.runtime.setup import ensure_project_settings, ensure_runtime
-from claude_auto_review.runtime.helpers import log_event
+from claude_auto_review.runtime.events import log_event
 
 
 def main():

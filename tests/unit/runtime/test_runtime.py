@@ -184,7 +184,7 @@ class TestRuntime(StateTestCase, unittest.TestCase):
                 self.fail("log_event should suppress OSError")
 
     def test_run_fail_open_logs_handler_failure_before_fallback(self):
-        from claude_auto_review.runtime.helpers import run_fail_open
+        from claude_auto_review.runtime.process import run_fail_open
 
         def callback():
             raise ValueError("boom")
@@ -192,7 +192,7 @@ class TestRuntime(StateTestCase, unittest.TestCase):
         def on_error(error):
             raise RuntimeError("handler boom")
 
-        with patch("claude_auto_review.runtime.helpers.log_failure") as mock_log:
+        with patch("claude_auto_review.runtime.events.log_failure") as mock_log:
             result = run_fail_open(
                 callback,
                 project_root=Path("/fake"),
@@ -207,7 +207,7 @@ class TestRuntime(StateTestCase, unittest.TestCase):
         self.assertEqual(mock_log.call_args_list[1].args[1], "test_event")
 
     def test_run_fail_open_treats_truthy_handler_as_handled(self):
-        from claude_auto_review.runtime.helpers import run_fail_open
+        from claude_auto_review.runtime.process import run_fail_open
 
         def callback():
             raise ValueError("boom")
@@ -215,7 +215,7 @@ class TestRuntime(StateTestCase, unittest.TestCase):
         def on_error(error):
             return True
 
-        with patch("claude_auto_review.runtime.helpers.log_failure") as mock_log:
+        with patch("claude_auto_review.runtime.events.log_failure") as mock_log:
             result = run_fail_open(
                 callback,
                 project_root=Path("/fake"),

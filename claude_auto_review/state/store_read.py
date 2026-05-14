@@ -3,7 +3,7 @@ import json
 from pathlib import Path
 
 from claude_auto_review.paths import is_runtime_relative_path, normalize_relative_path
-from claude_auto_review.runtime.helpers import resolve_client_id, resolve_project_root
+from claude_auto_review.runtime.context import resolve_client_id, resolve_project_root
 from claude_auto_review.state.models import (
     EditRecord,
     ReviewMetadata,

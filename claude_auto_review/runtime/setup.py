@@ -10,7 +10,7 @@ from claude_auto_review.paths import (
     get_client_runtime_dir,
     get_plugin_root,
 )
-from claude_auto_review.runtime.helpers import resolve_project_root
+from claude_auto_review.runtime.context import resolve_project_root
 from claude_auto_review.settings import DEFAULT_SETTINGS, _load_settings_document, _settings_path
 
 PLUGIN_SCRIPTS = frozenset(["post_tool_use.py", "stop_hook.py", "session_end.py"])

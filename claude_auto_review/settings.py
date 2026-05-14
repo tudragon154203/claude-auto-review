@@ -2,7 +2,7 @@ import json
 from pathlib import Path
 
 from claude_auto_review.paths import is_runtime_relative_path
-from claude_auto_review.runtime.helpers import resolve_project_root
+from claude_auto_review.runtime.context import resolve_project_root
 
 # Setting keys for easy reference
 SETTING_ENABLED = "enabled"

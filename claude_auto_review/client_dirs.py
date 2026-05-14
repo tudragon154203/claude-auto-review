@@ -24,7 +24,7 @@ def get_client_id(stdin_session_id=None) -> str:
 def _safe_hostname():
     try:
         return socket.gethostname()
-    except Exception:
+    except OSError:
         return "unknown"
 
 

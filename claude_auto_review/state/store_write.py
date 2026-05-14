@@ -3,7 +3,7 @@ from pathlib import Path
 
 from claude_auto_review.paths import client_state_path, local_now_iso
 from claude_auto_review.runtime.setup import ensure_client_runtime
-from claude_auto_review.runtime.helpers import resolve_client_id, resolve_project_root
+from claude_auto_review.runtime.context import resolve_client_id, resolve_project_root
 from claude_auto_review.state.models import (
     EditRecord,
     ReviewMetadata,
