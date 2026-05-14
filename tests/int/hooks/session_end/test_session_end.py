@@ -17,17 +17,10 @@ from claude_auto_review.paths import get_log_path  # noqa: E402
 
 
 def find_client_dir(project_root, session_id):
-    """Find the client directory for a session_id (by suffix or exact)."""
+    """Find the timestamped client directory for a session_id."""
     clients_dir = project_root / ".claude" / "claude-auto-review" / "clients"
-    # Old style: client-{timestamp}_{session_id}
     matches = sorted(clients_dir.glob(f"client-*_{session_id}"))
-    if matches:
-        return matches[-1]
-    # New style: client-{session_id}
-    exact = clients_dir / f"client-{session_id}"
-    if exact.is_dir():
-        return exact
-    return None
+    return matches[-1] if matches else None
 
 
 class TestSessionEndHook(HookTestCase, unittest.TestCase):

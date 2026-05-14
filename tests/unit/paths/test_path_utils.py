@@ -73,4 +73,12 @@ class TestPathUtils(StateTestCase, unittest.TestCase):
 
         self.assertEqual(result, expected)
 
+    def test_get_client_runtime_dir_keeps_timestamped_client_name(self):
+        project_root = self.temp_project()
+        client_name = "client-20260514-173035_session-a"
+
+        result = get_client_runtime_dir(project_root, client_name)
+
+        self.assertEqual(result, project_root / CLIENTS_DIR / client_name)
+
 

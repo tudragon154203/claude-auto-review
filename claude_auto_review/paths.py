@@ -13,6 +13,7 @@ DELETED_FILE_HASH = "__deleted__"
 
 
 FILE_URI_PREFIX = "file://"
+_CLIENT_RUNTIME_DIR_PATTERN = re.compile(r"^client-(\d{8}-\d{6})_(.+)$")
 
 
 def local_now_iso():
@@ -59,7 +60,6 @@ def get_client_id(stdin_session_id=None) -> str:
     return f"{ts}_{hostname}-{pid}"
 
 
-_CLIENT_RUNTIME_DIR_PATTERN = re.compile(r"^client-(\d{8}-\d{6})_(.+)$")
 _CLIENT_RUNTIME_DIR_CACHE = {}
 
 
@@ -78,13 +78,8 @@ def _find_existing_client_runtime_dir(project_root: Path, client_id: str):
         return None
 
     timestamped = []
-    legacy = []
-    legacy_name = f"client-{client_id}"
     for child in clients_dir.iterdir():
         if not child.is_dir():
-            continue
-        if child.name == legacy_name:
-            legacy.append(child)
             continue
         match = _CLIENT_RUNTIME_DIR_PATTERN.match(child.name)
         if match and match.group(2) == client_id:
@@ -92,8 +87,6 @@ def _find_existing_client_runtime_dir(project_root: Path, client_id: str):
 
     if timestamped:
         return sorted(timestamped)[-1]
-    if legacy:
-        return sorted(legacy)[-1]
     return None
 
 
@@ -107,7 +100,7 @@ def get_client_runtime_dir(project_root: Path, client_id: str) -> Path:
         _CLIENT_RUNTIME_DIR_CACHE.pop(cache_key, None)
 
     if _CLIENT_RUNTIME_DIR_PATTERN.match(client_id):
-        client_dir = project_root / CLIENTS_DIR / f"client-{client_id}"
+        client_dir = project_root / CLIENTS_DIR / client_id
     else:
         client_dir = _find_existing_client_runtime_dir(project_root, client_id)
         if client_dir is None:
@@ -121,16 +114,10 @@ def invalidate_client_runtime_dir_cache(project_root: Path, client_id: str):
     project_root = _project_root_path(project_root)
     cache_key = _client_runtime_dir_cache_key(project_root, client_id)
     _CLIENT_RUNTIME_DIR_CACHE.pop(cache_key, None)
-    # Also invalidate by bare session ID if given a full dir name
-    if client_id.startswith("client-"):
-        bare_id = client_id[len("client-"):]
-        match = _CLIENT_RUNTIME_DIR_PATTERN.match(bare_id)
-        if match:
-            bare_key = _client_runtime_dir_cache_key(project_root, match.group(2))
-            _CLIENT_RUNTIME_DIR_CACHE.pop(bare_key, None)
-        else:
-            bare_key = _client_runtime_dir_cache_key(project_root, bare_id)
-            _CLIENT_RUNTIME_DIR_CACHE.pop(bare_key, None)
+    match = _CLIENT_RUNTIME_DIR_PATTERN.match(client_id)
+    if match:
+        bare_key = _client_runtime_dir_cache_key(project_root, match.group(2))
+        _CLIENT_RUNTIME_DIR_CACHE.pop(bare_key, None)
 
 
 def client_state_path(project_root: Path, client_id: str) -> Path:
