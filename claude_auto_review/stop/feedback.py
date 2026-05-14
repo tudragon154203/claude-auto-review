@@ -1,25 +1,10 @@
-import json
-import sys
 from pathlib import Path
 
 from claude_auto_review.paths import local_now_iso
 from claude_auto_review.settings import DEFAULT_SETTINGS
 from claude_auto_review.state.models import StopBlockedRecord
 from claude_auto_review.state.store_write import append_state
-
-
-def block_response(message, feedback):
-    print(
-        json.dumps(
-            {
-                "decision": "block",
-                "reason": feedback,
-                "systemMessage": message,
-            },
-            separators=(",", ":"),
-        ),
-    )
-    print(message, file=sys.stderr)
+from claude_auto_review.stop.response import block_response
 
 
 def build_unreviewed_files_string(unreviewed_entries):
