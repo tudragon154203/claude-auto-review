@@ -5,7 +5,8 @@ import time
 from claude_auto_review.paths import CLIENTS_DIR, RUNTIME_DIR, client_state_path, get_client_runtime_dir, invalidate_client_runtime_dir_cache
 from claude_auto_review.runtime.helpers import log_event, log_failure, resolve_client_id, resolve_project_root
 from claude_auto_review.runtime.pending_cleanup import cleanup_expired_pending_reviews
-from claude_auto_review.settings import SETTING_STALE_CLIENT_TIMEOUT, load_settings
+from claude_auto_review.constants import SECONDS_PER_HOUR
+from claude_auto_review.settings import DEFAULT_SETTINGS, SETTING_STALE_CLIENT_TIMEOUT, load_settings
 from claude_auto_review.utils.datetime_utils import hours_since
 
 
@@ -116,7 +117,7 @@ def _is_safe_client_dir(client_dir, clients_dir_resolved):
 def _is_client_stale(client_dir, state_path, timeout_hours):
     if not state_path.is_file():
         st = state_path.parent.stat()
-        age_hours = (time.time() - st.st_mtime) / 3600.0
+        age_hours = (time.time() - st.st_mtime) / SECONDS_PER_HOUR
         return age_hours > timeout_hours
     last_entry = _read_last_jsonl_entry(state_path)
     return bool(last_entry) and _is_stale_entry(last_entry, timeout_hours)
@@ -126,7 +127,7 @@ def cleanup_stale_clients(project_root=None):
     """Remove client directories that have not seen any activity for a while."""
     project_root = resolve_project_root(project_root)
     settings = load_settings(project_root)
-    timeout_hours = settings.get(SETTING_STALE_CLIENT_TIMEOUT, 48)
+    timeout_hours = settings.get(SETTING_STALE_CLIENT_TIMEOUT, DEFAULT_SETTINGS[SETTING_STALE_CLIENT_TIMEOUT])
 
     clients_dir = project_root / CLIENTS_DIR
     if not clients_dir.is_dir():

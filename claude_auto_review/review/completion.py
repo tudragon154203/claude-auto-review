@@ -6,6 +6,7 @@ from claude_auto_review.paths import local_now_iso
 from claude_auto_review.state.models import EditRecord, ReviewCompletedRecord, ReviewFileRecord, ReviewMetadata, StopBlockedRecord, StateEvent
 from claude_auto_review.state.store_read import get_unreviewed_files, load_state
 from claude_auto_review.state.store_write import append_state, mark_files_reviewed
+from claude_auto_review.constants import DURATION_ROUND_PRECISION, SECONDS_PER_HOUR, SECONDS_PER_MINUTE
 from claude_auto_review.utils.datetime_utils import parse_iso_timestamp
 
 
@@ -27,13 +28,13 @@ def _duration_seconds(start_timestamp: str | None, end_timestamp: str) -> float 
         completed = parse_iso_timestamp(end_timestamp)
     except (ValueError, TypeError):
         return None
-    return max(0.0, round((completed - started).total_seconds(), 3))
+    return max(0.0, round((completed - started).total_seconds(), DURATION_ROUND_PRECISION))
 
 
 def _format_duration(seconds: float) -> str:
     total_seconds = max(0, round(seconds))
-    hours, remainder = divmod(total_seconds, 3600)
-    minutes, seconds = divmod(remainder, 60)
+    hours, remainder = divmod(total_seconds, SECONDS_PER_HOUR)
+    minutes, seconds = divmod(remainder, SECONDS_PER_MINUTE)
     parts: list[str] = []
     if hours:
         parts.append(f"{hours}h")
