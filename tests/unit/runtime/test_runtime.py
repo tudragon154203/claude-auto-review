@@ -152,6 +152,29 @@ class TestRuntime(StateTestCase, unittest.TestCase):
             except Exception:
                 self.fail("log_event should suppress OSError")
 
+    def test_run_fail_open_logs_handler_failure_before_fallback(self):
+        from claude_auto_review.runtime.helpers import run_fail_open
+
+        def callback():
+            raise ValueError("boom")
+
+        def on_error(error):
+            raise RuntimeError("handler boom")
+
+        with patch("claude_auto_review.runtime.helpers.log_failure") as mock_log:
+            result = run_fail_open(
+                callback,
+                project_root=Path("/fake"),
+                event_type="test_event",
+                on_error=on_error,
+                fallback=7,
+            )
+
+        self.assertEqual(result, 7)
+        self.assertEqual(mock_log.call_count, 2)
+        self.assertEqual(mock_log.call_args_list[0].args[1], "test_event_handler_failed")
+        self.assertEqual(mock_log.call_args_list[1].args[1], "test_event")
+
     def test_cleanup_expired_pending_reviews_preserves_invalid_lines(self):
         from datetime import datetime, timedelta
 

@@ -101,8 +101,10 @@ def get_client_runtime_dir(project_root: Path, client_id: str) -> Path:
     project_root = _project_root_path(project_root)
     cache_key = _client_runtime_dir_cache_key(project_root, client_id)
     cached = _CLIENT_RUNTIME_DIR_CACHE.get(cache_key)
-    if cached is not None:
+    if cached is not None and cached.exists() and cached.is_dir():
         return cached
+    if cached is not None:
+        _CLIENT_RUNTIME_DIR_CACHE.pop(cache_key, None)
 
     if _CLIENT_RUNTIME_DIR_PATTERN.match(client_id):
         client_dir = project_root / CLIENTS_DIR / f"client-{client_id}"

@@ -3,7 +3,11 @@ import subprocess
 from pathlib import Path
 
 from claude_auto_review.review.completion import apply_completed_review
-from claude_auto_review.state.reviews import is_review_clean, is_review_complete
+from claude_auto_review.state.reviews import (
+    extract_review_verdict_text,
+    is_review_clean_verdict,
+    is_review_complete_verdict,
+)
 from claude_auto_review.runtime.helpers import log_event
 
 
@@ -52,9 +56,9 @@ def _process_review_result(result, review_path, review_id, project_root, client_
         stderr=result.stderr[:500] if result.stderr else "",
     )
     if result.returncode == 0 and result.stdout.strip():
-        if not is_review_complete(review_path):
-            review_path.write_text(result.stdout, encoding="utf-8", newline="\n")
-        if is_review_complete(review_path) and is_review_clean(review_path):
+        verdict = extract_review_verdict_text(result.stdout)
+        review_path.write_text(result.stdout, encoding="utf-8", newline="\n")
+        if is_review_complete_verdict(verdict) and is_review_clean_verdict(verdict):
             remaining = apply_completed_review(project_root, client_id, review_id, covered_entries)
             return not remaining
     return False

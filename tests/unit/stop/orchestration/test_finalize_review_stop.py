@@ -26,20 +26,18 @@ class TestFinalizeReviewStop(unittest.TestCase):
 
     @patch("claude_auto_review.stop.orchestration.finalize.classify_last_assistant_message")
     @patch("claude_auto_review.stop.orchestration.finalize.get_entries_covered_by_review", return_value=[])
-    @patch("claude_auto_review.stop.orchestration.finalize.is_review_clean", return_value=True)
-    @patch("claude_auto_review.stop.orchestration.finalize.is_review_complete", return_value=True)
+    @patch("claude_auto_review.stop.orchestration.finalize._read_review_verdict", return_value="Clean - no issues found.")
     @patch("claude_auto_review.stop.orchestration.finalize.apply_completed_review", return_value=[])
-    def test_completed_no_remaining_returns_0(self, mock_apply, mock_complete, mock_clean, mock_covered, mock_classify):
+    def test_completed_no_remaining_returns_0(self, mock_apply, mock_verdict, mock_covered, mock_classify):
         result = finalize_review_stop(Path("/fake"), "c", self.resolution, {}, {})
         self.assertEqual(result, 0)
         mock_classify.assert_not_called()
 
     @patch("claude_auto_review.stop.orchestration.finalize.classify_last_assistant_message")
     @patch("claude_auto_review.stop.orchestration.finalize.get_entries_covered_by_review", return_value=[])
-    @patch("claude_auto_review.stop.orchestration.finalize.is_review_clean", return_value=True)
-    @patch("claude_auto_review.stop.orchestration.finalize.is_review_complete", return_value=True)
+    @patch("claude_auto_review.stop.orchestration.finalize._read_review_verdict", return_value="Clean - no issues found.")
     @patch("claude_auto_review.stop.orchestration.finalize.apply_completed_review", return_value=[EditRecord(timestamp="t", file="still.ts", hash="1")])
-    def test_completed_with_remaining_returns_2(self, mock_apply, mock_complete, mock_clean, mock_covered, mock_classify):
+    def test_completed_with_remaining_returns_2(self, mock_apply, mock_verdict, mock_covered, mock_classify):
         resolution = StopFlowResolution(
             state=[], unreviewed=[EditRecord(timestamp="t", file="still.ts", hash="1")],
             review=_mk_review("r1"),
@@ -51,8 +49,8 @@ class TestFinalizeReviewStop(unittest.TestCase):
     @patch("claude_auto_review.stop.orchestration.finalize.classify_last_assistant_message")
     @patch("claude_auto_review.stop.orchestration.finalize.get_entries_covered_by_review", return_value=[])
     @patch("claude_auto_review.stop.orchestration.finalize.attempt_stop_autocomplete", return_value=True)
-    @patch("claude_auto_review.stop.orchestration.finalize.is_review_complete", return_value=False)
-    def test_autocomplete_succeeds_returns_0(self, mock_complete, mock_auto, mock_covered, mock_classify):
+    @patch("claude_auto_review.stop.orchestration.finalize._read_review_verdict", return_value="Pending.")
+    def test_autocomplete_succeeds_returns_0(self, mock_verdict, mock_auto, mock_covered, mock_classify):
         result = finalize_review_stop(Path("/fake"), "c", self.resolution, {"last_assistant_message": "done"}, {})
         self.assertEqual(result, 0)
         mock_classify.assert_not_called()
@@ -61,8 +59,8 @@ class TestFinalizeReviewStop(unittest.TestCase):
     @patch("claude_auto_review.stop.orchestration.response_actions.append_state")
     @patch("claude_auto_review.stop.orchestration.finalize.get_entries_covered_by_review", return_value=[])
     @patch("claude_auto_review.stop.orchestration.finalize.attempt_stop_autocomplete", return_value=False)
-    @patch("claude_auto_review.stop.orchestration.finalize.is_review_complete", return_value=False)
-    def test_autocomplete_fails_blocks_stop(self, mock_complete, mock_auto, mock_covered, mock_append, mock_classify):
+    @patch("claude_auto_review.stop.orchestration.finalize._read_review_verdict", side_effect=["Pending.", "Pending."])
+    def test_autocomplete_fails_blocks_stop(self, mock_verdict, mock_auto, mock_covered, mock_append, mock_classify):
         result = finalize_review_stop(Path("/fake"), "c", self.resolution, {"last_assistant_message": "done"}, {"lastAssistantMessageClassifierEnabled": True})
         self.assertEqual(result, 2)
         mock_append.assert_called_once()
@@ -72,10 +70,9 @@ class TestFinalizeReviewStop(unittest.TestCase):
     @patch("claude_auto_review.stop.feedback.append_state")
     @patch("claude_auto_review.stop.feedback.block_response")
     @patch("claude_auto_review.stop.orchestration.finalize.get_entries_covered_by_review", return_value=[])
-    @patch("claude_auto_review.stop.orchestration.finalize.is_review_clean", return_value=False)
-    @patch("claude_auto_review.stop.orchestration.finalize.is_review_complete", return_value=True)
+    @patch("claude_auto_review.stop.orchestration.finalize._read_review_verdict", return_value="Not clean - fix src/app.ts.")
     def test_completed_review_with_findings_blocks_with_review_feedback(
-        self, mock_complete, mock_clean, mock_covered, mock_block, mock_append, mock_classify,
+        self, mock_verdict, mock_covered, mock_block, mock_append, mock_classify,
     ):
         result = finalize_review_stop(Path("/fake"), "c", self.resolution, {"last_assistant_message": "done"}, {})
         self.assertEqual(result, 2)
@@ -89,10 +86,9 @@ class TestFinalizeReviewStop(unittest.TestCase):
     @patch("claude_auto_review.stop.feedback.block_response")
     @patch("claude_auto_review.stop.orchestration.finalize.get_entries_covered_by_review", return_value=[])
     @patch("claude_auto_review.stop.orchestration.finalize.attempt_stop_autocomplete", return_value=False)
-    @patch("claude_auto_review.stop.orchestration.finalize.is_review_clean", side_effect=[False])
-    @patch("claude_auto_review.stop.orchestration.finalize.is_review_complete", side_effect=[False, True])
+    @patch("claude_auto_review.stop.orchestration.finalize._read_review_verdict", side_effect=["Pending.", "Not clean."])
     def test_autocomplete_findings_are_returned_to_parent_session(
-        self, mock_complete, mock_clean, mock_auto, mock_covered, mock_block, mock_append, mock_classify,
+        self, mock_verdict, mock_auto, mock_covered, mock_block, mock_append, mock_classify,
     ):
         result = finalize_review_stop(Path("/fake"), "c", self.resolution, {"last_assistant_message": "done"}, {})
         self.assertEqual(result, 2)
@@ -104,10 +100,9 @@ class TestFinalizeReviewStop(unittest.TestCase):
     @patch("claude_auto_review.stop.feedback.block_response")
     @patch("claude_auto_review.stop.orchestration.finalize.get_entries_covered_by_review", return_value=[])
     @patch("claude_auto_review.stop.orchestration.finalize.attempt_stop_autocomplete", return_value=False)
-    @patch("claude_auto_review.stop.orchestration.finalize.is_review_clean", side_effect=[False])
-    @patch("claude_auto_review.stop.orchestration.finalize.is_review_complete", side_effect=[False, False, True])
+    @patch("claude_auto_review.stop.orchestration.finalize._read_review_verdict", side_effect=["Pending.", "Not clean."])
     def test_autocomplete_completed_with_findings_blocks_completion(
-        self, mock_complete, mock_clean, mock_auto, mock_covered, mock_block, mock_append, mock_classify,
+        self, mock_verdict, mock_auto, mock_covered, mock_block, mock_append, mock_classify,
     ):
         result = finalize_review_stop(Path("/fake"), "c", self.resolution, {"last_assistant_message": "done"}, {})
         self.assertEqual(result, 2)

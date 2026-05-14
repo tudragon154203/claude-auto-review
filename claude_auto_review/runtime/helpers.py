@@ -18,13 +18,27 @@ def read_json_payload(raw):
     return json.loads(raw) if raw else {}
 
 
+def _json_safe(value):
+    if isinstance(value, Path):
+        return str(value)
+    if isinstance(value, Exception):
+        return str(value)
+    if isinstance(value, dict):
+        return {str(key): _json_safe(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_json_safe(item) for item in value]
+    if isinstance(value, set):
+        return sorted((_json_safe(item) for item in value), key=repr)
+    return value
+
+
 def log_event(project_root, event_type, **kwargs):
     try:
         log_path = get_log_path(project_root)
         log_path.parent.mkdir(parents=True, exist_ok=True)
-        entry = {"timestamp": local_now_iso(), "type": event_type, **kwargs}
+        entry = _json_safe({"timestamp": local_now_iso(), "type": event_type, **kwargs})
         with log_path.open("a", encoding="utf-8", newline="\n") as f:
-            f.write(json.dumps(entry, separators=(",", ":")) + "\n")
+            f.write(json.dumps(entry, separators=(",", ":"), default=str) + "\n")
     except OSError:
         pass
 
@@ -33,7 +47,7 @@ def log_failure(project_root, event_type, error, **kwargs):
     try:
         log_event(project_root, event_type, error=str(error), **kwargs)
         return True
-    except Exception:
+    except OSError:
         return False
 
 
@@ -70,7 +84,9 @@ def run_fail_open(callback, *, project_root=None, event_type=None, on_error=None
         if on_error is not None:
             try:
                 handled = bool(on_error(error))
-            except Exception:
+            except Exception as on_error_error:
+                if event_type:
+                    log_failure(project_root, f"{event_type}_handler_failed", on_error_error, original_error=error)
                 handled = False
         if event_type and not handled:
             log_failure(project_root, event_type, error)

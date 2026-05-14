@@ -1,6 +1,14 @@
 import unittest
+import shutil
+from unittest.mock import patch
 
-from claude_auto_review.paths import get_log_path, get_state_path, normalize_relative_path
+from claude_auto_review.paths import (
+    CLIENTS_DIR,
+    get_client_runtime_dir,
+    get_log_path,
+    get_state_path,
+    normalize_relative_path,
+)
 
 from tests.unit.state.support import StateTestCase
 
@@ -49,5 +57,20 @@ class TestPathUtils(StateTestCase, unittest.TestCase):
         project_root = self.temp_project()
         result = get_log_path(project_root)
         self.assertEqual(result, project_root / ".claude" / "claude-auto-review" / "claude-auto-review.log")
+
+    def test_get_client_runtime_dir_refreshes_deleted_cached_path(self):
+        project_root = self.temp_project()
+        client_id = "session-a"
+        first = get_client_runtime_dir(project_root, client_id)
+        first.mkdir(parents=True)
+        self.assertTrue(first.exists())
+
+        expected = project_root / CLIENTS_DIR / "client-fresh-session-a"
+        shutil.rmtree(first)
+
+        with patch("claude_auto_review.paths._timestamped_client_runtime_dir", return_value=expected):
+            result = get_client_runtime_dir(project_root, client_id)
+
+        self.assertEqual(result, expected)
 
 

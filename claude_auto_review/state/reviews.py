@@ -14,39 +14,53 @@ from claude_auto_review.state.review_matching import (
 )
 
 
-def _review_verdict_text(review_path):
+def extract_review_verdict_text(content):
+    if not content:
+        return None
+    if "## Verdict" not in content:
+        return None
+    verdict_block = content.split("## Verdict", 1)[1]
+    for line in verdict_block.splitlines():
+        verdict = line.strip()
+        if verdict:
+            return verdict
+    return None
+
+
+def get_review_verdict_text(review_path):
     path = Path(review_path)
     if not path.is_file():
         return None
     content = path.read_text(encoding="utf-8", errors="replace")
-    if "## Verdict" not in content:
-        return None
-    verdict = content.split("## Verdict", 1)[1].strip()
-    if not verdict:
-        return None
-    return verdict
+    return extract_review_verdict_text(content)
 
 
-def is_review_complete(review_path):
-    verdict = _review_verdict_text(review_path)
+def is_review_complete_verdict(verdict):
     if not verdict:
         return False
-    return verdict.lower() not in ("pending", "pending.")
+    return verdict.strip().lower() not in ("pending", "pending.")
 
 
-def is_review_clean(review_path):
+def is_review_clean_verdict(verdict):
     """Return True only if the review verdict indicates no blocking issues.
 
     Note: The verdict must start with 'clean' to allow stop. This is coupled
     with the verdict template in agents/reviewer.md. Template changes may require
     updating this check.
     """
-    verdict = _review_verdict_text(review_path)
     if not verdict:
         return False
-    verdict = verdict.lower()
+    verdict = verdict.strip().lower()
     if verdict.startswith("not clean"):
         return False
     if verdict.startswith("clean"):
         return True
     return bool(re.match(r"^confirmed\s*\(\s*clean\s*\)(?:\s|$|[-:])", verdict))
+
+
+def is_review_complete(review_path):
+    return is_review_complete_verdict(get_review_verdict_text(review_path))
+
+
+def is_review_clean(review_path):
+    return is_review_clean_verdict(get_review_verdict_text(review_path))

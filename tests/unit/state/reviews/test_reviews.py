@@ -1,7 +1,12 @@
 import unittest
 
 from claude_auto_review.state.models import ReviewMetadata
-from claude_auto_review.state.reviews import is_review_clean, is_review_complete, is_review_expired
+from claude_auto_review.state.reviews import (
+    extract_review_verdict_text,
+    is_review_clean,
+    is_review_complete,
+    is_review_expired,
+)
 
 from tests.unit.state.support import StateTestCase
 
@@ -67,6 +72,10 @@ class TestReviewCompletion(StateTestCase, unittest.TestCase):
         path = project_root / "review.md"
         path.write_text("## Verdict\nAll fixes applied.", encoding="utf-8")
         self.assertTrue(is_review_complete(path))
+
+    def test_extract_review_verdict_text_uses_first_non_empty_line(self):
+        content = "## Verdict\n\nClean - no issues found.\n\nExtra notes that should be ignored.\n"
+        self.assertEqual(extract_review_verdict_text(content), "Clean - no issues found.")
 
     def test_is_case_insensitive(self):
         project_root = self.temp_project()
