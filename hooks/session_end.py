@@ -7,8 +7,9 @@ ensure_repo_root_on_path()
 
 from claude_auto_review.paths import get_client_id, get_project_root
 from claude_auto_review.runtime.cleanup import cancel_session, cleanup_expired_pending_reviews, cleanup_stale_clients
-from claude_auto_review.runtime.helpers import get_payload_session_id, read_json_payload, run_fail_open
-from claude_auto_review.runtime.helpers import log_event
+from claude_auto_review.runtime.context import get_payload_session_id, read_json_payload
+from claude_auto_review.runtime.events import log_event
+from claude_auto_review.runtime.process import run_fail_open
 
 
 def _run_session_end():
@@ -37,4 +38,3 @@ def main():
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

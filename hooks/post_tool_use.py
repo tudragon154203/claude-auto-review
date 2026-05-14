@@ -6,6 +6,9 @@ from bootstrap import ensure_repo_root_on_path
 ensure_repo_root_on_path()
 
 from claude_auto_review.paths import DELETED_FILE_HASH, get_client_id, get_project_root, local_now_iso, normalize_relative_path
+from claude_auto_review.runtime.context import read_json_payload
+from claude_auto_review.runtime.events import log_event
+from claude_auto_review.runtime.process import run_fail_open
 from claude_auto_review.runtime.setup import ensure_client_runtime
 from claude_auto_review.settings import load_settings, should_skip_file
 from claude_auto_review.state.hook_input import extract_file_paths_from_hook_input
@@ -15,8 +18,6 @@ from claude_auto_review.state.store_read import (
     load_state,
     was_hash_reviewed,
 )
-from claude_auto_review.runtime.helpers import read_json_payload, run_fail_open
-from claude_auto_review.runtime.helpers import log_event
 from claude_auto_review.state.store_write import append_state
 
 
