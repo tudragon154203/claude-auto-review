@@ -1,0 +1,159 @@
+import io
+import json
+import socket
+import unittest
+from unittest.mock import patch
+from urllib import error
+
+from claude_auto_review.state.store_read import load_state
+from claude_auto_review.stop.classifier.models import CLASSIFICATION_EVENT
+from claude_auto_review.stop.classifier.last_assistant_message import (
+    classify_last_assistant_message,
+)
+
+from tests.unit.state.support import StateTestCase
+
+
+class _FakeResponse:
+    def __init__(self, payload):
+        self.payload = payload
+
+    def read(self):
+        return json.dumps(self.payload).encode("utf-8")
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc, tb):
+        return False
+
+
+class TestLastAssistantMessageErrors(StateTestCase, unittest.TestCase):
+    def setUp(self):
+        self.project_root = self.temp_project()
+        self.client_id = "classifier-client"
+        self.settings = {
+            "lastAssistantMessageClassifierEnabled": True,
+        }
+        self.env = {
+            "ANTHROPIC_BASE_URL": "http://127.0.0.1:13456",
+            "ANTHROPIC_API_KEY": "top-secret",
+        }
+
+    def test_classifier_disabled_returns_none(self):
+        result = classify_last_assistant_message(
+            self.project_root,
+            self.client_id,
+            {"last_assistant_message": "Ship it."},
+            {"lastAssistantMessageClassifierEnabled": False},
+            env=self.env,
+            urlopen=lambda req, timeout: _FakeResponse({"content": [{"text": "complete"}]}),
+        )
+        self.assertIsNone(result)
+
+    def test_missing_api_key_is_logged_as_error(self):
+        result = classify_last_assistant_message(
+            self.project_root,
+            self.client_id,
+            {"last_assistant_message": "Ship it."},
+            self.settings,
+            env={"ANTHROPIC_BASE_URL": "http://127.0.0.1:13456"},
+            urlopen=lambda req, timeout: _FakeResponse({"content": [{"text": "complete"}]}),
+        )
+        self.assertEqual(result.status, "error")
+        self.assertEqual(result.reason, "missing_api_key")
+
+    def test_unknown_debug_response_is_logged_but_not_persisted_to_state(self):
+        payload = {"content": [{"text": "unknown"}], "id": "msg-debug"}
+
+        with patch("claude_auto_review.stop.classifier.last_assistant_message.log_event") as mock_log:
+            classify_last_assistant_message(
+                self.project_root,
+                self.client_id,
+                {"last_assistant_message": "Message"},
+                self.settings,
+                env=self.env,
+                urlopen=lambda req, timeout: _FakeResponse(payload),
+            )
+
+        self.assertEqual(mock_log.call_args.kwargs["debugResponse"], json.dumps(payload, separators=(",", ":")))
+        state = load_state(self.project_root, self.client_id)
+        self.assertNotIn("debugResponse", state[-1])
+
+    def test_timeout_returns_error_without_raising(self):
+        result = classify_last_assistant_message(
+            self.project_root,
+            self.client_id,
+            {"last_assistant_message": "Message"},
+            self.settings,
+            env=self.env,
+            urlopen=lambda req, timeout: (_ for _ in ()).throw(socket.timeout()),
+        )
+        self.assertEqual(result.status, "error")
+        self.assertEqual(result.reason, "http_timeout")
+
+    def test_http_error_returns_error_without_raising(self):
+        def fake_urlopen(req, timeout):
+            raise error.HTTPError(req.full_url, 503, "down", hdrs=None, fp=io.BytesIO(b""))
+
+        result = classify_last_assistant_message(
+            self.project_root,
+            self.client_id,
+            {"last_assistant_message": "Message"},
+            self.settings,
+            env=self.env,
+            urlopen=fake_urlopen,
+        )
+        self.assertEqual(result.status, "error")
+        self.assertEqual(result.reason, "http_error")
+        self.assertEqual(result.http_status, 503)
+
+    def test_malformed_json_returns_error_without_raising(self):
+        class BadJsonResponse(_FakeResponse):
+            def read(self):
+                return b"{not-json"
+
+        result = classify_last_assistant_message(
+            self.project_root,
+            self.client_id,
+            {"last_assistant_message": "Message"},
+            self.settings,
+            env=self.env,
+            urlopen=lambda req, timeout: BadJsonResponse({}),
+        )
+        self.assertEqual(result.status, "error")
+        self.assertEqual(result.reason, "bad_response")
+
+    def test_missing_message_is_logged_as_skipped(self):
+        with patch("claude_auto_review.stop.classifier.last_assistant_message.log_event") as mock_log:
+            result = classify_last_assistant_message(
+                self.project_root,
+                self.client_id,
+                {},
+                self.settings,
+                env=self.env,
+                urlopen=lambda req, timeout: _FakeResponse({"content": [{"text": "complete"}]}),
+            )
+        self.assertEqual(result.status, "skipped")
+        self.assertEqual(result.reason, "missing_message")
+        mock_log.assert_called_once()
+        self.assertEqual(mock_log.call_args.args[1], CLASSIFICATION_EVENT)
+
+    def test_missing_env_fails_open_and_persists_separate_state_type(self):
+        result = classify_last_assistant_message(
+            self.project_root,
+            self.client_id,
+            {"last_assistant_message": "Message"},
+            self.settings,
+            env={},
+            urlopen=lambda req, timeout: _FakeResponse({"content": [{"text": "complete"}]}),
+        )
+        self.assertEqual(result.status, "error")
+        self.assertEqual(result.reason, "missing_base_url")
+        state = load_state(self.project_root, self.client_id)
+        self.assertEqual(state[-1]["type"], "last_assistant_message_classified")
+        self.assertNotIn("top-secret", json.dumps(state))
+
+
+if __name__ == "__main__":
+    unittest.main()
