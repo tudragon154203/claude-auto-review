@@ -35,7 +35,7 @@ class TestAutoComplete(unittest.TestCase):
         mock_log.assert_called_with(Path("/fake"), "stop_hook_prompt_not_found", path=str(Path("/nonexistent.md")))
 
     @patch("claude_auto_review.stop.reviews.prompt_runner.log_event")
-    @patch("claude_auto_review.stop.reviews.prompt_runner.subprocess.run", side_effect=subprocess.TimeoutExpired(cmd="claude", timeout=600))
+    @patch("claude_auto_review.stop.reviews.prompt_runner.run_captured", side_effect=subprocess.TimeoutExpired(cmd="claude", timeout=600))
     @patch("claude_auto_review.stop.reviews.prompt_runner.shutil.which", return_value="/usr/bin/claude")
     @patch("pathlib.Path.is_file", return_value=True)
     def test_subprocess_timeout(self, mock_is_file, mock_which, mock_run, mock_log):
@@ -48,7 +48,7 @@ class TestAutoComplete(unittest.TestCase):
         mock_log.assert_called_with(Path("/fake"), "stop_hook_claude_cli_timeout", reviewId="r")
 
     @patch("claude_auto_review.stop.reviews.prompt_runner.log_event")
-    @patch("claude_auto_review.stop.reviews.prompt_runner.subprocess.run")
+    @patch("claude_auto_review.stop.reviews.prompt_runner.run_captured")
     @patch("claude_auto_review.stop.reviews.prompt_runner.shutil.which", return_value="/usr/bin/claude")
     @patch("pathlib.Path.is_file", return_value=True)
     def test_passes_configured_timeout_to_subprocess(self, mock_is_file, mock_which, mock_run, mock_log):
@@ -61,7 +61,7 @@ class TestAutoComplete(unittest.TestCase):
         self.assertEqual(mock_run.call_args.kwargs["timeout"], 42.0)
 
     @patch("claude_auto_review.stop.reviews.prompt_runner.log_event")
-    @patch("claude_auto_review.stop.reviews.prompt_runner.subprocess.run")
+    @patch("claude_auto_review.stop.reviews.prompt_runner.run_captured")
     @patch("claude_auto_review.stop.reviews.prompt_runner.shutil.which", return_value="/usr/bin/claude")
     @patch("pathlib.Path.is_file", return_value=True)
     def test_general_exception(self, mock_is_file, mock_which, mock_run, mock_log):
@@ -76,7 +76,7 @@ class TestAutoComplete(unittest.TestCase):
 
     @patch("claude_auto_review.stop.reviews.prompt_runner.apply_completed_review", return_value=[])
     @patch("claude_auto_review.stop.reviews.prompt_runner.log_event")
-    @patch("claude_auto_review.stop.reviews.prompt_runner.subprocess.run")
+    @patch("claude_auto_review.stop.reviews.prompt_runner.run_captured")
     @patch("claude_auto_review.stop.reviews.prompt_runner.shutil.which", return_value="/usr/bin/claude")
     @patch("pathlib.Path.is_file", return_value=True)
     def test_successful_completion(self, mock_is_file, mock_which, mock_run, mock_log, mock_apply):
@@ -90,7 +90,7 @@ class TestAutoComplete(unittest.TestCase):
 
     @patch("claude_auto_review.stop.reviews.prompt_runner.apply_completed_review", return_value=[{"file": "still.ts"}])
     @patch("claude_auto_review.stop.reviews.prompt_runner.log_event")
-    @patch("claude_auto_review.stop.reviews.prompt_runner.subprocess.run")
+    @patch("claude_auto_review.stop.reviews.prompt_runner.run_captured")
     @patch("claude_auto_review.stop.reviews.prompt_runner.shutil.which", return_value="/usr/bin/claude")
     def test_completion_with_remaining_returns_false(self, mock_which, mock_run, mock_log, mock_apply):
         mock_run.return_value = MagicMock(returncode=0, stdout="## Verdict\nClean", stderr="")

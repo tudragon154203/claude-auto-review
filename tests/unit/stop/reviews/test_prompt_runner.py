@@ -26,13 +26,16 @@ class TestPromptRunner(unittest.TestCase):
         self.assertEqual(_review_prompt_path(_ctx(), "r1"), Path("/fake/run/review-r1-prompt.md"))
 
     @patch("claude_auto_review.stop.reviews.prompt_runner.log_event")
-    @patch("claude_auto_review.stop.reviews.prompt_runner.subprocess.run")
+    @patch("claude_auto_review.stop.reviews.prompt_runner.run_captured")
     def test_run_review_prompt_logs_and_returns_result(self, mock_run, mock_log):
         mock_run.return_value = MagicMock(stdout="ok", stderr="", returncode=0)
-        result = _run_review_prompt(_ctx(), Path("/fake/prompt.py"), {"CLAUDE_SESSION_ID": "sid"})
+        env = {"CLAUDE_SESSION_ID": "sid"}
+        result = _run_review_prompt(_ctx(), Path("/fake/prompt.py"), env)
 
         self.assertEqual(result.returncode, 0)
         mock_run.assert_called_once()
+        self.assertEqual(mock_run.call_args.kwargs["timeout"], 60)
+        self.assertEqual(mock_run.call_args.kwargs["env"], env)
         mock_log.assert_called_once_with(
             Path("/fake"),
             "stop_hook_review_invoked",

@@ -102,6 +102,17 @@ def _merge_hooks(existing_hooks, desired_hooks):
     return merged
 
 
+def _ensure_plugin_settings(settings):
+    if "claude-auto-review" not in settings:
+        settings["claude-auto-review"] = dict(DEFAULT_SETTINGS)
+
+
+def _merge_project_hooks(settings, hooks_document):
+    desired_hooks = hooks_document.get("hooks")
+    if desired_hooks:
+        settings["hooks"] = _merge_hooks(settings.get("hooks", {}), desired_hooks)
+
+
 def ensure_client_runtime(project_root, client_id):
     client_dir = get_client_runtime_dir(project_root, client_id)
     client_dir.mkdir(parents=True, exist_ok=True)
@@ -146,9 +157,7 @@ def ensure_project_settings(project_root=None):
     settings = _load_settings_document(settings_path)
     hooks_document = _load_hooks_document(plugin_root)
 
-    if "claude-auto-review" not in settings:
-        settings["claude-auto-review"] = dict(DEFAULT_SETTINGS)
-    if hooks_document.get("hooks"):
-        settings["hooks"] = _merge_hooks(settings.get("hooks", {}), hooks_document["hooks"])
+    _ensure_plugin_settings(settings)
+    _merge_project_hooks(settings, hooks_document)
     settings_path.write_text(json.dumps(settings, indent=2) + "\n", encoding="utf-8", newline="\n")
     return settings_path

@@ -76,18 +76,21 @@ def run_captured(command, *, cwd, timeout=None, env=None, **kwargs):
     )
 
 
+def _log_fail_open_error(project_root, event_type, error, on_error):
+    handled = False
+    if on_error is not None:
+        try:
+            handled = bool(on_error(error))
+        except Exception as on_error_error:
+            if event_type:
+                log_failure(project_root, f"{event_type}_handler_failed", on_error_error, original_error=error)
+    if event_type and not handled:
+        log_failure(project_root, event_type, error)
+
+
 def run_fail_open(callback, *, project_root=None, event_type=None, on_error=None, fallback=0):
     try:
         return callback()
     except Exception as error:
-        handled = False
-        if on_error is not None:
-            try:
-                handled = bool(on_error(error))
-            except Exception as on_error_error:
-                if event_type:
-                    log_failure(project_root, f"{event_type}_handler_failed", on_error_error, original_error=error)
-                handled = False
-        if event_type and not handled:
-            log_failure(project_root, event_type, error)
+        _log_fail_open_error(project_root, event_type, error, on_error)
         return fallback

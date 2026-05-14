@@ -30,6 +30,10 @@ def _project_root_path(project_root=None):
     return Path(project_root or get_project_root()).resolve()
 
 
+def _runtime_dir_path(project_root=None):
+    return _project_root_path(project_root) / RUNTIME_DIR
+
+
 def is_runtime_relative_path(file_path):
     if not file_path:
         return False
@@ -42,8 +46,8 @@ def is_runtime_relative_path(file_path):
 
 
 def get_state_path(project_root=None):
-    return _project_root_path(project_root) / STATE_RELATIVE_PATH
+    return _runtime_dir_path(project_root) / STATE_RELATIVE_PATH.name
 
 
 def get_log_path(project_root=None):
-    return _project_root_path(project_root) / LOG_RELATIVE_PATH
+    return _runtime_dir_path(project_root) / LOG_RELATIVE_PATH.name

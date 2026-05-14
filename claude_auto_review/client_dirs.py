@@ -28,6 +28,26 @@ def _client_runtime_dir_cache_key(project_root: Path, client_id: str):
     return str(project_root), client_id
 
 
+def _cached_client_runtime_dir(cache_key):
+    cached = _CLIENT_RUNTIME_DIR_CACHE.get(cache_key)
+    if cached is None:
+        return None
+    if cached.exists() and cached.is_dir():
+        return cached
+    _CLIENT_RUNTIME_DIR_CACHE.pop(cache_key, None)
+    return None
+
+
+def _clear_client_runtime_dir_cache_entries(project_root: Path, client_id: str):
+    cache_key = _client_runtime_dir_cache_key(project_root, client_id)
+    _CLIENT_RUNTIME_DIR_CACHE.pop(cache_key, None)
+
+    match = _CLIENT_RUNTIME_DIR_PATTERN.match(client_id)
+    if match:
+        bare_key = _client_runtime_dir_cache_key(project_root, match.group(2))
+        _CLIENT_RUNTIME_DIR_CACHE.pop(bare_key, None)
+
+
 def _timestamped_client_runtime_dir(project_root: Path, client_id: str) -> Path:
     ts = datetime.now().strftime("%Y%m%d-%H%M%S")
     return project_root / CLIENTS_DIR / f"client-{ts}_{client_id}"
@@ -38,14 +58,13 @@ def _find_existing_client_runtime_dir(project_root: Path, client_id: str):
     if not clients_dir.exists():
         return None
 
-    timestamped = []
-    for child in clients_dir.iterdir():
-        if not child.is_dir():
-            continue
-        match = _CLIENT_RUNTIME_DIR_PATTERN.match(child.name)
-        if match and match.group(2) == client_id:
-            timestamped.append(child)
-
+    timestamped = [
+        child
+        for child in clients_dir.iterdir()
+        if child.is_dir()
+        and (match := _CLIENT_RUNTIME_DIR_PATTERN.match(child.name))
+        and match.group(2) == client_id
+    ]
     if timestamped:
         return sorted(timestamped)[-1]
     return None
@@ -54,11 +73,9 @@ def _find_existing_client_runtime_dir(project_root: Path, client_id: str):
 def get_client_runtime_dir(project_root: Path, client_id: str) -> Path:
     project_root = _project_root_path(project_root)
     cache_key = _client_runtime_dir_cache_key(project_root, client_id)
-    cached = _CLIENT_RUNTIME_DIR_CACHE.get(cache_key)
-    if cached is not None and cached.exists() and cached.is_dir():
-        return cached
+    cached = _cached_client_runtime_dir(cache_key)
     if cached is not None:
-        _CLIENT_RUNTIME_DIR_CACHE.pop(cache_key, None)
+        return cached
 
     if _CLIENT_RUNTIME_DIR_PATTERN.match(client_id):
         client_dir = project_root / CLIENTS_DIR / client_id
@@ -73,12 +90,7 @@ def get_client_runtime_dir(project_root: Path, client_id: str) -> Path:
 
 def invalidate_client_runtime_dir_cache(project_root: Path, client_id: str):
     project_root = _project_root_path(project_root)
-    cache_key = _client_runtime_dir_cache_key(project_root, client_id)
-    _CLIENT_RUNTIME_DIR_CACHE.pop(cache_key, None)
-    match = _CLIENT_RUNTIME_DIR_PATTERN.match(client_id)
-    if match:
-        bare_key = _client_runtime_dir_cache_key(project_root, match.group(2))
-        _CLIENT_RUNTIME_DIR_CACHE.pop(bare_key, None)
+    _clear_client_runtime_dir_cache_entries(project_root, client_id)
 
 
 def client_state_path(project_root: Path, client_id: str) -> Path:

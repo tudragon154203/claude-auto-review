@@ -2,13 +2,12 @@ from dataclasses import dataclass
 from typing import Any, Literal, Optional
 
 
-@dataclass(frozen=True)
-class DictLikeModel:
-    pass
+def _serialize_review_file_entries(files: list["ReviewFileRecord"]) -> list[dict[str, Any]]:
+    return [entry.to_dict() for entry in files]
 
 
 @dataclass(frozen=True)
-class ReviewFileRecord(DictLikeModel):
+class ReviewFileRecord:
     file: str
     hash: str
 
@@ -17,6 +16,10 @@ class ReviewFileRecord(DictLikeModel):
             "file": self.file,
             "hash": self.hash,
         }
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "ReviewFileRecord":
+        return cls(file=data["file"], hash=data["hash"])
 
 
 def _coerce_review_file_entries(files: list[ReviewFileRecord]) -> list[ReviewFileRecord]:
@@ -36,12 +39,12 @@ def _parse_review_file_entries(files: list[dict[str, str]] | list[ReviewFileReco
             continue
         if not isinstance(item, dict) or "file" not in item or "hash" not in item:
             raise ValueError("files must contain file/hash entries")
-        parsed.append(ReviewFileRecord(file=item["file"], hash=item["hash"]))
+        parsed.append(ReviewFileRecord.from_dict(item))
     return parsed
 
 
 @dataclass(frozen=True)
-class EditRecord(DictLikeModel):
+class EditRecord:
     timestamp: str
     file: str
     hash: str
@@ -64,9 +67,20 @@ class EditRecord(DictLikeModel):
             d["deleted"] = self.deleted
         return d
 
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "EditRecord":
+        return cls(
+            timestamp=data.get("timestamp", ""),
+            file=data.get("file", ""),
+            hash=data.get("hash", ""),
+            reviewed=data.get("reviewed", False),
+            deleted=data.get("deleted", False),
+            reviewId=data.get("reviewId"),
+        )
+
 
 @dataclass(frozen=True)
-class StopBlockedRecord(DictLikeModel):
+class StopBlockedRecord:
     timestamp: str
     reason: Optional[str] = None
     reviewId: Optional[str] = None
@@ -86,9 +100,18 @@ class StopBlockedRecord(DictLikeModel):
             d["files"] = self.files
         return d
 
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "StopBlockedRecord":
+        return cls(
+            timestamp=data.get("timestamp", ""),
+            reason=data.get("reason"),
+            reviewId=data.get("reviewId"),
+            files=data.get("files"),
+        )
+
 
 @dataclass(frozen=True)
-class ReviewMetadata(DictLikeModel):
+class ReviewMetadata:
     timestamp: str
     reviewId: str
     reviewPath: str
@@ -106,14 +129,25 @@ class ReviewMetadata(DictLikeModel):
             "type": self.type,
             "reviewId": self.reviewId,
             "reviewPath": self.reviewPath,
-            "files": [entry.to_dict() for entry in self.files],
+            "files": _serialize_review_file_entries(self.files),
             "clientId": self.clientId,
             "status": self.status,
         }
 
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "ReviewMetadata":
+        return cls(
+            timestamp=data.get("timestamp", ""),
+            reviewId=data.get("reviewId", ""),
+            reviewPath=data.get("reviewPath", ""),
+            files=_parse_review_file_entries(data.get("files", [])),
+            clientId=data.get("clientId", ""),
+            status=data.get("status", "pending"),
+        )
+
 
 @dataclass(frozen=True)
-class ReviewCompletedRecord(DictLikeModel):
+class ReviewCompletedRecord:
     timestamp: str
     reviewId: str
     files: list[ReviewFileRecord]
@@ -130,7 +164,7 @@ class ReviewCompletedRecord(DictLikeModel):
             "timestamp": self.timestamp,
             "type": self.type,
             "reviewId": self.reviewId,
-            "files": [entry.to_dict() for entry in self.files],
+            "files": _serialize_review_file_entries(self.files),
             "clientId": self.clientId,
         }
         if self.duration is not None:
@@ -139,9 +173,20 @@ class ReviewCompletedRecord(DictLikeModel):
             d["durationSeconds"] = self.durationSeconds
         return d
 
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "ReviewCompletedRecord":
+        return cls(
+            timestamp=data.get("timestamp", ""),
+            reviewId=data.get("reviewId", ""),
+            files=_parse_review_file_entries(data.get("files", [])),
+            clientId=data.get("clientId", ""),
+            duration=data.get("duration"),
+            durationSeconds=data.get("durationSeconds"),
+        )
+
 
 @dataclass(frozen=True)
-class ClassificationRecord(DictLikeModel):
+class ClassificationRecord:
     timestamp: str
     status: str
     reason: str
@@ -170,52 +215,30 @@ class ClassificationRecord(DictLikeModel):
             d["debugResponse"] = self.debugResponse
         return d
 
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "ClassificationRecord":
+        return cls(
+            timestamp=data.get("timestamp", ""),
+            status=data.get("status", ""),
+            reason=data.get("reason", ""),
+            latencyMs=data.get("latencyMs", 0),
+            messageChars=data.get("messageChars", 0),
+            model=data.get("model", ""),
+            baseUrl=data.get("baseUrl", ""),
+            httpStatus=data.get("httpStatus"),
+            debugResponse=data.get("debugResponse"),
+        )
+
 
 # Union of all state event types for type annotations
 StateEvent = EditRecord | StopBlockedRecord | ReviewMetadata | ReviewCompletedRecord | ClassificationRecord
 
 _PARSERS = {
-    "edit": lambda d: EditRecord(
-        timestamp=d.get("timestamp", ""),
-        file=d.get("file", ""),
-        hash=d.get("hash", ""),
-        reviewed=d.get("reviewed", False),
-        deleted=d.get("deleted", False),
-        reviewId=d.get("reviewId"),
-    ),
-    "stop_blocked": lambda d: StopBlockedRecord(
-        timestamp=d.get("timestamp", ""),
-        reason=d.get("reason"),
-        reviewId=d.get("reviewId"),
-        files=d.get("files"),
-    ),
-    "review": lambda d: ReviewMetadata(
-        timestamp=d.get("timestamp", ""),
-        reviewId=d.get("reviewId", ""),
-        reviewPath=d.get("reviewPath", ""),
-        files=_parse_review_file_entries(d.get("files", [])),
-        clientId=d.get("clientId", ""),
-        status=d.get("status", "pending"),
-    ),
-    "review_completed": lambda d: ReviewCompletedRecord(
-        timestamp=d.get("timestamp", ""),
-        reviewId=d.get("reviewId", ""),
-        files=_parse_review_file_entries(d.get("files", [])),
-        clientId=d.get("clientId", ""),
-        duration=d.get("duration"),
-        durationSeconds=d.get("durationSeconds"),
-    ),
-    "last_assistant_message_classified": lambda d: ClassificationRecord(
-        timestamp=d.get("timestamp", ""),
-        status=d.get("status", ""),
-        reason=d.get("reason", ""),
-        latencyMs=d.get("latencyMs", 0),
-        messageChars=d.get("messageChars", 0),
-        model=d.get("model", ""),
-        baseUrl=d.get("baseUrl", ""),
-        httpStatus=d.get("httpStatus"),
-        debugResponse=d.get("debugResponse"),
-    ),
+    "edit": EditRecord.from_dict,
+    "stop_blocked": StopBlockedRecord.from_dict,
+    "review": ReviewMetadata.from_dict,
+    "review_completed": ReviewCompletedRecord.from_dict,
+    "last_assistant_message_classified": ClassificationRecord.from_dict,
 }
 
 

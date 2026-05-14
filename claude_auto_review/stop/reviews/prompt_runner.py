@@ -3,13 +3,13 @@ import subprocess
 import sys
 
 from claude_auto_review.paths import client_run_dir, local_now_iso
+from claude_auto_review.runtime.helpers import log_event, run_captured
 from claude_auto_review.review.completion import apply_completed_review
 from claude_auto_review.state.reviews import (
     extract_review_verdict_text,
     is_review_clean_verdict,
     is_review_complete_verdict,
 )
-from claude_auto_review.runtime.helpers import log_event
 from claude_auto_review.state.store_read import get_unreviewed_files, load_state
 from claude_auto_review.stop.feedback import block_response
 from claude_auto_review.stop.orchestration.context import RuntimeContext
@@ -36,16 +36,7 @@ def _review_prompt_command(review_prompt_script):
 
 def _run_review_prompt(ctx: RuntimeContext, review_prompt_script, env):
     cmd = _review_prompt_command(review_prompt_script)
-    result = subprocess.run(
-        cmd,
-        cwd=str(ctx.project_root),
-        capture_output=True,
-        text=True,
-        encoding="utf-8",
-        errors="replace",
-        timeout=60,
-        env=env,
-    )
+    result = run_captured(cmd, cwd=ctx.project_root, timeout=60, env=env)
     log_event(
         ctx.project_root,
         "stop_hook_review_invoked",
@@ -80,15 +71,7 @@ def _run_claude_cli(claude_cli, prompt_file, user_prompt, cwd, timeout):
         str(prompt_file),
         user_prompt,
     ]
-    return subprocess.run(
-        cmd,
-        cwd=str(cwd),
-        capture_output=True,
-        text=True,
-        encoding="utf-8",
-        errors="replace",
-        timeout=float(timeout),
-    )
+    return run_captured(cmd, cwd=cwd, timeout=float(timeout))
 
 
 def attempt_stop_autocomplete(

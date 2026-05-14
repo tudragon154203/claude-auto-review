@@ -1,3 +1,4 @@
+import os
 import unittest
 from pathlib import Path
 from unittest.mock import patch
@@ -144,6 +145,36 @@ class TestRuntime(StateTestCase, unittest.TestCase):
         result = _remove_tree(Path("/nonexistent/nope"))
         self.assertFalse(result)
 
+    def test_iter_runtime_cleanup_targets_returns_expected_paths(self):
+        from claude_auto_review.runtime.cleanup import _iter_runtime_cleanup_targets
+
+        runtime = Path("/fake/runtime")
+        targets = list(_iter_runtime_cleanup_targets(runtime))
+
+        self.assertEqual(
+            targets,
+            [
+                runtime / "run",
+                runtime / "reviews",
+                runtime / "clients",
+            ],
+        )
+
+    def test_is_client_state_stale_uses_parent_mtime_when_state_missing(self):
+        from claude_auto_review.runtime.cleanup import _is_client_state_stale
+
+        project_root = self.temp_project()
+        client_id = "stale-by-dir"
+        ensure_client_runtime(project_root, client_id)
+        state_path = client_state_path(project_root, client_id)
+        if state_path.exists():
+            state_path.unlink()
+
+        stale_ts = (project_root.stat().st_mtime - 3 * 24 * 60 * 60)
+        os.utime(state_path.parent, (stale_ts, stale_ts))
+
+        self.assertTrue(_is_client_state_stale(state_path, timeout_hours=48))
+
     def test_helpers_log_event_oserror_suppression(self):
         from claude_auto_review.runtime.helpers import log_event
         with patch("claude_auto_review.runtime.helpers.get_log_path", side_effect=OSError("no write")):
@@ -174,6 +205,27 @@ class TestRuntime(StateTestCase, unittest.TestCase):
         self.assertEqual(mock_log.call_count, 2)
         self.assertEqual(mock_log.call_args_list[0].args[1], "test_event_handler_failed")
         self.assertEqual(mock_log.call_args_list[1].args[1], "test_event")
+
+    def test_run_fail_open_treats_truthy_handler_as_handled(self):
+        from claude_auto_review.runtime.helpers import run_fail_open
+
+        def callback():
+            raise ValueError("boom")
+
+        def on_error(error):
+            return True
+
+        with patch("claude_auto_review.runtime.helpers.log_failure") as mock_log:
+            result = run_fail_open(
+                callback,
+                project_root=Path("/fake"),
+                event_type="test_event",
+                on_error=on_error,
+                fallback=7,
+            )
+
+        self.assertEqual(result, 7)
+        mock_log.assert_not_called()
 
     def test_cleanup_expired_pending_reviews_preserves_invalid_lines(self):
         from datetime import datetime, timedelta

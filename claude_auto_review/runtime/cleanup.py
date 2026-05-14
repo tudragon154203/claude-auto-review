@@ -2,20 +2,20 @@ import json
 import shutil
 import time
 
+from claude_auto_review.constants import SECONDS_PER_HOUR
 from claude_auto_review.paths import CLIENTS_DIR, RUNTIME_DIR, client_state_path, get_client_runtime_dir, invalidate_client_runtime_dir_cache
 from claude_auto_review.runtime.helpers import log_event, log_failure, resolve_client_id, resolve_project_root
 from claude_auto_review.runtime.pending_cleanup import cleanup_expired_pending_reviews
-from claude_auto_review.constants import SECONDS_PER_HOUR
 from claude_auto_review.settings import DEFAULT_SETTINGS, SETTING_STALE_CLIENT_TIMEOUT, load_settings
 from claude_auto_review.utils.datetime_utils import hours_since
 
 
-def _remove_tree(target, project_root=None):
+def _remove_path(target, project_root=None):
     try:
         if target.is_dir():
             shutil.rmtree(target)
             return True
-        elif target.exists():
+        if target.exists():
             target.unlink()
             return True
         return False
@@ -23,6 +23,10 @@ def _remove_tree(target, project_root=None):
         if project_root is not None:
             log_failure(project_root, "runtime_cleanup_failed", error, operation="remove_tree", target=str(target))
         return False
+
+
+def _remove_tree(target, project_root=None):
+    return _remove_path(target, project_root=project_root)
 
 
 def _remove_empty_runtime_dir(runtime, project_root=None):
@@ -34,6 +38,11 @@ def _remove_empty_runtime_dir(runtime, project_root=None):
         if project_root is not None:
             log_failure(project_root, "runtime_cleanup_failed", error, operation="rmdir", target=str(runtime))
     return False
+
+
+def _iter_runtime_cleanup_targets(runtime):
+    for child_name in ("run", "reviews", "clients"):
+        yield runtime / child_name
 
 
 def _entry_timestamp(entry) -> str:
@@ -50,6 +59,18 @@ def _is_stale_entry(entry, timeout_hours) -> bool:
     return age is not None and age > timeout_hours
 
 
+def _client_state_mtime_hours(state_path):
+    st = state_path.parent.stat()
+    return (time.time() - st.st_mtime) / SECONDS_PER_HOUR
+
+
+def _is_client_state_stale(state_path, timeout_hours):
+    if not state_path.is_file():
+        return _client_state_mtime_hours(state_path) > timeout_hours
+    last_entry = _read_last_jsonl_entry(state_path)
+    return bool(last_entry) and _is_stale_entry(last_entry, timeout_hours)
+
+
 def cancel_runtime(project_root=None, client_id=""):
     project_root = resolve_project_root(project_root)
     removed = []
@@ -61,11 +82,7 @@ def cancel_runtime(project_root=None, client_id=""):
         return removed
     runtime = project_root / RUNTIME_DIR
     if runtime.exists():
-        for target in [
-            runtime / "run",
-            runtime / "reviews",
-            runtime / "clients",
-        ]:
+        for target in _iter_runtime_cleanup_targets(runtime):
             if _remove_tree(target, project_root=project_root):
                 removed.append(target)
         if _remove_empty_runtime_dir(runtime, project_root=project_root):
@@ -114,13 +131,8 @@ def _is_safe_client_dir(client_dir, clients_dir_resolved):
     return True
 
 
-def _is_client_stale(client_dir, state_path, timeout_hours):
-    if not state_path.is_file():
-        st = state_path.parent.stat()
-        age_hours = (time.time() - st.st_mtime) / SECONDS_PER_HOUR
-        return age_hours > timeout_hours
-    last_entry = _read_last_jsonl_entry(state_path)
-    return bool(last_entry) and _is_stale_entry(last_entry, timeout_hours)
+def _is_client_stale(state_path, timeout_hours):
+    return _is_client_state_stale(state_path, timeout_hours)
 
 
 def cleanup_stale_clients(project_root=None):
@@ -146,7 +158,7 @@ def cleanup_stale_clients(project_root=None):
             continue
 
         state_path = client_dir / "state.jsonl"
-        if _is_client_stale(client_dir, state_path, timeout_hours):
+        if _is_client_stale(state_path, timeout_hours):
             if _remove_tree(client_dir, project_root=project_root):
                 invalidate_client_runtime_dir_cache(project_root, client_dir.name)
                 removed.append(client_dir)

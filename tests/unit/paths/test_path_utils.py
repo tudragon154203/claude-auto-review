@@ -4,6 +4,7 @@ from unittest.mock import patch
 
 from claude_auto_review.paths import (
     CLIENTS_DIR,
+    invalidate_client_runtime_dir_cache,
     get_client_runtime_dir,
     get_log_path,
     get_state_path,
@@ -81,4 +82,22 @@ class TestPathUtils(StateTestCase, unittest.TestCase):
 
         self.assertEqual(result, project_root / CLIENTS_DIR / client_name)
 
+    def test_get_client_runtime_dir_reloads_after_cache_invalidation(self):
+        project_root = self.temp_project()
+        client_id = "session-a"
+        clients_dir = project_root / CLIENTS_DIR
+        first_dir = clients_dir / "client-20260514-173035_session-a"
+        second_dir = clients_dir / "client-20260514-173036_session-a"
+
+        first_dir.mkdir(parents=True)
+
+        self.assertEqual(get_client_runtime_dir(project_root, client_id), first_dir)
+
+        second_dir.mkdir(parents=True)
+
+        self.assertEqual(get_client_runtime_dir(project_root, client_id), first_dir)
+
+        invalidate_client_runtime_dir_cache(project_root, client_id)
+
+        self.assertEqual(get_client_runtime_dir(project_root, client_id), second_dir)
 

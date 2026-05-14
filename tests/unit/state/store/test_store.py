@@ -3,7 +3,7 @@ import unittest
 from claude_auto_review.paths import client_state_path, get_log_path, local_now_iso
 from claude_auto_review.runtime.helpers import log_event
 from claude_auto_review.runtime.setup import ensure_client_runtime, ensure_runtime
-from claude_auto_review.state.models import ClassificationRecord, EditRecord, StopBlockedRecord
+from claude_auto_review.state.models import ClassificationRecord, EditRecord, ReviewCompletedRecord, ReviewFileRecord, ReviewMetadata, StopBlockedRecord
 from claude_auto_review.state.store_read import get_unreviewed_files, latest_entries_by_file, load_state, reviewed_hashes_by_file, was_hash_reviewed
 from claude_auto_review.state.store_write import append_state
 
@@ -133,3 +133,27 @@ class TestStateStore(StateTestCase, unittest.TestCase):
         state = load_state(project_root, client_id)
         self.assertEqual(len(state), 2)
 
+    def test_load_state_parses_review_records(self):
+        project_root = self.temp_project()
+        client_id = "review-records"
+        ensure_client_runtime(project_root, client_id)
+        state_path = client_state_path(project_root, client_id)
+        state_path.write_text(
+            "\n".join(
+                [
+                    '{"timestamp":"2026-05-05T08:00:00+07:00","type":"review","reviewId":"rev-1","reviewPath":"reviews/rev-1.md","files":[{"file":"src/a.ts","hash":"aaa"}],"clientId":"client-a","status":"pending"}',
+                    '{"timestamp":"2026-05-05T08:01:00+07:00","type":"review_completed","reviewId":"rev-1","files":[{"file":"src/a.ts","hash":"aaa"}],"clientId":"client-a","duration":"1m","durationSeconds":60}',
+                    '{"timestamp":"2026-05-05T08:02:00+07:00","type":"stop_blocked","reason":"review_pending","reviewId":"rev-1","files":["src/a.ts"]}',
+                ]
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+
+        state = load_state(project_root, client_id)
+
+        self.assertIsInstance(state[0], ReviewMetadata)
+        self.assertEqual(state[0].files, [ReviewFileRecord(file="src/a.ts", hash="aaa")])
+        self.assertIsInstance(state[1], ReviewCompletedRecord)
+        self.assertEqual(state[1].files, [ReviewFileRecord(file="src/a.ts", hash="aaa")])
+        self.assertIsInstance(state[2], StopBlockedRecord)
