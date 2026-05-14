@@ -53,7 +53,7 @@ def resolve_pending_review(ctx: RuntimeContext, state, unreviewed, timeout_hours
             "The review generation timed out. Check the logs and try again.",
         )
         return StopFlowResolution(state=state, unreviewed=unreviewed, exit_code=EXIT_REVIEW_FAILED)
-    except Exception as e:
+    except (OSError, ValueError, subprocess.SubprocessError) as e:
         log_event(ctx.project_root, "stop_hook_review_error", error=str(e))
         block_response(
             f"Claude Auto Review: Error generating review for {files_str}.",

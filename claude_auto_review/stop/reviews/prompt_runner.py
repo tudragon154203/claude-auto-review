@@ -99,7 +99,7 @@ def attempt_stop_autocomplete(
     except subprocess.TimeoutExpired:
         log_event(ctx.project_root, "stop_hook_claude_cli_timeout", reviewId=review_id)
         return False
-    except Exception as e:
+    except (OSError, ValueError, subprocess.SubprocessError) as e:
         log_event(ctx.project_root, "stop_hook_claude_cli_error", error=str(e))
         return False
 

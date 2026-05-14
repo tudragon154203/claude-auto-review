@@ -25,13 +25,10 @@ def log_event(project_root, event_type, **kwargs):
         entry = _json_safe({"timestamp": local_now_iso(), "type": event_type, **kwargs})
         with log_path.open("a", encoding="utf-8", newline="\n") as f:
             f.write(json.dumps(entry, separators=(",", ":"), default=str) + "\n")
-    except OSError:
-        pass
-
-
-def log_failure(project_root, event_type, error, **kwargs):
-    try:
-        log_event(project_root, event_type, error=str(error), **kwargs)
         return True
     except OSError:
         return False
+
+
+def log_failure(project_root, event_type, error, **kwargs):
+    return log_event(project_root, event_type, error=str(error), **kwargs)

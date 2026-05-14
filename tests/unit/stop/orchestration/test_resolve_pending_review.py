@@ -70,7 +70,7 @@ class TestResolvePendingReview(unittest.TestCase):
         self.assertEqual(result.exit_code, 2)
 
     @patch("claude_auto_review.stop.orchestration.pending.find_pending_review_for_files")
-    @patch("claude_auto_review.stop.orchestration.pending._run_review_prompt", side_effect=RuntimeError("boom"))
+    @patch("claude_auto_review.stop.orchestration.pending._run_review_prompt", side_effect=OSError("boom"))
     def test_error_blocks_stop(self, mock_run, mock_find):
         mock_find.return_value = None
         result = resolve_pending_review(_ctx(), **self.base_kwargs)

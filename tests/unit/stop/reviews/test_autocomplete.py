@@ -65,7 +65,7 @@ class TestAutoComplete(unittest.TestCase):
     @patch("claude_auto_review.stop.reviews.prompt_runner.shutil.which", return_value="/usr/bin/claude")
     @patch("pathlib.Path.is_file", return_value=True)
     def test_general_exception(self, mock_is_file, mock_which, mock_run, mock_log):
-        mock_run.side_effect = Exception("boom")
+        mock_run.side_effect = OSError("boom")
         result = attempt_stop_autocomplete(
             _ctx(), review_id="r",
             review_path=Path("/fake/review.md"), prompt_file=Path("/fake/prompt.md"),
