@@ -3,6 +3,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
+from claude_auto_review.paths import client_reviews_dir, client_run_dir
 from claude_auto_review.runtime.setup import ensure_client_runtime
 from claude_auto_review.review.prompt_flow import (
     _review_id_from_timestamp,
@@ -17,16 +18,14 @@ class TestReviewPromptFlow(unittest.TestCase):
 
     def test_review_prompt_paths_place_files_under_expected_directories(self):
         project_root = Path(tempfile.mkdtemp(prefix="claude-auto-review-prompt-flow-"))
-        review_path, prompt_path = _review_prompt_paths(project_root, "client-1", "rev-123")
+        review_path, prompt_path = _review_prompt_paths(project_root, "1", "rev-123")
 
-        self.assertEqual(
-            review_path,
-            project_root / ".claude" / "claude-auto-review" / "clients" / "client-client-1" / "reviews" / "review-rev-123.md",
-        )
-        self.assertEqual(
-            prompt_path,
-            project_root / ".claude" / "claude-auto-review" / "clients" / "client-client-1" / "run" / "review-rev-123-prompt.md",
-        )
+        expected_reviews = client_reviews_dir(project_root, "1")
+        self.assertEqual(review_path.parent, expected_reviews)
+        self.assertEqual(review_path.name, "review-rev-123.md")
+        expected_run = client_run_dir(project_root, "1")
+        self.assertEqual(prompt_path.parent, expected_run)
+        self.assertEqual(prompt_path.name, "review-rev-123-prompt.md")
 
     def test_create_review_prompt_files_writes_prompt_and_review_files(self):
         project_root = Path(tempfile.mkdtemp(prefix="claude-auto-review-prompt-flow-"))

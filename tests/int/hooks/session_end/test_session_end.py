@@ -11,6 +11,8 @@ from claude_auto_review.runtime.setup import ensure_client_runtime  # noqa: E402
 from claude_auto_review.state.store_read import load_state  # noqa: E402
 from claude_auto_review.state.store_write import append_state  # noqa: E402
 from tests.int.hooks.support import HookTestCase  # noqa: E402
+from tests.support import client_dir  # noqa: E402
+from claude_auto_review.paths import get_log_path  # noqa: E402
 
 
 def find_client_dir(project_root, session_id):
@@ -32,7 +34,7 @@ class TestSessionEndHook(HookTestCase, unittest.TestCase):
         project_root = self.temp_project()
         result = self.run_python("hooks/session_end.py", project_root, input_text="{not-json")
         self.assertEqual(result.returncode, 0)
-        log_path = project_root / ".claude" / "claude-auto-review" / "claude-auto-review.log"
+        log_path = get_log_path(project_root)
         self.assertTrue(log_path.exists())
         self.assertIn("session_end_error", log_path.read_text(encoding="utf-8"))
 
@@ -85,7 +87,9 @@ class TestSessionEndHook(HookTestCase, unittest.TestCase):
         # Create a real client dir so we have something to clean up
         ensure_client_runtime(project_root, "corrupt-test")
         # Write corrupted state into it
-        corrupt_state = project_root / ".claude" / "claude-auto-review" / "clients" / "client-corrupt-test" / "state.jsonl"
+        from claude_auto_review.paths import client_state_path
+
+        corrupt_state = client_state_path(project_root, "corrupt-test")
         corrupt_state.write_text("NOT JSON {{{", encoding="utf-8")
         result = self.run_python("hooks/session_end.py", project_root, client_id="corrupt-test")
         self.assertEqual(result.returncode, 0)
@@ -99,7 +103,7 @@ class TestSessionEndHook(HookTestCase, unittest.TestCase):
                         json.dumps({"tool_input": {"file_path": "src/app.ts"}}))
         result = self.run_python("hooks/session_end.py", project_root)
         self.assertEqual(result.returncode, 0)
-        log_path = project_root / ".claude" / "claude-auto-review" / "claude-auto-review.log"
+        log_path = get_log_path(project_root)
         self.assertTrue(log_path.exists())
         log_content = log_path.read_text(encoding="utf-8")
         self.assertIn("session_end_cleanup", log_content)
@@ -152,7 +156,7 @@ class TestSessionEndHook(HookTestCase, unittest.TestCase):
         self.assertIn("rev-expired", [e.get("reviewId") for e in load_state(project_root, "test-session") if e.get("type") == "review"])
         result = self.run_python("hooks/session_end.py", project_root, client_id="test-session")
         self.assertEqual(result.returncode, 0)
-        log_path = project_root / ".claude" / "claude-auto-review" / "claude-auto-review.log"
+        log_path = get_log_path(project_root)
         log_content = log_path.read_text(encoding="utf-8")
         self.assertIn("session_end_cleanup", log_content)
         self.assertIn("\"expired_removed\":1", log_content)
@@ -176,7 +180,7 @@ class TestSessionEndHook(HookTestCase, unittest.TestCase):
         payload = json.dumps({"session_id": "payload-session"})
         result = self.run_python("hooks/session_end.py", project_root, input_text=payload, client_id="env-session")
         self.assertEqual(result.returncode, 0)
-        self.assertFalse((project_root / ".claude" / "claude-auto-review" / "clients" / "client-payload-session").exists())
+        self.assertFalse(client_dir(project_root, "payload-session").exists())
 
     def test_session_end_non_dict_payload_falls_back_to_env_session(self):
         project_root = self.temp_project()
@@ -186,8 +190,8 @@ class TestSessionEndHook(HookTestCase, unittest.TestCase):
         # JSON number payload parses, but has no session_id
         result = self.run_python("hooks/session_end.py", project_root, input_text="1", client_id="env-session")
         self.assertEqual(result.returncode, 0)
-        self.assertFalse((project_root / ".claude" / "claude-auto-review" / "clients" / "client-env-session").exists())
-        self.assertTrue((project_root / ".claude" / "claude-auto-review" / "clients" / "client-other-session").exists())
+        self.assertFalse(client_dir(project_root, "env-session").exists())
+        self.assertTrue(client_dir(project_root, "other-session").exists())
 
 
 if __name__ == "__main__":

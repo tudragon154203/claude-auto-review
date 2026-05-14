@@ -1,4 +1,5 @@
 import os
+import re
 import socket
 from datetime import datetime, timezone
 from pathlib import Path
@@ -39,7 +40,7 @@ def get_client_id(stdin_session_id=None) -> str:
     """Returns a stable identifier for the current session.
 
     When a session_id is available (from stdin or CLAUDE_SESSION_ID),
-    it used directly as the client_id. This ensures all hook invocations
+    it is used directly as the client_id. This ensures all hook invocations
     within the same session share the same client directory.
 
     When no session_id is available, a timestamp prefix is added to
@@ -58,8 +59,76 @@ def get_client_id(stdin_session_id=None) -> str:
     return f"{ts}_{hostname}-{pid}"
 
 
+_CLIENT_RUNTIME_DIR_PATTERN = re.compile(r"^client-(\d{8}-\d{6})_(.+)$")
+_CLIENT_RUNTIME_DIR_CACHE = {}
+
+
+def _client_runtime_dir_cache_key(project_root: Path, client_id: str):
+    return str(project_root), client_id
+
+
+def _timestamped_client_runtime_dir(project_root: Path, client_id: str) -> Path:
+    ts = datetime.now().strftime("%Y%m%d-%H%M%S")
+    return project_root / CLIENTS_DIR / f"client-{ts}_{client_id}"
+
+
+def _find_existing_client_runtime_dir(project_root: Path, client_id: str):
+    clients_dir = project_root / CLIENTS_DIR
+    if not clients_dir.exists():
+        return None
+
+    timestamped = []
+    legacy = []
+    legacy_name = f"client-{client_id}"
+    for child in clients_dir.iterdir():
+        if not child.is_dir():
+            continue
+        if child.name == legacy_name:
+            legacy.append(child)
+            continue
+        match = _CLIENT_RUNTIME_DIR_PATTERN.match(child.name)
+        if match and match.group(2) == client_id:
+            timestamped.append(child)
+
+    if timestamped:
+        return sorted(timestamped)[-1]
+    if legacy:
+        return sorted(legacy)[-1]
+    return None
+
+
 def get_client_runtime_dir(project_root: Path, client_id: str) -> Path:
-    return project_root / CLIENTS_DIR / f"client-{client_id}"
+    project_root = _project_root_path(project_root)
+    cache_key = _client_runtime_dir_cache_key(project_root, client_id)
+    cached = _CLIENT_RUNTIME_DIR_CACHE.get(cache_key)
+    if cached is not None:
+        return cached
+
+    if _CLIENT_RUNTIME_DIR_PATTERN.match(client_id):
+        client_dir = project_root / CLIENTS_DIR / f"client-{client_id}"
+    else:
+        client_dir = _find_existing_client_runtime_dir(project_root, client_id)
+        if client_dir is None:
+            client_dir = _timestamped_client_runtime_dir(project_root, client_id)
+
+    _CLIENT_RUNTIME_DIR_CACHE[cache_key] = client_dir
+    return client_dir
+
+
+def invalidate_client_runtime_dir_cache(project_root: Path, client_id: str):
+    project_root = _project_root_path(project_root)
+    cache_key = _client_runtime_dir_cache_key(project_root, client_id)
+    _CLIENT_RUNTIME_DIR_CACHE.pop(cache_key, None)
+    # Also invalidate by bare session ID if given a full dir name
+    if client_id.startswith("client-"):
+        bare_id = client_id[len("client-"):]
+        match = _CLIENT_RUNTIME_DIR_PATTERN.match(bare_id)
+        if match:
+            bare_key = _client_runtime_dir_cache_key(project_root, match.group(2))
+            _CLIENT_RUNTIME_DIR_CACHE.pop(bare_key, None)
+        else:
+            bare_key = _client_runtime_dir_cache_key(project_root, bare_id)
+            _CLIENT_RUNTIME_DIR_CACHE.pop(bare_key, None)
 
 
 def client_state_path(project_root: Path, client_id: str) -> Path:

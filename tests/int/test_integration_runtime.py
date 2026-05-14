@@ -4,6 +4,7 @@ from datetime import datetime
 from pathlib import Path
 
 from tests.int.support import IntegrationTestCase, REPO_ROOT, _FakeResponse
+from tests.support import client_dir
 
 from claude_auto_review.paths import get_log_path
 from claude_auto_review.runtime.cleanup import cancel_runtime
@@ -113,11 +114,11 @@ class IntegrationRuntimeTests(IntegrationTestCase):
             client_id=client_id,
         )
 
-        client_dir = project_root / ".claude" / "claude-auto-review" / "clients" / f"client-{client_id}"
-        self.assertTrue(client_dir.exists())
+        client_dir_path = client_dir(project_root, client_id)
+        self.assertTrue(client_dir_path.exists())
 
         cancel_runtime(project_root, client_id=client_id)
-        self.assertFalse(client_dir.exists())
+        self.assertFalse(client_dir_path.exists())
 
     def test_ensure_runtime_is_idempotent(self):
         project_root = self.temp_project()

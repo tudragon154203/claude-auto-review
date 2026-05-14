@@ -60,7 +60,8 @@ class EndToEndTestCase(TempProjectMixin, SubprocessMixin, unittest.TestCase):
         return server, f"http://127.0.0.1:{server.server_port}"
 
     def complete_review(self, project_root, verdict="Clean - no issues found.", client_id="test-session"):
-        review_dir = project_root / ".claude" / "claude-auto-review" / "clients" / f"client-{client_id}" / "reviews"
+        from claude_auto_review.paths import client_reviews_dir
+        review_dir = client_reviews_dir(project_root, client_id)
         review_path = sorted(review_dir.glob("review-*.md"))[-1]
         content = review_path.read_text(encoding="utf-8")
         content = content.replace(

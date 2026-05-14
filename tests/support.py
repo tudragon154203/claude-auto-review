@@ -12,12 +12,10 @@ from claude_auto_review.paths import get_client_runtime_dir
 
 
 def client_dir(project_root, client_id="test-session"):
-    """Return the actual client directory path, resolving any timestamp prefix."""
     return get_client_runtime_dir(Path(project_root), client_id)
 
 
 def client_relpath(project_root, client_id="test-session"):
-    """Return the relative client directory path for state entries."""
     return str(client_dir(project_root, client_id).relative_to(Path(project_root)))
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -78,15 +76,9 @@ class SubprocessMixin:
             fake_dir = Path(tempfile.mkdtemp(prefix="claude-fake-"))
             fake_script = fake_dir / "claude_fake.py"
             fake_cmd = fake_dir / "claude.cmd"
-            capture_file = (
-                Path(project_root)
-                / ".claude"
-                / "claude-auto-review"
-                / "clients"
-                / f"client-{prefixed_client_id}"
-                / "run"
-                / "claude-cli-args.json"
-            )
+            from claude_auto_review.paths import client_run_dir
+
+            capture_file = client_run_dir(project_root, client_id) / "claude-cli-args.json"
             fake_script.write_text(
                 "import json\n"
                 "import os\n"

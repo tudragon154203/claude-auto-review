@@ -13,6 +13,7 @@ from claude_auto_review.runtime.setup import ensure_client_runtime  # noqa: E402
 from claude_auto_review.runtime.cleanup import cleanup_stale_clients  # noqa: E402
 from claude_auto_review.state.store_write import append_state  # noqa: E402
 from tests.int.hooks.support import HookTestCase  # noqa: E402
+from tests.support import client_dir  # noqa: E402
 
 
 class TestStaleCleanup(HookTestCase, unittest.TestCase):
@@ -41,10 +42,10 @@ class TestStaleCleanup(HookTestCase, unittest.TestCase):
         removed = cleanup_stale_clients(project_root)
 
         self.assertEqual(len(removed), 1)
-        self.assertIn("client-stale-session", str(removed[0]))
+        self.assertIn("stale-session", str(removed[0]))
 
-        stale_dir = project_root / ".claude" / "claude-auto-review" / "clients" / "client-stale-session"
-        fresh_dir = project_root / ".claude" / "claude-auto-review" / "clients" / "client-fresh-session"
+        stale_dir = client_dir(project_root, "stale-session")
+        fresh_dir = client_dir(project_root, "fresh-session")
 
         self.assertFalse(stale_dir.exists())
         self.assertTrue(fresh_dir.exists())
@@ -53,7 +54,7 @@ class TestStaleCleanup(HookTestCase, unittest.TestCase):
         project_root = self.temp_project()
         ensure_client_runtime(project_root, "no-state-stale")
 
-        stale_dir = project_root / ".claude" / "claude-auto-review" / "clients" / "client-no-state-stale"
+        stale_dir = client_dir(project_root, "no-state-stale")
         state_file = stale_dir / "state.jsonl"
         if state_file.exists():
             state_file.unlink()

@@ -41,10 +41,14 @@ class TestRuntime(StateTestCase, unittest.TestCase):
         self.assertFalse((project_root / ".claude" / "claude-auto-review" / "state.jsonl").exists())
 
     def test_cancel_runtime_removes_client_data(self):
+        from tests.support import client_dir
+
         project_root = self.temp_project()
         ensure_client_runtime(project_root, "test-client")
+        target = client_dir(project_root, "test-client")
+        self.assertTrue(target.exists())
         cancel_runtime(project_root, client_id="test-client")
-        self.assertFalse((project_root / ".claude" / "claude-auto-review" / "clients" / "client-test-client").exists())
+        self.assertFalse(target.exists())
 
     def test_cancel_runtime_removes_empty_runtime_directory(self):
         project_root = self.temp_project()
@@ -58,18 +62,16 @@ class TestRuntime(StateTestCase, unittest.TestCase):
         self.assertFalse(runtime_dir.exists())
 
     def test_cancel_session_removes_client_state(self):
+        from tests.support import client_dir as _client_dir
+
         project_root = self.temp_project()
         ensure_client_runtime(project_root, "session-a")
         ensure_client_runtime(project_root, "session-b")
 
         removed = cancel_session(project_root, client_id="session-a")
 
-        self.assertFalse(
-            (project_root / ".claude" / "claude-auto-review" / "clients" / "client-session-a").exists()
-        )
-        self.assertTrue(
-            (project_root / ".claude" / "claude-auto-review" / "clients" / "client-session-b").exists()
-        )
+        self.assertFalse(_client_dir(project_root, "session-a").exists())
+        self.assertTrue(_client_dir(project_root, "session-b").exists())
         self.assertGreater(len(removed), 0)
 
     def test_cancel_session_noop_when_no_data(self):
@@ -78,18 +80,16 @@ class TestRuntime(StateTestCase, unittest.TestCase):
         self.assertEqual(removed, [])
 
     def test_cancel_session_does_not_overmatch_underscore_suffix(self):
+        from tests.support import client_dir as _client_dir
+
         project_root = self.temp_project()
         ensure_client_runtime(project_root, "team_alpha")
         ensure_client_runtime(project_root, "other_alpha")
 
         removed = cancel_session(project_root, client_id="team_alpha")
 
-        self.assertFalse(
-            (project_root / ".claude" / "claude-auto-review" / "clients" / "client-team_alpha").exists()
-        )
-        self.assertTrue(
-            (project_root / ".claude" / "claude-auto-review" / "clients" / "client-other_alpha").exists()
-        )
+        self.assertFalse(_client_dir(project_root, "team_alpha").exists())
+        self.assertTrue(_client_dir(project_root, "other_alpha").exists())
         self.assertGreater(len(removed), 0)
 
     def test_remove_tree_oserror_suppressed(self):

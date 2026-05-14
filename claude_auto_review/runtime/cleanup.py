@@ -2,7 +2,7 @@ from datetime import datetime
 import shutil
 import json
 
-from claude_auto_review.paths import CLIENTS_DIR, RUNTIME_DIR, client_state_path, get_client_runtime_dir
+from claude_auto_review.paths import CLIENTS_DIR, RUNTIME_DIR, client_state_path, get_client_runtime_dir, invalidate_client_runtime_dir_cache
 from claude_auto_review.runtime.helpers import log_event, log_failure, resolve_client_id, resolve_project_root
 from claude_auto_review.runtime.pending_cleanup import cleanup_expired_pending_reviews
 from claude_auto_review.settings import SETTING_STALE_CLIENT_TIMEOUT, load_settings
@@ -41,6 +41,7 @@ def cancel_runtime(project_root=None, client_id=""):
     if client_id:
         client_dir = get_client_runtime_dir(project_root, client_id)
         if _remove_tree(client_dir, project_root=project_root):
+            invalidate_client_runtime_dir_cache(project_root, client_id)
             removed.append(client_dir)
         return removed
     runtime = project_root / RUNTIME_DIR
@@ -63,6 +64,7 @@ def cancel_session(project_root=None, client_id=""):
     client_dir = get_client_runtime_dir(project_root, client_id)
     removed = []
     if _remove_tree(client_dir, project_root=project_root):
+        invalidate_client_runtime_dir_cache(project_root, client_id)
         removed.append(client_dir)
         return removed
     return []
@@ -108,6 +110,7 @@ def cleanup_stale_clients(project_root=None):
             age_hours = (datetime.now().timestamp() - st.st_mtime) / 3600.0
             if age_hours > timeout_hours:
                 if _remove_tree(client_dir, project_root=project_root):
+                    invalidate_client_runtime_dir_cache(project_root, client_dir.name)
                     removed.append(client_dir)
             continue
 
@@ -129,6 +132,7 @@ def cleanup_stale_clients(project_root=None):
 
         if last_entry and is_review_expired(last_entry, timeout_hours):
             if _remove_tree(client_dir, project_root=project_root):
+                invalidate_client_runtime_dir_cache(project_root, client_dir.name)
                 removed.append(client_dir)
 
     if removed:
