@@ -1,7 +1,7 @@
 import unittest
 from pathlib import Path
 
-from claude_auto_review.state.models import EditRecord, ReviewMetadata
+from claude_auto_review.state.models import EditRecord, ReviewFileRecord, ReviewMetadata
 from claude_auto_review.stop.reviews.selection import find_pending_review_for_files, get_entries_covered_by_review
 
 
@@ -26,13 +26,13 @@ class TestSelection(unittest.TestCase):
             _mk_review(
                 "best",
                 "pending",
-                files=[{"file": "a.ts", "hash": "1"}, {"file": "b.ts", "hash": "2"}],
+                files=[ReviewFileRecord(file="a.ts", hash="1"), ReviewFileRecord(file="b.ts", hash="2")],
                 timestamp="2026-05-11T10:00:00+07:00",
             ),
             _mk_review(
                 "partial",
                 "pending",
-                files=[{"file": "a.ts", "hash": "1"}],
+                files=[ReviewFileRecord(file="a.ts", hash="1")],
                 timestamp="2026-05-11T11:00:00+07:00",
             ),
         ]
@@ -48,7 +48,7 @@ class TestSelection(unittest.TestCase):
             _mk_review(
                 "stale",
                 "pending",
-                files=[{"file": "a.ts", "hash": "old-a"}, {"file": "b.ts", "hash": "b"}],
+                files=[ReviewFileRecord(file="a.ts", hash="old-a"), ReviewFileRecord(file="b.ts", hash="b")],
                 timestamp="2026-05-11T10:00:00+07:00",
             ),
         ]
@@ -63,7 +63,7 @@ class TestSelection(unittest.TestCase):
             _mk_review(
                 "stale",
                 "pending",
-                files=[{"file": "a.ts", "hash": "a"}, {"file": "b.ts", "hash": "b"}],
+                files=[ReviewFileRecord(file="a.ts", hash="a"), ReviewFileRecord(file="b.ts", hash="b")],
                 timestamp="2026-05-11T10:00:00+07:00",
             ),
         ]
@@ -74,7 +74,7 @@ class TestSelection(unittest.TestCase):
         self.assertIsNone(best)
 
     def test_get_entries_covered_by_review_uses_latest_state_entry(self):
-        review_entry = _mk_review("r", "pending", files=[{"file": "src/app.ts", "hash": "22222222"}])
+        review_entry = _mk_review("r", "pending", files=[ReviewFileRecord(file="src/app.ts", hash="22222222")])
         state_entries = [
             _mk_edit("src/app.ts", "11111111"),
             _mk_edit("src/app.ts", "22222222"),

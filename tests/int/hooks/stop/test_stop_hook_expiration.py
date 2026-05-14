@@ -6,7 +6,7 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[4]
 sys.path.insert(0, str(REPO_ROOT))
-from claude_auto_review.state.models import ReviewMetadata  # noqa: E402
+from claude_auto_review.state.models import ReviewFileRecord, ReviewMetadata  # noqa: E402
 from claude_auto_review.state.store_read import load_state  # noqa: E402
 from claude_auto_review.state.store_write import append_state  # noqa: E402
 from tests.int.hooks.support import HookTestCase  # noqa: E402
@@ -28,7 +28,7 @@ class TestStopHookExpiration(HookTestCase, unittest.TestCase):
                 reviewId="expired-payload",
                 reviewPath=client_relpath(project_root, "payload-session") + "/reviews/review-expired.md",
                 status="pending",
-                files=[{"file": "src/app.ts", "hash": "testhash"}],
+                files=[ReviewFileRecord(file="src/app.ts", hash="testhash")],
                 clientId="payload-session",
             ),
             project_root,
@@ -47,7 +47,7 @@ class TestStopHookExpiration(HookTestCase, unittest.TestCase):
         self.assertIn(stop.returncode, [0, 2], "Stop should not crash")
 
         state_after = load_state(project_root, client_id="payload-session")
-        pending_ids = [e.get("reviewId") for e in state_after if e.get("type") == "review" and e.get("status") == "pending"]
+        pending_ids = [e.reviewId for e in state_after if e.type == "review" and e.status == "pending"]
         self.assertIn("expired-payload", pending_ids)
 
     def test_pending_review_not_expired_is_used(self):
@@ -75,7 +75,7 @@ class TestStopHookExpiration(HookTestCase, unittest.TestCase):
                 reviewId="rev-expired",
                 reviewPath=client_relpath(project_root) + "/reviews/review-expired.md",
                 status="pending",
-                files=[{"file": "src/app.ts", "hash": "testhash"}],
+                files=[ReviewFileRecord(file="src/app.ts", hash="testhash")],
                 clientId="test-session",
             ),
             project_root,
@@ -83,14 +83,14 @@ class TestStopHookExpiration(HookTestCase, unittest.TestCase):
         )
 
         state_before = load_state(project_root, client_id="test-session")
-        expired_reviews = [e for e in state_before if e.get("type") == "review" and e.get("status") == "pending"]
+        expired_reviews = [e for e in state_before if e.type == "review" and e.status == "pending"]
         self.assertEqual(len(expired_reviews), 1, "Expired review should be in state")
 
         stop = self.run_python("hooks/stop_hook.py", project_root, env_overrides={"PATH": ""}, use_fake_claude=False)
         self.assertIn(stop.returncode, [0, 2], "Stop should not crash")
 
         state_after = load_state(project_root, client_id="test-session")
-        expired_ids = [e.get("reviewId") for e in state_after if e.get("type") == "review" and e.get("status") == "pending"]
+        expired_ids = [e.reviewId for e in state_after if e.type == "review" and e.status == "pending"]
         self.assertIn("rev-expired", expired_ids, "Stop hook should not remove expired reviews")
 
     def test_pending_review_timeout_custom_setting_skip_only(self):
@@ -110,7 +110,7 @@ class TestStopHookExpiration(HookTestCase, unittest.TestCase):
                 reviewId="rev-custom-timeout",
                 reviewPath=client_relpath(project_root) + "/reviews/review-custom.md",
                 status="pending",
-                files=[{"file": "src/app.ts", "hash": "testhash"}],
+                files=[ReviewFileRecord(file="src/app.ts", hash="testhash")],
                 clientId="test-session",
             ),
             project_root,
@@ -121,5 +121,5 @@ class TestStopHookExpiration(HookTestCase, unittest.TestCase):
         self.assertIn(stop.returncode, [0, 2], "Stop should not crash")
 
         state_after = load_state(project_root, client_id="test-session")
-        expired_ids = [e.get("reviewId") for e in state_after if e.get("type") == "review" and e.get("status") == "pending"]
+        expired_ids = [e.reviewId for e in state_after if e.type == "review" and e.status == "pending"]
         self.assertIn("rev-custom-timeout", expired_ids, "Stop hook should not remove expired reviews")

@@ -42,7 +42,7 @@ class EndToEndStopHookAutocompleteTests(EndToEndTestCase):
         self.assertIn("--system-prompt-file", cli_args)
 
         state = load_state(project_root, "test-session")
-        self.assertTrue(state[-1].get("reviewed", False))
+        self.assertTrue(state[-1].reviewed)
         self.assertEqual(len(get_unreviewed_files(state)), 0)
 
     @unittest.skipUnless(real_cli_available(), "real claude CLI not available")

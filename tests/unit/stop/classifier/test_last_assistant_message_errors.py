@@ -151,7 +151,7 @@ class TestLastAssistantMessageErrors(StateTestCase, unittest.TestCase):
         self.assertEqual(result.status, "error")
         self.assertEqual(result.reason, "missing_base_url")
         state = load_state(self.project_root, self.client_id)
-        self.assertEqual(state[-1]["type"], "last_assistant_message_classified")
+        self.assertEqual(state[-1].type, "last_assistant_message_classified")
         self.assertNotIn("top-secret", json.dumps([vars(r) for r in state]))
 
 

@@ -1,17 +1,43 @@
-from dataclasses import dataclass, asdict
-from typing import Literal, Optional, Any
+from dataclasses import dataclass
+from typing import Any, Literal, Optional
 
 
 @dataclass(frozen=True)
 class DictLikeModel:
-    def __getitem__(self, key: str) -> Any:
-        try:
-            return getattr(self, key)
-        except AttributeError:
-            raise KeyError(key)
+    pass
 
-    def get(self, key: str, default: Any = None) -> Any:
-        return getattr(self, key, default)
+
+@dataclass(frozen=True)
+class ReviewFileRecord(DictLikeModel):
+    file: str
+    hash: str
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "file": self.file,
+            "hash": self.hash,
+        }
+
+
+def _coerce_review_file_entries(files: list[ReviewFileRecord]) -> list[ReviewFileRecord]:
+    coerced: list[ReviewFileRecord] = []
+    for item in files:
+        if not isinstance(item, ReviewFileRecord):
+            raise ValueError("files must contain ReviewFileRecord entries")
+        coerced.append(item)
+    return coerced
+
+
+def _parse_review_file_entries(files: list[dict[str, str]] | list[ReviewFileRecord]) -> list[ReviewFileRecord]:
+    parsed: list[ReviewFileRecord] = []
+    for item in files:
+        if isinstance(item, ReviewFileRecord):
+            parsed.append(item)
+            continue
+        if not isinstance(item, dict) or "file" not in item or "hash" not in item:
+            raise ValueError("files must contain file/hash entries")
+        parsed.append(ReviewFileRecord(file=item["file"], hash=item["hash"]))
+    return parsed
 
 
 @dataclass(frozen=True)
@@ -66,10 +92,13 @@ class ReviewMetadata(DictLikeModel):
     timestamp: str
     reviewId: str
     reviewPath: str
-    files: list[dict[str, str]]
+    files: list[ReviewFileRecord]
     clientId: str
     status: Literal["pending", "completed"] = "pending"
     type: Literal["review"] = "review"
+
+    def __post_init__(self):
+        object.__setattr__(self, "files", _coerce_review_file_entries(self.files))
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -77,7 +106,7 @@ class ReviewMetadata(DictLikeModel):
             "type": self.type,
             "reviewId": self.reviewId,
             "reviewPath": self.reviewPath,
-            "files": self.files,
+            "files": [entry.to_dict() for entry in self.files],
             "clientId": self.clientId,
             "status": self.status,
         }
@@ -87,18 +116,21 @@ class ReviewMetadata(DictLikeModel):
 class ReviewCompletedRecord(DictLikeModel):
     timestamp: str
     reviewId: str
-    files: list[dict[str, str]]
+    files: list[ReviewFileRecord]
     clientId: str = ""
     duration: Optional[str] = None
     durationSeconds: Optional[float] = None
     type: Literal["review_completed"] = "review_completed"
+
+    def __post_init__(self):
+        object.__setattr__(self, "files", _coerce_review_file_entries(self.files))
 
     def to_dict(self) -> dict[str, Any]:
         d: dict[str, Any] = {
             "timestamp": self.timestamp,
             "type": self.type,
             "reviewId": self.reviewId,
-            "files": self.files,
+            "files": [entry.to_dict() for entry in self.files],
             "clientId": self.clientId,
         }
         if self.duration is not None:
@@ -161,14 +193,14 @@ _PARSERS = {
         timestamp=d.get("timestamp", ""),
         reviewId=d.get("reviewId", ""),
         reviewPath=d.get("reviewPath", ""),
-        files=d.get("files", []),
+        files=_parse_review_file_entries(d.get("files", [])),
         clientId=d.get("clientId", ""),
         status=d.get("status", "pending"),
     ),
     "review_completed": lambda d: ReviewCompletedRecord(
         timestamp=d.get("timestamp", ""),
         reviewId=d.get("reviewId", ""),
-        files=d.get("files", []),
+        files=_parse_review_file_entries(d.get("files", [])),
         clientId=d.get("clientId", ""),
         duration=d.get("duration"),
         durationSeconds=d.get("durationSeconds"),
@@ -195,5 +227,5 @@ def parse_event(raw: dict[str, Any]) -> StateEvent | None:
         return None
     try:
         return parser(raw)
-    except (TypeError, KeyError):
+    except (TypeError, KeyError, ValueError):
         return None

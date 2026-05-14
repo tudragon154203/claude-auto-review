@@ -2,13 +2,13 @@ from pathlib import Path
 
 from claude_auto_review.paths import local_now_iso
 from claude_auto_review.settings import DEFAULT_SETTINGS
-from claude_auto_review.state.models import EditRecord, StopBlockedRecord
+from claude_auto_review.state.models import StopBlockedRecord
 from claude_auto_review.state.store_write import append_state
 from claude_auto_review.stop.response import block_response
 
 
 def _file_of(entry):
-    return entry.file if isinstance(entry, EditRecord) else entry["file"]
+    return entry.file
 
 
 def build_unreviewed_files_string(unreviewed_entries):

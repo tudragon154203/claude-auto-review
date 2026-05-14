@@ -1,5 +1,6 @@
 import unittest
 
+from claude_auto_review.state.models import ReviewMetadata
 from claude_auto_review.state.reviews import is_review_clean, is_review_complete, is_review_expired
 
 from tests.unit.state.support import StateTestCase
@@ -76,27 +77,57 @@ class TestReviewCompletion(StateTestCase, unittest.TestCase):
         self.assertFalse(is_review_complete(path))
 
     def test_is_review_expired_with_timeout_zero(self):
-        entry = {"timestamp": "2024-01-01T07:00:00+07:00"}
+        entry = ReviewMetadata(
+            timestamp="2024-01-01T07:00:00+07:00",
+            reviewId="r1",
+            reviewPath="reviews/r1.md",
+            files=[],
+            clientId="c",
+        )
         self.assertFalse(is_review_expired(entry, 0))
 
     def test_is_review_expired_missing_timestamp(self):
-        entry = {"reviewId": "r1"}
+        entry = ReviewMetadata(
+            timestamp="",
+            reviewId="r1",
+            reviewPath="reviews/r1.md",
+            files=[],
+            clientId="c",
+        )
         self.assertFalse(is_review_expired(entry, 1))
 
     def test_is_review_expired_invalid_timestamp(self):
-        entry = {"timestamp": "not-a-date"}
+        entry = ReviewMetadata(
+            timestamp="not-a-date",
+            reviewId="r1",
+            reviewPath="reviews/r1.md",
+            files=[],
+            clientId="c",
+        )
         self.assertFalse(is_review_expired(entry, 1))
 
     def test_is_review_expired_old_review(self):
         from datetime import datetime, timedelta
         old_time = (datetime.now().astimezone() - timedelta(hours=2)).isoformat()
-        entry = {"timestamp": old_time}
+        entry = ReviewMetadata(
+            timestamp=old_time,
+            reviewId="r1",
+            reviewPath="reviews/r1.md",
+            files=[],
+            clientId="c",
+        )
         self.assertTrue(is_review_expired(entry, 1))
 
     def test_is_review_expired_recent_review(self):
         from datetime import datetime, timedelta
         recent_time = (datetime.now().astimezone() - timedelta(minutes=30)).isoformat()
-        entry = {"timestamp": recent_time}
+        entry = ReviewMetadata(
+            timestamp=recent_time,
+            reviewId="r1",
+            reviewPath="reviews/r1.md",
+            files=[],
+            clientId="c",
+        )
         self.assertFalse(is_review_expired(entry, 1))
 
 

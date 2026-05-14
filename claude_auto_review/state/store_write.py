@@ -7,6 +7,7 @@ from claude_auto_review.runtime.helpers import resolve_client_id, resolve_projec
 from claude_auto_review.state.models import (
     EditRecord,
     ReviewMetadata,
+    ReviewFileRecord,
     StateEvent,
 )
 
@@ -18,8 +19,8 @@ def _append_jsonl_state(entry: StateEvent, project_root, client_id):
         f.write(json.dumps(entry.to_dict()) + "\n")
 
 
-def _review_file_entries(entries: list[EditRecord]):
-    return [{"file": entry.file, "hash": entry.hash} for entry in entries]
+def _review_file_entries(entries: list[EditRecord]) -> list[ReviewFileRecord]:
+    return [ReviewFileRecord(file=entry.file, hash=entry.hash) for entry in entries]
 
 
 def _review_state_entry(entries: list[EditRecord], review_id, review_path, client_id, project_root):

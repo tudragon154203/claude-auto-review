@@ -25,9 +25,9 @@ class EndToEndFileDeletionTests(EndToEndTestCase):
         self.assertEqual(result.returncode, 0)
         state = load_state(project_root, "test-session")
         self.assertEqual(len(state), 2)
-        self.assertEqual(state[1]["file"], "src/app.ts")
-        self.assertEqual(state[1]["hash"], "__deleted__")
-        self.assertTrue(state[1]["deleted"])
+        self.assertEqual(state[1].file, "src/app.ts")
+        self.assertEqual(state[1].hash, "__deleted__")
+        self.assertTrue(state[1].deleted)
 
     def test_deleted_file_allows_stop(self):
         project_root = self.temp_project()

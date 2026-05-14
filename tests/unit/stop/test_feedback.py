@@ -2,6 +2,7 @@ import json
 import unittest
 from unittest.mock import patch
 from pathlib import Path
+from claude_auto_review.state.models import EditRecord
 from claude_auto_review.stop.feedback import (
     block_response,
     build_review_completion_prompt,
@@ -12,7 +13,10 @@ from claude_auto_review.stop.feedback import (
 
 class TestFeedback(unittest.TestCase):
     def test_build_unreviewed_files_string(self):
-        entries = [{"file": "a.ts", "hash": "1"}, {"file": "b.ts", "hash": "2"}]
+        entries = [
+            EditRecord(timestamp="2026-05-05T08:00:00+07:00", file="a.ts", hash="1"),
+            EditRecord(timestamp="2026-05-05T08:00:00+07:00", file="b.ts", hash="2"),
+        ]
         self.assertEqual(build_unreviewed_files_string(entries), "a.ts, b.ts")
 
     def test_build_review_completion_prompt(self):

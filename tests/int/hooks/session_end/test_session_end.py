@@ -8,7 +8,7 @@ REPO_ROOT = Path(__file__).resolve().parents[4]
 sys.path.insert(0, str(REPO_ROOT))
 
 from claude_auto_review.runtime.setup import ensure_client_runtime  # noqa: E402
-from claude_auto_review.state.models import ReviewMetadata  # noqa: E402
+from claude_auto_review.state.models import ReviewFileRecord, ReviewMetadata  # noqa: E402
 from claude_auto_review.state.store_read import load_state  # noqa: E402
 from claude_auto_review.state.store_write import append_state  # noqa: E402
 from tests.int.hooks.support import HookTestCase  # noqa: E402
@@ -148,13 +148,13 @@ class TestSessionEndHook(HookTestCase, unittest.TestCase):
                 reviewId="rev-expired",
                 reviewPath=".claude/claude-auto-review/clients/client-test-session/reviews/review-expired.md",
                 status="pending",
-                files=[{"file": "src/app.ts", "hash": "deadbeef"}],
+                files=[ReviewFileRecord(file="src/app.ts", hash="deadbeef")],
                 clientId="test-session",
             ),
             project_root,
             client_id="test-session",
         )
-        self.assertIn("rev-expired", [e.get("reviewId") for e in load_state(project_root, "test-session") if e.get("type") == "review"])
+        self.assertIn("rev-expired", [e.reviewId for e in load_state(project_root, "test-session") if e.type == "review"])
         result = self.run_python("hooks/session_end.py", project_root, client_id="test-session")
         self.assertEqual(result.returncode, 0)
         log_path = get_log_path(project_root)
@@ -172,7 +172,7 @@ class TestSessionEndHook(HookTestCase, unittest.TestCase):
                 reviewId="rev-expired-payload",
                 reviewPath=".claude/claude-auto-review/clients/client-payload-session/reviews/review-expired.md",
                 status="pending",
-                files=[{"file": "src/app.ts", "hash": "deadbeef"}],
+                files=[ReviewFileRecord(file="src/app.ts", hash="deadbeef")],
                 clientId="payload-session",
             ),
             project_root,
@@ -197,4 +197,3 @@ class TestSessionEndHook(HookTestCase, unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-

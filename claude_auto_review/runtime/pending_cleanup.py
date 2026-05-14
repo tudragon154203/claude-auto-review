@@ -1,18 +1,20 @@
 from claude_auto_review.paths import client_state_path
 from claude_auto_review.runtime.helpers import log_event, log_failure, resolve_client_id, resolve_project_root
 from claude_auto_review.settings import load_settings
+from claude_auto_review.state.models import ReviewMetadata
 from claude_auto_review.state.review_expiry import is_review_expired
-from claude_auto_review.state.store_read import read_jsonl_records
+from claude_auto_review.state.store_read import parse_event, read_jsonl_records
 
 
 def _latest_review_statuses(entries):
     latest = {}
     for _, entry in entries:
-        if not isinstance(entry, dict) or entry.get("type") != "review":
+        parsed = parse_event(entry) if isinstance(entry, dict) else None
+        if not isinstance(parsed, ReviewMetadata):
             continue
-        review_id = entry.get("reviewId")
+        review_id = parsed.reviewId
         if review_id:
-            latest[review_id] = entry.get("status")
+            latest[review_id] = parsed.status
     return latest
 
 
@@ -35,12 +37,12 @@ def cleanup_expired_pending_reviews(project_root=None, client_id=""):
         if entry is None:
             entries.append(line)
             continue
+        parsed = parse_event(entry) if isinstance(entry, dict) else None
         if (
-            isinstance(entry, dict)
-            and entry.get("type") == "review"
-            and entry.get("status") == "pending"
-            and latest_statuses.get(entry.get("reviewId")) == "pending"
-            and is_review_expired(entry, timeout_hours)
+            isinstance(parsed, ReviewMetadata)
+            and parsed.status == "pending"
+            and latest_statuses.get(parsed.reviewId) == "pending"
+            and is_review_expired(parsed, timeout_hours)
         ):
             removed += 1
             continue

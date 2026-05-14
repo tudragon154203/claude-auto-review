@@ -1,7 +1,7 @@
 import unittest
 
 from claude_auto_review.runtime.setup import ensure_client_runtime, ensure_runtime
-from claude_auto_review.state.models import EditRecord, ReviewMetadata
+from claude_auto_review.state.models import EditRecord, ReviewFileRecord, ReviewMetadata
 from claude_auto_review.state.reviews import pending_reviews_for_entries
 from claude_auto_review.state.store_read import latest_review_entries_by_id, load_state, was_hash_reviewed
 from claude_auto_review.state.store_write import append_review_started, mark_files_reviewed
@@ -29,21 +29,21 @@ class TestReviewCycle(StateTestCase, unittest.TestCase):
         self.assertEqual(review_entry.clientId, "test-client")
 
     def test_pending_reviews_for_entries_no_matching_review(self):
-        state = [ReviewMetadata(timestamp="2026-05-05T08:00:00+07:00", reviewId="x", reviewPath="reviews/x.md", clientId="c", status="pending", files=[{"file": "a.ts", "hash": "1"}])]
+        state = [ReviewMetadata(timestamp="2026-05-05T08:00:00+07:00", reviewId="x", reviewPath="reviews/x.md", clientId="c", status="pending", files=[ReviewFileRecord(file="a.ts", hash="1")])]
         entries = [EditRecord(timestamp="2026-05-05T08:00:00+07:00", file="a.ts", hash="2")]
         result = pending_reviews_for_entries(state, entries)
         self.assertEqual(result, [])
 
     def test_pending_reviews_for_entries_excludes_non_pending_reviews(self):
-        state = [ReviewMetadata(timestamp="2026-05-05T08:00:00+07:00", reviewId="x", reviewPath="reviews/x.md", clientId="c", status="completed", files=[{"file": "a.ts", "hash": "1"}])]
+        state = [ReviewMetadata(timestamp="2026-05-05T08:00:00+07:00", reviewId="x", reviewPath="reviews/x.md", clientId="c", status="completed", files=[ReviewFileRecord(file="a.ts", hash="1")])]
         entries = [EditRecord(timestamp="2026-05-05T08:00:00+07:00", file="a.ts", hash="1")]
         result = pending_reviews_for_entries(state, entries)
         self.assertEqual(result, [])
 
     def test_pending_reviews_for_entries_uses_latest_review_status(self):
         state = [
-            ReviewMetadata(timestamp="2026-05-05T08:00:00+07:00", reviewId="x", reviewPath="reviews/x.md", clientId="c", status="pending", files=[{"file": "a.ts", "hash": "1"}]),
-            ReviewMetadata(timestamp="2026-05-05T08:01:00+07:00", reviewId="x", reviewPath="reviews/x.md", clientId="c", status="completed", files=[{"file": "a.ts", "hash": "1"}]),
+            ReviewMetadata(timestamp="2026-05-05T08:00:00+07:00", reviewId="x", reviewPath="reviews/x.md", clientId="c", status="pending", files=[ReviewFileRecord(file="a.ts", hash="1")]),
+            ReviewMetadata(timestamp="2026-05-05T08:01:00+07:00", reviewId="x", reviewPath="reviews/x.md", clientId="c", status="completed", files=[ReviewFileRecord(file="a.ts", hash="1")]),
         ]
         entries = [EditRecord(timestamp="2026-05-05T08:00:00+07:00", file="a.ts", hash="1")]
         result = pending_reviews_for_entries(state, entries)

@@ -43,7 +43,7 @@ class TestStopHookLifecycle(HookTestCase, unittest.TestCase):
         self.assertEqual(self.run_python("hooks/stop_hook.py", project_root).returncode, 0)
         post_again = self.run_python("hooks/post_tool_use.py", project_root, json.dumps({"file_path": "src/app.ts"}))
         self.assertEqual(post_again.returncode, 0)
-        self.assertTrue(load_state(project_root, "test-session")[-1]["reviewed"])
+        self.assertTrue(load_state(project_root, "test-session")[-1].reviewed)
         self.assertEqual(self.run_python("hooks/stop_hook.py", project_root).returncode, 0)
 
     def test_reblocks_after_reviewed_file_changes_to_new_hash(self):
@@ -59,7 +59,7 @@ class TestStopHookLifecycle(HookTestCase, unittest.TestCase):
         stop = self.run_python("hooks/stop_hook.py", project_root)
         self.assertEqual(stop.returncode, 0)
         self.assertEqual(stop.stdout.strip(), "")
-        self.assertTrue(load_state(project_root, "test-session")[-1]["reviewed"])
+        self.assertTrue(load_state(project_root, "test-session")[-1].reviewed)
 
     def test_stop_hook_outputs_strict_json_when_blocking(self):
         project_root = self.temp_project()
@@ -90,7 +90,7 @@ class TestStopHookLifecycle(HookTestCase, unittest.TestCase):
         stop = self.run_python("hooks/stop_hook.py", project_root)
         self.assertEqual(stop.returncode, 0, "New unreviewed edit after clean review should approve again")
         state = load_state(project_root, "test-session")
-        self.assertTrue(state[-1]["reviewed"])
+        self.assertTrue(state[-1].reviewed)
 
     def test_stop_hook_creates_subagent_and_waits_for_review(self):
         """Stop hook runs review_prompt.py itself before blocking, then waits for review completion."""
@@ -127,4 +127,3 @@ class TestStopHookLifecycle(HookTestCase, unittest.TestCase):
 
         stop3 = self.run_python("hooks/stop_hook.py", project_root)
         self.assertEqual(stop3.returncode, 0, "Stop should be allowed after review is completed")
-

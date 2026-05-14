@@ -18,7 +18,7 @@ class TestPostToolUseHook(HookTestCase, unittest.TestCase):
 
         post = self.run_python("hooks/post_tool_use.py", project_root, json.dumps({"tool_input": {"file_path": "src/app.ts"}}))
         self.assertEqual(post.returncode, 0)
-        self.assertEqual(load_state(project_root, "test-session")[0]["file"], "src/app.ts")
+        self.assertEqual(load_state(project_root, "test-session")[0].file, "src/app.ts")
 
         stop = self.run_python("hooks/stop_hook.py", project_root, env_overrides={"PATH": ""}, use_fake_claude=False)
         self.assertEqual(stop.returncode, 2)
@@ -31,7 +31,7 @@ class TestPostToolUseHook(HookTestCase, unittest.TestCase):
 
         post = self.run_python("hooks/post_tool_use.py", project_root, json.dumps({"file_path": str(target)}))
         self.assertEqual(post.returncode, 0)
-        self.assertEqual(load_state(project_root, "test-session")[0]["file"], "src/app.ts")
+        self.assertEqual(load_state(project_root, "test-session")[0].file, "src/app.ts")
 
     def test_post_tool_use_accepts_canonical_file_uris(self):
         project_root = self.temp_project()
@@ -41,8 +41,8 @@ class TestPostToolUseHook(HookTestCase, unittest.TestCase):
         post = self.run_python("hooks/post_tool_use.py", project_root, json.dumps({"file_path": f"file:///{target.as_posix()}"}))
         self.assertEqual(post.returncode, 0)
         state = load_state(project_root, "test-session")
-        self.assertEqual(state[0]["file"], "src/app.ts")
-        self.assertNotEqual(state[0]["hash"], "__deleted__")
+        self.assertEqual(state[0].file, "src/app.ts")
+        self.assertNotEqual(state[0].hash, "__deleted__")
 
     def test_post_tool_use_tracks_removed_file_and_stop_hook_allows(self):
         project_root = self.temp_project()
@@ -51,10 +51,10 @@ class TestPostToolUseHook(HookTestCase, unittest.TestCase):
         post = self.run_python("hooks/post_tool_use.py", project_root, json.dumps(payload))
         self.assertEqual(post.returncode, 0)
         state = load_state(project_root, "test-session")
-        self.assertEqual(state[0]["file"], "src/deleted.ts")
-        self.assertEqual(state[0]["hash"], "__deleted__")
-        self.assertFalse(state[0]["reviewed"])
-        self.assertTrue(state[0]["deleted"])
+        self.assertEqual(state[0].file, "src/deleted.ts")
+        self.assertEqual(state[0].hash, "__deleted__")
+        self.assertFalse(state[0].reviewed)
+        self.assertTrue(state[0].deleted)
         # Deleted files should allow stop since they no longer exist
         self.assertEqual(self.run_python("hooks/stop_hook.py", project_root, env_overrides={"PATH": ""}, use_fake_claude=False).returncode, 0)
 
@@ -118,7 +118,7 @@ class TestPostToolUseHook(HookTestCase, unittest.TestCase):
         py_post = self.run_python("hooks/post_tool_use.py", project_root, json.dumps({"file_path": "src/app.py"}))
         self.assertEqual(ts_post.returncode, 0)
         self.assertEqual(py_post.returncode, 0)
-        self.assertEqual([entry["file"] for entry in load_state(project_root, "test-session")], ["src/app.py"])
+        self.assertEqual([entry.file for entry in load_state(project_root, "test-session")], ["src/app.py"])
 
     def test_post_tool_use_writes_lifecycle_log_without_stdout(self):
         project_root = self.temp_project()
@@ -151,7 +151,7 @@ class TestPostToolUseHook(HookTestCase, unittest.TestCase):
         post = self.run_python("hooks/post_tool_use.py", project_root, json.dumps(payload))
         self.assertEqual(post.returncode, 0)
         self.assertEqual(
-            sorted(entry["file"] for entry in load_state(project_root, "test-session")),
+            sorted(entry.file for entry in load_state(project_root, "test-session")),
             ["src/a.ts", "src/b.ts"],
         )
         self.assertEqual(self.run_python("hooks/stop_hook.py", project_root, env_overrides={"PATH": ""}, use_fake_claude=False).returncode, 2)
@@ -159,4 +159,3 @@ class TestPostToolUseHook(HookTestCase, unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-

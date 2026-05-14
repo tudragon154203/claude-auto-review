@@ -2,13 +2,17 @@ import unittest
 from unittest.mock import patch, MagicMock
 from pathlib import Path
 
+from claude_auto_review.state.models import EditRecord
 from claude_auto_review.review.prompt import _log_failure, _run_review_prompt, main
 from claude_auto_review.stop.feedback import build_unreviewed_files_string
 
 
 class TestReviewPrompt(unittest.TestCase):
     def test_build_unreviewed_files_string_joins_filenames(self):
-        entries = [{"file": "src/a.ts", "hash": "1"}, {"file": "src/b.ts", "hash": "2"}]
+        entries = [
+            EditRecord(timestamp="2026-05-05T08:00:00+07:00", file="src/a.ts", hash="1"),
+            EditRecord(timestamp="2026-05-05T08:00:00+07:00", file="src/b.ts", hash="2"),
+        ]
         result = build_unreviewed_files_string(entries)
         self.assertEqual(result, "src/a.ts, src/b.ts")
 

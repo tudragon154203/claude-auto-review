@@ -42,7 +42,7 @@ class ConcurrencyReviewTests(ClientIsolationTestCase):
         self.assertEqual(review_entry.clientId, client_id)
         self.assertEqual(review_entry.reviewId, "rev-test")
         self.assertEqual(len(review_entry.files), 1)
-        self.assertEqual(review_entry.files[0]["file"], "file1.ts")
+        self.assertEqual(review_entry.files[0].file, "file1.ts")
 
     def test_stop_hook_blocking_logic_per_client(self):
         project_root = self.temp_project()

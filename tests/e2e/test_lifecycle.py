@@ -65,7 +65,7 @@ class EndToEndLifecycleTests(EndToEndTestCase):
         self.assertEqual(self.stop(project_root).returncode, 0)
 
         state = load_state(project_root, "test-session")
-        hashes = {e["hash"] for e in state if e.get("type") == "edit"}
+        hashes = {e.hash for e in state if e.type == "edit"}
         self.assertEqual(len(hashes), 2)
 
     def test_concurrent_clients_full_workflow(self):
@@ -151,7 +151,7 @@ class EndToEndLifecycleTests(EndToEndTestCase):
         self.review(project_root)
 
         state = load_state(project_root, "test-session")
-        review_ids = {e["reviewId"] for e in state if e.get("type") == "review"}
+        review_ids = {e.reviewId for e in state if e.type == "review"}
         self.assertEqual(len(review_ids), 2)
 
     def test_stop_block_feedback_contains_actionable_info(self):

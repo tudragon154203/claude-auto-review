@@ -2,10 +2,9 @@ from __future__ import annotations
 
 from datetime import datetime
 from pathlib import Path
-from typing import Any
 
 from claude_auto_review.paths import local_now_iso
-from claude_auto_review.state.models import EditRecord, ReviewCompletedRecord, ReviewMetadata, StopBlockedRecord, StateEvent
+from claude_auto_review.state.models import EditRecord, ReviewCompletedRecord, ReviewFileRecord, ReviewMetadata, StopBlockedRecord, StateEvent
 from claude_auto_review.state.store_read import get_unreviewed_files, load_state
 from claude_auto_review.state.store_write import append_state, mark_files_reviewed
 
@@ -42,24 +41,13 @@ def _format_duration(seconds: float) -> str:
     return " ".join(parts)
 
 
-def _validate_covered_entries(covered_entries: list[dict[str, str]] | list[EditRecord]) -> list[EditRecord]:
+def _validate_covered_entries(covered_entries: list[EditRecord]) -> list[EditRecord]:
     validated: list[EditRecord] = []
     for item in covered_entries:
         if isinstance(item, EditRecord):
             validated.append(item)
             continue
-        if not isinstance(item, dict) or "file" not in item or "hash" not in item:
-            raise ValueError("covered_entries must contain file/hash dicts")
-        validated.append(
-            EditRecord(
-                timestamp=item.get("timestamp", ""),
-                file=item["file"],
-                hash=item["hash"],
-                reviewed=bool(item.get("reviewed", False)),
-                deleted=bool(item.get("deleted", False)),
-                reviewId=item.get("reviewId"),
-            )
-        )
+        raise ValueError("covered_entries must contain EditRecord instances")
     return validated
 
 
@@ -75,7 +63,7 @@ def _review_completed_entry(
     return ReviewCompletedRecord(
         timestamp=timestamp,
         reviewId=review_id,
-        files=[{"file": entry.file, "hash": entry.hash} for entry in validated_entries],
+        files=[ReviewFileRecord(file=entry.file, hash=entry.hash) for entry in validated_entries],
         clientId=client_id,
         duration=_format_duration(duration) if duration is not None else None,
         durationSeconds=duration,
@@ -97,7 +85,7 @@ def apply_completed_review(
     project_root: Path,
     client_id: str,
     review_id: str,
-    covered_entries: list[dict[str, str]] | list[EditRecord],
+    covered_entries: list[EditRecord],
 ) -> list[EditRecord]:
     validated_entries = _validate_covered_entries(covered_entries)
     state_before = load_state(project_root, client_id)

@@ -6,7 +6,7 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[4]
 sys.path.insert(0, str(REPO_ROOT))
-from claude_auto_review.state.models import EditRecord, ReviewMetadata  # noqa: E402
+from claude_auto_review.state.models import EditRecord, ReviewFileRecord, ReviewMetadata  # noqa: E402
 from claude_auto_review.state.store_read import load_state  # noqa: E402
 from claude_auto_review.state.store_write import append_state  # noqa: E402
 from tests.int.hooks.support import HookTestCase  # noqa: E402
@@ -21,9 +21,9 @@ class TestStopHookOverlap(HookTestCase, unittest.TestCase):
         self.run_python("hooks/post_tool_use.py", project_root, json.dumps({"file_path": "src/a.ts"}))
         self.run_python("hooks/post_tool_use.py", project_root, json.dumps({"file_path": "src/b.ts"}))
 
-        edits = [e for e in load_state(project_root, "test-session") if e.get("type") == "edit"]
-        hash_a = [e["hash"] for e in edits if e.get("file") == "src/a.ts"][-1]
-        hash_b = [e["hash"] for e in edits if e.get("file") == "src/b.ts"][-1]
+        edits = [e for e in load_state(project_root, "test-session") if e.type == "edit"]
+        hash_a = [e.hash for e in edits if e.file == "src/a.ts"][-1]
+        hash_b = [e.hash for e in edits if e.file == "src/b.ts"][-1]
 
         review_dir = client_dir(project_root) / "reviews"
         review_dir.mkdir(parents=True, exist_ok=True)
@@ -43,8 +43,8 @@ class TestStopHookOverlap(HookTestCase, unittest.TestCase):
                 reviewPath=path_high.relative_to(project_root).as_posix(),
                 status="pending",
                 files=[
-                    {"file": "src/a.ts", "hash": hash_a},
-                    {"file": "src/b.ts", "hash": hash_b},
+                    ReviewFileRecord(file="src/a.ts", hash=hash_a),
+                    ReviewFileRecord(file="src/b.ts", hash=hash_b),
                 ],
                 clientId="test-session",
             ),
@@ -57,7 +57,7 @@ class TestStopHookOverlap(HookTestCase, unittest.TestCase):
                 reviewId="newer-low-overlap",
                 reviewPath=path_new.relative_to(project_root).as_posix(),
                 status="pending",
-                files=[{"file": "src/a.ts", "hash": hash_a}],
+                files=[ReviewFileRecord(file="src/a.ts", hash=hash_a)],
                 clientId="test-session",
             ),
             project_root,
@@ -74,7 +74,7 @@ class TestStopHookOverlap(HookTestCase, unittest.TestCase):
         target.write_text("export const value = 1;\n", encoding="utf-8")
         self.run_python("hooks/post_tool_use.py", project_root, json.dumps({"file_path": "src/app.ts"}))
 
-        current_hash = load_state(project_root, "test-session")[-1]["hash"]
+        current_hash = load_state(project_root, "test-session")[-1].hash
         review_dir = client_dir(project_root) / "reviews"
         review_dir.mkdir(parents=True, exist_ok=True)
         old_path = review_dir / "review-old.md"
@@ -91,7 +91,7 @@ class TestStopHookOverlap(HookTestCase, unittest.TestCase):
                 reviewId="old",
                 reviewPath=old_path.relative_to(project_root).as_posix(),
                 status="pending",
-                files=[{"file": "src/app.ts", "hash": current_hash}],
+                files=[ReviewFileRecord(file="src/app.ts", hash=current_hash)],
                 clientId="test-session",
             ),
             project_root,
@@ -103,7 +103,7 @@ class TestStopHookOverlap(HookTestCase, unittest.TestCase):
                 reviewId="new",
                 reviewPath=new_path.relative_to(project_root).as_posix(),
                 status="pending",
-                files=[{"file": "src/app.ts", "hash": current_hash}],
+                files=[ReviewFileRecord(file="src/app.ts", hash=current_hash)],
                 clientId="test-session",
             ),
             project_root,
@@ -123,9 +123,9 @@ class TestStopHookOverlap(HookTestCase, unittest.TestCase):
         self.run_python("hooks/post_tool_use.py", project_root, json.dumps({"file_path": "src/a.ts"}))
         self.run_python("hooks/post_tool_use.py", project_root, json.dumps({"file_path": "src/b.ts"}))
 
-        edits = [e for e in load_state(project_root, "test-session") if e.get("type") == "edit"]
-        old_hash_a = [e["hash"] for e in edits if e.get("file") == "src/a.ts"][-1]
-        hash_b = [e["hash"] for e in edits if e.get("file") == "src/b.ts"][-1]
+        edits = [e for e in load_state(project_root, "test-session") if e.type == "edit"]
+        old_hash_a = [e.hash for e in edits if e.file == "src/a.ts"][-1]
+        hash_b = [e.hash for e in edits if e.file == "src/b.ts"][-1]
 
         review_dir = client_dir(project_root) / "reviews"
         review_dir.mkdir(parents=True, exist_ok=True)
@@ -137,7 +137,7 @@ class TestStopHookOverlap(HookTestCase, unittest.TestCase):
                 reviewId="stale",
                 reviewPath=stale_path.relative_to(project_root).as_posix(),
                 status="pending",
-                files=[{"file": "src/a.ts", "hash": old_hash_a}, {"file": "src/b.ts", "hash": hash_b}],
+                files=[ReviewFileRecord(file="src/a.ts", hash=old_hash_a), ReviewFileRecord(file="src/b.ts", hash=hash_b)],
                 clientId="test-session",
             ),
             project_root,
@@ -146,18 +146,18 @@ class TestStopHookOverlap(HookTestCase, unittest.TestCase):
 
         file_a.write_text("export const a = 2;\n", encoding="utf-8")
         self.run_python("hooks/post_tool_use.py", project_root, json.dumps({"file_path": "src/a.ts"}))
-        latest_hash_a = load_state(project_root, "test-session")[-1]["hash"]
+        latest_hash_a = load_state(project_root, "test-session")[-1].hash
 
         stop = self.run_python("hooks/stop_hook.py", project_root, env_overrides={"PATH": ""}, use_fake_claude=False)
 
         self.assertEqual(stop.returncode, 2)
         self.assertNotIn("Review stale found issues", json.loads(stop.stdout)["systemMessage"])
-        reviews = [e for e in load_state(project_root, "test-session") if e.get("type") == "review"]
+        reviews = [e for e in load_state(project_root, "test-session") if e.type == "review"]
         self.assertEqual(len(reviews), 2)
         latest_review = reviews[-1]
-        self.assertNotEqual(latest_review["reviewId"], "stale")
-        self.assertIn({"file": "src/a.ts", "hash": latest_hash_a}, latest_review["files"])
-        self.assertIn({"file": "src/b.ts", "hash": hash_b}, latest_review["files"])
+        self.assertNotEqual(latest_review.reviewId, "stale")
+        self.assertIn(ReviewFileRecord(file="src/a.ts", hash=latest_hash_a), latest_review.files)
+        self.assertIn(ReviewFileRecord(file="src/b.ts", hash=hash_b), latest_review.files)
 
     def test_stop_hook_rebuilds_review_when_next_pass_unreviewed_set_shrinks(self):
         project_root = self.temp_project()
@@ -172,12 +172,12 @@ class TestStopHookOverlap(HookTestCase, unittest.TestCase):
         self.assertEqual(first_stop.returncode, 2)
 
         state = load_state(project_root, "test-session")
-        current_entries = {entry["file"]: entry for entry in state if entry.get("type") == "edit" and not entry.get("reviewed")}
+        current_entries = {entry.file: entry for entry in state if entry.type == "edit" and not entry.reviewed}
         append_state(
             EditRecord(
                 timestamp=datetime.now().astimezone().isoformat(),
                 file="src/b.ts",
-                hash=current_entries["src/b.ts"]["hash"],
+                hash=current_entries["src/b.ts"].hash,
                 reviewed=True,
                 reviewId="manual-pass-1",
             ),
@@ -188,8 +188,8 @@ class TestStopHookOverlap(HookTestCase, unittest.TestCase):
         second_stop = self.run_python("hooks/stop_hook.py", project_root, env_overrides={"PATH": ""}, use_fake_claude=False)
 
         self.assertEqual(second_stop.returncode, 2)
-        reviews = [e for e in load_state(project_root, "test-session") if e.get("type") == "review"]
+        reviews = [e for e in load_state(project_root, "test-session") if e.type == "review"]
         self.assertEqual(len(reviews), 2)
         latest_review = reviews[-1]
-        self.assertEqual(latest_review["files"], [{"file": "src/a.ts", "hash": current_entries["src/a.ts"]["hash"]}])
-        self.assertIn("Review " + latest_review["reviewId"], json.loads(second_stop.stdout)["systemMessage"])
+        self.assertEqual(latest_review.files, [ReviewFileRecord(file="src/a.ts", hash=current_entries["src/a.ts"].hash)])
+        self.assertIn("Review " + latest_review.reviewId, json.loads(second_stop.stdout)["systemMessage"])

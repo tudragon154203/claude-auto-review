@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from unittest.mock import patch
 
-from claude_auto_review.state.models import EditRecord, ReviewMetadata
+from claude_auto_review.state.models import EditRecord, ReviewFileRecord, ReviewMetadata
 from claude_auto_review.state.reviews import (
     best_pending_review_exactly_matching_entries,
     best_pending_review_for_entries,
@@ -20,17 +20,16 @@ from claude_auto_review.state.reviews import (
 class TestPendingReviewSelection(unittest.TestCase):
     def test_entry_and_review_hash_pair_helpers_ignore_invalid_items(self):
         entries = [
-            {"file": "a.ts", "hash": "111"},
-            {"file": "", "hash": "222"},
-            {"file": "b.ts"},
-            "not-a-dict",
+            ReviewFileRecord(file="a.ts", hash="111"),
+            ReviewFileRecord(file="", hash="222"),
+            ReviewFileRecord(file="b.ts", hash=""),
         ]
         review_entry = ReviewMetadata(
             timestamp="2026-05-11T10:00:00+07:00",
             reviewId="r1",
             reviewPath="reviews/r1.md",
             clientId="c",
-            files=[{"file": "a.ts", "hash": "111"}, {"file": "b.ts", "hash": "222"}],
+            files=[ReviewFileRecord(file="a.ts", hash="111"), ReviewFileRecord(file="b.ts", hash="222")],
         )
 
         self.assertEqual(entry_file_hash_pairs(entries), {("a.ts", "111")})
@@ -45,7 +44,7 @@ class TestPendingReviewSelection(unittest.TestCase):
                 reviewPath="reviews/older.md",
                 clientId="c",
                 status="pending",
-                files=[{"file": "a.ts", "hash": "1"}, {"file": "b.ts", "hash": "2"}],
+                files=[ReviewFileRecord(file="a.ts", hash="1"), ReviewFileRecord(file="b.ts", hash="2")],
             ),
             ReviewMetadata(
                 timestamp=(now - timedelta(hours=1)).isoformat(),
@@ -53,7 +52,7 @@ class TestPendingReviewSelection(unittest.TestCase):
                 reviewPath="reviews/newer.md",
                 clientId="c",
                 status="pending",
-                files=[{"file": "a.ts", "hash": "1"}, {"file": "b.ts", "hash": "2"}],
+                files=[ReviewFileRecord(file="a.ts", hash="1"), ReviewFileRecord(file="b.ts", hash="2")],
             ),
             ReviewMetadata(
                 timestamp=now.isoformat(),
@@ -61,7 +60,7 @@ class TestPendingReviewSelection(unittest.TestCase):
                 reviewPath="reviews/partial.md",
                 clientId="c",
                 status="pending",
-                files=[{"file": "a.ts", "hash": "1"}],
+                files=[ReviewFileRecord(file="a.ts", hash="1")],
             ),
         ]
         entries = [EditRecord(timestamp=now.isoformat(), file="a.ts", hash="1"), EditRecord(timestamp=now.isoformat(), file="b.ts", hash="2")]
@@ -79,7 +78,7 @@ class TestPendingReviewSelection(unittest.TestCase):
                 reviewPath="reviews/best.md",
                 clientId="c",
                 status="pending",
-                files=[{"file": "a.ts", "hash": "1"}, {"file": "b.ts", "hash": "2"}],
+                files=[ReviewFileRecord(file="a.ts", hash="1"), ReviewFileRecord(file="b.ts", hash="2")],
             ),
             ReviewMetadata(
                 timestamp=(now + timedelta(minutes=1)).isoformat(),
@@ -87,7 +86,7 @@ class TestPendingReviewSelection(unittest.TestCase):
                 reviewPath="reviews/partial.md",
                 clientId="c",
                 status="pending",
-                files=[{"file": "a.ts", "hash": "1"}],
+                files=[ReviewFileRecord(file="a.ts", hash="1")],
             ),
             ReviewMetadata(
                 timestamp=(now - timedelta(hours=3)).isoformat(),
@@ -95,7 +94,7 @@ class TestPendingReviewSelection(unittest.TestCase):
                 reviewPath="reviews/expired.md",
                 clientId="c",
                 status="pending",
-                files=[{"file": "a.ts", "hash": "1"}],
+                files=[ReviewFileRecord(file="a.ts", hash="1")],
             ),
         ]
         entries = [EditRecord(timestamp=now.isoformat(), file="a.ts", hash="1"), EditRecord(timestamp=now.isoformat(), file="b.ts", hash="2")]
@@ -119,7 +118,7 @@ class TestPendingReviewSelection(unittest.TestCase):
                 reviewPath="reviews/best.md",
                 clientId="c",
                 status="pending",
-                files=[{"file": "a.ts", "hash": "1"}, {"file": "b.ts", "hash": "2"}],
+                files=[ReviewFileRecord(file="a.ts", hash="1"), ReviewFileRecord(file="b.ts", hash="2")],
             ),
             ReviewMetadata(
                 timestamp="2026-05-11T11:00:00+07:00",
@@ -127,7 +126,7 @@ class TestPendingReviewSelection(unittest.TestCase):
                 reviewPath="reviews/runner-up.md",
                 clientId="c",
                 status="pending",
-                files=[{"file": "a.ts", "hash": "1"}],
+                files=[ReviewFileRecord(file="a.ts", hash="1")],
             ),
         ]
         entries = [EditRecord(timestamp="2026-05-11T10:00:00+07:00", file="a.ts", hash="1"), EditRecord(timestamp="2026-05-11T10:00:00+07:00", file="b.ts", hash="2")]
@@ -145,8 +144,8 @@ class TestPendingReviewSelection(unittest.TestCase):
                 clientId="c",
                 status="pending",
                 files=[
-                    {"file": "a.ts", "hash": "1"},
-                    {"file": "b.ts", "hash": "2"},
+                    ReviewFileRecord(file="a.ts", hash="1"),
+                    ReviewFileRecord(file="b.ts", hash="2"),
                 ],
             ),
             ReviewMetadata(
@@ -155,7 +154,7 @@ class TestPendingReviewSelection(unittest.TestCase):
                 reviewPath="reviews/exact.md",
                 clientId="c",
                 status="pending",
-                files=[{"file": "a.ts", "hash": "1"}],
+                files=[ReviewFileRecord(file="a.ts", hash="1")],
             ),
         ]
         entries = [EditRecord(timestamp="2026-05-11T12:00:00+07:00", file="a.ts", hash="1")]
@@ -174,7 +173,7 @@ class TestPendingReviewSelection(unittest.TestCase):
                 reviewPath="reviews/x.md",
                 clientId="c",
                 status="pending",
-                files=[{"file": "a.ts", "hash": "1"}],
+                files=[ReviewFileRecord(file="a.ts", hash="1")],
             ),
             ReviewMetadata(
                 timestamp="2026-05-11T11:01:00+07:00",
@@ -182,7 +181,7 @@ class TestPendingReviewSelection(unittest.TestCase):
                 reviewPath="reviews/x.md",
                 clientId="c",
                 status="completed",
-                files=[{"file": "a.ts", "hash": "1"}],
+                files=[ReviewFileRecord(file="a.ts", hash="1")],
             ),
         ]
         entries = [EditRecord(timestamp="2026-05-11T11:00:00+07:00", file="a.ts", hash="1")]

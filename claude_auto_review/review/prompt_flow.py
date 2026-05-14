@@ -43,7 +43,7 @@ def _write_text_file(path, content):
 def create_review_prompt_files(project_root, client_id, unreviewed, settings):
     timestamp = local_now_iso()
     review_id = _review_id_from_timestamp(timestamp)
-    files = [entry["file"] for entry in unreviewed]
+    files = [entry.file for entry in unreviewed]
 
     rules = read_if_exists(resolve_rules_file_path(project_root, settings))
     diff = git_diff(files, project_root)

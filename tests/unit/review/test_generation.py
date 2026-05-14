@@ -6,6 +6,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 import sys
 sys.path.insert(0, str(REPO_ROOT))
 
+from claude_auto_review.state.models import EditRecord
 from claude_auto_review.review.generation import (
     build_prompt,
     current_file_snapshots,
@@ -21,7 +22,7 @@ class ReviewGenerationTests(unittest.TestCase):
         review_id = "rev-123"
         timestamp = "2026-05-05T08:00:00+07:00"
         readable_timestamp = format_review_timestamp(timestamp)
-        entries = [{"file": "src/app.ts", "hash": "abc123"}]
+        entries = [EditRecord(timestamp="2026-05-05T08:00:00+07:00", file="src/app.ts", hash="abc123")]
         rules = "Rule one."
         diff = "-old\n+new"
         snapshots = "## src/app.ts\n\n```ts\nconst value = 2;\n```"
@@ -96,7 +97,7 @@ Pending.
 
     def test_format_review_files_builds_review_body_from_entries(self):
         timestamp = "2026-05-05T08:00:00+07:00"
-        entries = [{"file": "src/app.ts", "hash": "abc123"}]
+        entries = [EditRecord(timestamp="2026-05-05T08:00:00+07:00", file="src/app.ts", hash="abc123")]
         prompt_path = Path("/tmp/review-123-prompt.md")
         expected = format_review_file(
             "rev-123",

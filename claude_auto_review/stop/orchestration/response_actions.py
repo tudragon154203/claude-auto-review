@@ -31,7 +31,7 @@ def block_pending_review(project_root, client_id, review_id, review_path, unrevi
         StopBlockedRecord(
             timestamp=local_now_iso(),
             reason="review_pending",
-            files=[entry["file"] for entry in unreviewed],
+            files=[entry.file for entry in unreviewed],
         ),
         project_root,
         client_id=client_id,

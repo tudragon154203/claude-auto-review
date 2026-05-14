@@ -1,21 +1,17 @@
 from datetime import datetime
 
-from claude_auto_review.state.models import ReviewMetadata, StateEvent
+from claude_auto_review.state.models import ReviewMetadata
 
 
-def _timestamp_str(review_entry: StateEvent | dict) -> str:
-    if isinstance(review_entry, ReviewMetadata):
-        return review_entry.timestamp
-    if isinstance(review_entry, dict):
-        return review_entry.get("timestamp", "")
-    return ""
+def _timestamp_str(review_entry: ReviewMetadata) -> str:
+    return review_entry.timestamp
 
 
-def is_review_expired(review_entry: StateEvent | dict, timeout_hours: float | int) -> bool:
+def is_review_expired(review_entry: ReviewMetadata, timeout_hours: float | int) -> bool:
     """Return True if a pending review is older than timeout_hours."""
     if timeout_hours <= 0:
         return False
-    if not isinstance(review_entry, (ReviewMetadata, dict)):
+    if not isinstance(review_entry, ReviewMetadata):
         return False
     timestamp_str = _timestamp_str(review_entry)
     if not timestamp_str:

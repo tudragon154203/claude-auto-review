@@ -6,9 +6,6 @@ from claude_auto_review.paths import CLIENTS_DIR, RUNTIME_DIR, client_state_path
 from claude_auto_review.runtime.helpers import log_event, log_failure, resolve_client_id, resolve_project_root
 from claude_auto_review.runtime.pending_cleanup import cleanup_expired_pending_reviews
 from claude_auto_review.settings import SETTING_STALE_CLIENT_TIMEOUT, load_settings
-from claude_auto_review.state.review_expiry import is_review_expired
-
-
 def _remove_tree(target, project_root=None):
     try:
         if target.is_dir():
@@ -33,6 +30,29 @@ def _remove_empty_runtime_dir(runtime, project_root=None):
         if project_root is not None:
             log_failure(project_root, "runtime_cleanup_failed", error, operation="rmdir", target=str(runtime))
     return False
+
+
+def _entry_timestamp(entry) -> str:
+    if isinstance(entry, dict):
+        return entry.get("timestamp", "")
+    return getattr(entry, "timestamp", "")
+
+
+def _is_stale_entry(entry, timeout_hours) -> bool:
+    timestamp = _entry_timestamp(entry)
+    if not timestamp:
+        return False
+    try:
+        ts = datetime.fromisoformat(timestamp.replace("Z", "+00:00") if timestamp.endswith("Z") else timestamp)
+    except (TypeError, ValueError):
+        return False
+    local_now = datetime.now().astimezone()
+    if ts.tzinfo is None:
+        ts = ts.replace(tzinfo=local_now.tzinfo)
+    else:
+        ts = ts.astimezone(local_now.tzinfo)
+    age_hours = (local_now - ts).total_seconds() / 3600.0
+    return age_hours > timeout_hours
 
 
 def cancel_runtime(project_root=None, client_id=""):
@@ -130,10 +150,11 @@ def cleanup_stale_clients(project_root=None):
         except (OSError, json.JSONDecodeError):
             pass
 
-        if last_entry and is_review_expired(last_entry, timeout_hours):
+        if last_entry and _is_stale_entry(last_entry, timeout_hours):
             if _remove_tree(client_dir, project_root=project_root):
                 invalidate_client_runtime_dir_cache(project_root, client_dir.name)
                 removed.append(client_dir)
+            continue
 
     if removed:
         log_event(

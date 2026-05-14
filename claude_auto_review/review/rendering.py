@@ -30,7 +30,7 @@ def format_review_timestamp(timestamp):
 
 
 def format_file_list(entries):
-    return "\n".join(f"- {entry['file']} (hash: {entry['hash']})" for entry in entries)
+    return "\n".join(f"- {entry.file} (hash: {entry.hash})" for entry in entries)
 
 
 def _review_context(entries, timestamp):
