@@ -34,7 +34,7 @@ class TestClientId(StateTestCase, unittest.TestCase):
 
     def test_get_client_id_uses_unknown_when_hostname_lookup_fails(self):
         with mock.patch.dict(os.environ, {}, clear=True):
-            with mock.patch("claude_auto_review.paths.socket.gethostname", side_effect=RuntimeError("boom")):
+            with mock.patch("claude_auto_review.client_dirs.socket.gethostname", side_effect=RuntimeError("boom")):
                 result = get_client_id()
 
         self.assertRegex(result, r"^\d{8}-\d{6}_unknown-\d+$")

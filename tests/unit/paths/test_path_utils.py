@@ -68,7 +68,7 @@ class TestPathUtils(StateTestCase, unittest.TestCase):
         expected = project_root / CLIENTS_DIR / "client-fresh-session-a"
         shutil.rmtree(first)
 
-        with patch("claude_auto_review.paths._timestamped_client_runtime_dir", return_value=expected):
+        with patch("claude_auto_review.client_dirs._timestamped_client_runtime_dir", return_value=expected):
             result = get_client_runtime_dir(project_root, client_id)
 
         self.assertEqual(result, expected)
