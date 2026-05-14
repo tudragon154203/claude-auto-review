@@ -57,10 +57,10 @@ def build_review_findings_feedback(review_id, review_path, max_chars=None, proje
     )
 
 
-def block_completed_review_findings(project_root, client_id, review_id, review_path, unreviewed, settings):
+def block_completed_review_findings(ctx, review_id, review_path, unreviewed):
     block_response(
         f"Claude Auto Review: Review {review_id} found issues to address.",
-        build_review_findings_feedback(review_id, review_path, review_feedback_max_chars(settings), project_root=project_root),
+        build_review_findings_feedback(review_id, review_path, review_feedback_max_chars(ctx.settings), project_root=ctx.project_root),
     )
     append_state(
         StopBlockedRecord(
@@ -69,6 +69,6 @@ def block_completed_review_findings(project_root, client_id, review_id, review_p
             reviewId=review_id,
             files=[_file_of(entry) for entry in unreviewed],
         ),
-        project_root,
-        client_id=client_id,
+        ctx.project_root,
+        client_id=ctx.client_id,
     )

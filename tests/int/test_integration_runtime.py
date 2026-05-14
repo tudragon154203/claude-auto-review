@@ -15,6 +15,7 @@ from claude_auto_review.runtime.helpers import log_event
 from claude_auto_review.state.models import EditRecord
 from claude_auto_review.state.store_write import append_state
 from claude_auto_review.stop.classifier.last_assistant_message import classify_last_assistant_message
+from claude_auto_review.stop.orchestration.context import RuntimeContext
 
 
 class IntegrationRuntimeTests(IntegrationTestCase):
@@ -78,10 +79,15 @@ class IntegrationRuntimeTests(IntegrationTestCase):
         ensure_client_runtime(project_root, client_id)
 
         result = classify_last_assistant_message(
-            project_root,
-            client_id,
-            {"last_assistant_message": "Final answer."},
-            {"lastAssistantMessageClassifierEnabled": True, "lastAssistantMessageClassifierTimeoutSeconds": 10},
+            RuntimeContext(
+                project_root=project_root,
+                client_id=client_id,
+                settings={
+                    "lastAssistantMessageClassifierEnabled": True,
+                    "lastAssistantMessageClassifierTimeoutSeconds": 10,
+                },
+                payload={"last_assistant_message": "Final answer."},
+            ),
             env={
                 "ANTHROPIC_BASE_URL": "http://127.0.0.1:13456",
                 "ANTHROPIC_API_KEY": "secret-key",

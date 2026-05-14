@@ -10,6 +10,7 @@ from claude_auto_review.stop.classifier.models import CLASSIFICATION_EVENT
 from claude_auto_review.stop.classifier.last_assistant_message import (
     classify_last_assistant_message,
 )
+from claude_auto_review.stop.orchestration.context import RuntimeContext
 
 from tests.unit.state.support import StateTestCase
 
@@ -28,6 +29,15 @@ class _FakeResponse:
         return False
 
 
+def _make_ctx(project_root, payload=None, settings=None):
+    return RuntimeContext(
+        project_root=project_root,
+        client_id="classifier-client",
+        settings=settings if settings is not None else {},
+        payload=payload if payload is not None else {"last_assistant_message": "some message"},
+    )
+
+
 class TestLastAssistantMessageErrors(StateTestCase, unittest.TestCase):
     def setUp(self):
         self.project_root = self.temp_project()
@@ -42,10 +52,7 @@ class TestLastAssistantMessageErrors(StateTestCase, unittest.TestCase):
 
     def test_classifier_disabled_returns_none(self):
         result = classify_last_assistant_message(
-            self.project_root,
-            self.client_id,
-            {"last_assistant_message": "Ship it."},
-            {"lastAssistantMessageClassifierEnabled": False},
+            _make_ctx(self.project_root, {"last_assistant_message": "Ship it."}, {"lastAssistantMessageClassifierEnabled": False}),
             env=self.env,
             urlopen=lambda req, timeout: _FakeResponse({"content": [{"text": "complete"}]}),
         )
@@ -53,10 +60,7 @@ class TestLastAssistantMessageErrors(StateTestCase, unittest.TestCase):
 
     def test_missing_api_key_is_logged_as_error(self):
         result = classify_last_assistant_message(
-            self.project_root,
-            self.client_id,
-            {"last_assistant_message": "Ship it."},
-            self.settings,
+            _make_ctx(self.project_root, {"last_assistant_message": "Ship it."}, self.settings),
             env={"ANTHROPIC_BASE_URL": "http://127.0.0.1:13456"},
             urlopen=lambda req, timeout: _FakeResponse({"content": [{"text": "complete"}]}),
         )
@@ -68,10 +72,7 @@ class TestLastAssistantMessageErrors(StateTestCase, unittest.TestCase):
 
         with patch("claude_auto_review.stop.classifier.last_assistant_message.log_event") as mock_log:
             classify_last_assistant_message(
-                self.project_root,
-                self.client_id,
-                {"last_assistant_message": "Message"},
-                self.settings,
+                _make_ctx(self.project_root, {"last_assistant_message": "Message"}, self.settings),
                 env=self.env,
                 urlopen=lambda req, timeout: _FakeResponse(payload),
             )
@@ -82,10 +83,7 @@ class TestLastAssistantMessageErrors(StateTestCase, unittest.TestCase):
 
     def test_timeout_returns_error_without_raising(self):
         result = classify_last_assistant_message(
-            self.project_root,
-            self.client_id,
-            {"last_assistant_message": "Message"},
-            self.settings,
+            _make_ctx(self.project_root, {"last_assistant_message": "Message"}, self.settings),
             env=self.env,
             urlopen=lambda req, timeout: (_ for _ in ()).throw(socket.timeout()),
         )
@@ -97,10 +95,7 @@ class TestLastAssistantMessageErrors(StateTestCase, unittest.TestCase):
             raise error.HTTPError(req.full_url, 503, "down", hdrs=None, fp=io.BytesIO(b""))
 
         result = classify_last_assistant_message(
-            self.project_root,
-            self.client_id,
-            {"last_assistant_message": "Message"},
-            self.settings,
+            _make_ctx(self.project_root, {"last_assistant_message": "Message"}, self.settings),
             env=self.env,
             urlopen=fake_urlopen,
         )
@@ -114,10 +109,7 @@ class TestLastAssistantMessageErrors(StateTestCase, unittest.TestCase):
                 return b"{not-json"
 
         result = classify_last_assistant_message(
-            self.project_root,
-            self.client_id,
-            {"last_assistant_message": "Message"},
-            self.settings,
+            _make_ctx(self.project_root, {"last_assistant_message": "Message"}, self.settings),
             env=self.env,
             urlopen=lambda req, timeout: BadJsonResponse({}),
         )
@@ -127,10 +119,7 @@ class TestLastAssistantMessageErrors(StateTestCase, unittest.TestCase):
     def test_missing_message_is_logged_as_skipped(self):
         with patch("claude_auto_review.stop.classifier.last_assistant_message.log_event") as mock_log:
             result = classify_last_assistant_message(
-                self.project_root,
-                self.client_id,
-                {},
-                self.settings,
+                _make_ctx(self.project_root, {}, self.settings),
                 env=self.env,
                 urlopen=lambda req, timeout: _FakeResponse({"content": [{"text": "complete"}]}),
             )
@@ -141,10 +130,7 @@ class TestLastAssistantMessageErrors(StateTestCase, unittest.TestCase):
 
     def test_missing_env_fails_open_and_persists_separate_state_type(self):
         result = classify_last_assistant_message(
-            self.project_root,
-            self.client_id,
-            {"last_assistant_message": "Message"},
-            self.settings,
+            _make_ctx(self.project_root, {"last_assistant_message": "Message"}, self.settings),
             env={},
             urlopen=lambda req, timeout: _FakeResponse({"content": [{"text": "complete"}]}),
         )

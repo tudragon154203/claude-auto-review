@@ -8,6 +8,7 @@ from claude_auto_review.stop.classifier.models import (
 from claude_auto_review.stop.classifier.last_assistant_message import (
     classify_last_assistant_message,
 )
+from claude_auto_review.stop.orchestration.context import RuntimeContext
 
 from tests.unit.state.support import StateTestCase
 
@@ -39,6 +40,14 @@ class TestLastAssistantMessageClassifier(StateTestCase, unittest.TestCase):
             "ANTHROPIC_API_KEY": "top-secret",
         }
 
+    def _ctx(self, payload=None, settings=None):
+        return RuntimeContext(
+            project_root=self.project_root,
+            client_id=self.client_id,
+            settings=settings if settings is not None else self.settings,
+            payload=payload if payload is not None else {"last_assistant_message": "Ship it."},
+        )
+
     def test_sends_expected_request_shape(self):
         seen = {}
 
@@ -50,10 +59,7 @@ class TestLastAssistantMessageClassifier(StateTestCase, unittest.TestCase):
             return _FakeResponse({"content": [{"type": "text", "text": "complete"}]})
 
         result = classify_last_assistant_message(
-            self.project_root,
-            self.client_id,
-            {"last_assistant_message": "Ship it."},
-            self.settings,
+            self._ctx(),
             env=self.env,
             urlopen=fake_urlopen,
         )
@@ -79,10 +85,9 @@ class TestLastAssistantMessageClassifier(StateTestCase, unittest.TestCase):
             return _FakeResponse({"content": [{"text": "complete"}]})
 
         result = classify_last_assistant_message(
-            self.project_root,
-            self.client_id,
-            {"last_assistant_message": "Ship it."},
-            {"lastAssistantMessageClassifierEnabled": True, "lastAssistantMessageClassifierTimeoutSeconds": "nope"},
+            self._ctx(
+                settings={"lastAssistantMessageClassifierEnabled": True, "lastAssistantMessageClassifierTimeoutSeconds": "nope"},
+            ),
             env=self.env,
             urlopen=fake_urlopen,
         )
@@ -93,10 +98,7 @@ class TestLastAssistantMessageClassifier(StateTestCase, unittest.TestCase):
         for label in ("complete", "incomplete", "unknown"):
             with self.subTest(label=label):
                 result = classify_last_assistant_message(
-                    self.project_root,
-                    self.client_id,
-                    {"last_assistant_message": "Message"},
-                    self.settings,
+                    self._ctx(payload={"last_assistant_message": "Message"}),
                     env=self.env,
                     urlopen=lambda req, timeout, value=label: _FakeResponse({"content": [{"text": value}]}),
                 )
@@ -106,10 +108,7 @@ class TestLastAssistantMessageClassifier(StateTestCase, unittest.TestCase):
     def test_unexpected_output_downgrades_to_unknown(self):
         payload = {"content": [{"text": "maybe"}]}
         result = classify_last_assistant_message(
-            self.project_root,
-            self.client_id,
-            {"last_assistant_message": "Message"},
-            self.settings,
+            self._ctx(payload={"last_assistant_message": "Message"}),
             env=self.env,
             urlopen=lambda req, timeout: _FakeResponse(payload),
         )
@@ -125,10 +124,7 @@ class TestLastAssistantMessageClassifier(StateTestCase, unittest.TestCase):
             ]
         }
         result = classify_last_assistant_message(
-            self.project_root,
-            self.client_id,
-            {"last_assistant_message": "Message"},
-            self.settings,
+            self._ctx(payload={"last_assistant_message": "Message"}),
             env=self.env,
             urlopen=lambda req, timeout: _FakeResponse(payload),
         )
@@ -138,10 +134,7 @@ class TestLastAssistantMessageClassifier(StateTestCase, unittest.TestCase):
     def test_accepts_label_with_extra_text(self):
         payload = {"content": [{"type": "text", "text": "complete\nfinal answer"}]}
         result = classify_last_assistant_message(
-            self.project_root,
-            self.client_id,
-            {"last_assistant_message": "Message"},
-            self.settings,
+            self._ctx(payload={"last_assistant_message": "Message"}),
             env=self.env,
             urlopen=lambda req, timeout: _FakeResponse(payload),
         )

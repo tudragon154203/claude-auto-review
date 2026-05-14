@@ -1,24 +1,44 @@
+import shutil
 import subprocess
 import sys
 
-from claude_auto_review.state.store_read import get_unreviewed_files, load_state
+from claude_auto_review.paths import client_run_dir, local_now_iso
+from claude_auto_review.review.completion import apply_completed_review
+from claude_auto_review.state.reviews import (
+    extract_review_verdict_text,
+    is_review_clean_verdict,
+    is_review_complete_verdict,
+)
 from claude_auto_review.runtime.helpers import log_event
+from claude_auto_review.state.store_read import get_unreviewed_files, load_state
 from claude_auto_review.stop.feedback import block_response
+from claude_auto_review.stop.orchestration.context import RuntimeContext
+
+
+CLAUDE_REVIEW_ARGS = [
+    "--print",
+    "--bare",
+    "--allowedTools",
+    "Read",
+    "Grep",
+    "Glob",
+    "Bash",
+    "--model",
+    "fast",
+    "--effort",
+    "low",
+]
 
 
 def _review_prompt_command(review_prompt_script):
     return [sys.executable, str(review_prompt_script)]
 
 
-def _review_prompt_path(project_root, client_id, review_id):
-    from claude_auto_review.paths import client_run_dir
-    return client_run_dir(project_root, client_id) / f"review-{review_id}-prompt.md"
-
-
-def _run_review_prompt(project_root, review_prompt_script, env):
+def _run_review_prompt(ctx: RuntimeContext, review_prompt_script, env):
+    cmd = _review_prompt_command(review_prompt_script)
     result = subprocess.run(
-        _review_prompt_command(review_prompt_script),
-        cwd=str(project_root),
+        cmd,
+        cwd=str(ctx.project_root),
         capture_output=True,
         text=True,
         encoding="utf-8",
@@ -27,7 +47,7 @@ def _run_review_prompt(project_root, review_prompt_script, env):
         env=env,
     )
     log_event(
-        project_root,
+        ctx.project_root,
         "stop_hook_review_invoked",
         stdout=result.stdout,
         stderr=result.stderr,
@@ -36,8 +56,12 @@ def _run_review_prompt(project_root, review_prompt_script, env):
     return result
 
 
-def _reload_client_state(project_root, client_id):
-    state = load_state(project_root, client_id)
+def _review_prompt_path(ctx: RuntimeContext, review_id):
+    return client_run_dir(ctx.project_root, ctx.client_id) / f"review-{review_id}-prompt.md"
+
+
+def _reload_client_state(ctx: RuntimeContext):
+    state = load_state(ctx.project_root, ctx.client_id)
     return state, get_unreviewed_files(state)
 
 
@@ -46,3 +70,74 @@ def _block_review_prompt_failure(files_str, result):
         f"Claude Auto Review: Failed to create review for {files_str}.",
         f"review_prompt.py ran but no review was created.\n\nOutput:\n{result.stdout}\n\nErrors:\n{result.stderr}",
     )
+
+
+def _run_claude_cli(claude_cli, prompt_file, user_prompt, cwd, timeout):
+    cmd = [
+        claude_cli,
+        *CLAUDE_REVIEW_ARGS,
+        "--system-prompt-file",
+        str(prompt_file),
+        user_prompt,
+    ]
+    return subprocess.run(
+        cmd,
+        cwd=str(cwd),
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        timeout=float(timeout),
+    )
+
+
+def attempt_stop_autocomplete(
+    ctx: RuntimeContext,
+    review_id,
+    review_path,
+    prompt_file,
+    covered_entries,
+    user_prompt,
+    reviewer_timeout_seconds=600,
+):
+    claude_cli = shutil.which("claude")
+    if not claude_cli:
+        log_event(ctx.project_root, "stop_hook_claude_cli_not_found")
+        return False
+    if not prompt_file.is_file():
+        log_event(ctx.project_root, "stop_hook_prompt_not_found", path=str(prompt_file))
+        return False
+
+    try:
+        cli_result = _run_claude_cli(
+            claude_cli, prompt_file, user_prompt, ctx.project_root, reviewer_timeout_seconds
+        )
+    except subprocess.TimeoutExpired:
+        log_event(ctx.project_root, "stop_hook_claude_cli_timeout", reviewId=review_id)
+        return False
+    except Exception as e:
+        log_event(ctx.project_root, "stop_hook_claude_cli_error", error=str(e))
+        return False
+
+    return _process_review_result(
+        ctx, cli_result, review_path, review_id, covered_entries
+    )
+
+
+def _process_review_result(ctx: RuntimeContext, result, review_path, review_id, covered_entries):
+    log_event(
+        ctx.project_root,
+        "stop_hook_claude_cli_done",
+        returncode=result.returncode,
+        stdout=result.stdout[:500],
+        stderr=result.stderr[:500] if result.stderr else "",
+    )
+    if result.returncode == 0 and result.stdout.strip():
+        verdict = extract_review_verdict_text(result.stdout)
+        review_path.write_text(result.stdout, encoding="utf-8", newline="\n")
+        if is_review_complete_verdict(verdict) and is_review_clean_verdict(verdict):
+            remaining = apply_completed_review(
+                ctx.project_root, ctx.client_id, review_id, covered_entries
+            )
+            return not remaining
+    return False

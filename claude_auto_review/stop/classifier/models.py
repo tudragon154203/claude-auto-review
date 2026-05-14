@@ -1,6 +1,7 @@
 import time
 from dataclasses import dataclass
 
+from claude_auto_review.constants import MS_PER_SECOND
 from claude_auto_review.paths import local_now_iso
 from claude_auto_review.state.models import ClassificationRecord
 
@@ -47,7 +48,7 @@ def result_factory(status, reason, started_at, message_chars, base_url="", http_
     return AssistantMessageClassificationResult(
         status=status,
         reason=reason,
-        latency_ms=max(0, int((time.monotonic() - started_at) * 1000)),
+        latency_ms=max(0, int((time.monotonic() - started_at) * MS_PER_SECOND)),
         message_chars=message_chars,
         base_url=base_url,
         http_status=http_status,

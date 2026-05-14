@@ -10,6 +10,7 @@ from claude_auto_review.review.generation import (
     read_if_exists,
 )
 from claude_auto_review.settings import resolve_rules_file_path
+from claude_auto_review.stop.orchestration.context import RuntimeContext
 from claude_auto_review.utils.datetime_utils import parse_iso_timestamp
 
 
@@ -29,10 +30,10 @@ def _review_id_from_timestamp(timestamp):
     return "rev-" + parsed.strftime("%Y%m%d%H%M%S%f")
 
 
-def _review_prompt_paths(project_root, client_id, review_id):
+def _review_prompt_paths(ctx: RuntimeContext, review_id):
     return (
-        client_reviews_dir(project_root, client_id) / f"review-{review_id}.md",
-        client_run_dir(project_root, client_id) / f"review-{review_id}-prompt.md",
+        client_reviews_dir(ctx.project_root, ctx.client_id) / f"review-{review_id}.md",
+        client_run_dir(ctx.project_root, ctx.client_id) / f"review-{review_id}-prompt.md",
     )
 
 
@@ -40,16 +41,17 @@ def _write_text_file(path, content):
     path.write_text(content, encoding="utf-8", newline="\n")
 
 
-def create_review_prompt_files(project_root, client_id, unreviewed, settings):
+def create_review_prompt_files(ctx: RuntimeContext, unreviewed, settings=None):
+    settings = settings or ctx.settings
     timestamp = local_now_iso()
     review_id = _review_id_from_timestamp(timestamp)
     files = [entry.file for entry in unreviewed]
 
-    rules = read_if_exists(resolve_rules_file_path(project_root, settings))
-    diff = git_diff(files, project_root)
-    snapshots = current_file_snapshots(files, project_root)
+    rules = read_if_exists(resolve_rules_file_path(ctx.project_root, settings))
+    diff = git_diff(files, ctx.project_root)
+    snapshots = current_file_snapshots(files, ctx.project_root)
 
-    review_path, prompt_path = _review_prompt_paths(project_root, client_id, review_id)
+    review_path, prompt_path = _review_prompt_paths(ctx, review_id)
 
     _write_text_file(prompt_path, build_prompt(review_id, timestamp, unreviewed, rules, diff, snapshots, review_path))
     _write_text_file(review_path, format_review_files(unreviewed, prompt_path, review_id, timestamp))

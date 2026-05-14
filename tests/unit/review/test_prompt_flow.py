@@ -11,6 +11,7 @@ from claude_auto_review.review.prompt_flow import (
     _review_prompt_paths,
     create_review_prompt_files,
 )
+from claude_auto_review.stop.orchestration.context import RuntimeContext
 
 
 class TestReviewPromptFlow(unittest.TestCase):
@@ -19,7 +20,8 @@ class TestReviewPromptFlow(unittest.TestCase):
 
     def test_review_prompt_paths_place_files_under_expected_directories(self):
         project_root = Path(tempfile.mkdtemp(prefix="claude-auto-review-prompt-flow-"))
-        review_path, prompt_path = _review_prompt_paths(project_root, "1", "rev-123")
+        ctx = RuntimeContext(project_root=project_root, client_id="1")
+        review_path, prompt_path = _review_prompt_paths(ctx, "rev-123")
 
         expected_reviews = client_reviews_dir(project_root, "1")
         self.assertEqual(review_path.parent, expected_reviews)
@@ -41,11 +43,15 @@ class TestReviewPromptFlow(unittest.TestCase):
         ensure_client_runtime(project_root, client_id)
 
         with patch("claude_auto_review.review.prompt_flow.local_now_iso", return_value="2026-05-11T12:34:56+07:00"):
+            ctx = RuntimeContext(
+                project_root=project_root,
+                client_id=client_id,
+                settings={"rulesFile": str(review_rules)},
+            )
             artifacts = create_review_prompt_files(
-                project_root,
-                client_id,
+                ctx,
                 [EditRecord(timestamp="2026-05-11T12:34:56+07:00", file="src/app.ts", hash="abc123")],
-                {"rulesFile": str(review_rules)},
+                settings=ctx.settings,
             )
 
         self.assertEqual(artifacts.review_id, "rev-20260511123456000000")

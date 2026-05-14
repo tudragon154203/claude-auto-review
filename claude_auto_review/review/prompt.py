@@ -20,6 +20,7 @@ from claude_auto_review.settings import load_settings
 from claude_auto_review.state.store_read import get_unreviewed_files, load_state
 from claude_auto_review.runtime.helpers import log_event
 from claude_auto_review.state.store_write import append_review_started
+from claude_auto_review.stop.orchestration.context import RuntimeContext
 
 
 def _log_failure(project_root, error):
@@ -54,7 +55,12 @@ def _run_review_prompt(project_root, client_id):
         print("Claude Auto Review: no unreviewed changes.")
         return 0
 
-    artifacts = create_review_prompt_files(project_root, client_id, unreviewed, settings)
+    ctx = RuntimeContext(
+        project_root=project_root,
+        client_id=client_id,
+        settings=settings,
+    )
+    artifacts = create_review_prompt_files(ctx, unreviewed, settings=settings)
 
     append_review_started(unreviewed, artifacts.review_id, artifacts.review_path, project_root, client_id=client_id)
     log_event(

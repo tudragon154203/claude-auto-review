@@ -1,12 +1,11 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
+
 
 @dataclass(frozen=True)
-class StopContext:
+class RuntimeContext:
     project_root: Path
     client_id: str
-    settings: Dict[str, Any]
-    payload: Dict[str, Any]
-    state: List[Dict[str, Any]]
-    log_file: Optional[Path] = None
+    settings: dict[str, Any] = field(default_factory=dict)
+    payload: dict[str, Any] = field(default_factory=dict)

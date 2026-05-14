@@ -194,4 +194,4 @@ class TestRunStopFlow(unittest.TestCase):
         result = run_stop_flow(Path("/fake"), {"session_id": "sid"})
 
         self.assertEqual(result, 2)
-        self.assertEqual(mock_resolve.call_args.args[5], 1.0)
+        self.assertEqual(mock_resolve.call_args.args[3], 1.0)
