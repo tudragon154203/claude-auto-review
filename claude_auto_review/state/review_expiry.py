@@ -1,10 +1,5 @@
-from datetime import datetime
-
 from claude_auto_review.state.models import ReviewMetadata
-
-
-def _timestamp_str(review_entry: ReviewMetadata) -> str:
-    return review_entry.timestamp
+from claude_auto_review.utils.datetime_utils import is_older_than_hours
 
 
 def is_review_expired(review_entry: ReviewMetadata, timeout_hours: float | int) -> bool:
@@ -13,20 +8,7 @@ def is_review_expired(review_entry: ReviewMetadata, timeout_hours: float | int) 
         return False
     if not isinstance(review_entry, ReviewMetadata):
         return False
-    timestamp_str = _timestamp_str(review_entry)
+    timestamp_str = review_entry.timestamp
     if not timestamp_str:
         return False
-    try:
-        ts_str = timestamp_str
-        if ts_str.endswith("Z"):
-            ts_str = ts_str[:-1] + "+00:00"
-        ts = datetime.fromisoformat(ts_str)
-        local_now = datetime.now().astimezone()
-        if ts.tzinfo is None:
-            ts = ts.replace(tzinfo=local_now.tzinfo)
-        else:
-            ts = ts.astimezone(local_now.tzinfo)
-        age_hours = (local_now - ts).total_seconds() / 3600.0
-        return age_hours > timeout_hours
-    except (ValueError, TypeError):
-        return False
+    return is_older_than_hours(timestamp_str, float(timeout_hours))

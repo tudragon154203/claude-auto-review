@@ -1,11 +1,14 @@
-from datetime import datetime
-import shutil
 import json
+import shutil
+import time
 
 from claude_auto_review.paths import CLIENTS_DIR, RUNTIME_DIR, client_state_path, get_client_runtime_dir, invalidate_client_runtime_dir_cache
 from claude_auto_review.runtime.helpers import log_event, log_failure, resolve_client_id, resolve_project_root
 from claude_auto_review.runtime.pending_cleanup import cleanup_expired_pending_reviews
 from claude_auto_review.settings import SETTING_STALE_CLIENT_TIMEOUT, load_settings
+from claude_auto_review.utils.datetime_utils import hours_since
+
+
 def _remove_tree(target, project_root=None):
     try:
         if target.is_dir():
@@ -42,17 +45,8 @@ def _is_stale_entry(entry, timeout_hours) -> bool:
     timestamp = _entry_timestamp(entry)
     if not timestamp:
         return False
-    try:
-        ts = datetime.fromisoformat(timestamp.replace("Z", "+00:00") if timestamp.endswith("Z") else timestamp)
-    except (TypeError, ValueError):
-        return False
-    local_now = datetime.now().astimezone()
-    if ts.tzinfo is None:
-        ts = ts.replace(tzinfo=local_now.tzinfo)
-    else:
-        ts = ts.astimezone(local_now.tzinfo)
-    age_hours = (local_now - ts).total_seconds() / 3600.0
-    return age_hours > timeout_hours
+    age = hours_since(timestamp)
+    return age is not None and age > timeout_hours
 
 
 def cancel_runtime(project_root=None, client_id=""):
@@ -90,6 +84,44 @@ def cancel_session(project_root=None, client_id=""):
     return []
 
 
+def _read_last_jsonl_entry(state_path):
+    try:
+        with state_path.open("rb") as f:
+            try:
+                f.seek(-2, 2)
+                while f.read(1) != b"\n":
+                    f.seek(-2, 1)
+            except OSError:
+                f.seek(0)
+            last_line = f.read().decode("utf-8").strip()
+            if last_line:
+                return json.loads(last_line)
+    except (OSError, json.JSONDecodeError):
+        pass
+    return None
+
+
+def _is_safe_client_dir(client_dir, clients_dir_resolved):
+    try:
+        client_dir_resolved = client_dir.resolve()
+    except OSError:
+        return False
+    try:
+        client_dir_resolved.relative_to(clients_dir_resolved)
+    except ValueError:
+        return False
+    return True
+
+
+def _is_client_stale(client_dir, state_path, timeout_hours):
+    if not state_path.is_file():
+        st = state_path.parent.stat()
+        age_hours = (time.time() - st.st_mtime) / 3600.0
+        return age_hours > timeout_hours
+    last_entry = _read_last_jsonl_entry(state_path)
+    return bool(last_entry) and _is_stale_entry(last_entry, timeout_hours)
+
+
 def cleanup_stale_clients(project_root=None):
     """Remove client directories that have not seen any activity for a while."""
     project_root = resolve_project_root(project_root)
@@ -100,7 +132,6 @@ def cleanup_stale_clients(project_root=None):
     if not clients_dir.is_dir():
         return []
 
-    # Canonicalize the clients directory once
     try:
         clients_dir_resolved = clients_dir.resolve()
     except OSError:
@@ -110,51 +141,14 @@ def cleanup_stale_clients(project_root=None):
     for client_dir in clients_dir.iterdir():
         if not client_dir.is_dir() or not client_dir.name.startswith("client-"):
             continue
-
-        # Guard against symlink/toctou: ensure resolved client_dir is a child of clients_dir
-        try:
-            client_dir_resolved = client_dir.resolve()
-        except OSError:
-            continue
-        try:
-            client_dir_resolved.relative_to(clients_dir_resolved)
-        except ValueError:
-            # client_dir resolves outside clients_dir — skip it (symlink escape)
+        if not _is_safe_client_dir(client_dir, clients_dir_resolved):
             continue
 
         state_path = client_dir / "state.jsonl"
-        if not state_path.is_file():
-            # If no state file, we can't judge activity.
-            # But let's check directory modification time as fallback.
-            st = state_path.parent.stat()
-            age_hours = (datetime.now().timestamp() - st.st_mtime) / 3600.0
-            if age_hours > timeout_hours:
-                if _remove_tree(client_dir, project_root=project_root):
-                    invalidate_client_runtime_dir_cache(project_root, client_dir.name)
-                    removed.append(client_dir)
-            continue
-
-        # Try to find the last activity timestamp in the state file
-        last_entry = None
-        try:
-            with state_path.open("rb") as f:
-                try:
-                    f.seek(-2, 2)
-                    while f.read(1) != b"\n":
-                        f.seek(-2, 1)
-                except OSError:
-                    f.seek(0)
-                last_line = f.read().decode("utf-8").strip()
-                if last_line:
-                    last_entry = json.loads(last_line)
-        except (OSError, json.JSONDecodeError):
-            pass
-
-        if last_entry and _is_stale_entry(last_entry, timeout_hours):
+        if _is_client_stale(client_dir, state_path, timeout_hours):
             if _remove_tree(client_dir, project_root=project_root):
                 invalidate_client_runtime_dir_cache(project_root, client_dir.name)
                 removed.append(client_dir)
-            continue
 
     if removed:
         log_event(

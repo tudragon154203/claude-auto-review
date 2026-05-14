@@ -1,4 +1,5 @@
 import json
+import subprocess
 from pathlib import Path
 
 from claude_auto_review.paths import get_client_id, get_log_path, get_project_root, local_now_iso
@@ -40,6 +41,25 @@ def get_payload_session_id(payload):
     if isinstance(payload, dict):
         return payload.get("session_id")
     return None
+
+
+def run_captured(command, *, cwd, timeout=None, env=None, **kwargs):
+    """Run a subprocess with standard text-capture kwargs.
+
+    All callers share capture_output=True, text=True, encoding="utf-8",
+    errors="replace" and str(cwd).  Pass extra kwargs (check, etc.) as needed.
+    """
+    return subprocess.run(
+        command,
+        cwd=str(cwd),
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        timeout=timeout,
+        env=env,
+        **kwargs,
+    )
 
 
 def run_fail_open(callback, *, project_root=None, event_type=None, on_error=None, fallback=0):

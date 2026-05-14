@@ -9,7 +9,6 @@ from claude_auto_review.paths import (
     STATE_RELATIVE_PATH,
     get_client_runtime_dir,
     get_plugin_root,
-    get_project_root,
 )
 from claude_auto_review.runtime.helpers import resolve_project_root
 from claude_auto_review.settings import DEFAULT_SETTINGS, _load_settings_document, _settings_path
@@ -140,7 +139,7 @@ def ensure_runtime(project_root=None, plugin_root=None):
 
 
 def ensure_project_settings(project_root=None):
-    project_root = Path(project_root or get_project_root())
+    project_root = resolve_project_root(project_root)
     plugin_root = Path(get_plugin_root())
     settings_path = _settings_path(project_root)
     settings_path.parent.mkdir(parents=True, exist_ok=True)

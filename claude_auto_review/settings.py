@@ -1,7 +1,8 @@
 import json
 from pathlib import Path
 
-from claude_auto_review.paths import get_project_root, is_runtime_relative_path
+from claude_auto_review.paths import is_runtime_relative_path
+from claude_auto_review.runtime.helpers import resolve_project_root
 
 # Setting keys for easy reference
 SETTING_ENABLED = "enabled"
@@ -35,7 +36,7 @@ DEFAULT_SETTINGS = {
 
 
 def _settings_path(project_root):
-    return Path(project_root or get_project_root()) / ".claude" / "settings.json"
+    return resolve_project_root(project_root) / ".claude" / "settings.json"
 
 
 def _load_settings_document(settings_path):
@@ -71,5 +72,21 @@ def should_skip_file(file_path, settings=None):
     if include_extensions and ext not in include_extensions:
         return True
     return bool(ext and ext in skip_extensions)
+
+
+def get_setting_float(settings: dict, key: str, default: float) -> float:
+    """Get a float setting with safe type coercion."""
+    try:
+        return float(settings.get(key, default))
+    except (TypeError, ValueError):
+        return float(default)
+
+
+def get_setting_int(settings: dict, key: str, default: int) -> int:
+    """Get an int setting with safe type coercion."""
+    try:
+        return int(settings.get(key, default))
+    except (TypeError, ValueError):
+        return int(default)
 
 

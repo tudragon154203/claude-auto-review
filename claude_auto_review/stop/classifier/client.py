@@ -7,6 +7,8 @@ from claude_auto_review.stop.classifier.response import parse_classifier_label, 
 
 _parse_classifier_label = parse_classifier_label
 
+ANTHROPIC_API_VERSION = "2023-06-01"
+
 def sanitize_base_url(base_url):
     if not isinstance(base_url, str) or not base_url.strip():
         return ""
@@ -37,7 +39,7 @@ def call_classifier_api(message_text, base_url, api_key, started_at, timeout_sec
         headers={
             "content-type": "application/json",
             "x-api-key": api_key,
-            "anthropic-version": "2023-06-01",
+            "anthropic-version": ANTHROPIC_API_VERSION,
         },
         method="POST",
     )

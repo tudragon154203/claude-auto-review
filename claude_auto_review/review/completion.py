@@ -1,12 +1,15 @@
 from __future__ import annotations
 
-from datetime import datetime
 from pathlib import Path
 
 from claude_auto_review.paths import local_now_iso
 from claude_auto_review.state.models import EditRecord, ReviewCompletedRecord, ReviewFileRecord, ReviewMetadata, StopBlockedRecord, StateEvent
 from claude_auto_review.state.store_read import get_unreviewed_files, load_state
 from claude_auto_review.state.store_write import append_state, mark_files_reviewed
+from claude_auto_review.utils.datetime_utils import parse_iso_timestamp
+
+
+REASON_PARTIAL_REVIEW = "partial_review"
 
 
 def _review_entry_for_id(state: list[StateEvent], review_id: str) -> ReviewMetadata | None:
@@ -20,9 +23,9 @@ def _duration_seconds(start_timestamp: str | None, end_timestamp: str) -> float 
     if not start_timestamp:
         return None
     try:
-        started = datetime.fromisoformat(start_timestamp)
-        completed = datetime.fromisoformat(end_timestamp)
-    except ValueError:
+        started = parse_iso_timestamp(start_timestamp)
+        completed = parse_iso_timestamp(end_timestamp)
+    except (ValueError, TypeError):
         return None
     return max(0.0, round((completed - started).total_seconds(), 3))
 
@@ -103,7 +106,7 @@ def apply_completed_review(
         append_state(
             StopBlockedRecord(
                 timestamp=local_now_iso(),
-                reason="partial_review",
+                reason=REASON_PARTIAL_REVIEW,
                 reviewId=review_id,
                 files=[e.file for e in remaining],
             ),

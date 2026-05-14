@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from claude_auto_review.paths import local_now_iso
-from claude_auto_review.settings import DEFAULT_SETTINGS
+from claude_auto_review.settings import DEFAULT_SETTINGS, get_setting_int
 from claude_auto_review.state.models import StopBlockedRecord
 from claude_auto_review.state.store_write import append_state
 from claude_auto_review.stop.response import block_response
@@ -25,10 +25,7 @@ def build_review_completion_prompt(review_path):
 
 
 def review_feedback_max_chars(settings):
-    try:
-        return max(0, int(settings.get("reviewFeedbackMaxChars", DEFAULT_SETTINGS["reviewFeedbackMaxChars"])))
-    except (TypeError, ValueError):
-        return DEFAULT_SETTINGS["reviewFeedbackMaxChars"]
+    return max(0, get_setting_int(settings, "reviewFeedbackMaxChars", DEFAULT_SETTINGS["reviewFeedbackMaxChars"]))
 
 
 def read_review_feedback(review_path, max_chars=None, project_root=None):
