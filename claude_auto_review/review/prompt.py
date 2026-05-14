@@ -12,13 +12,13 @@ from claude_auto_review.bootstrap import ensure_repo_root_on_path
 ensure_repo_root_on_path()
 
 from claude_auto_review.paths import get_client_id, get_project_root
+from claude_auto_review.runtime.events import log_event, log_failure
+from claude_auto_review.runtime.process import run_fail_open
 from claude_auto_review.review.prompt_flow import create_review_prompt_files
 from claude_auto_review.install.shims import write_project_script_shim
-from claude_auto_review.runtime.helpers import run_fail_open
 from claude_auto_review.runtime.setup import ensure_client_runtime
 from claude_auto_review.settings import load_settings
 from claude_auto_review.state.store_read import get_unreviewed_files, load_state
-from claude_auto_review.runtime.helpers import log_event
 from claude_auto_review.state.store_write import append_review_started
 from claude_auto_review.stop.orchestration.context import RuntimeContext
 
@@ -26,9 +26,7 @@ from claude_auto_review.stop.orchestration.context import RuntimeContext
 def _log_failure(project_root, error):
     message = f"Claude Auto Review failed open: {error}"
     traceback_text = traceback.format_exc()
-    try:
-        log_event(project_root, "review_prompt_error", error=str(error), traceback=traceback_text)
-    except Exception:
+    if not log_failure(project_root, "review_prompt_error", error, traceback=traceback_text):
         print(message, file=sys.stderr)
         print(traceback_text, file=sys.stderr)
     else:

@@ -176,8 +176,8 @@ class TestRuntime(StateTestCase, unittest.TestCase):
         self.assertTrue(_is_client_state_stale(state_path, timeout_hours=48))
 
     def test_helpers_log_event_oserror_suppression(self):
-        from claude_auto_review.runtime.helpers import log_event
-        with patch("claude_auto_review.runtime.helpers.get_log_path", side_effect=OSError("no write")):
+        from claude_auto_review.runtime.events import log_event
+        with patch("claude_auto_review.runtime.events.get_log_path", side_effect=OSError("no write")):
             try:
                 log_event(Path("/fake"), "test_event")
             except Exception:

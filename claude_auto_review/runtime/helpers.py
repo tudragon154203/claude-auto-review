@@ -1,96 +1,60 @@
-import json
-import subprocess
-from pathlib import Path
+from claude_auto_review.paths import get_client_id as _get_client_id, get_log_path as _get_log_path, get_project_root as _get_project_root
+from claude_auto_review.runtime.context import (
+    get_payload_session_id as _get_payload_session_id,
+    read_json_payload as _read_json_payload,
+    resolve_client_id as _resolve_client_id,
+    resolve_project_root as _resolve_project_root,
+)
+from claude_auto_review.runtime.events import log_event as _log_event, log_failure as _log_failure
+from claude_auto_review.runtime.process import run_captured as _run_captured, run_fail_open as _run_fail_open
 
-from claude_auto_review.paths import get_client_id, get_log_path, get_project_root, local_now_iso
+
+def get_project_root():
+    return _get_project_root()
+
+
+def get_client_id(stdin_session_id=None):
+    return _get_client_id(stdin_session_id)
+
+
+def get_log_path(project_root=None):
+    return _get_log_path(project_root)
 
 
 def resolve_project_root(project_root=None):
-    return Path(project_root or get_project_root())
+    return _resolve_project_root(project_root)
 
 
 def resolve_client_id(client_id=""):
-    return client_id or get_client_id()
+    return _resolve_client_id(client_id)
 
 
 def read_json_payload(raw):
-    raw = raw.strip()
-    return json.loads(raw) if raw else {}
-
-
-def _json_safe(value):
-    if isinstance(value, Path):
-        return str(value)
-    if isinstance(value, Exception):
-        return str(value)
-    if isinstance(value, dict):
-        return {str(key): _json_safe(item) for key, item in value.items()}
-    if isinstance(value, (list, tuple)):
-        return [_json_safe(item) for item in value]
-    if isinstance(value, set):
-        return sorted((_json_safe(item) for item in value), key=repr)
-    return value
+    return _read_json_payload(raw)
 
 
 def log_event(project_root, event_type, **kwargs):
-    try:
-        log_path = get_log_path(project_root)
-        log_path.parent.mkdir(parents=True, exist_ok=True)
-        entry = _json_safe({"timestamp": local_now_iso(), "type": event_type, **kwargs})
-        with log_path.open("a", encoding="utf-8", newline="\n") as f:
-            f.write(json.dumps(entry, separators=(",", ":"), default=str) + "\n")
-    except OSError:
-        pass
+    return _log_event(project_root, event_type, **kwargs)
 
 
 def log_failure(project_root, event_type, error, **kwargs):
-    try:
-        log_event(project_root, event_type, error=str(error), **kwargs)
-        return True
-    except OSError:
-        return False
+    return _log_failure(project_root, event_type, error, **kwargs)
 
 
 def get_payload_session_id(payload):
-    if isinstance(payload, dict):
-        return payload.get("session_id")
-    return None
+    return _get_payload_session_id(payload)
 
 
 def run_captured(command, *, cwd, timeout=None, env=None, **kwargs):
-    """Run a subprocess with standard text-capture kwargs.
-
-    All callers share capture_output=True, text=True, encoding="utf-8",
-    errors="replace" and str(cwd).  Pass extra kwargs (check, etc.) as needed.
-    """
-    return subprocess.run(
-        command,
-        cwd=str(cwd),
-        capture_output=True,
-        text=True,
-        encoding="utf-8",
-        errors="replace",
-        timeout=timeout,
-        env=env,
-        **kwargs,
-    )
-
-
-def _log_fail_open_error(project_root, event_type, error, on_error):
-    handled = False
-    if on_error is not None:
-        try:
-            handled = bool(on_error(error))
-        except Exception as on_error_error:
-            if event_type:
-                log_failure(project_root, f"{event_type}_handler_failed", on_error_error, original_error=error)
-    if event_type and not handled:
-        log_failure(project_root, event_type, error)
+    return _run_captured(command, cwd=cwd, timeout=timeout, env=env, **kwargs)
 
 
 def run_fail_open(callback, *, project_root=None, event_type=None, on_error=None, fallback=0):
-    try:
-        return callback()
-    except Exception as error:
-        _log_fail_open_error(project_root, event_type, error, on_error)
-        return fallback
+    return _run_fail_open(
+        callback,
+        project_root=project_root,
+        event_type=event_type,
+        on_error=on_error,
+        fallback=fallback,
+        log_failure=log_failure,
+    )

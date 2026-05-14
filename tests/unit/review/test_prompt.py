@@ -22,14 +22,14 @@ class TestReviewPrompt(unittest.TestCase):
         self.assertEqual(result, "")
 
     def test_log_failure_handles_logging_error(self):
-        with patch("claude_auto_review.review.prompt.log_event", side_effect=RuntimeError("log boom")):
+        with patch("claude_auto_review.review.prompt.log_failure", return_value=False):
             with patch("builtins.print") as mock_print:
                 _log_failure(Path("/fake"), ValueError("test"))
         # On error, prints to stderr twice (message + traceback)
         self.assertEqual(mock_print.call_count, 2)
 
     def test_log_failure_prints_message_on_success(self):
-        with patch("claude_auto_review.review.prompt.log_event"):
+        with patch("claude_auto_review.review.prompt.log_failure", return_value=True):
             with patch("builtins.print") as mock_print:
                 _log_failure(Path("/fake"), ValueError("test"))
         mock_print.assert_called_once()

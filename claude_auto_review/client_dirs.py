@@ -16,12 +16,16 @@ def get_client_id(stdin_session_id=None) -> str:
         return session_id
 
     ts = datetime.now().strftime("%Y%m%d-%H%M%S")
-    try:
-        hostname = socket.gethostname()
-    except Exception:
-        hostname = "unknown"
+    hostname = _safe_hostname()
     pid = os.getpid()
     return f"{ts}_{hostname}-{pid}"
+
+
+def _safe_hostname():
+    try:
+        return socket.gethostname()
+    except Exception:
+        return "unknown"
 
 
 def _client_runtime_dir_cache_key(project_root: Path, client_id: str):

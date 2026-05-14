@@ -1,10 +1,11 @@
-import json
 import shutil
 import time
+import json
 
 from claude_auto_review.constants import SECONDS_PER_HOUR
 from claude_auto_review.paths import CLIENTS_DIR, RUNTIME_DIR, client_state_path, get_client_runtime_dir, invalidate_client_runtime_dir_cache
-from claude_auto_review.runtime.helpers import log_event, log_failure, resolve_client_id, resolve_project_root
+from claude_auto_review.runtime.context import resolve_client_id, resolve_project_root
+from claude_auto_review.runtime.events import log_event, log_failure
 from claude_auto_review.runtime.pending_cleanup import cleanup_expired_pending_reviews
 from claude_auto_review.settings import DEFAULT_SETTINGS, SETTING_STALE_CLIENT_TIMEOUT, load_settings
 from claude_auto_review.utils.datetime_utils import hours_since
@@ -104,17 +105,14 @@ def cancel_session(project_root=None, client_id=""):
 
 def _read_last_jsonl_entry(state_path):
     try:
-        with state_path.open("rb") as f:
-            try:
-                f.seek(-2, 2)
-                while f.read(1) != b"\n":
-                    f.seek(-2, 1)
-            except OSError:
-                f.seek(0)
-            last_line = f.read().decode("utf-8").strip()
-            if last_line:
-                return json.loads(last_line)
-    except (OSError, json.JSONDecodeError):
+        last_line = ""
+        with state_path.open("r", encoding="utf-8") as f:
+            for line in f:
+                if line.strip():
+                    last_line = line
+        if last_line:
+            return json.loads(last_line)
+    except (OSError, json.JSONDecodeError, ValueError):
         pass
     return None
 
