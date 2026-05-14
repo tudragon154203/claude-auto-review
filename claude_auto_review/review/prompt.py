@@ -31,7 +31,7 @@ def _log_failure(project_root, error):
         print(message, file=sys.stderr)
         print(traceback_text, file=sys.stderr)
     else:
-        print(message)
+        print(message, file=sys.stderr)
     return True
 
 

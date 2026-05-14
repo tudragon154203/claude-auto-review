@@ -1,3 +1,4 @@
+import sys
 import unittest
 from unittest.mock import patch, MagicMock
 from pathlib import Path
@@ -32,6 +33,7 @@ class TestReviewPrompt(unittest.TestCase):
             with patch("builtins.print") as mock_print:
                 _log_failure(Path("/fake"), ValueError("test"))
         mock_print.assert_called_once()
+        self.assertEqual(mock_print.call_args.kwargs["file"], sys.stderr)
 
     @patch("claude_auto_review.review.prompt.log_event")
     @patch("claude_auto_review.review.prompt.write_project_script_shim")
