@@ -38,7 +38,7 @@ flowchart TD
 - **Stop response:** `stop/feedback.py`, `stop/response.py`
 - **Selection & autocomplete:** `stop/reviews/selection.py`, `stop/reviews/autocomplete.py`, `stop/reviews/prompt_runner.py`
 - **Classifier:** `stop/classifier/last_assistant_message.py`, `stop/classifier/extraction.py`, `stop/classifier/client.py`, `stop/classifier/models.py`, `stop/classifier/request.py`, `stop/classifier/response.py`
-- **Runtime:** `runtime/setup.py`, `runtime/cleanup.py`, `runtime/helpers.py`, `runtime/pending_cleanup.py`
+- **Runtime:** `runtime/setup.py`, `runtime/cleanup.py`, `runtime/context.py`, `runtime/events.py`, `runtime/process.py`, `runtime/pending_cleanup.py`
 - **Utilities:** `utils/shell_parsing.py`, `utils/datetime_utils.py`
 - **Install:** `install/installer.py`, `install/shims.py`, `install/setup_cli.py`, `install/cancel_cli.py`
 - **Support files:** `agents/reviewer.md`, `rules/review-rules.md`
