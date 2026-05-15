@@ -1,9 +1,9 @@
 from pathlib import Path
 
-from claude_auto_review.client_dirs import get_client_id
+from claude_auto_review.runtime.client_dirs import get_client_id
 from claude_auto_review.runtime.events import log_event
 from claude_auto_review.runtime.setup import ensure_client_runtime
-from claude_auto_review.settings import (
+from claude_auto_review.config.settings import (
     DEFAULT_SETTINGS,
     SETTING_MAX_STOP_PASSES,
     SETTING_PENDING_TIMEOUT,

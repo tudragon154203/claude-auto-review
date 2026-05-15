@@ -2,7 +2,7 @@ import os
 from pathlib import Path
 from urllib.parse import unquote, urlsplit
 
-from claude_auto_review.path_utils import FILE_URI_PREFIX, _project_root_path
+from claude_auto_review.paths.path_utils import FILE_URI_PREFIX, _project_root_path
 
 
 def _normalize_file_uri(file_path: str) -> str:

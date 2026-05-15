@@ -19,11 +19,11 @@ def get_project_root():
 
 
 def get_plugin_root():
-    return Path(__file__).resolve().parent.parent
+    return Path(__file__).resolve().parent.parent.parent
 
 
 def get_reviewer_prompt_script():
-    return get_plugin_root() / "review" / "prompt.py"
+    return get_plugin_root() / "claude_auto_review" / "review" / "prompt.py"
 
 
 def _project_root_path(project_root=None):

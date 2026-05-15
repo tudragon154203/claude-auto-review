@@ -4,7 +4,7 @@ import socket
 from datetime import datetime
 from pathlib import Path
 
-from claude_auto_review.path_utils import CLIENTS_DIR, _project_root_path
+from claude_auto_review.paths.path_utils import CLIENTS_DIR, _project_root_path
 
 _CLIENT_RUNTIME_DIR_PATTERN = re.compile(r"^client-(\d{8}-\d{6})_(.+)$")
 _CLIENT_RUNTIME_DIR_CACHE = {}

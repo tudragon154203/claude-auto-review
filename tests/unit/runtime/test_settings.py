@@ -2,8 +2,8 @@ import json
 import unittest
 
 from claude_auto_review.runtime.setup import ensure_project_settings
-from claude_auto_review.settings import DEFAULT_SETTINGS, DEFAULT_TIMEOUT_SECONDS, load_settings, should_skip_file
-from claude_auto_review.settings import resolve_rules_file_path
+from claude_auto_review.config.settings import DEFAULT_SETTINGS, DEFAULT_TIMEOUT_SECONDS, load_settings, should_skip_file
+from claude_auto_review.config.settings import resolve_rules_file_path
 
 from tests.unit.state.support import StateTestCase
 

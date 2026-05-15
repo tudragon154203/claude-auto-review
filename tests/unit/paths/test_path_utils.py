@@ -2,16 +2,16 @@ import unittest
 import shutil
 from unittest.mock import patch
 
-from claude_auto_review.path_utils import (
+from claude_auto_review.paths.path_utils import (
     CLIENTS_DIR,
     get_log_path,
     get_state_path,
 )
-from claude_auto_review.client_dirs import (
+from claude_auto_review.runtime.client_dirs import (
     get_client_runtime_dir,
     invalidate_client_runtime_dir_cache,
 )
-from claude_auto_review.uri_utils import normalize_relative_path
+from claude_auto_review.paths.uri_utils import normalize_relative_path
 
 from tests.unit.state.support import StateTestCase
 
@@ -71,7 +71,7 @@ class TestPathUtils(StateTestCase, unittest.TestCase):
         expected = project_root / CLIENTS_DIR / "client-fresh-session-a"
         shutil.rmtree(first)
 
-        with patch("claude_auto_review.client_dirs._timestamped_client_runtime_dir", return_value=expected):
+        with patch("claude_auto_review.runtime.client_dirs._timestamped_client_runtime_dir", return_value=expected):
             result = get_client_runtime_dir(project_root, client_id)
 
         self.assertEqual(result, expected)

@@ -1,7 +1,7 @@
-from claude_auto_review.client_dirs import client_state_path
+from claude_auto_review.runtime.client_dirs import client_state_path
 from claude_auto_review.runtime.context import resolve_client_id, resolve_project_root
 from claude_auto_review.runtime.events import log_event, log_failure
-from claude_auto_review.settings import load_settings
+from claude_auto_review.config.settings import load_settings
 from claude_auto_review.state.models import ReviewMetadata
 from claude_auto_review.state.review_expiry import is_review_expired
 from claude_auto_review.state.store_read import parse_event, read_jsonl_records

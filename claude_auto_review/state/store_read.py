@@ -2,8 +2,8 @@ import hashlib
 import json
 from pathlib import Path
 
-from claude_auto_review.path_utils import is_runtime_relative_path
-from claude_auto_review.uri_utils import normalize_relative_path
+from claude_auto_review.paths.path_utils import is_runtime_relative_path
+from claude_auto_review.paths.uri_utils import normalize_relative_path
 from claude_auto_review.runtime.context import resolve_client_id, resolve_project_root
 from claude_auto_review.state.models import (
     EditRecord,
@@ -78,7 +78,7 @@ def get_file_hash(file_path, project_root=None):
 
 
 def load_state(project_root=None, client_id=None):
-    from claude_auto_review.client_dirs import client_state_path
+    from claude_auto_review.runtime.client_dirs import client_state_path
 
     project_root = resolve_project_root(project_root)
     client_id = resolve_client_id(client_id)

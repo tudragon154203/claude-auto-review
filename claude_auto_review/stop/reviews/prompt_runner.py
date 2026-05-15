@@ -2,8 +2,8 @@ import shutil
 import subprocess
 import sys
 
-from claude_auto_review.client_dirs import client_run_dir
-from claude_auto_review.path_utils import local_now_iso
+from claude_auto_review.runtime.client_dirs import client_run_dir
+from claude_auto_review.paths.path_utils import local_now_iso
 from claude_auto_review.runtime.events import log_event
 from claude_auto_review.runtime.process import run_captured
 from claude_auto_review.review.completion import apply_completed_review

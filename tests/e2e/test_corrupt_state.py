@@ -11,7 +11,7 @@ class EndToEndCorruptStateTests(EndToEndTestCase):
 
         self.track(project_root, "src/app.ts")
 
-        from claude_auto_review.client_dirs import client_state_path
+        from claude_auto_review.runtime.client_dirs import client_state_path
 
         state_path = client_state_path(project_root, "test-session")
         state_path.write_text(
@@ -28,7 +28,7 @@ class EndToEndCorruptStateTests(EndToEndTestCase):
 
         self.track(project_root, "src/app.ts")
 
-        from claude_auto_review.client_dirs import client_state_path
+        from claude_auto_review.runtime.client_dirs import client_state_path
         from claude_auto_review.state.store_read import load_state
 
         state_path = client_state_path(project_root, "test-session")

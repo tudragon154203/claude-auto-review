@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 
-from claude_auto_review.path_utils import is_runtime_relative_path
+from claude_auto_review.paths.path_utils import is_runtime_relative_path
 from claude_auto_review.runtime.context import resolve_project_root
 
 # Setting keys for easy reference

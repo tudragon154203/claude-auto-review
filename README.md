@@ -31,7 +31,7 @@ flowchart TD
 ```
 
 - **Hook entrypoints:** `hooks/post_tool_use.py`, `hooks/stop_hook.py`, `hooks/session_end.py`
-- **Core config:** `paths.py`, `path_utils.py`, `uri_utils.py`, `client_dirs.py`, `settings.py`, `bootstrap.py`
+- **Core config:** `config/constants.py`, `config/settings.py`, `paths/path_utils.py`, `paths/uri_utils.py`, `runtime/client_dirs.py`, `utils/bootstrap.py`
 - **State bookkeeping:** `state/models.py`, `state/store_read.py`, `state/store_write.py`, `state/reviews.py`, `state/review_matching.py`, `state/review_expiry.py`, `state/hook_input.py`
 - **Review generation:** `review/generation.py`, `review/prompt_flow.py`, `review/prompt.py`, `review/prompt_templates.py`, `review/completion.py`, `review/rendering.py`
 - **Stop orchestration:** `stop/orchestration/flow.py`, `stop/orchestration/pending.py`, `stop/orchestration/finalize.py`, `stop/orchestration/context.py`, `stop/orchestration/resolution.py`, `stop/orchestration/response_actions.py`
