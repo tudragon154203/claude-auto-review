@@ -7,7 +7,7 @@ from claude_auto_review.runtime.context import resolve_client_id, resolve_projec
 from claude_auto_review.runtime.events import log_event, log_failure
 from claude_auto_review.runtime.pending_cleanup import cleanup_expired_pending_reviews
 from claude_auto_review.settings import DEFAULT_SETTINGS, SETTING_STALE_CLIENT_TIMEOUT, load_settings
-from claude_auto_review.state.store_read import read_jsonl_records
+from claude_auto_review.state.store_read import read_last_jsonl_record
 from claude_auto_review.utils.datetime_utils import hours_since
 
 
@@ -68,7 +68,7 @@ def _client_state_mtime_hours(state_path):
 def _is_client_state_stale(state_path, timeout_hours):
     if not state_path.is_file():
         return _client_state_mtime_hours(state_path) > timeout_hours
-    last_entry = _read_last_jsonl_entry(state_path)
+    last_entry = read_last_jsonl_record(state_path)
     return bool(last_entry) and _is_stale_entry(last_entry, timeout_hours)
 
 
@@ -101,19 +101,6 @@ def cancel_session(project_root=None, client_id=""):
         removed.append(client_dir)
         return removed
     return []
-
-
-def _read_last_jsonl_entry(state_path):
-    try:
-        last_entry = None
-        for _, raw in read_jsonl_records(state_path):
-            if isinstance(raw, dict):
-                last_entry = raw
-        return last_entry
-    except OSError:
-        pass
-    return None
-
 
 def _is_safe_client_dir(client_dir, clients_dir_resolved):
     try:

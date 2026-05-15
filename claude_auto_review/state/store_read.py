@@ -54,6 +54,14 @@ def read_jsonl_records(path):
     return records
 
 
+def read_last_jsonl_record(path):
+    last_entry = None
+    for _, raw in read_jsonl_records(path):
+        if isinstance(raw, dict):
+            last_entry = raw
+    return last_entry
+
+
 def get_file_hash(file_path, project_root=None):
     project_root = resolve_project_root(project_root)
     relative = normalize_relative_path(file_path, project_root)

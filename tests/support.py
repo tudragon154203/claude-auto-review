@@ -159,7 +159,7 @@ def make_classifier_handler(response_label="complete", response_delay=0, respons
             try:
                 self.wfile.write(encoded)
             except OSError:
-                pass
+                return
 
         def log_message(self, fmt, *args):
             return
