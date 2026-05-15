@@ -21,12 +21,14 @@ flowchart TD
     H -- No --> J[Run review prompt script]
     J --> K{Review generation succeeded?}
     K -- No --> L[Block stop]
-    K -- Yes --> M{Review verdict clean?}
+    K -- Yes --> M{Would stop be blocked?}
     I --> M
-    M -- Yes --> G
-    M -- No --> L
-    L --> N[Classify last assistant message]
-    N --> O[Return blocked stop response]
+    M -- No --> G
+    M -- Yes --> N[Classify last assistant message]
+    N --> O{Classifier says incomplete?}
+    O -- Yes --> G
+    O -- No --> L
+    L --> P[Return blocked stop response]
 ```
 
 - **Hook entrypoints:** `hooks/post_tool_use.py`, `hooks/stop_hook.py`, `hooks/session_end.py`
@@ -41,6 +43,8 @@ flowchart TD
 - **Utilities:** `utils/shell_parsing.py`, `utils/datetime_utils.py`
 - **Install:** `install/installer.py`, `install/shims.py`, `install/setup_cli.py`, `install/cancel_cli.py`
 - **Support files:** `agents/reviewer.md`, `rules/review-rules.md`
+
+The classifier is now a stop gate on would-block paths: `incomplete` lets Claude continue working, while `complete`, `unknown`, `error`, and `skipped` keep the stop blocked.
 
 **Commands:**
 - `/claude-auto-review` — Complete manual review for current unreviewed files
