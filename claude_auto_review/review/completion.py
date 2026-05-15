@@ -85,12 +85,12 @@ def _review_status_completed_entry(review_id: str, client_id: str) -> ReviewMeta
     )
 
 
-def apply_completed_review(
+def record_completed_review(
     project_root: Path,
     client_id: str,
     review_id: str,
     covered_entries: list[EditRecord],
-) -> list[EditRecord]:
+) -> None:
     validated_entries = _validate_covered_entries(covered_entries)
     state_before = load_state(project_root, client_id)
     timestamp = local_now_iso()
@@ -102,6 +102,15 @@ def apply_completed_review(
         client_id=client_id,
     )
     mark_files_reviewed(validated_entries, review_id, project_root, client_id=client_id, timestamp=timestamp)
+
+
+def apply_completed_review(
+    project_root: Path,
+    client_id: str,
+    review_id: str,
+    covered_entries: list[EditRecord],
+) -> list[EditRecord]:
+    record_completed_review(project_root, client_id, review_id, covered_entries)
     remaining = get_unreviewed_files(load_state(project_root, client_id))
     if remaining:
         append_state(

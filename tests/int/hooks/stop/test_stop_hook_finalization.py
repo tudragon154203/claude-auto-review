@@ -1,6 +1,7 @@
 import json
 import unittest
 
+from claude_auto_review.state.store.read import load_state, was_hash_reviewed
 from tests.int.hooks.support import HookTestCase
 from tests.support import start_classifier_server
 
@@ -35,6 +36,10 @@ class TestStopHookFinalization(HookTestCase, unittest.TestCase):
         self.assertEqual(stop2.returncode, 2)
         self.assertIn("found issues to address.", stop2.stdout)
         self.assertIn(findings, stop2.stdout)
+
+        state = load_state(project_root, "test-session")
+        edit = next(entry for entry in state if getattr(entry, "file", None) == "src/app.ts")
+        self.assertTrue(was_hash_reviewed(state, edit.file, edit.hash))
 
     def test_stop_blocked_when_review_is_incomplete_artifact(self):
         """Test the path where is_completed_review_content is True but there is no full verdict."""

@@ -7,7 +7,7 @@ from claude_auto_review.state.reviews import (
     is_review_complete_verdict,
     normalize_review_verdict_content,
 )
-from claude_auto_review.review.completion import apply_completed_review
+from claude_auto_review.review.completion import apply_completed_review, record_completed_review
 from claude_auto_review.config.constants import EXIT_REVIEW_FAILED
 from claude_auto_review.config.settings import DEFAULT_SETTINGS, SETTING_REVIEWER_TIMEOUT
 from claude_auto_review.stop.orchestration.core.context import RuntimeContext
@@ -73,6 +73,7 @@ def finalize_review_stop(ctx: RuntimeContext, resolution):
         return _apply_completed_clean_review(ctx, review_id, covered_entries)
 
     if is_review_complete_verdict(verdict):
+        record_completed_review(ctx.project_root, ctx.client_id, review_id, covered_entries)
         block_completed_review_findings(ctx, review_id, review_path, unreviewed)
         return 2
 
@@ -94,6 +95,7 @@ def finalize_review_stop(ctx: RuntimeContext, resolution):
 
     verdict = _read_review_verdict(review_path)
     if is_review_complete_verdict(verdict) and not is_review_clean(review_path):
+        record_completed_review(ctx.project_root, ctx.client_id, review_id, covered_entries)
         block_completed_review_findings(ctx, review_id, review_path, unreviewed)
         return 2
 

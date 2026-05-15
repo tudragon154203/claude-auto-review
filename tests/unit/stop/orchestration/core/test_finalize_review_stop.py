@@ -45,17 +45,19 @@ class TestFinalizeReviewStop(unittest.TestCase):
         self.assertEqual(result, 0)
 
     @patch("claude_auto_review.stop.orchestration.core.finalize.get_entries_covered_by_review", return_value=[])
+    @patch("claude_auto_review.stop.orchestration.core.finalize.record_completed_review")
     @patch("claude_auto_review.stop.orchestration.core.finalize.block_completed_review_findings")
     @patch("claude_auto_review.stop.orchestration.core.finalize._read_review_verdict", return_value="Has findings")
-    def test_completed_with_findings_returns_2(self, mock_verdict, mock_block, mock_covered):
+    def test_completed_with_findings_returns_2(self, mock_verdict, mock_block, mock_record, mock_covered):
         result = finalize_review_stop(_ctx(), self.resolution)
         self.assertEqual(result, 2)
         mock_block.assert_called_once()
+        mock_record.assert_called_once()
 
     @patch("claude_auto_review.stop.orchestration.core.finalize.get_entries_covered_by_review", return_value=[])
-    @patch("claude_auto_review.stop.orchestration.core.finalize.apply_completed_review")
+    @patch("claude_auto_review.stop.orchestration.core.finalize.record_completed_review")
     @patch("claude_auto_review.stop.orchestration.core.finalize.block_completed_review_findings")
-    def test_completed_clean_verdict_with_findings_blocks(self, mock_block, mock_apply, mock_covered):
+    def test_completed_clean_verdict_with_findings_blocks(self, mock_block, mock_record, mock_covered):
         with tempfile.TemporaryDirectory() as tmpdir:
             project_root = Path(tmpdir)
             review_dir = project_root / "fake"
@@ -72,7 +74,7 @@ class TestFinalizeReviewStop(unittest.TestCase):
             resolution = StopFlowResolution(state=[], unreviewed=[], review=_mk_review("r1", "fake/r.md"))
             result = finalize_review_stop(_ctx(project_root=project_root), resolution)
             self.assertEqual(result, 2)
-            mock_apply.assert_not_called()
+            mock_record.assert_called_once()
             mock_block.assert_called_once()
             self.assertIn(
                 "Findings present. Claude must address all findings before stopping.",
@@ -103,16 +105,18 @@ class TestFinalizeReviewStop(unittest.TestCase):
         mock_apply.assert_called_once()
 
     @patch("claude_auto_review.stop.orchestration.core.finalize.get_entries_covered_by_review", return_value=[])
+    @patch("claude_auto_review.stop.orchestration.core.finalize.record_completed_review")
     @patch("claude_auto_review.stop.orchestration.core.finalize.block_completed_review_findings")
     @patch("claude_auto_review.stop.orchestration.core.finalize.build_review_completion_prompt")
     @patch("claude_auto_review.stop.orchestration.core.finalize.attempt_stop_autocomplete", return_value=False)
     @patch("claude_auto_review.stop.orchestration.core.finalize._read_review_verdict", side_effect=["Pending.", "Not clean."])
     def test_autocomplete_completed_with_findings_blocks_completion(
-        self, mock_verdict, mock_auto, mock_prompt, mock_block, mock_covered
+        self, mock_verdict, mock_auto, mock_prompt, mock_block, mock_record, mock_covered
     ):
         result = finalize_review_stop(_ctx(), self.resolution)
         self.assertEqual(result, 2)
         mock_block.assert_called_once()
+        mock_record.assert_called_once()
 
     @patch("claude_auto_review.stop.orchestration.core.finalize.get_entries_covered_by_review", return_value=[])
     @patch("claude_auto_review.stop.orchestration.core.finalize.build_review_completion_prompt")
@@ -123,13 +127,14 @@ class TestFinalizeReviewStop(unittest.TestCase):
         self.assertEqual(result, 2)
 
     @patch("claude_auto_review.stop.orchestration.core.finalize.get_entries_covered_by_review", return_value=[])
+    @patch("claude_auto_review.stop.orchestration.core.finalize.record_completed_review")
     @patch("claude_auto_review.stop.orchestration.core.finalize.block_completed_review_findings")
     @patch("claude_auto_review.stop.orchestration.core.finalize._review_has_completed_artifact", side_effect=[False, True])
     @patch("claude_auto_review.stop.orchestration.core.finalize.build_review_completion_prompt")
     @patch("claude_auto_review.stop.orchestration.core.finalize.attempt_stop_autocomplete", return_value=False)
     @patch("claude_auto_review.stop.orchestration.core.finalize._read_review_verdict", side_effect=["Pending.", None])
     def test_autocomplete_with_non_placeholder_review_blocks_with_findings(
-        self, mock_verdict, mock_auto, mock_prompt, mock_completed, mock_block, mock_covered
+        self, mock_verdict, mock_auto, mock_prompt, mock_completed, mock_block, mock_record, mock_covered
     ):
         result = finalize_review_stop(_ctx(), self.resolution)
         self.assertEqual(result, 2)
