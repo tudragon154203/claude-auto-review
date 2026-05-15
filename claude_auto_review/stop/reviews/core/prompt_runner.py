@@ -109,19 +109,57 @@ def attempt_stop_autocomplete(
 
 
 def _process_review_result(ctx: RuntimeContext, result, review_path, review_id, covered_entries):
+    stdout_len = len(result.stdout) if result.stdout else 0
     log_event(
         ctx.project_root,
         "stop_hook_claude_cli_done",
         returncode=result.returncode,
+        stdout_len=stdout_len,
         stdout=result.stdout[:500],
         stderr=result.stderr[:500] if result.stderr else "",
     )
-    if result.returncode == 0 and result.stdout.strip():
-        normalized_output = normalize_review_verdict_content(result.stdout)
-        review_path.write_text(normalized_output, encoding="utf-8", newline="\n")
-        if is_review_clean_content(normalized_output):
-            remaining = apply_completed_review(
-                ctx.project_root, ctx.client_id, review_id, covered_entries
+
+    if result.returncode != 0:
+        log_event(
+            ctx.project_root,
+            "stop_hook_claude_cli_nonzero",
+            returncode=result.returncode,
+            reviewId=review_id,
+            stderr=result.stderr[:500] if result.stderr else "",
+        )
+        return False
+
+    if not result.stdout.strip():
+        log_event(
+            ctx.project_root,
+            "stop_hook_claude_cli_empty",
+            reviewId=review_id,
+            stdout_len=stdout_len,
+            stderr=result.stderr[:500] if result.stderr else "",
+        )
+        return False
+
+    normalized_output = normalize_review_verdict_content(result.stdout)
+    review_path.write_text(normalized_output, encoding="utf-8", newline="\n")
+
+    if is_review_clean_content(normalized_output):
+        remaining = apply_completed_review(
+            ctx.project_root, ctx.client_id, review_id, covered_entries
+        )
+        if remaining:
+            log_event(
+                ctx.project_root,
+                "stop_hook_claude_cli_partial",
+                reviewId=review_id,
+                remaining_files=len(remaining),
             )
-            return not remaining
+            return False
+        return True
+
+    log_event(
+        ctx.project_root,
+        "stop_hook_claude_cli_nonclean",
+        reviewId=review_id,
+        stdout_len=stdout_len,
+    )
     return False
