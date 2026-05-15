@@ -14,9 +14,9 @@ from claude_auto_review.config.core.settings import (
 )
 from claude_auto_review.state.store.read import consecutive_stop_blocks, get_unreviewed_files, load_state
 from claude_auto_review.stop.classifier.core.last_assistant_message import classify_last_assistant_message
-from claude_auto_review.stop.orchestration.context import RuntimeContext
-from claude_auto_review.stop.orchestration.finalize import finalize_review_stop
-from claude_auto_review.stop.orchestration.pending import resolve_pending_review
+from claude_auto_review.stop.orchestration.core.context import RuntimeContext
+from claude_auto_review.stop.orchestration.core.finalize import finalize_review_stop
+from claude_auto_review.stop.orchestration.core.pending import resolve_pending_review
 
 
 def _allow_stop(project_root, reason, **details):
@@ -78,7 +78,7 @@ def run_stop_flow(project_root, payload):
         state,
         unreviewed,
         timeout_hours,
-        Path(__file__).resolve().parents[2] / "review" / "prompt.py",
+        Path(__file__).resolve().parents[3] / "review" / "prompt.py",
     )
     if resolution.is_terminal:
         return resolution.exit_code

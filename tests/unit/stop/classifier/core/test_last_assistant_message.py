@@ -8,7 +8,7 @@ from claude_auto_review.stop.classifier.core.models import (
 from claude_auto_review.stop.classifier.core.last_assistant_message import (
     classify_last_assistant_message,
 )
-from claude_auto_review.stop.orchestration.context import RuntimeContext
+from claude_auto_review.stop.orchestration.core.context import RuntimeContext
 
 from tests.unit.state.support import StateTestCase
 

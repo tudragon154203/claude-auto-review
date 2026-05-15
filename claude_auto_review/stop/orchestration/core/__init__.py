@@ -1,0 +1,1 @@
+"""Core stop orchestration helpers."""

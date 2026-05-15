@@ -4,8 +4,8 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 from claude_auto_review.state.models import EditRecord, ReviewMetadata
-from claude_auto_review.stop.orchestration.context import RuntimeContext
-from claude_auto_review.stop.orchestration.pending import resolve_pending_review
+from claude_auto_review.stop.orchestration.core.context import RuntimeContext
+from claude_auto_review.stop.orchestration.core.pending import resolve_pending_review
 
 from tests.unit.state.support import StateTestCase
 
@@ -42,8 +42,8 @@ class TestResolvePendingReview(unittest.TestCase):
         "review_prompt_script": Path("/fake/script"),
     }
 
-    @patch("claude_auto_review.stop.orchestration.pending.find_pending_review_for_files")
-    @patch("claude_auto_review.stop.orchestration.pending._run_review_prompt")
+    @patch("claude_auto_review.stop.orchestration.core.pending.find_pending_review_for_files")
+    @patch("claude_auto_review.stop.orchestration.core.pending._run_review_prompt")
     def test_existing_pending_review_returns_review(self, mock_run, mock_find):
         review = _mk_review()
         mock_find.return_value = review
@@ -52,8 +52,8 @@ class TestResolvePendingReview(unittest.TestCase):
         self.assertFalse(result.is_terminal)
         mock_run.assert_not_called()
 
-    @patch("claude_auto_review.stop.orchestration.pending.find_pending_review_for_files", return_value=None)
-    @patch("claude_auto_review.stop.orchestration.pending._run_review_prompt")
+    @patch("claude_auto_review.stop.orchestration.core.pending.find_pending_review_for_files", return_value=None)
+    @patch("claude_auto_review.stop.orchestration.core.pending._run_review_prompt")
     def test_no_pending_runs_prompt(self, mock_run, mock_find):
         mock_result = MagicMock()
         mock_result.stdout = ""
@@ -62,24 +62,24 @@ class TestResolvePendingReview(unittest.TestCase):
         result = resolve_pending_review(_ctx(), **self.base_kwargs)
         mock_run.assert_called_once()
 
-    @patch("claude_auto_review.stop.orchestration.pending.find_pending_review_for_files")
-    @patch("claude_auto_review.stop.orchestration.pending._run_review_prompt", side_effect=subprocess.TimeoutExpired(cmd="x", timeout=60))
+    @patch("claude_auto_review.stop.orchestration.core.pending.find_pending_review_for_files")
+    @patch("claude_auto_review.stop.orchestration.core.pending._run_review_prompt", side_effect=subprocess.TimeoutExpired(cmd="x", timeout=60))
     def test_timeout_blocks_stop(self, mock_run, mock_find):
         mock_find.return_value = None
         result = resolve_pending_review(_ctx(), **self.base_kwargs)
         self.assertEqual(result.exit_code, 2)
 
-    @patch("claude_auto_review.stop.orchestration.pending.find_pending_review_for_files")
-    @patch("claude_auto_review.stop.orchestration.pending._run_review_prompt", side_effect=OSError("boom"))
+    @patch("claude_auto_review.stop.orchestration.core.pending.find_pending_review_for_files")
+    @patch("claude_auto_review.stop.orchestration.core.pending._run_review_prompt", side_effect=OSError("boom"))
     def test_error_blocks_stop(self, mock_run, mock_find):
         mock_find.return_value = None
         result = resolve_pending_review(_ctx(), **self.base_kwargs)
         self.assertEqual(result.exit_code, 2)
 
-    @patch("claude_auto_review.stop.orchestration.pending._reload_client_state")
-    @patch("claude_auto_review.stop.orchestration.pending.find_pending_review_for_files")
-    @patch("claude_auto_review.stop.orchestration.pending._run_review_prompt")
-    @patch("claude_auto_review.stop.orchestration.pending._block_review_prompt_failure")
+    @patch("claude_auto_review.stop.orchestration.core.pending._reload_client_state")
+    @patch("claude_auto_review.stop.orchestration.core.pending.find_pending_review_for_files")
+    @patch("claude_auto_review.stop.orchestration.core.pending._run_review_prompt")
+    @patch("claude_auto_review.stop.orchestration.core.pending._block_review_prompt_failure")
     def test_prompt_runs_but_no_review_created_blocks(self, mock_block, mock_run, mock_find, mock_reload):
         mock_find.return_value = None
         mock_result = MagicMock()

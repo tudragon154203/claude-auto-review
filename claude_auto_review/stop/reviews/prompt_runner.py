@@ -13,7 +13,7 @@ from claude_auto_review.state.reviews import (
 )
 from claude_auto_review.state.store.read import get_unreviewed_files, load_state
 from claude_auto_review.stop.feedback import block_response
-from claude_auto_review.stop.orchestration.context import RuntimeContext
+from claude_auto_review.stop.orchestration.core.context import RuntimeContext
 
 
 CLAUDE_REVIEW_ARGS = [

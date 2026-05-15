@@ -10,7 +10,7 @@ from claude_auto_review.state.reviews import (
 from claude_auto_review.review.completion import apply_completed_review
 from claude_auto_review.config.core.constants import EXIT_REVIEW_FAILED
 from claude_auto_review.config.core.settings import DEFAULT_SETTINGS, SETTING_REVIEWER_TIMEOUT
-from claude_auto_review.stop.orchestration.context import RuntimeContext
+from claude_auto_review.stop.orchestration.core.context import RuntimeContext
 from claude_auto_review.stop.feedback import (
     block_completed_review_findings,
     build_review_completion_prompt,
@@ -18,7 +18,7 @@ from claude_auto_review.stop.feedback import (
 )
 from claude_auto_review.stop.reviews.selection import get_entries_covered_by_review
 from claude_auto_review.stop.reviews.prompt_runner import _review_prompt_path, attempt_stop_autocomplete
-from claude_auto_review.stop.orchestration.response_actions import block_pending_review
+from claude_auto_review.stop.orchestration.core.response_actions import block_pending_review
 
 
 def _read_review_verdict(review_path):

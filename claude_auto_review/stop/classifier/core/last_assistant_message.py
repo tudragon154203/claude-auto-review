@@ -12,7 +12,7 @@ from claude_auto_review.stop.classifier.core.models import (
     CLASSIFIER_MODEL,
     result_factory,
 )
-from claude_auto_review.stop.orchestration.context import RuntimeContext
+from claude_auto_review.stop.orchestration.core.context import RuntimeContext
 
 
 def _persist_result(result, ctx):
