@@ -3,8 +3,8 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from claude_auto_review.runtime.cleanup_paths import _iter_runtime_cleanup_targets, _remove_tree
-from claude_auto_review.runtime.cleanup_session import cancel_runtime, cancel_session
+from claude_auto_review.runtime.cleanup.paths import _iter_runtime_cleanup_targets, _remove_tree
+from claude_auto_review.runtime.cleanup.session import cancel_runtime, cancel_session
 from claude_auto_review.runtime.client_dirs import client_state_path
 from claude_auto_review.runtime.setup import ensure_client_runtime, ensure_runtime
 
@@ -48,7 +48,7 @@ class TestCleanupSession(StateTestCase, unittest.TestCase):
 
         with (
             patch("pathlib.Path.rmdir", side_effect=OSError("busy")),
-            patch("claude_auto_review.runtime.cleanup_paths.log_failure") as mock_log,
+            patch("claude_auto_review.runtime.cleanup.paths.log_failure") as mock_log,
         ):
             removed = cancel_runtime(project_root)
 
@@ -98,8 +98,8 @@ class TestCleanupSession(StateTestCase, unittest.TestCase):
         target = project_root / "fake-dir"
         target.mkdir()
         with (
-            patch("claude_auto_review.runtime.cleanup_paths.shutil.rmtree", side_effect=OSError("no perms")),
-            patch("claude_auto_review.runtime.cleanup_paths.log_failure") as mock_log,
+            patch("claude_auto_review.runtime.cleanup.paths.shutil.rmtree", side_effect=OSError("no perms")),
+            patch("claude_auto_review.runtime.cleanup.paths.log_failure") as mock_log,
         ):
             result = _remove_tree(target, project_root=project_root)
             self.assertFalse(result)

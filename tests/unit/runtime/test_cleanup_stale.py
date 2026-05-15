@@ -3,7 +3,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from claude_auto_review.runtime.cleanup_stale import _is_client_state_stale, cleanup_stale_clients
+from claude_auto_review.runtime.cleanup.stale import _is_client_state_stale, cleanup_stale_clients
 from claude_auto_review.runtime.client_dirs import client_state_path
 from claude_auto_review.runtime.setup import ensure_client_runtime
 
@@ -32,7 +32,7 @@ class TestCleanupStaleClients(StateTestCase, unittest.TestCase):
         state_path = client_state_path(project_root, client_id)
         state_path.write_text("{}", encoding="utf-8")
 
-        with patch("claude_auto_review.state.store_read.read_jsonl_records", side_effect=OSError("boom")):
+        with patch("claude_auto_review.runtime.cleanup.stale.read_last_jsonl_record", side_effect=OSError("boom")):
             removed = cleanup_stale_clients(project_root)
 
         self.assertEqual(removed, [])

@@ -32,7 +32,7 @@ def extract_review_verdict_text(content):
         line = line.strip()
         if not line or line.startswith("#"):
             continue
-        if re.match(r"^(clean\b|confirmed\b)", line, re.IGNORECASE):
+        if re.match(r"^(clean\b|confirmed\s*\(\s*clean\s*\))", line, re.IGNORECASE):
             return line
     return None
 

@@ -1,6 +1,6 @@
 from claude_auto_review.paths.path_utils import RUNTIME_DIR
 from claude_auto_review.runtime.client_dirs import get_client_runtime_dir, invalidate_client_runtime_dir_cache
-from claude_auto_review.runtime.cleanup_paths import _iter_runtime_cleanup_targets, _remove_empty_runtime_dir, _remove_tree
+from claude_auto_review.runtime.cleanup.paths import _iter_runtime_cleanup_targets, _remove_empty_runtime_dir, _remove_tree
 from claude_auto_review.runtime.context import resolve_client_id, resolve_project_root
 
 
