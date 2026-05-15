@@ -68,7 +68,7 @@ def _run_claude_cli(claude_cli, prompt_file, user_prompt, cwd, timeout):
     cmd = [
         claude_cli,
         *CLAUDE_REVIEW_ARGS,
-        "--system-prompt-file",
+        "--append-system-prompt-file",
         str(prompt_file),
         user_prompt,
     ]

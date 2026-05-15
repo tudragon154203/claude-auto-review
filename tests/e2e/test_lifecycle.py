@@ -164,6 +164,10 @@ class EndToEndLifecycleTests(EndToEndTestCase):
         parsed = json.loads(stop.stdout)
         self.assertEqual(parsed["decision"], "block")
         self.assertIn("Review file created at:", parsed["reason"])
+        self.assertIn("This file is only a placeholder until the review is completed.", parsed["reason"])
+        self.assertIn("Complete the review from:", parsed["reason"])
+        self.assertIn("review-", parsed["reason"])
+        self.assertIn("-prompt.md", parsed["reason"])
         rel_segment = ".claude/claude-auto-review/clients"
         self.assertIn(rel_segment, parsed["reason"])
         self.assertNotIn(str(project_root), parsed["reason"])

@@ -66,4 +66,5 @@ class TestReviewPromptFlow(unittest.TestCase):
         self.assertIn("Git diff unavailable. Review the current file contents directly.", prompt_content)
         self.assertIn("## Current File Snapshots", prompt_content)
         self.assertIn("const value = 1;", prompt_content)
+        self.assertIn("No findings yet. This file is a placeholder until Claude completes the review.", review_content)
         self.assertIn("Pending. Claude must complete this review from", review_content)

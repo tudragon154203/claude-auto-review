@@ -64,7 +64,7 @@ Rule one.
 ## Current File Snapshots
 {snapshots}
 
-Complete the review in 10 turns or less."""
+Complete the review in 20 turns or less."""
 
         self.assertEqual(
             build_prompt(review_id, timestamp, entries, rules, diff, snapshots, review_path),
@@ -82,6 +82,8 @@ Complete the review in 10 turns or less."""
 {file_list}
 
 ## Findings
+
+No findings yet. This file is a placeholder until Claude completes the review.
 
 Pending. Claude must complete this review from {prompt_path}.
 

@@ -5,6 +5,13 @@ from claude_auto_review.stop.orchestration.context import RuntimeContext
 from claude_auto_review.stop.feedback import block_response, build_unreviewed_files_string
 
 
+def _display_path(path, project_root):
+    try:
+        return path.relative_to(project_root).as_posix()
+    except ValueError:
+        return str(path)
+
+
 def complete_clean_review(ctx: RuntimeContext, review_id, covered_entries, apply_completed_review):
     remaining = apply_completed_review(ctx.project_root, ctx.client_id, review_id, covered_entries)
     if not remaining:
@@ -16,15 +23,18 @@ def complete_clean_review(ctx: RuntimeContext, review_id, covered_entries, apply
     return 2
 
 
-def block_pending_review(ctx: RuntimeContext, review_id, review_path, unreviewed):
+def block_pending_review(ctx: RuntimeContext, review_id, review_path, prompt_path, unreviewed):
     files_str = build_unreviewed_files_string(unreviewed)
-    review_path_rel = review_path.relative_to(ctx.project_root).as_posix()
+    review_path_rel = _display_path(review_path, ctx.project_root)
+    prompt_path_rel = _display_path(prompt_path, ctx.project_root)
     block_response(
         f"Claude Auto Review: Review {review_id} created for {files_str}.",
         (
             f"Review file created at:\n  {review_path_rel}\n\n"
-            "Go through each finding in the generated file and set its verdict "
-            "(Confirmed, Skipped). Once all findings are resolved, "
+            "This file is only a placeholder until the review is completed.\n\n"
+            f"Complete the review from:\n  {prompt_path_rel}\n\n"
+            "Then write the findings into the review file and set each finding verdict "
+            "(Confirmed, Skipped). Once the review verdict is no longer Pending, "
             "stopping will be allowed."
         ),
     )

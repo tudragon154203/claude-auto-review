@@ -4,7 +4,7 @@ from unittest.mock import patch, MagicMock
 from pathlib import Path
 
 from claude_auto_review.stop.orchestration.context import RuntimeContext
-from claude_auto_review.stop.reviews.prompt_runner import attempt_stop_autocomplete
+from claude_auto_review.stop.reviews.prompt_runner import _run_claude_cli, attempt_stop_autocomplete
 
 
 def _ctx(project_root=Path("/fake"), client_id="c"):
@@ -12,6 +12,33 @@ def _ctx(project_root=Path("/fake"), client_id="c"):
 
 
 class TestAutoComplete(unittest.TestCase):
+    @patch("claude_auto_review.stop.reviews.prompt_runner.run_captured")
+    def test_run_claude_cli_uses_append_system_prompt_file(self, mock_run):
+        prompt_file = Path("/fake/prompt.md")
+        _run_claude_cli("/usr/bin/claude", prompt_file, "finish review", Path("/cwd"), 42)
+
+        mock_run.assert_called_once_with(
+            [
+                "/usr/bin/claude",
+                "--print",
+                "--bare",
+                "--allowedTools",
+                "Read",
+                "Grep",
+                "Glob",
+                "Bash",
+                "--model",
+                "fast",
+                "--effort",
+                "low",
+                "--append-system-prompt-file",
+                str(prompt_file),
+                "finish review",
+            ],
+            cwd=Path("/cwd"),
+            timeout=42.0,
+        )
+
     @patch("claude_auto_review.stop.reviews.prompt_runner.log_event")
     @patch("claude_auto_review.stop.reviews.prompt_runner.shutil.which", return_value=None)
     def test_claude_cli_not_found(self, mock_which, mock_log):
@@ -78,8 +105,9 @@ class TestAutoComplete(unittest.TestCase):
     @patch("claude_auto_review.stop.reviews.prompt_runner.log_event")
     @patch("claude_auto_review.stop.reviews.prompt_runner.run_captured")
     @patch("claude_auto_review.stop.reviews.prompt_runner.shutil.which", return_value="/usr/bin/claude")
+    @patch("pathlib.Path.write_text")
     @patch("pathlib.Path.is_file", return_value=True)
-    def test_successful_completion(self, mock_is_file, mock_which, mock_run, mock_log, mock_apply):
+    def test_successful_completion(self, mock_is_file, mock_write_text, mock_which, mock_run, mock_log, mock_apply):
         mock_run.return_value = MagicMock(returncode=0, stdout="## Verdict\nClean", stderr="")
         result = attempt_stop_autocomplete(
             _ctx(), review_id="r",
@@ -92,7 +120,9 @@ class TestAutoComplete(unittest.TestCase):
     @patch("claude_auto_review.stop.reviews.prompt_runner.log_event")
     @patch("claude_auto_review.stop.reviews.prompt_runner.run_captured")
     @patch("claude_auto_review.stop.reviews.prompt_runner.shutil.which", return_value="/usr/bin/claude")
-    def test_completion_with_remaining_returns_false(self, mock_which, mock_run, mock_log, mock_apply):
+    @patch("pathlib.Path.write_text")
+    @patch("pathlib.Path.is_file", return_value=True)
+    def test_completion_with_remaining_returns_false(self, mock_is_file, mock_write_text, mock_which, mock_run, mock_log, mock_apply):
         mock_run.return_value = MagicMock(returncode=0, stdout="## Verdict\nClean", stderr="")
         result = attempt_stop_autocomplete(
             _ctx(), review_id="r",

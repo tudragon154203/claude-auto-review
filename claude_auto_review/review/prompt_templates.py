@@ -33,7 +33,7 @@ If no findings exist, write "Clean - no issues found. Claude may stop." under "#
 ## Current File Snapshots
 {snapshots}
 
-Complete the review in 10 turns or less."""
+Complete the review in 20 turns or less."""
 
 _REVIEW_FILE_TEMPLATE = """# Review {review_id} - {readable_timestamp}
 
@@ -41,6 +41,8 @@ _REVIEW_FILE_TEMPLATE = """# Review {review_id} - {readable_timestamp}
 {file_list}
 
 ## Findings
+
+No findings yet. This file is a placeholder until Claude completes the review.
 
 Pending. Claude must complete this review from {prompt_path}.
 

@@ -39,7 +39,13 @@ class EndToEndStopHookAutocompleteTests(EndToEndTestCase):
         idx = cli_args.index("--model")
         self.assertEqual(cli_args[idx + 1], "fast")
         self.assertIn("--allowedTools", cli_args)
-        self.assertIn("--system-prompt-file", cli_args)
+        self.assertIn("--append-system-prompt-file", cli_args)
+        prompt_idx = cli_args.index("--append-system-prompt-file")
+        prompt_arg = cli_args[prompt_idx + 1]
+        self.assertTrue(prompt_arg.endswith("-prompt.md"))
+        prompt_text = Path(prompt_arg).read_text(encoding="utf-8")
+        self.assertIn("# Claude Auto Review Request", prompt_text)
+        self.assertIn("## Current File Snapshots", prompt_text)
 
         state = load_state(project_root, "test-session")
         self.assertTrue(state[-1].reviewed)

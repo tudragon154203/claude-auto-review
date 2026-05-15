@@ -74,7 +74,7 @@ def finalize_review_stop(ctx: RuntimeContext, resolution):
             block_completed_review_findings(ctx, review_id, review_path, unreviewed)
             return exit_code
 
-        return block_pending_review(ctx, review_id, review_path, unreviewed)
+        return block_pending_review(ctx, review_id, review_path, prompt_file, unreviewed)
     finally:
         if exit_code != 0:
             _classify_last_assistant_message_if_enabled(ctx)
