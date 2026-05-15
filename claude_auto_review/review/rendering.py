@@ -10,7 +10,7 @@ _SNAPSHOT_RENDER_LIMIT_CHARS = 40000
 
 def _read_text_with_limit(path, max_chars, encoding="utf-8"):
     chunks = []
-    remaining = max_chars + 1
+    remaining = max_chars
     with Path(path).open("r", encoding=encoding, errors="replace") as handle:
         while remaining > 0:
             chunk = handle.read(min(remaining, _TEXT_READ_CHUNK_SIZE))
@@ -48,7 +48,8 @@ def _snapshot_section(file_path, project_root, max_chars):
     full_path = Path(project_root) / file_path
     if not full_path.is_file():
         return _format_missing_file_snapshot(file_path)
-    content = _read_text_with_limit(full_path, max_chars)
+    # Read max_chars + 1 so _format_file_snapshot can detect if truncation occurred
+    content = _read_text_with_limit(full_path, max_chars + 1)
     return _format_file_snapshot(file_path, content, max_chars=max_chars)
 
 

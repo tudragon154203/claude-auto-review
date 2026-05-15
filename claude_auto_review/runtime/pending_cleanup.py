@@ -4,7 +4,8 @@ from claude_auto_review.runtime.events import log_event, log_failure
 from claude_auto_review.config.settings import load_settings
 from claude_auto_review.state.models import ReviewMetadata
 from claude_auto_review.state.review_expiry import is_review_expired
-from claude_auto_review.state.store_read import parse_event, read_jsonl_records
+from claude_auto_review.state.parsing import parse_event
+from claude_auto_review.state.store_read import read_jsonl_records
 
 
 def _latest_review_statuses(entries):

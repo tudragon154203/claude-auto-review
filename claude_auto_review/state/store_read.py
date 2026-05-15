@@ -5,13 +5,8 @@ from pathlib import Path
 from claude_auto_review.paths.path_utils import is_runtime_relative_path
 from claude_auto_review.paths.uri_utils import normalize_relative_path
 from claude_auto_review.runtime.context import resolve_client_id, resolve_project_root
-from claude_auto_review.state.models import (
-    EditRecord,
-    ReviewMetadata,
-    StateEvent,
-    StopBlockedRecord,
-    parse_event,
-)
+from claude_auto_review.state.models import EditRecord, ReviewMetadata, StateEvent, StopBlockedRecord
+from claude_auto_review.state.parsing import parse_event
 from claude_auto_review.utils.datetime_utils import parse_iso_timestamp
 
 
