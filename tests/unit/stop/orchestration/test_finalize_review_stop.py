@@ -82,6 +82,20 @@ class TestFinalizeReviewStop(unittest.TestCase):
 
     @patch("claude_auto_review.stop.orchestration.finalize.classify_last_assistant_message")
     @patch("claude_auto_review.stop.orchestration.finalize.get_entries_covered_by_review", return_value=[])
+    @patch("claude_auto_review.stop.orchestration.finalize.block_completed_review_findings")
+    @patch("claude_auto_review.stop.orchestration.finalize._review_has_completed_artifact", side_effect=[False, True])
+    @patch("claude_auto_review.stop.orchestration.finalize.build_review_completion_prompt")
+    @patch("claude_auto_review.stop.orchestration.finalize.attempt_stop_autocomplete", return_value=False)
+    @patch("claude_auto_review.stop.orchestration.finalize._read_review_verdict", side_effect=["Pending.", None])
+    def test_autocomplete_with_non_placeholder_review_blocks_with_findings(
+        self, mock_verdict, mock_auto, mock_prompt, mock_completed, mock_block, mock_covered, mock_classify
+    ):
+        result = finalize_review_stop(_ctx(), self.resolution)
+        self.assertEqual(result, 2)
+        mock_block.assert_called_once()
+
+    @patch("claude_auto_review.stop.orchestration.finalize.classify_last_assistant_message")
+    @patch("claude_auto_review.stop.orchestration.finalize.get_entries_covered_by_review", return_value=[])
     @patch("claude_auto_review.stop.orchestration.finalize._read_review_verdict", return_value=None)
     def test_missing_review_file_blocks(self, mock_verdict, mock_covered, mock_classify):
         result = finalize_review_stop(_ctx(), self.resolution)

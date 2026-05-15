@@ -2,6 +2,7 @@ from pathlib import Path
 
 from claude_auto_review.state.reviews import (
     extract_review_verdict_text,
+    is_completed_review_content,
     is_review_clean_verdict,
     is_review_complete_verdict,
 )
@@ -23,6 +24,12 @@ def _read_review_verdict(review_path):
     if not review_path.is_file():
         return None
     return extract_review_verdict_text(review_path.read_text(encoding="utf-8", errors="replace"))
+
+
+def _review_has_completed_artifact(review_path):
+    if not review_path.is_file():
+        return False
+    return is_completed_review_content(review_path.read_text(encoding="utf-8", errors="replace"))
 
 
 def _classify_last_assistant_message_if_enabled(ctx: RuntimeContext):
@@ -56,6 +63,10 @@ def finalize_review_stop(ctx: RuntimeContext, resolution):
             block_completed_review_findings(ctx, review_id, review_path, unreviewed)
             return exit_code
 
+        if _review_has_completed_artifact(review_path):
+            block_completed_review_findings(ctx, review_id, review_path, unreviewed)
+            return exit_code
+
         user_prompt = build_review_completion_prompt(review_path)
         if attempt_stop_autocomplete(
             ctx,
@@ -71,6 +82,10 @@ def finalize_review_stop(ctx: RuntimeContext, resolution):
 
         verdict = _read_review_verdict(review_path)
         if is_review_complete_verdict(verdict) and not is_review_clean_verdict(verdict):
+            block_completed_review_findings(ctx, review_id, review_path, unreviewed)
+            return exit_code
+
+        if _review_has_completed_artifact(review_path):
             block_completed_review_findings(ctx, review_id, review_path, unreviewed)
             return exit_code
 

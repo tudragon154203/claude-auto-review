@@ -3,6 +3,8 @@ import unittest
 from claude_auto_review.state.models import ReviewMetadata
 from claude_auto_review.state.reviews import (
     extract_review_verdict_text,
+    is_completed_review_content,
+    is_placeholder_review_content,
     is_review_clean,
     is_review_complete,
     is_review_expired,
@@ -76,6 +78,28 @@ class TestReviewCompletion(StateTestCase, unittest.TestCase):
     def test_extract_review_verdict_text_uses_first_non_empty_line(self):
         content = "## Verdict\n\nClean - no issues found.\n\nExtra notes that should be ignored.\n"
         self.assertEqual(extract_review_verdict_text(content), "Clean - no issues found.")
+
+    def test_marks_any_non_placeholder_review_content_as_completed(self):
+        content = (
+            "# Review rev-1\n\n"
+            "## Files Reviewed\n"
+            "- README.md (hash: abc123)\n\n"
+            "## Findings\n"
+            "1. **Low** - Flowchart misses a stop branch.\n"
+        )
+        self.assertTrue(is_completed_review_content(content))
+
+    def test_marks_placeholder_review_content_as_not_completed(self):
+        content = (
+            "# Review rev-1\n\n"
+            "## Files Reviewed\n"
+            "- README.md (hash: abc123)\n\n"
+            "## Findings\n\n"
+            "No findings yet. This file is a placeholder until Claude completes the review.\n\n"
+            "Pending. Claude must complete this review from /tmp/review-prompt.md.\n"
+        )
+        self.assertTrue(is_placeholder_review_content(content))
+        self.assertFalse(is_completed_review_content(content))
 
     def test_is_case_insensitive(self):
         project_root = self.temp_project()

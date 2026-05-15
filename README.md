@@ -10,24 +10,23 @@ The implementation is split into small modules instead of one monolith:
 
 ```mermaid
 flowchart TD
-  A[Claude edits file] --> B[PostToolUse hook]
-  B --> C[Track file hash in client state<br/>state.jsonl]
-  C --> D[Claude attempts stop]
-  D --> E[Stop hook → flow orchestration]
-  E --> F{Unreviewed files?}
-  F -- No --> H[Allow stop ✓]
-  F -- Yes --> I{Pending review?}
-  I -- Yes --> N{Review complete?}
-  N -- Yes --> O{Covered & clean?}
-  O -- Yes --> H
-  O -- No --> M[Block stop with findings]
-  N -- No --> K{Claude CLI available?}
-  K -- Yes --> L[Run autocomplete reviewer]
-  K -- No --> M
-  L --> P[Apply verdict]
-  P --> O
-  M --> Q[Classify last assistant message]
-  Q --> R[Block stop ✗]
+    A[Claude edits file] --> B[PostToolUse hook]
+    B --> C[Track file hash in client state]
+    C --> D[Claude attempts stop]
+    D --> E[Stop hook runs run_stop_flow]
+    E --> F{Unreviewed files?}
+    F -- No --> G[Allow stop]
+    F -- Yes --> H{Pending review exists?}
+    H -- Yes --> I[Reuse pending review]
+    H -- No --> J[Run review prompt script]
+    J --> K{Review generation succeeded?}
+    K -- No --> L[Block stop]
+    K -- Yes --> M{Review verdict clean?}
+    I --> M
+    M -- Yes --> G
+    M -- No --> L
+    L --> N[Classify last assistant message]
+    N --> O[Return blocked stop response]
 ```
 
 - **Hook entrypoints:** `hooks/post_tool_use.py`, `hooks/stop_hook.py`, `hooks/session_end.py`

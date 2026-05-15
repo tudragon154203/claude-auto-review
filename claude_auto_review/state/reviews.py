@@ -27,6 +27,34 @@ def extract_review_verdict_text(content):
     return None
 
 
+def extract_review_findings_text(content):
+    if not content or "## Findings" not in content:
+        return None
+    findings_block = content.split("## Findings", 1)[1]
+    if "## Verdict" in findings_block:
+        findings_block = findings_block.split("## Verdict", 1)[0]
+    findings = findings_block.strip()
+    return findings or None
+
+
+def is_placeholder_review_content(content):
+    if not content:
+        return True
+    text = content.strip()
+    if not text:
+        return True
+    placeholder_markers = (
+        "No findings yet. This file is a placeholder until Claude completes the review.",
+        "Pending. Claude must complete this review",
+        "## Verdict\n\nPending.",
+    )
+    return any(marker in text for marker in placeholder_markers)
+
+
+def is_completed_review_content(content):
+    return not is_placeholder_review_content(content)
+
+
 def get_review_verdict_text(review_path):
     path = Path(review_path)
     if not path.is_file():
