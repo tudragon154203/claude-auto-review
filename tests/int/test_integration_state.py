@@ -1,6 +1,7 @@
 from tests.int.support import IntegrationTestCase
 
-from claude_auto_review.state.models import EditRecord, ReviewMetadata, StopBlockedRecord
+from claude_auto_review.review.completion import apply_completed_review
+from claude_auto_review.state.models import EditRecord, ReviewCompletedRecord, ReviewMetadata, StopBlockedRecord
 from claude_auto_review.paths.path_utils import local_now_iso
 from claude_auto_review.runtime.setup import ensure_client_runtime
 from claude_auto_review.state.reviews import pending_reviews_for_entries
@@ -144,3 +145,43 @@ class IntegrationStateTests(IntegrationTestCase):
         pending = pending_reviews_for_entries(state_after, edit_entries)
         self.assertEqual(len(pending), 1)
         self.assertEqual(pending[0].reviewId, "rev-01")
+
+    def test_apply_completed_review_records_partial_review_state(self):
+        project_root = self.temp_project()
+        client_id = "partial-review"
+        ensure_client_runtime(project_root, client_id)
+
+        covered_entry = EditRecord(
+            timestamp="2026-05-11T23:18:00+07:00",
+            file="src/a.ts",
+            hash="aaaa1111",
+            reviewed=False,
+        )
+        remaining_entry = EditRecord(
+            timestamp="2026-05-11T23:19:00+07:00",
+            file="src/b.ts",
+            hash="bbbb2222",
+            reviewed=False,
+        )
+
+        append_state(covered_entry, project_root, client_id=client_id)
+        append_review_started([covered_entry], "review-123", "reviews/review-123.md", project_root, client_id=client_id)
+        append_state(remaining_entry, project_root, client_id=client_id)
+
+        remaining = apply_completed_review(project_root, client_id, "review-123", [covered_entry])
+
+        self.assertEqual([entry.file for entry in remaining], ["src/b.ts"])
+
+        state = load_state(project_root, client_id)
+        review_entries = [entry for entry in state if isinstance(entry, ReviewMetadata)]
+        completed_reviews = [entry for entry in state if isinstance(entry, ReviewCompletedRecord)]
+        blocked_entries = [entry for entry in state if isinstance(entry, StopBlockedRecord)]
+
+        self.assertEqual(review_entries[-1].status, "completed")
+        self.assertEqual(review_entries[-1].reviewId, "review-123")
+        self.assertEqual(completed_reviews[-1].reviewId, "review-123")
+        self.assertEqual(completed_reviews[-1].files[0].file, "src/a.ts")
+        self.assertEqual(blocked_entries[-1].reason, "partial_review")
+        self.assertEqual(blocked_entries[-1].files, ["src/b.ts"])
+        self.assertTrue(was_hash_reviewed(state, "src/a.ts", "aaaa1111"))
+        self.assertFalse(was_hash_reviewed(state, "src/b.ts", "bbbb2222"))
