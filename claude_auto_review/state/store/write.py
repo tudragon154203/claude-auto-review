@@ -1,11 +1,11 @@
 import json
 from pathlib import Path
 
-from claude_auto_review.runtime.core.client_dirs import client_state_path
-from claude_auto_review.paths.core.path_utils import local_now_iso
-from claude_auto_review.runtime.core.setup import ensure_client_runtime
-from claude_auto_review.runtime.core.context import resolve_client_id, resolve_project_root
-from claude_auto_review.state.core.models import (
+from claude_auto_review.runtime.client_dirs import client_state_path
+from claude_auto_review.paths.path_utils import local_now_iso
+from claude_auto_review.runtime.setup import ensure_client_runtime
+from claude_auto_review.runtime.context import resolve_client_id, resolve_project_root
+from claude_auto_review.state.models import (
     EditRecord,
     ReviewMetadata,
     ReviewFileRecord,

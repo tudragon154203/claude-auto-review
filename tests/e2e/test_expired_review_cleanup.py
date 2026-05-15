@@ -6,14 +6,14 @@ from datetime import datetime, timedelta
 from pathlib import Path
 
 from tests.e2e.support import EndToEndTestCase
-from claude_auto_review.runtime.core.client_dirs import client_state_path
-from claude_auto_review.paths.core.path_utils import get_log_path, local_now_iso
+from claude_auto_review.runtime.client_dirs import client_state_path
+from claude_auto_review.paths.path_utils import get_log_path, local_now_iso
 
 
 _CLEANUP_SCRIPT = (
     "import json, sys; "
     "sys.path.insert(0, sys.argv[1]); "
-    "from claude_auto_review.runtime.core.pending_cleanup import cleanup_expired_pending_reviews; "
+    "from claude_auto_review.runtime.pending_cleanup import cleanup_expired_pending_reviews; "
     "removed = cleanup_expired_pending_reviews(sys.argv[2], client_id=sys.argv[3]); "
     "print(removed)"
 )

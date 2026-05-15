@@ -10,7 +10,7 @@ import time
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
 
-from claude_auto_review.runtime.core.client_dirs import get_client_runtime_dir
+from claude_auto_review.runtime.client_dirs import get_client_runtime_dir
 
 
 def client_dir(project_root, client_id="test-session"):
@@ -60,7 +60,7 @@ class SubprocessMixin:
         elif isinstance(stdin_session_id_payload, str):
             stdin_session_id = stdin_session_id_payload
 
-        from claude_auto_review.runtime.core.client_dirs import get_client_id as _get_client_id
+        from claude_auto_review.runtime.client_dirs import get_client_id as _get_client_id
 
         prefixed_client_id = _get_client_id(stdin_session_id=stdin_session_id or client_id)
 
@@ -78,7 +78,7 @@ class SubprocessMixin:
             fake_dir = Path(tempfile.mkdtemp(prefix="claude-fake-"))
             fake_script = fake_dir / "claude_fake.py"
             fake_cmd = fake_dir / "claude.cmd"
-            from claude_auto_review.runtime.core.client_dirs import client_run_dir
+            from claude_auto_review.runtime.client_dirs import client_run_dir
 
             capture_file = client_run_dir(project_root, client_id) / "claude-cli-args.json"
             fake_script.write_text(

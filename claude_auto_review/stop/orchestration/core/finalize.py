@@ -7,9 +7,9 @@ from claude_auto_review.state.reviews import (
     is_review_complete_verdict,
     normalize_review_verdict_content,
 )
-from claude_auto_review.review.core.completion import apply_completed_review
-from claude_auto_review.config.core.constants import EXIT_REVIEW_FAILED
-from claude_auto_review.config.core.settings import DEFAULT_SETTINGS, SETTING_REVIEWER_TIMEOUT
+from claude_auto_review.review.completion import apply_completed_review
+from claude_auto_review.config.constants import EXIT_REVIEW_FAILED
+from claude_auto_review.config.settings import DEFAULT_SETTINGS, SETTING_REVIEWER_TIMEOUT
 from claude_auto_review.stop.orchestration.core.context import RuntimeContext
 from claude_auto_review.stop.core.feedback import (
     block_completed_review_findings,

@@ -1,8 +1,8 @@
 from dataclasses import dataclass
 from pathlib import Path
 
-from claude_auto_review.runtime.core.client_dirs import client_reviews_dir, client_run_dir
-from claude_auto_review.paths.core.path_utils import local_now_iso
+from claude_auto_review.runtime.client_dirs import client_reviews_dir, client_run_dir
+from claude_auto_review.paths.path_utils import local_now_iso
 from claude_auto_review.review.prompting.generation import (
     build_prompt,
     current_file_snapshots,
@@ -10,9 +10,9 @@ from claude_auto_review.review.prompting.generation import (
     git_diff,
     read_if_exists,
 )
-from claude_auto_review.config.core.settings import resolve_rules_file_path
+from claude_auto_review.config.settings import resolve_rules_file_path
 from claude_auto_review.stop.orchestration.core.context import RuntimeContext
-from claude_auto_review.utils.core.datetime_utils import parse_iso_timestamp
+from claude_auto_review.utils.datetime_utils import parse_iso_timestamp
 
 
 @dataclass(frozen=True)

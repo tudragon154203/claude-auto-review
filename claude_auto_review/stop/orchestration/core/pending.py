@@ -1,8 +1,8 @@
 import os
 import subprocess
 
-from claude_auto_review.config.core.constants import EXIT_REVIEW_FAILED
-from claude_auto_review.runtime.core.events import log_event
+from claude_auto_review.config.constants import EXIT_REVIEW_FAILED
+from claude_auto_review.runtime.events import log_event
 from claude_auto_review.stop.core.feedback import build_unreviewed_files_string, block_response
 from claude_auto_review.stop.orchestration.core.context import RuntimeContext
 from claude_auto_review.stop.orchestration.core.resolution import StopFlowResolution

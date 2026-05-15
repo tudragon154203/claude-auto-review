@@ -7,7 +7,7 @@ from claude_auto_review.review.prompting.templates import (
     format_review_files as _format_review_files,
 )
 from claude_auto_review.review.prompting.rendering import _review_context, current_file_snapshots, format_review_timestamp
-from claude_auto_review.runtime.core.process import run_captured
+from claude_auto_review.runtime.process import run_captured
 
 _GIT_DIFF_UNAVAILABLE_MESSAGE = "Git diff unavailable. Review the current file contents directly."
 

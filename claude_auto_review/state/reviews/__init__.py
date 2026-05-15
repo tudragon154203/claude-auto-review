@@ -1,7 +1,7 @@
 import re
 from pathlib import Path
 
-from claude_auto_review.state.core.models import ReviewMetadata
+from claude_auto_review.state.models import ReviewMetadata
 from claude_auto_review.state.reviews.expiry import is_review_expired
 from claude_auto_review.state.reviews.matching import (
     best_pending_review_covering_entries,

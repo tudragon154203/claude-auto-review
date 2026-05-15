@@ -6,7 +6,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 import sys
 sys.path.insert(0, str(REPO_ROOT))
 
-from claude_auto_review.state.core.models import EditRecord
+from claude_auto_review.state.models import EditRecord
 from claude_auto_review.review.prompting.generation import (
     build_prompt,
     current_file_snapshots,

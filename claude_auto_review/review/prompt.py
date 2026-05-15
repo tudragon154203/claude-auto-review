@@ -4,21 +4,21 @@ import traceback
 from pathlib import Path
 
 # Ensure repo root is on path so claude_auto_review package is importable
-_repo_root = Path(__file__).resolve().parent.parent.parent
+_repo_root = Path(__file__).resolve().parents[2]
 if str(_repo_root) not in sys.path:
     sys.path.insert(0, str(_repo_root))
-from claude_auto_review.utils.core.bootstrap import ensure_repo_root_on_path
+from claude_auto_review.utils.bootstrap import ensure_repo_root_on_path
 
 ensure_repo_root_on_path()
 
-from claude_auto_review.runtime.core.client_dirs import get_client_id
-from claude_auto_review.paths.core.path_utils import get_project_root
-from claude_auto_review.runtime.core.events import log_event, log_failure
-from claude_auto_review.runtime.core.process import run_fail_open
+from claude_auto_review.runtime.client_dirs import get_client_id
+from claude_auto_review.paths.path_utils import get_project_root
+from claude_auto_review.runtime.events import log_event, log_failure
+from claude_auto_review.runtime.process import run_fail_open
 from claude_auto_review.review.prompting.flow import create_review_prompt_files
-from claude_auto_review.install.core.shims import write_project_script_shim
-from claude_auto_review.runtime.core.setup import ensure_client_runtime
-from claude_auto_review.config.core.settings import load_settings
+from claude_auto_review.install.shims import write_project_script_shim
+from claude_auto_review.runtime.setup import ensure_client_runtime
+from claude_auto_review.config.settings import load_settings
 from claude_auto_review.state.store.read import get_unreviewed_files, load_state
 from claude_auto_review.state.store.write import append_review_started
 from claude_auto_review.stop.orchestration.core.context import RuntimeContext

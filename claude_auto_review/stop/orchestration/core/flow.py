@@ -1,9 +1,8 @@
-from pathlib import Path
-
-from claude_auto_review.runtime.core.client_dirs import get_client_id
-from claude_auto_review.runtime.core.events import log_event
-from claude_auto_review.runtime.core.setup import ensure_client_runtime
-from claude_auto_review.config.core.settings import (
+from claude_auto_review.runtime.client_dirs import get_client_id
+from claude_auto_review.runtime.events import log_event
+from claude_auto_review.runtime.setup import ensure_client_runtime
+from claude_auto_review.paths.path_utils import get_reviewer_prompt_script
+from claude_auto_review.config.settings import (
     DEFAULT_SETTINGS,
     SETTING_CLASSIFIER_ENABLED,
     SETTING_MAX_STOP_PASSES,
@@ -78,7 +77,7 @@ def run_stop_flow(project_root, payload):
         state,
         unreviewed,
         timeout_hours,
-        Path(__file__).resolve().parents[3] / "review" / "prompt.py",
+        get_reviewer_prompt_script(),
     )
     if resolution.is_terminal:
         return resolution.exit_code

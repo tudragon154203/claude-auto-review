@@ -1,6 +1,6 @@
 import shutil
 
-from claude_auto_review.runtime.core.events import log_failure
+from claude_auto_review.runtime.events import log_failure
 
 
 def _is_contained(target, parent):

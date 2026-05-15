@@ -8,7 +8,7 @@ from tests.support import TempProjectMixin
 REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT))
 
-from claude_auto_review.runtime.core.setup import ensure_client_runtime
+from claude_auto_review.runtime.setup import ensure_client_runtime
 
 
 class _FakeResponse:

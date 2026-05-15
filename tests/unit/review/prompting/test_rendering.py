@@ -2,8 +2,8 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from claude_auto_review.state.core.models import ReviewFileRecord
-from claude_auto_review.utils.core.datetime_utils import parse_iso_timestamp
+from claude_auto_review.state.models import ReviewFileRecord
+from claude_auto_review.utils.datetime_utils import parse_iso_timestamp
 from claude_auto_review.review.prompting.rendering import (
     _format_file_snapshot,
     _format_missing_file_snapshot,

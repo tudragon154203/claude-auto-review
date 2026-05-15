@@ -3,7 +3,7 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
 
-from claude_auto_review.state.core.models import EditRecord
+from claude_auto_review.state.models import EditRecord
 from claude_auto_review.stop.orchestration.core.flow import run_stop_flow
 
 _UNREVIEWED = [EditRecord(timestamp="2026-05-11T10:00:00+07:00", file="a.ts", hash="1")]

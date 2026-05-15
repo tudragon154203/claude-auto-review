@@ -3,9 +3,9 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from unittest.mock import patch
 
-from claude_auto_review.runtime.core.client_dirs import client_state_path
-from claude_auto_review.runtime.core.pending_cleanup import cleanup_expired_pending_reviews
-from claude_auto_review.runtime.core.setup import ensure_client_runtime
+from claude_auto_review.runtime.client_dirs import client_state_path
+from claude_auto_review.runtime.pending_cleanup import cleanup_expired_pending_reviews
+from claude_auto_review.runtime.setup import ensure_client_runtime
 from claude_auto_review.state.store.read import load_state
 
 from tests.unit.state.support import StateTestCase
@@ -65,7 +65,7 @@ class TestCleanupExpiredPendingReviews(StateTestCase, unittest.TestCase):
 
         with (
             patch("pathlib.Path.open", new=fail_on_state_write),
-            patch("claude_auto_review.runtime.core.pending_cleanup.log_failure") as mock_log,
+            patch("claude_auto_review.runtime.pending_cleanup.log_failure") as mock_log,
         ):
             removed = cleanup_expired_pending_reviews(project_root, client_id=client_id)
 

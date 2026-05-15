@@ -2,12 +2,12 @@ import hashlib
 import json
 from pathlib import Path
 
-from claude_auto_review.paths.core.path_utils import is_runtime_relative_path
-from claude_auto_review.paths.core.uri_utils import normalize_relative_path
-from claude_auto_review.runtime.core.context import resolve_client_id, resolve_project_root
-from claude_auto_review.state.core.models import EditRecord, ReviewMetadata, StateEvent, StopBlockedRecord
+from claude_auto_review.paths.path_utils import is_runtime_relative_path
+from claude_auto_review.paths.uri_utils import normalize_relative_path
+from claude_auto_review.runtime.context import resolve_client_id, resolve_project_root
+from claude_auto_review.state.models import EditRecord, ReviewMetadata, StateEvent, StopBlockedRecord
 from claude_auto_review.state.store.parsing import parse_event
-from claude_auto_review.utils.core.datetime_utils import parse_iso_timestamp
+from claude_auto_review.utils.datetime_utils import parse_iso_timestamp
 
 
 def _timestamp_value(entry: StateEvent) -> str:
@@ -73,7 +73,7 @@ def get_file_hash(file_path, project_root=None):
 
 
 def load_state(project_root=None, client_id=None):
-    from claude_auto_review.runtime.core.client_dirs import client_state_path
+    from claude_auto_review.runtime.client_dirs import client_state_path
 
     project_root = resolve_project_root(project_root)
     client_id = resolve_client_id(client_id)

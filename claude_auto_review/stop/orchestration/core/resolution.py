@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from claude_auto_review.state.core.models import ReviewMetadata, StateEvent
+from claude_auto_review.state.models import ReviewMetadata, StateEvent
 
 
 @dataclass(frozen=True)

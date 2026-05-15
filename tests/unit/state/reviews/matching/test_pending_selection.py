@@ -4,7 +4,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from unittest.mock import patch
 
-from claude_auto_review.state.core.models import EditRecord, ReviewFileRecord, ReviewMetadata
+from claude_auto_review.state.models import EditRecord, ReviewFileRecord, ReviewMetadata
 from claude_auto_review.state.reviews.matching import (
     best_pending_review_covering_entries,
     best_pending_review_exactly_matching_entries,

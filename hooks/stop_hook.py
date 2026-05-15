@@ -5,9 +5,9 @@ from bootstrap import ensure_repo_root_on_path
 
 ensure_repo_root_on_path()
 
-from claude_auto_review.paths.core.path_utils import get_project_root
-from claude_auto_review.runtime.core.context import read_json_payload
-from claude_auto_review.runtime.core.process import run_fail_open
+from claude_auto_review.paths.path_utils import get_project_root
+from claude_auto_review.runtime.context import read_json_payload
+from claude_auto_review.runtime.process import run_fail_open
 from claude_auto_review.stop.orchestration.core.flow import run_stop_flow
 
 
