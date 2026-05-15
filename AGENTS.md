@@ -111,7 +111,7 @@ flowchart TD
 | `rulesFile` | `.claude/claude-auto-review/review-rules.md` | Path to the review rules file |
 | `includeExtensions` | `[]` | Only track these suffixes when set |
 | `skipExtensions` | `[]` | Never track these suffixes |
-| `maxStopPasses` | `3` | Stop-block circuit breaker threshold |
+| `maxStopPasses` | `5` | Stop-block circuit breaker threshold |
 | `pendingReviewTimeoutHours` | `1` | Age before a pending review expires |
 | `reviewerTimeoutSeconds` | `600` | Hard cap for the review subprocess |
 | `reviewFeedbackMaxChars` | `9000` | Maximum feedback copied back into Claude |

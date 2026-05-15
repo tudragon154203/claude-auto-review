@@ -27,7 +27,7 @@ class TestRunStopFlow(unittest.TestCase):
         mock_settings.return_value = {
             "enabled": False,
             "pendingReviewTimeoutHours": 1,
-            "maxStopPasses": 3,
+            "maxStopPasses": 5,
         }
 
         result = run_stop_flow(Path("/fake"), {"session_id": "sid"})
@@ -51,7 +51,7 @@ class TestRunStopFlow(unittest.TestCase):
         mock_settings.return_value = {
             "enabled": True,
             "pendingReviewTimeoutHours": 1,
-            "maxStopPasses": 3,
+            "maxStopPasses": 5,
             "lastAssistantMessageClassifierEnabled": True,
         }
 
@@ -61,7 +61,7 @@ class TestRunStopFlow(unittest.TestCase):
         mock_classify.assert_not_called()
 
     @patch("claude_auto_review.stop.orchestration.flow.classify_last_assistant_message")
-    @patch("claude_auto_review.stop.orchestration.flow.consecutive_stop_blocks", return_value=3)
+    @patch("claude_auto_review.stop.orchestration.flow.consecutive_stop_blocks", return_value=5)
     @patch("claude_auto_review.stop.orchestration.flow.get_unreviewed_files", return_value=_UNREVIEWED)
     @patch("claude_auto_review.stop.orchestration.flow.load_state", return_value=_STATE)
     @patch("claude_auto_review.stop.orchestration.flow.ensure_client_runtime")
@@ -78,7 +78,7 @@ class TestRunStopFlow(unittest.TestCase):
         mock_settings.return_value = {
             "enabled": True,
             "pendingReviewTimeoutHours": 1,
-            "maxStopPasses": 3,
+            "maxStopPasses": 5,
             "lastAssistantMessageClassifierEnabled": True,
         }
 
@@ -107,7 +107,7 @@ class TestRunStopFlow(unittest.TestCase):
         mock_settings.return_value = {
             "enabled": True,
             "pendingReviewTimeoutHours": 1,
-            "maxStopPasses": 3,
+            "maxStopPasses": 5,
             "lastAssistantMessageClassifierEnabled": True,
         }
         mock_classify.return_value = SimpleNamespace(status="complete", reason="parsed_label")
@@ -139,7 +139,7 @@ class TestRunStopFlow(unittest.TestCase):
         mock_settings.return_value = {
             "enabled": True,
             "pendingReviewTimeoutHours": 1,
-            "maxStopPasses": 3,
+            "maxStopPasses": 5,
             "lastAssistantMessageClassifierEnabled": True,
         }
         mock_classify.return_value = SimpleNamespace(status="incomplete", reason="parsed_label")
@@ -169,7 +169,7 @@ class TestRunStopFlow(unittest.TestCase):
         mock_settings.return_value = {
             "enabled": True,
             "pendingReviewTimeoutHours": 1,
-            "maxStopPasses": 3,
+            "maxStopPasses": 5,
             "lastAssistantMessageClassifierEnabled": False,
         }
         mock_resolve.return_value.is_terminal = True
@@ -202,7 +202,7 @@ class TestRunStopFlow(unittest.TestCase):
         mock_settings.return_value = {
             "enabled": True,
             "pendingReviewTimeoutHours": 1,
-            "maxStopPasses": 3,
+            "maxStopPasses": 5,
             "lastAssistantMessageClassifierEnabled": True,
         }
         mock_classify.return_value = SimpleNamespace(status="complete", reason="parsed_label")
