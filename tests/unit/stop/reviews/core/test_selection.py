@@ -2,7 +2,7 @@ import unittest
 from pathlib import Path
 
 from claude_auto_review.state.models import EditRecord, ReviewFileRecord, ReviewMetadata
-from claude_auto_review.stop.reviews.selection import find_pending_review_for_files, get_entries_covered_by_review
+from claude_auto_review.stop.reviews.core.selection import find_pending_review_for_files, get_entries_covered_by_review
 
 
 def _mk_edit(file: str, hash: str, reviewed: bool = False) -> EditRecord:

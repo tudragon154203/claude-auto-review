@@ -16,8 +16,8 @@ from claude_auto_review.stop.feedback import (
     build_review_completion_prompt,
     block_response,
 )
-from claude_auto_review.stop.reviews.selection import get_entries_covered_by_review
-from claude_auto_review.stop.reviews.prompt_runner import _review_prompt_path, attempt_stop_autocomplete
+from claude_auto_review.stop.reviews.core.selection import get_entries_covered_by_review
+from claude_auto_review.stop.reviews.core.prompt_runner import _review_prompt_path, attempt_stop_autocomplete
 from claude_auto_review.stop.orchestration.core.response_actions import block_pending_review
 
 
