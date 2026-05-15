@@ -45,7 +45,9 @@ def current_file_snapshots(files, project_root):
 
 
 def _snapshot_section(file_path, project_root, max_chars):
-    full_path = Path(project_root) / file_path
+    full_path = (Path(project_root) / file_path).resolve()
+    if not full_path.is_relative_to(Path(project_root).resolve()):
+        return _format_missing_file_snapshot(file_path)
     if not full_path.is_file():
         return _format_missing_file_snapshot(file_path)
     # Read max_chars + 1 so _format_file_snapshot can detect if truncation occurred

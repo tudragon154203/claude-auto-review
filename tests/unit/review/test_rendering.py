@@ -145,40 +145,43 @@ class TestFormatMissingFileSnapshot(unittest.TestCase):
 
 class TestSnapshotSection(unittest.TestCase):
     def test_missing_file_returns_missing_snapshot(self):
-        project_root = Path(tempfile.mkdtemp())
-        result = _snapshot_section("nope.ts", project_root, 100)
-        self.assertIn("nope.ts", result)
-        self.assertIn("File does not currently exist.", result)
+        with tempfile.TemporaryDirectory() as tmpdir:
+            project_root = Path(tmpdir)
+            result = _snapshot_section("nope.ts", project_root, 100)
+            self.assertIn("nope.ts", result)
+            self.assertIn("File does not currently exist.", result)
 
     def test_existing_file_returns_snapshot(self):
-        project_root = Path(tempfile.mkdtemp())
-        file_path = project_root / "src" / "a.ts"
-        file_path.parent.mkdir(parents=True, exist_ok=True)
-        file_path.write_text("content", encoding="utf-8")
-        result = _snapshot_section("src/a.ts", project_root, 100)
-        self.assertIn("src/a.ts", result)
-        self.assertIn("content", result)
+        with tempfile.TemporaryDirectory() as tmpdir:
+            project_root = Path(tmpdir)
+            file_path = project_root / "src" / "a.ts"
+            file_path.parent.mkdir(parents=True, exist_ok=True)
+            file_path.write_text("content", encoding="utf-8")
+            result = _snapshot_section("src/a.ts", project_root, 100)
+            self.assertIn("src/a.ts", result)
+            self.assertIn("content", result)
 
 
 class TestCurrentFileSnapshots(unittest.TestCase):
     def test_empty_files_list_returns_empty(self):
-        project_root = Path(tempfile.mkdtemp())
-        self.assertEqual(current_file_snapshots([], project_root), "")
+        with tempfile.TemporaryDirectory() as tmpdir:
+            self.assertEqual(current_file_snapshots([], Path(tmpdir)), "")
 
     def test_single_file(self):
-        project_root = Path(tempfile.mkdtemp())
-        file_path = project_root / "a.ts"
-        file_path.write_text("hello", encoding="utf-8")
-        result = current_file_snapshots(["a.ts"], project_root)
-        self.assertIn("a.ts", result)
-        self.assertIn("hello", result)
+        with tempfile.TemporaryDirectory() as tmpdir:
+            project_root = Path(tmpdir)
+            (project_root / "a.ts").write_text("hello", encoding="utf-8")
+            result = current_file_snapshots(["a.ts"], project_root)
+            self.assertIn("a.ts", result)
+            self.assertIn("hello", result)
 
     def test_multiple_files_separated_by_newlines(self):
-        project_root = Path(tempfile.mkdtemp())
-        (project_root / "a.ts").write_text("alpha", encoding="utf-8")
-        (project_root / "b.ts").write_text("beta", encoding="utf-8")
-        result = current_file_snapshots(["a.ts", "b.ts"], project_root)
-        self.assertIn("a.ts", result)
-        self.assertIn("b.ts", result)
-        self.assertIn("alpha", result)
-        self.assertIn("beta", result)
+        with tempfile.TemporaryDirectory() as tmpdir:
+            project_root = Path(tmpdir)
+            (project_root / "a.ts").write_text("alpha", encoding="utf-8")
+            (project_root / "b.ts").write_text("beta", encoding="utf-8")
+            result = current_file_snapshots(["a.ts", "b.ts"], project_root)
+            self.assertIn("a.ts", result)
+            self.assertIn("b.ts", result)
+            self.assertIn("alpha", result)
+            self.assertIn("beta", result)
