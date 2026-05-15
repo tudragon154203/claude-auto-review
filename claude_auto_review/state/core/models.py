@@ -232,4 +232,3 @@ class ClassificationRecord:
 
 # Union of all state event types for type annotations
 StateEvent = EditRecord | StopBlockedRecord | ReviewMetadata | ReviewCompletedRecord | ClassificationRecord
-

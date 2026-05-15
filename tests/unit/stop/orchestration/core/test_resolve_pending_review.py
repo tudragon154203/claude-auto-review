@@ -3,7 +3,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-from claude_auto_review.state.models import EditRecord, ReviewMetadata
+from claude_auto_review.state.core.models import EditRecord, ReviewMetadata
 from claude_auto_review.stop.orchestration.core.context import RuntimeContext
 from claude_auto_review.stop.orchestration.core.pending import resolve_pending_review
 

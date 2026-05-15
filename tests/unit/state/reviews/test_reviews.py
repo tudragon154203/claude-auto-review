@@ -1,6 +1,6 @@
 import unittest
 
-from claude_auto_review.state.models import ReviewMetadata
+from claude_auto_review.state.core.models import ReviewMetadata
 from claude_auto_review.state.reviews import (
     extract_review_verdict_text,
     is_completed_review_content,

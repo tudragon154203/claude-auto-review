@@ -1,7 +1,7 @@
 from tests.int.support import ClientIsolationTestCase
 
 from claude_auto_review.runtime.core.client_dirs import client_state_path
-from claude_auto_review.state.models import EditRecord
+from claude_auto_review.state.core.models import EditRecord
 from claude_auto_review.state.store.read import get_unreviewed_files, load_state, was_hash_reviewed
 from claude_auto_review.state.store.write import append_state, mark_files_reviewed
 

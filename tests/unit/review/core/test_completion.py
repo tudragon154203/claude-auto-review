@@ -2,7 +2,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from claude_auto_review.state.models import EditRecord, ReviewCompletedRecord, ReviewMetadata, StopBlockedRecord
+from claude_auto_review.state.core.models import EditRecord, ReviewCompletedRecord, ReviewMetadata, StopBlockedRecord
 from claude_auto_review.review.core.completion import _format_duration, apply_completed_review
 
 

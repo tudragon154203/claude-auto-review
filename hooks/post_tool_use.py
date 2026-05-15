@@ -13,8 +13,8 @@ from claude_auto_review.runtime.core.events import log_event
 from claude_auto_review.runtime.core.process import run_fail_open
 from claude_auto_review.runtime.setup import ensure_client_runtime
 from claude_auto_review.config.core.settings import load_settings, should_skip_file
-from claude_auto_review.state.hook_input import extract_file_paths_from_hook_input
-from claude_auto_review.state.models import EditRecord
+from claude_auto_review.state.core.hook_input import extract_file_paths_from_hook_input
+from claude_auto_review.state.core.models import EditRecord
 from claude_auto_review.state.store.read import (
     get_file_hash,
     load_state,

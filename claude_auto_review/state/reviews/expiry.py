@@ -1,4 +1,4 @@
-from claude_auto_review.state.models import ReviewMetadata
+from claude_auto_review.state.core.models import ReviewMetadata
 from claude_auto_review.utils.core.datetime_utils import is_older_than_hours
 
 

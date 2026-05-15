@@ -1,6 +1,6 @@
 import unittest
 
-from claude_auto_review.state.models import ClassificationRecord, EditRecord, ReviewCompletedRecord, ReviewFileRecord, ReviewMetadata, StopBlockedRecord
+from claude_auto_review.state.core.models import ClassificationRecord, EditRecord, ReviewCompletedRecord, ReviewFileRecord, ReviewMetadata, StopBlockedRecord
 
 
 class TestStateModels(unittest.TestCase):

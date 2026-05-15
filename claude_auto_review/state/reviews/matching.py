@@ -1,7 +1,7 @@
 from typing import Sequence
 
 from claude_auto_review.runtime.core.events import log_event
-from claude_auto_review.state.models import EditRecord, ReviewFileRecord, ReviewMetadata, StateEvent
+from claude_auto_review.state.core.models import EditRecord, ReviewFileRecord, ReviewMetadata, StateEvent
 from claude_auto_review.state.reviews.expiry import is_review_expired
 from claude_auto_review.state.store.read import latest_review_entries_by_id
 

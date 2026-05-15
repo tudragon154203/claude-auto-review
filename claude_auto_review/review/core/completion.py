@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from claude_auto_review.paths.core.path_utils import local_now_iso
-from claude_auto_review.state.models import EditRecord, ReviewCompletedRecord, ReviewFileRecord, ReviewMetadata, StopBlockedRecord, StateEvent
+from claude_auto_review.state.core.models import EditRecord, ReviewCompletedRecord, ReviewFileRecord, ReviewMetadata, StopBlockedRecord, StateEvent
 from claude_auto_review.state.store.read import get_unreviewed_files, load_state
 from claude_auto_review.state.store.write import append_state, mark_files_reviewed
 from claude_auto_review.config.core.constants import DURATION_ROUND_PRECISION, SECONDS_PER_HOUR, SECONDS_PER_MINUTE

@@ -1,7 +1,7 @@
 from collections.abc import Callable
 from typing import Any
 
-from claude_auto_review.state.models import (
+from claude_auto_review.state.core.models import (
     ClassificationRecord,
     EditRecord,
     ReviewCompletedRecord,

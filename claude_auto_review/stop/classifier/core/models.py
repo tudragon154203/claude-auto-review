@@ -3,7 +3,7 @@ from dataclasses import dataclass
 
 from claude_auto_review.config.core.constants import MS_PER_SECOND
 from claude_auto_review.paths.core.path_utils import local_now_iso
-from claude_auto_review.state.models import ClassificationRecord
+from claude_auto_review.state.core.models import ClassificationRecord
 
 CLASSIFIER_MODEL = "claude-3-5-haiku-20241022"
 CLASSIFIER_MAX_TOKENS = 8
