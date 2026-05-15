@@ -74,6 +74,10 @@ class TestFinalizeReviewStop(unittest.TestCase):
             self.assertEqual(result, 2)
             mock_apply.assert_not_called()
             mock_block.assert_called_once()
+            self.assertIn(
+                "Findings present. Claude must address all findings before stopping.",
+                review_path.read_text(encoding="utf-8"),
+            )
 
     @patch("claude_auto_review.stop.orchestration.finalize.get_entries_covered_by_review", return_value=[])
     @patch("claude_auto_review.stop.orchestration.finalize.build_review_completion_prompt")

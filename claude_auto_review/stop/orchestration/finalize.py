@@ -5,6 +5,7 @@ from claude_auto_review.state.reviews import (
     is_completed_review_content,
     is_review_clean,
     is_review_complete_verdict,
+    normalize_review_verdict_content,
 )
 from claude_auto_review.review.completion import apply_completed_review
 from claude_auto_review.config.constants import EXIT_REVIEW_FAILED
@@ -23,7 +24,12 @@ from claude_auto_review.stop.orchestration.response_actions import block_pending
 def _read_review_verdict(review_path):
     if not review_path.is_file():
         return None
-    return extract_review_verdict_text(review_path.read_text(encoding="utf-8", errors="replace"))
+    content = review_path.read_text(encoding="utf-8", errors="replace")
+    normalized = normalize_review_verdict_content(content)
+    if normalized != content:
+        review_path.write_text(normalized, encoding="utf-8", newline="\n")
+        content = normalized
+    return extract_review_verdict_text(content)
 
 
 def _review_has_completed_artifact(review_path):

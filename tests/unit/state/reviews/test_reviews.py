@@ -9,6 +9,7 @@ from claude_auto_review.state.reviews import (
     is_review_clean_content,
     is_review_complete,
     is_review_expired,
+    normalize_review_verdict_content,
 )
 
 from tests.unit.state.support import StateTestCase
@@ -79,6 +80,30 @@ class TestReviewCompletion(StateTestCase, unittest.TestCase):
             "Clean - no issues found. Claude may stop.\n"
         )
         self.assertFalse(is_review_clean_content(content))
+
+    def test_normalize_review_verdict_content_rewrites_clean_verdict_when_findings_exist(self):
+        content = (
+            "## Findings\n"
+            "### [Low] Unused import\n"
+            "**Verdict:** Confirmed\n\n"
+            "## Verdict\n"
+            "Clean - no issues found. Claude may stop.\n"
+        )
+        normalized = normalize_review_verdict_content(content)
+        self.assertIn(
+            "Findings present. Claude must address all findings before stopping.",
+            normalized,
+        )
+        self.assertNotIn("Clean - no issues found. Claude may stop.", normalized)
+
+    def test_normalize_review_verdict_content_keeps_clean_verdict_when_no_findings_exist(self):
+        content = (
+            "## Findings\n"
+            "None. The new test is well-structured and the assertions cover the intended behavior.\n\n"
+            "## Verdict\n"
+            "Clean - no issues found.\n"
+        )
+        self.assertEqual(normalize_review_verdict_content(content), content)
 
     def test_is_review_clean_accepts_clean_verdict_with_none_findings_summary(self):
         content = (

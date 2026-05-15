@@ -62,6 +62,44 @@ class TestStopHookFinalization(HookTestCase, unittest.TestCase):
         self.assertEqual(stop2.returncode, 2)
         self.assertIn("found issues to address.", stop2.stdout)
 
+    def test_stop_rewrites_contradictory_clean_verdict_when_findings_exist(self):
+        project_root = self.temp_project()
+        (project_root / "src" / "app.ts").write_text("export const value = 1;\n", encoding="utf-8")
+
+        self.run_python("hooks/post_tool_use.py", project_root, json.dumps({"file_path": "src/app.ts"}))
+
+        stop1 = self.run_python("hooks/stop_hook.py", project_root, env_overrides={"PATH": ""}, use_fake_claude=False)
+        self.assertEqual(stop1.returncode, 2)
+
+        findings = (
+            "### 1. Mutable shared state in helper\n"
+            "**Severity:** Low\n"
+            "**Verdict:** Confirmed\n"
+        )
+        review_path = self.complete_latest_review(
+            project_root,
+            verdict="Clean - no issues found. Claude may stop.",
+        )
+        content = review_path.read_text(encoding="utf-8")
+        review_path.write_text(
+            content.replace(
+                "No findings yet. This file is a placeholder until Claude completes the review.",
+                findings,
+            ),
+            encoding="utf-8",
+            newline="\n",
+        )
+
+        stop2 = self.run_python("hooks/stop_hook.py", project_root, env_overrides={"PATH": ""}, use_fake_claude=False)
+        self.assertEqual(stop2.returncode, 2)
+        self.assertIn("found issues to address.", stop2.stdout)
+        updated = review_path.read_text(encoding="utf-8")
+        self.assertIn(
+            "Findings present. Claude must address all findings before stopping.",
+            updated,
+        )
+        self.assertNotIn("Clean - no issues found. Claude may stop.", updated)
+
     def test_stop_allowed_when_classifier_overrides_blocking(self):
         """Classifier says 'incomplete' → stop is allowed even when review is pending."""
         project_root = self.temp_project()

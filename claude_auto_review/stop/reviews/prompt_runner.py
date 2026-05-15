@@ -9,6 +9,7 @@ from claude_auto_review.runtime.process import run_captured
 from claude_auto_review.review.completion import apply_completed_review
 from claude_auto_review.state.reviews import (
     is_review_clean_content,
+    normalize_review_verdict_content,
 )
 from claude_auto_review.state.store_read import get_unreviewed_files, load_state
 from claude_auto_review.stop.feedback import block_response
@@ -116,8 +117,9 @@ def _process_review_result(ctx: RuntimeContext, result, review_path, review_id, 
         stderr=result.stderr[:500] if result.stderr else "",
     )
     if result.returncode == 0 and result.stdout.strip():
-        review_path.write_text(result.stdout, encoding="utf-8", newline="\n")
-        if is_review_clean_content(result.stdout):
+        normalized_output = normalize_review_verdict_content(result.stdout)
+        review_path.write_text(normalized_output, encoding="utf-8", newline="\n")
+        if is_review_clean_content(normalized_output):
             remaining = apply_completed_review(
                 ctx.project_root, ctx.client_id, review_id, covered_entries
             )

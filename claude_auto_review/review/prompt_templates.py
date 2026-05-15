@@ -18,6 +18,7 @@ Use this exact top matter:
 ```
 
 If no findings exist, write "Clean - no issues found. Claude may stop." under "## Verdict".
+If you record one or more findings under "## Findings", you MUST NOT use a clean verdict. End with a blocking verdict such as "N issues found. Claude must address all findings before stopping."
 
 ## Files To Review
 {file_list}

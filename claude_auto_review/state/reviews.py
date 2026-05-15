@@ -44,6 +44,36 @@ def has_review_findings(content):
     return not re.match(r"^(none\b|no findings\b|no issues\b|clean\b)", findings.strip(), re.IGNORECASE)
 
 
+def normalize_review_verdict_content(content):
+    if not content:
+        return content
+    verdict = extract_review_verdict_text(content)
+    if not is_review_clean_verdict(verdict):
+        return content
+    if not has_review_findings(content):
+        return content
+    if "## Verdict" not in content:
+        return content
+
+    stricter_verdict = "Findings present. Claude must address all findings before stopping."
+    before, after = content.split("## Verdict", 1)
+    lines = after.splitlines()
+    replaced = False
+    new_lines = []
+    for line in lines:
+        if replaced:
+            new_lines.append(line)
+            continue
+        if line.strip():
+            new_lines.append(line.replace(line.strip(), stricter_verdict, 1))
+            replaced = True
+        else:
+            new_lines.append(line)
+    if not replaced:
+        new_lines.append(stricter_verdict)
+    return before + "## Verdict" + "\n".join(new_lines)
+
+
 def is_placeholder_review_content(content):
     if not content:
         return True

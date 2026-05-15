@@ -73,6 +73,8 @@ End with one of:
 - `Clean - no issues found. Claude may stop.`
 - `N issues found. Claude must address all findings before stopping.`
 
+If `## Findings` contains any actual finding entry, you must not emit the clean verdict. Only use the clean verdict when the findings section is effectively empty or explicitly says there were no findings.
+
 ## Constraints
 
 - Do not review files outside the request.
