@@ -2,7 +2,8 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from claude_auto_review.state.models import EditRecord, ReviewFileRecord
+from claude_auto_review.state.models import ReviewFileRecord
+from claude_auto_review.utils.datetime_utils import parse_iso_timestamp
 from claude_auto_review.review.rendering import (
     _format_file_snapshot,
     _format_missing_file_snapshot,
@@ -56,7 +57,7 @@ class TestReadTextWithLimit(unittest.TestCase):
             Path(path).unlink(missing_ok=True)
 
     def test_reads_partially_larger_than_chunk_size(self):
-        content = "x" * 20000  # > 2x _TEXT_READ_CHUNK_SIZE (8192)
+        content = "x" * 20000
         with tempfile.NamedTemporaryFile(mode="w", delete=False, encoding="utf-8") as f:
             f.write(content)
             path = f.name
@@ -70,18 +71,29 @@ class TestReadTextWithLimit(unittest.TestCase):
 
 class TestFormatReviewTimestamp(unittest.TestCase):
     def test_formats_utc_timestamp(self):
-        result = format_review_timestamp("2024-01-01T12:00:00+00:00")
-        # Note: the output is in the local timezone, so UTC 12:00 may appear different
-        self.assertIn("2024-01-01", result)
+        timestamp = "2024-01-01T12:00:00+00:00"
+        result = format_review_timestamp(timestamp)
+        ts = parse_iso_timestamp(timestamp).astimezone()
+        offset = ts.strftime("%z")
+        offset = f"{offset[:3]}:{offset[3:]}" if offset else ""
+        expected = f"{ts.strftime('%Y-%m-%d | %H:%M:%S')} {offset}".rstrip()
+        self.assertEqual(result, expected)
 
     def test_formats_positive_offset(self):
-        result = format_review_timestamp("2024-06-15T08:30:00+07:00")
-        self.assertIn("08:30", result)
+        # We check formatting via real timezone conversion so test is env-stable
+        timestamp = "2024-06-15T08:30:00+07:00"
+        result = format_review_timestamp(timestamp)
+        ts = parse_iso_timestamp(timestamp).astimezone()
+        offset = ts.strftime("%z")
+        offset = f"{offset[:3]}:{offset[3:]}" if offset else ""
+        expected = f"{ts.strftime('%Y-%m-%d | %H:%M:%S')} {offset}".rstrip()
+        self.assertEqual(result, expected)
 
     def test_z_suffix_works(self):
-        result = format_review_timestamp("2024-01-01T12:00:00Z")
-        # Z gets normalized to UTC, then displayed in local timezone
-        self.assertIn("2024-01-01", result)
+        self.assertEqual(
+            format_review_timestamp("2024-01-01T12:00:00Z"),
+            format_review_timestamp("2024-01-01T12:00:00+00:00"),
+        )
 
 
 class TestFormatFileList(unittest.TestCase):
