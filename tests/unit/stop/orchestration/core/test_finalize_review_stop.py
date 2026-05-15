@@ -90,6 +90,19 @@ class TestFinalizeReviewStop(unittest.TestCase):
         self.assertEqual(result, 0)
 
     @patch("claude_auto_review.stop.orchestration.core.finalize.get_entries_covered_by_review", return_value=[])
+    @patch("claude_auto_review.stop.orchestration.core.finalize.apply_completed_review", return_value=[])
+    @patch("claude_auto_review.stop.orchestration.core.finalize.build_review_completion_prompt")
+    @patch("claude_auto_review.stop.orchestration.core.finalize.attempt_stop_autocomplete", return_value=False)
+    @patch("claude_auto_review.stop.orchestration.core.finalize._read_review_verdict", side_effect=["Pending.", "Clean"])
+    @patch("claude_auto_review.stop.orchestration.core.finalize.is_review_clean", return_value=True)
+    def test_pending_review_autocomplete_clean_file_returns_0(
+        self, mock_clean, mock_verdict, mock_auto, mock_prompt, mock_apply, mock_covered
+    ):
+        result = finalize_review_stop(_ctx(), self.resolution)
+        self.assertEqual(result, 0)
+        mock_apply.assert_called_once()
+
+    @patch("claude_auto_review.stop.orchestration.core.finalize.get_entries_covered_by_review", return_value=[])
     @patch("claude_auto_review.stop.orchestration.core.finalize.block_completed_review_findings")
     @patch("claude_auto_review.stop.orchestration.core.finalize.build_review_completion_prompt")
     @patch("claude_auto_review.stop.orchestration.core.finalize.attempt_stop_autocomplete", return_value=False)

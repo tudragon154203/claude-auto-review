@@ -1,9 +1,7 @@
 from dataclasses import dataclass
 from typing import Any, Literal, Optional
 
-
-def _serialize_review_file_entries(files: list["ReviewFileRecord"]) -> list[dict[str, Any]]:
-    return [entry.to_dict() for entry in files]
+from claude_auto_review.state.serialization import serialize_review_file_entries
 
 
 @dataclass(frozen=True)
@@ -20,6 +18,7 @@ class ReviewFileRecord:
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "ReviewFileRecord":
         return cls(file=data["file"], hash=data["hash"])
+
 
 
 def _coerce_review_file_entries(files: list[ReviewFileRecord]) -> list[ReviewFileRecord]:
@@ -129,7 +128,7 @@ class ReviewMetadata:
             "type": self.type,
             "reviewId": self.reviewId,
             "reviewPath": self.reviewPath,
-            "files": _serialize_review_file_entries(self.files),
+            "files": serialize_review_file_entries(self.files),
             "clientId": self.clientId,
             "status": self.status,
         }
@@ -164,7 +163,7 @@ class ReviewCompletedRecord:
             "timestamp": self.timestamp,
             "type": self.type,
             "reviewId": self.reviewId,
-            "files": _serialize_review_file_entries(self.files),
+            "files": serialize_review_file_entries(self.files),
             "clientId": self.clientId,
         }
         if self.duration is not None:

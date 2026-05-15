@@ -45,6 +45,19 @@ def _block_partial_review_remaining(review_id, remaining):
     )
 
 
+def _apply_completed_clean_review(ctx, review_id, covered_entries):
+    remaining = apply_completed_review(
+        ctx.project_root,
+        ctx.client_id,
+        review_id,
+        covered_entries,
+    )
+    if not remaining:
+        return 0
+    _block_partial_review_remaining(review_id, remaining)
+    return 2
+
+
 def finalize_review_stop(ctx: RuntimeContext, resolution):
     state = resolution.state
     unreviewed = resolution.unreviewed
@@ -57,16 +70,7 @@ def finalize_review_stop(ctx: RuntimeContext, resolution):
     verdict = _read_review_verdict(review_path)
 
     if is_review_complete_verdict(verdict) and is_review_clean(review_path):
-        remaining = apply_completed_review(
-            ctx.project_root,
-            ctx.client_id,
-            review_id,
-            covered_entries,
-        )
-        if not remaining:
-            return 0
-        _block_partial_review_remaining(review_id, remaining)
-        return 2
+        return _apply_completed_clean_review(ctx, review_id, covered_entries)
 
     if is_review_complete_verdict(verdict):
         block_completed_review_findings(ctx, review_id, review_path, unreviewed)
@@ -92,6 +96,9 @@ def finalize_review_stop(ctx: RuntimeContext, resolution):
     if is_review_complete_verdict(verdict) and not is_review_clean(review_path):
         block_completed_review_findings(ctx, review_id, review_path, unreviewed)
         return 2
+
+    if is_review_complete_verdict(verdict) and is_review_clean(review_path):
+        return _apply_completed_clean_review(ctx, review_id, covered_entries)
 
     if _review_has_completed_artifact(review_path):
         block_completed_review_findings(ctx, review_id, review_path, unreviewed)
