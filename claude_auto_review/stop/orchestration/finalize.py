@@ -3,7 +3,7 @@ from pathlib import Path
 from claude_auto_review.state.reviews import (
     extract_review_verdict_text,
     is_completed_review_content,
-    is_review_clean_verdict,
+    is_review_clean,
     is_review_complete_verdict,
 )
 from claude_auto_review.review.completion import apply_completed_review
@@ -58,7 +58,7 @@ def finalize_review_stop(ctx: RuntimeContext, resolution):
     reviewer_timeout_seconds = ctx.settings.get(SETTING_REVIEWER_TIMEOUT, DEFAULT_SETTINGS[SETTING_REVIEWER_TIMEOUT])
     verdict = _read_review_verdict(review_path)
 
-    if is_review_complete_verdict(verdict) and is_review_clean_verdict(verdict):
+    if is_review_complete_verdict(verdict) and is_review_clean(review_path):
         remaining = apply_completed_review(
             ctx.project_root,
             ctx.client_id,
@@ -97,7 +97,7 @@ def finalize_review_stop(ctx: RuntimeContext, resolution):
         return 0
 
     verdict = _read_review_verdict(review_path)
-    if is_review_complete_verdict(verdict) and not is_review_clean_verdict(verdict):
+    if is_review_complete_verdict(verdict) and not is_review_clean(review_path):
         if not _should_keep_blocking_after_classifier(ctx):
             return 0
         block_completed_review_findings(ctx, review_id, review_path, unreviewed)

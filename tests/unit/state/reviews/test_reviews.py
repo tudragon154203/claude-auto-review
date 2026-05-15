@@ -6,6 +6,7 @@ from claude_auto_review.state.reviews import (
     is_completed_review_content,
     is_placeholder_review_content,
     is_review_clean,
+    is_review_clean_content,
     is_review_complete,
     is_review_expired,
 )
@@ -68,6 +69,25 @@ class TestReviewCompletion(StateTestCase, unittest.TestCase):
         path = project_root / "review.md"
         path.write_text("## Verdict\nNot clean - fix src/app.ts.", encoding="utf-8")
         self.assertFalse(is_review_clean(path))
+
+    def test_is_review_clean_rejects_clean_verdict_when_findings_exist(self):
+        content = (
+            "## Findings\n"
+            "### [Low] Unused import\n"
+            "**Verdict:** Confirmed\n\n"
+            "## Verdict\n"
+            "Clean - no issues found. Claude may stop.\n"
+        )
+        self.assertFalse(is_review_clean_content(content))
+
+    def test_is_review_clean_accepts_clean_verdict_with_none_findings_summary(self):
+        content = (
+            "## Findings\n"
+            "None. The new test is well-structured and the assertions cover the intended behavior.\n\n"
+            "## Verdict\n"
+            "Clean - no issues found.\n"
+        )
+        self.assertTrue(is_review_clean_content(content))
 
     def test_returns_true_when_verdict_is_a_fixed_message(self):
         project_root = self.temp_project()

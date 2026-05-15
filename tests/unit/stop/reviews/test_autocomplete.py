@@ -116,6 +116,34 @@ class TestAutoComplete(unittest.TestCase):
         )
         self.assertTrue(result)
 
+    @patch("claude_auto_review.stop.reviews.prompt_runner.apply_completed_review")
+    @patch("claude_auto_review.stop.reviews.prompt_runner.log_event")
+    @patch("claude_auto_review.stop.reviews.prompt_runner.run_captured")
+    @patch("claude_auto_review.stop.reviews.prompt_runner.shutil.which", return_value="/usr/bin/claude")
+    @patch("pathlib.Path.write_text")
+    @patch("pathlib.Path.is_file", return_value=True)
+    def test_contradictory_clean_verdict_with_findings_does_not_complete(
+        self, mock_is_file, mock_write_text, mock_which, mock_run, mock_log, mock_apply
+    ):
+        mock_run.return_value = MagicMock(
+            returncode=0,
+            stdout=(
+                "## Findings\n"
+                "### [Low] Unused import\n"
+                "**Verdict:** Confirmed\n\n"
+                "## Verdict\n"
+                "Clean - no issues found. Claude may stop.\n"
+            ),
+            stderr="",
+        )
+        result = attempt_stop_autocomplete(
+            _ctx(), review_id="r",
+            review_path=Path("/fake/review.md"), prompt_file=Path("/fake/prompt.md"),
+            covered_entries=[], user_prompt="finish",
+        )
+        self.assertFalse(result)
+        mock_apply.assert_not_called()
+
     @patch("claude_auto_review.stop.reviews.prompt_runner.apply_completed_review", return_value=[{"file": "still.ts"}])
     @patch("claude_auto_review.stop.reviews.prompt_runner.log_event")
     @patch("claude_auto_review.stop.reviews.prompt_runner.run_captured")

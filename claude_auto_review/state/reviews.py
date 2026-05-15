@@ -37,6 +37,13 @@ def extract_review_findings_text(content):
     return findings or None
 
 
+def has_review_findings(content):
+    findings = extract_review_findings_text(content)
+    if not findings:
+        return False
+    return not re.match(r"^(none\b|no findings\b|no issues\b|clean\b)", findings.strip(), re.IGNORECASE)
+
+
 def is_placeholder_review_content(content):
     if not content:
         return True
@@ -86,9 +93,20 @@ def is_review_clean_verdict(verdict):
     return bool(re.match(r"^confirmed\s*\(\s*clean\s*\)(?:\s|$|[-:])", verdict))
 
 
+def is_review_clean_content(content):
+    verdict = extract_review_verdict_text(content)
+    if not is_review_clean_verdict(verdict):
+        return False
+    return not has_review_findings(content)
+
+
 def is_review_complete(review_path):
     return is_review_complete_verdict(get_review_verdict_text(review_path))
 
 
 def is_review_clean(review_path):
-    return is_review_clean_verdict(get_review_verdict_text(review_path))
+    path = Path(review_path)
+    if not path.is_file():
+        return False
+    content = path.read_text(encoding="utf-8", errors="replace")
+    return is_review_clean_content(content)

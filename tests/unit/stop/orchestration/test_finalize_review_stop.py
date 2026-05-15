@@ -1,3 +1,4 @@
+import tempfile
 import unittest
 from pathlib import Path
 from unittest.mock import MagicMock, patch
@@ -9,11 +10,11 @@ from claude_auto_review.stop.orchestration.finalize import finalize_review_stop
 from claude_auto_review.stop.orchestration.resolution import StopFlowResolution
 
 
-def _mk_review(reviewId: str = "r1") -> ReviewMetadata:
+def _mk_review(reviewId: str = "r1", reviewPath: str = "/fake/r.md") -> ReviewMetadata:
     return ReviewMetadata(
         timestamp="2026-05-11T10:00:00+07:00",
         reviewId=reviewId,
-        reviewPath="/fake/r.md",
+        reviewPath=reviewPath,
         files=[],
         clientId="c",
         status="pending",
@@ -46,8 +47,10 @@ class TestFinalizeReviewStop(unittest.TestCase):
 
     @patch("claude_auto_review.stop.orchestration.finalize.classify_last_assistant_message")
     @patch("claude_auto_review.stop.orchestration.finalize.get_entries_covered_by_review", return_value=[])
+    @patch("claude_auto_review.stop.orchestration.finalize.apply_completed_review", return_value=[])
+    @patch("claude_auto_review.stop.orchestration.finalize.is_review_clean", return_value=True)
     @patch("claude_auto_review.stop.orchestration.finalize._read_review_verdict", return_value="Clean")
-    def test_completed_no_remaining_returns_0(self, mock_verdict, mock_covered, mock_classify):
+    def test_completed_no_remaining_returns_0(self, mock_verdict, mock_clean, mock_apply, mock_covered, mock_classify):
         result = finalize_review_stop(_ctx(), self.resolution)
         self.assertEqual(result, 0)
         mock_classify.assert_not_called()
@@ -61,6 +64,30 @@ class TestFinalizeReviewStop(unittest.TestCase):
         result = finalize_review_stop(_ctx(), self.resolution)
         self.assertEqual(result, 2)
         mock_block.assert_called_once()
+
+    @patch("claude_auto_review.stop.orchestration.finalize.classify_last_assistant_message")
+    @patch("claude_auto_review.stop.orchestration.finalize.get_entries_covered_by_review", return_value=[])
+    @patch("claude_auto_review.stop.orchestration.finalize.apply_completed_review")
+    @patch("claude_auto_review.stop.orchestration.finalize.block_completed_review_findings")
+    def test_completed_clean_verdict_with_findings_blocks(self, mock_block, mock_apply, mock_covered, mock_classify):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            project_root = Path(tmpdir)
+            review_dir = project_root / "fake"
+            review_dir.mkdir(parents=True, exist_ok=True)
+            review_path = review_dir / "r.md"
+            review_path.write_text(
+                "## Findings\n"
+                "### [Low] Unused import\n"
+                "**Verdict:** Confirmed\n\n"
+                "## Verdict\n"
+                "Clean - no issues found. Claude may stop.\n",
+                encoding="utf-8",
+            )
+            resolution = StopFlowResolution(state=[], unreviewed=[], review=_mk_review("r1", "fake/r.md"))
+            result = finalize_review_stop(_ctx(project_root=project_root), resolution)
+            self.assertEqual(result, 2)
+            mock_apply.assert_not_called()
+            mock_block.assert_called_once()
 
     @patch("claude_auto_review.stop.orchestration.finalize.classify_last_assistant_message")
     @patch("claude_auto_review.stop.orchestration.finalize.get_entries_covered_by_review", return_value=[])
@@ -180,10 +207,11 @@ class TestFinalizeReviewStop(unittest.TestCase):
     @patch("claude_auto_review.stop.orchestration.finalize.classify_last_assistant_message")
     @patch("claude_auto_review.stop.orchestration.finalize.get_entries_covered_by_review", return_value=[])
     @patch("claude_auto_review.stop.orchestration.finalize.apply_completed_review")
+    @patch("claude_auto_review.stop.orchestration.finalize.is_review_clean", return_value=True)
     @patch("claude_auto_review.stop.orchestration.finalize._read_review_verdict", return_value="Clean")
     @patch("claude_auto_review.stop.orchestration.finalize.block_response")
     def test_completed_clean_with_remaining_files_allows_continue_when_classifier_incomplete(
-        self, mock_block_response, mock_verdict, mock_apply, mock_covered, mock_classify
+        self, mock_block_response, mock_verdict, mock_clean, mock_apply, mock_covered, mock_classify
     ):
         mock_apply.return_value = [EditRecord(timestamp="t", file="still.ts", hash="abc")]
         mock_classify.return_value = self._classification("incomplete")
@@ -194,10 +222,11 @@ class TestFinalizeReviewStop(unittest.TestCase):
     @patch("claude_auto_review.stop.orchestration.finalize.classify_last_assistant_message")
     @patch("claude_auto_review.stop.orchestration.finalize.get_entries_covered_by_review", return_value=[])
     @patch("claude_auto_review.stop.orchestration.finalize.apply_completed_review")
+    @patch("claude_auto_review.stop.orchestration.finalize.is_review_clean", return_value=True)
     @patch("claude_auto_review.stop.orchestration.finalize._read_review_verdict", return_value="Clean")
     @patch("claude_auto_review.stop.orchestration.finalize.block_response")
     def test_completed_clean_with_remaining_files_keeps_blocking_on_classifier_error(
-        self, mock_block_response, mock_verdict, mock_apply, mock_covered, mock_classify
+        self, mock_block_response, mock_verdict, mock_clean, mock_apply, mock_covered, mock_classify
     ):
         mock_apply.return_value = [EditRecord(timestamp="t", file="still.ts", hash="abc")]
         mock_classify.return_value = self._classification("error", reason="http_timeout")
