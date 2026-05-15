@@ -5,9 +5,9 @@ from claude_auto_review.paths.core.path_utils import local_now_iso
 from claude_auto_review.runtime.core.events import log_event
 from claude_auto_review.config.core.settings import SETTING_CLASSIFIER_TIMEOUT, get_setting_float
 from claude_auto_review.state.store.write import append_state
-from claude_auto_review.stop.classifier.client import call_classifier_api, sanitize_base_url
-from claude_auto_review.stop.classifier.extraction import extract_last_assistant_message_text
-from claude_auto_review.stop.classifier.models import (
+from claude_auto_review.stop.classifier.core.client import call_classifier_api, sanitize_base_url
+from claude_auto_review.stop.classifier.core.extraction import extract_last_assistant_message_text
+from claude_auto_review.stop.classifier.core.models import (
     DEFAULT_TIMEOUT_SECONDS,
     CLASSIFIER_MODEL,
     result_factory,

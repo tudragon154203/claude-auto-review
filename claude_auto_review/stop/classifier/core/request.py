@@ -1,4 +1,4 @@
-from claude_auto_review.stop.classifier.models import CLASSIFIER_MAX_TOKENS, CLASSIFIER_MODEL, _SYSTEM_PROMPT
+from claude_auto_review.stop.classifier.core.models import CLASSIFIER_MAX_TOKENS, CLASSIFIER_MODEL, _SYSTEM_PROMPT
 
 
 def build_classifier_request_body(message_text):

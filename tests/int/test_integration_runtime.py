@@ -14,7 +14,7 @@ from claude_auto_review.config.core.settings import DEFAULT_SETTINGS, DEFAULT_TI
 from claude_auto_review.state.store.read import consecutive_stop_blocks, load_state
 from claude_auto_review.state.models import EditRecord
 from claude_auto_review.state.store.write import append_state
-from claude_auto_review.stop.classifier.last_assistant_message import classify_last_assistant_message
+from claude_auto_review.stop.classifier.core.last_assistant_message import classify_last_assistant_message
 from claude_auto_review.stop.orchestration.context import RuntimeContext
 
 

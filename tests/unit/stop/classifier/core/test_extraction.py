@@ -1,5 +1,5 @@
 import unittest
-from claude_auto_review.stop.classifier.extraction import extract_last_assistant_message_text
+from claude_auto_review.stop.classifier.core.extraction import extract_last_assistant_message_text
 
 class TestExtraction(unittest.TestCase):
     def test_extracts_last_assistant_message_string(self):

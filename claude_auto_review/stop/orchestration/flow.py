@@ -13,7 +13,7 @@ from claude_auto_review.config.core.settings import (
     load_settings,
 )
 from claude_auto_review.state.store.read import consecutive_stop_blocks, get_unreviewed_files, load_state
-from claude_auto_review.stop.classifier.last_assistant_message import classify_last_assistant_message
+from claude_auto_review.stop.classifier.core.last_assistant_message import classify_last_assistant_message
 from claude_auto_review.stop.orchestration.context import RuntimeContext
 from claude_auto_review.stop.orchestration.finalize import finalize_review_stop
 from claude_auto_review.stop.orchestration.pending import resolve_pending_review

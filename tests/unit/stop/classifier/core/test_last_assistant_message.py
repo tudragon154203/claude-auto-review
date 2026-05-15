@@ -1,11 +1,11 @@
 import json
 import unittest
 
-from claude_auto_review.stop.classifier.models import (
+from claude_auto_review.stop.classifier.core.models import (
     CLASSIFIER_MODEL,
     DEFAULT_TIMEOUT_SECONDS,
 )
-from claude_auto_review.stop.classifier.last_assistant_message import (
+from claude_auto_review.stop.classifier.core.last_assistant_message import (
     classify_last_assistant_message,
 )
 from claude_auto_review.stop.orchestration.context import RuntimeContext

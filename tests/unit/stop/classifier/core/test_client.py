@@ -4,7 +4,7 @@ import socket
 import unittest
 from urllib import error
 
-from claude_auto_review.stop.classifier.client import _parse_classifier_label, call_classifier_api, sanitize_base_url
+from claude_auto_review.stop.classifier.core.client import _parse_classifier_label, call_classifier_api, sanitize_base_url
 
 
 class _FakeResponse:

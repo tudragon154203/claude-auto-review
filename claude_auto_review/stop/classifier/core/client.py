@@ -1,9 +1,9 @@
 import json
 import socket
 from urllib import error, parse, request
-from claude_auto_review.stop.classifier.models import result_factory
-from claude_auto_review.stop.classifier.request import build_classifier_request_body
-from claude_auto_review.stop.classifier.response import parse_classifier_label, response_payload_debug_json
+from claude_auto_review.stop.classifier.core.models import result_factory
+from claude_auto_review.stop.classifier.core.request import build_classifier_request_body
+from claude_auto_review.stop.classifier.core.response import parse_classifier_label, response_payload_debug_json
 
 _parse_classifier_label = parse_classifier_label
 
@@ -70,4 +70,3 @@ def call_classifier_api(message_text, base_url, api_key, started_at, timeout_sec
     if label == "unknown":
         debug_response = response_payload_debug_json(response_data)
     return result_factory(label, reason, started_at, message_chars, base_url=base_url, debug_response=debug_response)
-

@@ -1,7 +1,7 @@
 import json
 import unittest
 
-from claude_auto_review.stop.classifier.models import CLASSIFIER_MODEL
+from claude_auto_review.stop.classifier.core.models import CLASSIFIER_MODEL
 from tests.int.hooks.support import HookTestCase
 from tests.support import start_classifier_server
 
