@@ -3,7 +3,7 @@ import unittest
 from unittest.mock import patch
 from pathlib import Path
 from claude_auto_review.state.models import EditRecord
-from claude_auto_review.stop.core.feedback import (
+from claude_auto_review.stop.feedback import (
     block_response,
     build_review_completion_prompt,
     build_review_findings_feedback,

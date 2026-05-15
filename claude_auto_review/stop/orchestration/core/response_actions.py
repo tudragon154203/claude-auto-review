@@ -2,7 +2,7 @@ from claude_auto_review.paths.path_utils import local_now_iso
 from claude_auto_review.state.models import StopBlockedRecord
 from claude_auto_review.state.store.write import append_state
 from claude_auto_review.stop.orchestration.core.context import RuntimeContext
-from claude_auto_review.stop.core.feedback import block_response, build_unreviewed_files_string
+from claude_auto_review.stop.feedback import block_response, build_unreviewed_files_string
 
 
 def _display_path(path, project_root):

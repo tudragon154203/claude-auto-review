@@ -11,7 +11,7 @@ from claude_auto_review.review.completion import apply_completed_review
 from claude_auto_review.config.constants import EXIT_REVIEW_FAILED
 from claude_auto_review.config.settings import DEFAULT_SETTINGS, SETTING_REVIEWER_TIMEOUT
 from claude_auto_review.stop.orchestration.core.context import RuntimeContext
-from claude_auto_review.stop.core.feedback import (
+from claude_auto_review.stop.feedback import (
     block_completed_review_findings,
     build_review_completion_prompt,
     block_response,
