@@ -17,13 +17,23 @@ from claude_auto_review.state.review_matching import (
 def extract_review_verdict_text(content):
     if not content:
         return None
-    if "## Verdict" not in content:
+    if "## Verdict" in content:
+        verdict_block = content.split("## Verdict", 1)[1]
+        for line in verdict_block.splitlines():
+            verdict = line.strip()
+            if verdict:
+                return verdict
+    # Fallback: extract verdict from ## Findings when ## Verdict is absent.
+    # The auto-reviewer sometimes puts the clean verdict line directly under ## Findings.
+    if "## Findings" not in content:
         return None
-    verdict_block = content.split("## Verdict", 1)[1]
-    for line in verdict_block.splitlines():
-        verdict = line.strip()
-        if verdict:
-            return verdict
+    findings_block = content.split("## Findings", 1)[1]
+    for line in findings_block.splitlines():
+        line = line.strip()
+        if not line or line.startswith("#"):
+            continue
+        if re.match(r"^(clean\b|confirmed\b)", line, re.IGNORECASE):
+            return line
     return None
 
 
