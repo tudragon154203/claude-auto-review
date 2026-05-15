@@ -6,7 +6,8 @@ from datetime import datetime, timedelta
 from pathlib import Path
 
 from tests.e2e.support import EndToEndTestCase
-from claude_auto_review.paths import client_state_path, get_log_path, local_now_iso
+from claude_auto_review.client_dirs import client_state_path
+from claude_auto_review.path_utils import get_log_path, local_now_iso
 
 
 _CLEANUP_SCRIPT = (

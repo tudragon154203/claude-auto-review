@@ -34,7 +34,7 @@ You must review the changed files before stopping. Use the reviewer agent behavi
 
 ## Review Output
 
-Output the final review to stdout. It will be captured and saved to the review file. You do not have Write or Edit tools.
+Output only the final review markdown to stdout. It will be captured and saved to the review file. Do not emit progress updates, planning notes, or any text before or after the final markdown review. You do not have Write or Edit tools.
 
 Use this exact top matter:
 
@@ -64,7 +64,7 @@ Rule one.
 ## Current File Snapshots
 {snapshots}
 
-Complete the review in 20 turns or less."""
+Complete the review in a single response."""
 
         self.assertEqual(
             build_prompt(review_id, timestamp, entries, rules, diff, snapshots, review_path),

@@ -11,7 +11,8 @@ from claude_auto_review.bootstrap import ensure_repo_root_on_path
 
 ensure_repo_root_on_path()
 
-from claude_auto_review.paths import get_client_id, get_project_root
+from claude_auto_review.client_dirs import get_client_id
+from claude_auto_review.path_utils import get_project_root
 from claude_auto_review.runtime.events import log_event, log_failure
 from claude_auto_review.runtime.process import run_fail_open
 from claude_auto_review.review.prompt_flow import create_review_prompt_files

@@ -4,7 +4,7 @@ You must review the changed files before stopping. Use the reviewer agent behavi
 
 ## Review Output
 
-Output the final review to stdout. It will be captured and saved to the review file. You do not have Write or Edit tools.
+Output only the final review markdown to stdout. It will be captured and saved to the review file. Do not emit progress updates, planning notes, or any text before or after the final markdown review. You do not have Write or Edit tools.
 
 Use this exact top matter:
 
@@ -33,7 +33,7 @@ If no findings exist, write "Clean - no issues found. Claude may stop." under "#
 ## Current File Snapshots
 {snapshots}
 
-Complete the review in 20 turns or less."""
+Complete the review in a single response."""
 
 _REVIEW_FILE_TEMPLATE = """# Review {review_id} - {readable_timestamp}
 

@@ -1,7 +1,8 @@
 import json
 from pathlib import Path
 
-from claude_auto_review.paths import get_client_id, get_project_root
+from claude_auto_review.client_dirs import get_client_id
+from claude_auto_review.path_utils import get_project_root
 
 
 def resolve_project_root(project_root=None):

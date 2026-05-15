@@ -1,6 +1,6 @@
 from tests.int.support import ClientIsolationTestCase
 
-from claude_auto_review.paths import client_reviews_dir
+from claude_auto_review.client_dirs import client_reviews_dir
 from claude_auto_review.state.models import EditRecord
 from claude_auto_review.state.reviews import pending_reviews_for_entries
 from claude_auto_review.state.store_read import get_unreviewed_files, load_state

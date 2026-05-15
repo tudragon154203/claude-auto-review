@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from claude_auto_review.paths import local_now_iso
+from claude_auto_review.path_utils import local_now_iso
 from claude_auto_review.settings import DEFAULT_SETTINGS, get_setting_int
 from claude_auto_review.state.models import StopBlockedRecord
 from claude_auto_review.state.store_write import append_state
@@ -18,6 +18,8 @@ def build_unreviewed_files_string(unreviewed_entries):
 def build_review_completion_prompt(review_path):
     return (
         f"Complete the review at {review_path}. "
+        "Return only the final markdown review to stdout. "
+        "Do not output planning notes, progress updates, or next-step narration. "
         "Read each file, evaluate findings, set verdicts "
         "(Confirmed/Skipped), and write the final review "
         "with a non-Pending Verdict."

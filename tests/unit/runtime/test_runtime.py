@@ -3,7 +3,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from claude_auto_review.paths import client_reviews_dir, client_run_dir, client_state_path
+from claude_auto_review.client_dirs import client_reviews_dir, client_run_dir, client_state_path
 from claude_auto_review.runtime.cleanup import cancel_runtime, cancel_session, cleanup_expired_pending_reviews, cleanup_stale_clients
 from claude_auto_review.runtime.setup import ensure_client_runtime, ensure_runtime
 from claude_auto_review.state.store_read import load_state

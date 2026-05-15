@@ -31,7 +31,9 @@ class TestPromptTemplates(unittest.TestCase):
         self.assertIn("## Git Diff", result)
         self.assertIn("```diff\n-old\n+new\n```", result)
         self.assertIn("## Current File Snapshots", result)
-        self.assertIn("Complete the review in 20 turns or less.", result)
+        self.assertIn("Output only the final review markdown to stdout.", result)
+        self.assertIn("Do not emit progress updates, planning notes, or any text before or after the final markdown review.", result)
+        self.assertIn("Complete the review in a single response.", result)
         self.assertNotIn("/tmp/review-123.md", result)
 
     def test_format_review_file_includes_prompt_path_placeholder(self):

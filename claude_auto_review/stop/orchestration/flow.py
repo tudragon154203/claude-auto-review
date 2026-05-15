@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from claude_auto_review.paths import get_client_id
+from claude_auto_review.client_dirs import get_client_id
 from claude_auto_review.runtime.events import log_event
 from claude_auto_review.runtime.setup import ensure_client_runtime
 from claude_auto_review.settings import (

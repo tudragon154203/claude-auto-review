@@ -5,7 +5,9 @@ from bootstrap import ensure_repo_root_on_path
 
 ensure_repo_root_on_path()
 
-from claude_auto_review.paths import DELETED_FILE_HASH, get_client_id, get_project_root, local_now_iso, normalize_relative_path
+from claude_auto_review.path_utils import DELETED_FILE_HASH, get_project_root, local_now_iso
+from claude_auto_review.client_dirs import get_client_id
+from claude_auto_review.uri_utils import normalize_relative_path
 from claude_auto_review.runtime.context import read_json_payload
 from claude_auto_review.runtime.events import log_event
 from claude_auto_review.runtime.process import run_fail_open

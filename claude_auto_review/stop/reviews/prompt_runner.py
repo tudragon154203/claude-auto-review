@@ -2,7 +2,8 @@ import shutil
 import subprocess
 import sys
 
-from claude_auto_review.paths import client_run_dir, local_now_iso
+from claude_auto_review.client_dirs import client_run_dir
+from claude_auto_review.path_utils import local_now_iso
 from claude_auto_review.runtime.events import log_event
 from claude_auto_review.runtime.process import run_captured
 from claude_auto_review.review.completion import apply_completed_review
@@ -118,8 +119,16 @@ def _process_review_result(ctx: RuntimeContext, result, review_path, review_id, 
     )
     if result.returncode == 0 and result.stdout.strip():
         verdict = extract_review_verdict_text(result.stdout)
+        if not is_review_complete_verdict(verdict):
+            log_event(
+                ctx.project_root,
+                "stop_hook_claude_cli_invalid_output",
+                reviewId=review_id,
+                stdout=result.stdout[:500],
+            )
+            return False
         review_path.write_text(result.stdout, encoding="utf-8", newline="\n")
-        if is_review_complete_verdict(verdict) and is_review_clean_verdict(verdict):
+        if is_review_clean_verdict(verdict):
             remaining = apply_completed_review(
                 ctx.project_root, ctx.client_id, review_id, covered_entries
             )

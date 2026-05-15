@@ -1,7 +1,7 @@
 import os
 import time
 
-from claude_auto_review.paths import local_now_iso
+from claude_auto_review.path_utils import local_now_iso
 from claude_auto_review.runtime.events import log_event
 from claude_auto_review.settings import SETTING_CLASSIFIER_TIMEOUT, get_setting_float
 from claude_auto_review.state.store_write import append_state

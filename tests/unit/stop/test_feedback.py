@@ -23,6 +23,8 @@ class TestFeedback(unittest.TestCase):
         review_path = Path("/fake/review.md")
         prompt = build_review_completion_prompt(review_path)
         self.assertIn(str(review_path), prompt)
+        self.assertIn("Return only the final markdown review to stdout.", prompt)
+        self.assertIn("Do not output planning notes, progress updates, or next-step narration.", prompt)
         self.assertIn("non-Pending Verdict", prompt)
 
     def test_block_response_outputs_json(self):

@@ -2,7 +2,7 @@ import time
 from dataclasses import dataclass
 
 from claude_auto_review.constants import MS_PER_SECOND
-from claude_auto_review.paths import local_now_iso
+from claude_auto_review.path_utils import local_now_iso
 from claude_auto_review.state.models import ClassificationRecord
 
 CLASSIFIER_MODEL = "claude-3-5-haiku-20241022"

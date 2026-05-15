@@ -6,7 +6,7 @@ from pathlib import Path
 from tests.int.support import IntegrationTestCase, REPO_ROOT, _FakeResponse
 from tests.support import client_dir
 
-from claude_auto_review.paths import get_log_path
+from claude_auto_review.path_utils import get_log_path
 from claude_auto_review.runtime.events import log_event
 from claude_auto_review.runtime.cleanup import cancel_runtime
 from claude_auto_review.runtime.setup import ensure_client_runtime, ensure_project_settings, ensure_runtime

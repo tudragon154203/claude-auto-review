@@ -1,7 +1,7 @@
 from tests.int.support import IntegrationTestCase
 
 from claude_auto_review.state.models import EditRecord, ReviewMetadata, StopBlockedRecord
-from claude_auto_review.paths import local_now_iso
+from claude_auto_review.path_utils import local_now_iso
 from claude_auto_review.runtime.setup import ensure_client_runtime
 from claude_auto_review.state.reviews import pending_reviews_for_entries
 from claude_auto_review.state.store_read import consecutive_stop_blocks, get_unreviewed_files, load_state, was_hash_reviewed

@@ -2,14 +2,16 @@ import unittest
 import shutil
 from unittest.mock import patch
 
-from claude_auto_review.paths import (
+from claude_auto_review.path_utils import (
     CLIENTS_DIR,
-    invalidate_client_runtime_dir_cache,
-    get_client_runtime_dir,
     get_log_path,
     get_state_path,
-    normalize_relative_path,
 )
+from claude_auto_review.client_dirs import (
+    get_client_runtime_dir,
+    invalidate_client_runtime_dir_cache,
+)
+from claude_auto_review.uri_utils import normalize_relative_path
 
 from tests.unit.state.support import StateTestCase
 

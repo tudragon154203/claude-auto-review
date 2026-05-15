@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 
-from claude_auto_review.paths import get_log_path, local_now_iso
+from claude_auto_review.path_utils import get_log_path, local_now_iso
 
 
 def _json_safe(value):

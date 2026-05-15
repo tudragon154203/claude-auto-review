@@ -3,13 +3,13 @@ import shlex
 import shutil
 from pathlib import Path
 
-from claude_auto_review.paths import (
+from claude_auto_review.path_utils import (
     LOG_RELATIVE_PATH,
     RUNTIME_DIR,
     STATE_RELATIVE_PATH,
-    get_client_runtime_dir,
     get_plugin_root,
 )
+from claude_auto_review.client_dirs import get_client_runtime_dir
 from claude_auto_review.runtime.context import resolve_project_root
 from claude_auto_review.settings import DEFAULT_SETTINGS, _load_settings_document, _settings_path
 

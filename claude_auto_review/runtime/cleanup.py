@@ -2,7 +2,9 @@ import shutil
 import time
 
 from claude_auto_review.constants import SECONDS_PER_HOUR
-from claude_auto_review.paths import CLIENTS_DIR, RUNTIME_DIR, client_state_path, get_client_runtime_dir, invalidate_client_runtime_dir_cache
+from claude_auto_review.path_utils import CLIENTS_DIR, RUNTIME_DIR
+from claude_auto_review.client_dirs import invalidate_client_runtime_dir_cache
+from claude_auto_review.client_dirs import client_state_path, get_client_runtime_dir
 from claude_auto_review.runtime.context import resolve_client_id, resolve_project_root
 from claude_auto_review.runtime.events import log_event, log_failure
 from claude_auto_review.runtime.pending_cleanup import cleanup_expired_pending_reviews

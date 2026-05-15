@@ -1,7 +1,8 @@
 from dataclasses import dataclass
 from pathlib import Path
 
-from claude_auto_review.paths import client_reviews_dir, client_run_dir, local_now_iso
+from claude_auto_review.client_dirs import client_reviews_dir, client_run_dir
+from claude_auto_review.path_utils import local_now_iso
 from claude_auto_review.review.generation import (
     build_prompt,
     current_file_snapshots,
