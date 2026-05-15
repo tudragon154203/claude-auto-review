@@ -2,7 +2,7 @@ from pathlib import Path
 
 from claude_auto_review.runtime.core.client_dirs import get_client_id
 from claude_auto_review.runtime.core.events import log_event
-from claude_auto_review.runtime.setup import ensure_client_runtime
+from claude_auto_review.runtime.core.setup import ensure_client_runtime
 from claude_auto_review.config.core.settings import (
     DEFAULT_SETTINGS,
     SETTING_CLASSIFIER_ENABLED,

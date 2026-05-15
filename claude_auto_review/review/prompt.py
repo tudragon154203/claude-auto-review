@@ -17,7 +17,7 @@ from claude_auto_review.runtime.core.events import log_event, log_failure
 from claude_auto_review.runtime.core.process import run_fail_open
 from claude_auto_review.review.prompting.flow import create_review_prompt_files
 from claude_auto_review.install.core.shims import write_project_script_shim
-from claude_auto_review.runtime.setup import ensure_client_runtime
+from claude_auto_review.runtime.core.setup import ensure_client_runtime
 from claude_auto_review.config.core.settings import load_settings
 from claude_auto_review.state.store.read import get_unreviewed_files, load_state
 from claude_auto_review.state.store.write import append_review_started

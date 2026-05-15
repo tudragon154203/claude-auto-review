@@ -2,7 +2,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from claude_auto_review.runtime.setup import _load_hooks_document, _merge_hooks, _merge_unique_list
+from claude_auto_review.runtime.core.setup import _load_hooks_document, _merge_hooks, _merge_unique_list
 
 
 class TestSetupHelpers(unittest.TestCase):
@@ -41,4 +41,3 @@ class TestSetupHelpers(unittest.TestCase):
                 "stop": [{"type": "command", "value": "stop"}],
             },
         )
-

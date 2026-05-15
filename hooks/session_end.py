@@ -9,7 +9,7 @@ from claude_auto_review.runtime.core.client_dirs import get_client_id
 from claude_auto_review.paths.core.path_utils import get_project_root
 from claude_auto_review.runtime.cleanup.session import cancel_session
 from claude_auto_review.runtime.cleanup.stale import cleanup_stale_clients
-from claude_auto_review.runtime.pending_cleanup import cleanup_expired_pending_reviews
+from claude_auto_review.runtime.core.pending_cleanup import cleanup_expired_pending_reviews
 from claude_auto_review.runtime.core.context import get_payload_session_id, read_json_payload
 from claude_auto_review.runtime.core.events import log_event
 from claude_auto_review.runtime.core.process import run_fail_open

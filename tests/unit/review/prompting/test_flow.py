@@ -4,7 +4,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from claude_auto_review.runtime.core.client_dirs import client_reviews_dir, client_run_dir
-from claude_auto_review.runtime.setup import ensure_client_runtime
+from claude_auto_review.runtime.core.setup import ensure_client_runtime
 from claude_auto_review.state.core.models import EditRecord
 from claude_auto_review.review.prompting.flow import (
     _review_id_from_timestamp,

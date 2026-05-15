@@ -1,7 +1,7 @@
 import unittest
 
 from claude_auto_review.runtime.core.client_dirs import client_state_path
-from claude_auto_review.runtime.setup import ensure_client_runtime
+from claude_auto_review.runtime.core.setup import ensure_client_runtime
 from claude_auto_review.state.core.models import ClassificationRecord, EditRecord, StopBlockedRecord
 from claude_auto_review.state.store.read import consecutive_stop_blocks, load_state
 from claude_auto_review.state.store.write import append_state

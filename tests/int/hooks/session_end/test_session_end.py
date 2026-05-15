@@ -7,7 +7,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[4]
 sys.path.insert(0, str(REPO_ROOT))
 
-from claude_auto_review.runtime.setup import ensure_client_runtime  # noqa: E402
+from claude_auto_review.runtime.core.setup import ensure_client_runtime  # noqa: E402
 from claude_auto_review.state.core.models import ReviewFileRecord, ReviewMetadata  # noqa: E402
 from claude_auto_review.state.store.read import load_state  # noqa: E402
 from claude_auto_review.state.store.write import append_state  # noqa: E402

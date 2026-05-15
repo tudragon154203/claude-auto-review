@@ -12,7 +12,7 @@ ensure_repo_root_on_path()
 
 from claude_auto_review.paths.core.path_utils import get_project_root
 from claude_auto_review.install.core.installer import copy_if_changed, ensure_gitignore_entries, write_runtime_shims
-from claude_auto_review.runtime.setup import ensure_project_settings, ensure_runtime
+from claude_auto_review.runtime.core.setup import ensure_project_settings, ensure_runtime
 from claude_auto_review.runtime.core.events import log_event
 
 

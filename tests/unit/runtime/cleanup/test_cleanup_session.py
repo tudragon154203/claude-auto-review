@@ -6,7 +6,7 @@ from unittest.mock import patch
 from claude_auto_review.runtime.cleanup.paths import _iter_runtime_cleanup_targets, _remove_tree
 from claude_auto_review.runtime.cleanup.session import cancel_runtime, cancel_session
 from claude_auto_review.runtime.core.client_dirs import client_state_path
-from claude_auto_review.runtime.setup import ensure_client_runtime, ensure_runtime
+from claude_auto_review.runtime.core.setup import ensure_client_runtime, ensure_runtime
 
 from tests.unit.state.support import StateTestCase
 

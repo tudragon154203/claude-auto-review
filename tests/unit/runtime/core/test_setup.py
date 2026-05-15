@@ -1,7 +1,7 @@
 import unittest
 from pathlib import Path
 
-from claude_auto_review.runtime.setup import ensure_client_runtime, ensure_runtime
+from claude_auto_review.runtime.core.setup import ensure_client_runtime, ensure_runtime
 
 from tests.unit.state.support import StateTestCase
 

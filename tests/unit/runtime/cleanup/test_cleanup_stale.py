@@ -5,7 +5,7 @@ from unittest.mock import patch
 
 from claude_auto_review.runtime.cleanup.stale import _is_client_state_stale, cleanup_stale_clients
 from claude_auto_review.runtime.core.client_dirs import client_state_path
-from claude_auto_review.runtime.setup import ensure_client_runtime
+from claude_auto_review.runtime.core.setup import ensure_client_runtime
 
 from tests.unit.state.support import StateTestCase
 
