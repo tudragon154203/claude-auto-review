@@ -60,7 +60,7 @@ class TestLastAssistantMessageClassifierHook(HookTestCase, unittest.TestCase):
         self.assertEqual(entries[-1]["baseUrl"], base_url)
         self.assertNotIn("secret-key", json.dumps(entries[-1]))
 
-    def test_stop_hook_logs_incomplete_classification(self):
+    def test_stop_hook_allows_continue_on_incomplete_classification(self):
         project_root = self.temp_project()
         (project_root / "src" / "app.ts").write_text("export const value = 1;\n", encoding="utf-8")
         self.run_python("hooks/post_tool_use.py", project_root, json.dumps({"file_path": "src/app.ts"}))
@@ -82,7 +82,7 @@ class TestLastAssistantMessageClassifierHook(HookTestCase, unittest.TestCase):
             server.shutdown()
             server.server_close()
 
-        self.assertEqual(result.returncode, 2)
+        self.assertEqual(result.returncode, 0)
         entries = [e for e in self._read_log_entries(project_root) if e.get("type") == "last_assistant_message_classified"]
         self.assertEqual(entries[-1]["status"], "incomplete")
 
