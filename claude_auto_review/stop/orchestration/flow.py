@@ -5,6 +5,7 @@ from claude_auto_review.runtime.events import log_event
 from claude_auto_review.runtime.setup import ensure_client_runtime
 from claude_auto_review.config.settings import (
     DEFAULT_SETTINGS,
+    SETTING_CLASSIFIER_ENABLED,
     SETTING_MAX_STOP_PASSES,
     SETTING_PENDING_TIMEOUT,
     get_setting_float,
@@ -12,6 +13,7 @@ from claude_auto_review.config.settings import (
     load_settings,
 )
 from claude_auto_review.state.store_read import consecutive_stop_blocks, get_unreviewed_files, load_state
+from claude_auto_review.stop.classifier.last_assistant_message import classify_last_assistant_message
 from claude_auto_review.stop.orchestration.context import RuntimeContext
 from claude_auto_review.stop.orchestration.finalize import finalize_review_stop
 from claude_auto_review.stop.orchestration.pending import resolve_pending_review
@@ -20,6 +22,20 @@ from claude_auto_review.stop.orchestration.pending import resolve_pending_review
 def _allow_stop(project_root, reason, **details):
     log_event(project_root, "stop_approved", reason=reason, **details)
     return 0
+
+
+def _allow_continue_after_classifier(ctx):
+    if not ctx.settings.get(SETTING_CLASSIFIER_ENABLED, DEFAULT_SETTINGS[SETTING_CLASSIFIER_ENABLED]):
+        return None
+    result = classify_last_assistant_message(ctx)
+    if result is not None and result.status == "incomplete":
+        return _allow_stop(
+            ctx.project_root,
+            "classifier_incomplete",
+            classifier_status=result.status,
+            classifier_reason=result.reason,
+        )
+    return None
 
 
 def run_stop_flow(project_root, payload):
@@ -53,6 +69,9 @@ def run_stop_flow(project_root, payload):
         settings=settings,
         payload=payload,
     )
+    classifier_result = _allow_continue_after_classifier(ctx)
+    if classifier_result is not None:
+        return classifier_result
 
     resolution = resolve_pending_review(
         ctx,

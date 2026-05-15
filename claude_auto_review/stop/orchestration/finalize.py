@@ -8,14 +8,13 @@ from claude_auto_review.state.reviews import (
 )
 from claude_auto_review.review.completion import apply_completed_review
 from claude_auto_review.config.constants import EXIT_REVIEW_FAILED
-from claude_auto_review.config.settings import DEFAULT_SETTINGS, SETTING_CLASSIFIER_ENABLED, SETTING_REVIEWER_TIMEOUT
+from claude_auto_review.config.settings import DEFAULT_SETTINGS, SETTING_REVIEWER_TIMEOUT
 from claude_auto_review.stop.orchestration.context import RuntimeContext
 from claude_auto_review.stop.feedback import (
     block_completed_review_findings,
     build_review_completion_prompt,
     block_response,
 )
-from claude_auto_review.stop.classifier.last_assistant_message import classify_last_assistant_message
 from claude_auto_review.stop.reviews.selection import get_entries_covered_by_review
 from claude_auto_review.stop.reviews.prompt_runner import _review_prompt_path, attempt_stop_autocomplete
 from claude_auto_review.stop.orchestration.response_actions import block_pending_review
@@ -31,13 +30,6 @@ def _review_has_completed_artifact(review_path):
     if not review_path.is_file():
         return False
     return is_completed_review_content(review_path.read_text(encoding="utf-8", errors="replace"))
-
-
-def _should_keep_blocking_after_classifier(ctx: RuntimeContext) -> bool:
-    if not ctx.settings.get(SETTING_CLASSIFIER_ENABLED, DEFAULT_SETTINGS[SETTING_CLASSIFIER_ENABLED]):
-        return True
-    result = classify_last_assistant_message(ctx)
-    return result is None or result.status != "incomplete"
 
 
 def _block_partial_review_remaining(review_id, remaining):
@@ -67,20 +59,14 @@ def finalize_review_stop(ctx: RuntimeContext, resolution):
         )
         if not remaining:
             return 0
-        if not _should_keep_blocking_after_classifier(ctx):
-            return 0
         _block_partial_review_remaining(review_id, remaining)
         return 2
 
     if is_review_complete_verdict(verdict):
-        if not _should_keep_blocking_after_classifier(ctx):
-            return 0
         block_completed_review_findings(ctx, review_id, review_path, unreviewed)
         return 2
 
     if _review_has_completed_artifact(review_path):
-        if not _should_keep_blocking_after_classifier(ctx):
-            return 0
         block_completed_review_findings(ctx, review_id, review_path, unreviewed)
         return 2
 
@@ -98,17 +84,11 @@ def finalize_review_stop(ctx: RuntimeContext, resolution):
 
     verdict = _read_review_verdict(review_path)
     if is_review_complete_verdict(verdict) and not is_review_clean(review_path):
-        if not _should_keep_blocking_after_classifier(ctx):
-            return 0
         block_completed_review_findings(ctx, review_id, review_path, unreviewed)
         return 2
 
     if _review_has_completed_artifact(review_path):
-        if not _should_keep_blocking_after_classifier(ctx):
-            return 0
         block_completed_review_findings(ctx, review_id, review_path, unreviewed)
         return 2
 
-    if not _should_keep_blocking_after_classifier(ctx):
-        return 0
     return block_pending_review(ctx, review_id, review_path, prompt_file, unreviewed)

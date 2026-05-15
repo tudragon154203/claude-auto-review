@@ -10,16 +10,16 @@ flowchart TD
   HookStop[hooks/stop_hook.py] --> Flow[stop/orchestration/flow.py]
   HookEnd[hooks/session_end.py] --> Cleanup[runtime/cleanup.py]
 
+  Flow --> Classifier[stop/classifier/last_assistant_message.py]
+  Classifier --> State
   Flow --> Pending[stop/orchestration/pending.py]
   Pending --> ReviewGen[review/generation.py]
   Finalize --> AutoReview[stop/reviews/autocomplete.py]
   AutoReview --> ReviewComp[review/completion.py]
   Flow --> Finalize[stop/orchestration/finalize.py]
-  Finalize --> Classifier[stop/classifier/last_assistant_message.py]
 
   ReviewGen --> ReviewFile["review prompt + result files"]
   ReviewComp --> State
-  Classifier --> State
   Cleanup --> State
 ```
 
@@ -73,7 +73,7 @@ flowchart TD
 
 ### Classifier
 
-- `claude_auto_review/stop/classifier/last_assistant_message.py` optionally classifies the last assistant message on would-block stop paths.
+- `claude_auto_review/stop/classifier/last_assistant_message.py` optionally classifies the last assistant message before pending-review resolution on unreviewed stop paths.
 - `claude_auto_review/stop/classifier/extraction.py` extracts the message text from the hook payload.
 - `claude_auto_review/stop/classifier/client.py` talks to the Anthropic API.
 - `claude_auto_review/stop/classifier/models.py` defines classifier defaults and result objects.
@@ -115,7 +115,7 @@ flowchart TD
 | `pendingReviewTimeoutHours` | `1` | Age before a pending review expires |
 | `reviewerTimeoutSeconds` | `600` | Hard cap for the review subprocess |
 | `reviewFeedbackMaxChars` | `9000` | Maximum feedback copied back into Claude |
-| `lastAssistantMessageClassifierEnabled` | `true` | Enable the stop-gate classifier on would-block paths |
+| `lastAssistantMessageClassifierEnabled` | `true` | Enable the stop-gate classifier before pending-review resolution on unreviewed stop paths |
 | `lastAssistantMessageClassifierTimeoutSeconds` | `20` | Timeout for the classifier API call |
 | `staleClientTimeoutHours` | `48` | Hours after which a client session is considered stale |
 
@@ -143,7 +143,7 @@ flowchart LR
 3. If needed, the review generator writes a prompt file and a pending-review record.
 4. The reviewer subprocess or Claude CLI autocomplete writes the review result.
 5. Finalization marks covered hashes reviewed and decides whether Claude may stop.
-6. On would-block stop paths, the optional classifier runs before the block response is emitted; `incomplete` allows Claude to continue, while `complete`, `unknown`, `error`, and `skipped` keep the stop blocked. The result is also recorded in state/log telemetry.
+6. On unreviewed stop paths, the optional classifier runs before pending-review resolution; `incomplete` allows Claude to continue without invoking review generation, while `complete`, `unknown`, `error`, and `skipped` continue into the normal review/block flow. The result is also recorded in state/log telemetry.
 
 ## Testing Shape
 

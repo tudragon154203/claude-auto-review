@@ -59,6 +59,8 @@ class TestLastAssistantMessageClassifierHook(HookTestCase, unittest.TestCase):
         self.assertEqual(entries[-1]["reason"], "parsed_label")
         self.assertEqual(entries[-1]["baseUrl"], base_url)
         self.assertNotIn("secret-key", json.dumps(entries[-1]))
+        review_events = [e for e in self._read_log_entries(project_root) if e.get("type") == "review_prompt_created"]
+        self.assertEqual(len(review_events), 1)
 
     def test_stop_hook_allows_continue_on_incomplete_classification(self):
         project_root = self.temp_project()
@@ -85,6 +87,8 @@ class TestLastAssistantMessageClassifierHook(HookTestCase, unittest.TestCase):
         self.assertEqual(result.returncode, 0)
         entries = [e for e in self._read_log_entries(project_root) if e.get("type") == "last_assistant_message_classified"]
         self.assertEqual(entries[-1]["status"], "incomplete")
+        review_events = [e for e in self._read_log_entries(project_root) if e.get("type") == "review_prompt_created"]
+        self.assertEqual(review_events, [])
 
     def test_timeout_logs_error_and_existing_blocking_behavior_stays_intact(self):
         project_root = self.temp_project()

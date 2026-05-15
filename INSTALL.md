@@ -40,6 +40,8 @@ This removes runtime state for the active session. Delete `.claude/claude-auto-r
 1. Start a Claude Code session in the target project.
 2. Have Claude edit a tracked file.
 3. Check that a new line appeared in `.claude/claude-auto-review/clients/{session-id}/state.jsonl`.
-4. When Claude tries to stop, the stop hook will block if any file is unreviewed, then auto-review it.
+4. When Claude tries to stop with unreviewed files, the stop hook first classifies the parent Claude session's last assistant message.
+5. If the classifier returns `incomplete`, stop is allowed to continue without invoking review generation.
+6. Otherwise, the stop hook continues into the normal review flow and will block until the unreviewed changes are reviewed.
 
 Hook lifecycle events are logged to `.claude/claude-auto-review/claude-auto-review.log`.

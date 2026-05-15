@@ -16,19 +16,19 @@ flowchart TD
     D --> E[Stop hook runs run_stop_flow]
     E --> F{Unreviewed files?}
     F -- No --> G[Allow stop]
-    F -- Yes --> H{Pending review exists?}
-    H -- Yes --> I[Reuse pending review]
-    H -- No --> J[Run review prompt script]
-    J --> K{Review generation succeeded?}
-    K -- No --> L[Block stop]
-    K -- Yes --> M{Would stop be blocked?}
-    I --> M
-    M -- No --> G
-    M -- Yes --> N[Classify last assistant message]
-    N --> O{Classifier says incomplete?}
-    O -- Yes --> G
-    O -- No --> L
-    L --> P[Return blocked stop response]
+    F -- Yes --> H[Classify last assistant message]
+    H --> I{Classifier says incomplete?}
+    I -- Yes --> G
+    I -- No --> J{Pending review exists?}
+    J -- Yes --> K[Reuse pending review]
+    J -- No --> L[Run review prompt script]
+    L --> M{Review generation succeeded?}
+    M -- No --> N[Block stop]
+    M -- Yes --> O{Would stop be blocked?}
+    K --> O
+    O -- No --> G
+    O -- Yes --> N
+    N --> P[Return blocked stop response]
 ```
 
 - **Hook entrypoints:** `hooks/post_tool_use.py`, `hooks/stop_hook.py`, `hooks/session_end.py`
@@ -44,7 +44,7 @@ flowchart TD
 - **Install:** `install/installer.py`, `install/shims.py`, `install/setup_cli.py`, `install/cancel_cli.py`
 - **Support files:** `agents/reviewer.md`, `rules/review-rules.md`
 
-The classifier is now a stop gate on would-block paths: `incomplete` lets Claude continue working, while `complete`, `unknown`, `error`, and `skipped` keep the stop blocked.
+The classifier now runs before pending-review resolution on unreviewed stop paths: `incomplete` lets Claude continue working without invoking review generation, while `complete`, `unknown`, `error`, and `skipped` continue into the normal review/block flow.
 
 **Commands:**
 - `/claude-auto-review` — Complete manual review for current unreviewed files
