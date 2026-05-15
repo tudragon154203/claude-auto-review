@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from claude_auto_review.state.reviews import (
+from claude_auto_review.state.reviews.verdicts import (
     extract_review_verdict_text,
     is_completed_review_content,
     is_review_clean,

@@ -1,14 +1,14 @@
 import unittest
 
 from claude_auto_review.state.models import ReviewMetadata
-from claude_auto_review.state.reviews import (
+from claude_auto_review.state.reviews.expiry import is_review_expired
+from claude_auto_review.state.reviews.verdicts import (
     extract_review_verdict_text,
     is_completed_review_content,
     is_placeholder_review_content,
     is_review_clean,
     is_review_clean_content,
     is_review_complete,
-    is_review_expired,
     normalize_review_verdict_content,
 )
 

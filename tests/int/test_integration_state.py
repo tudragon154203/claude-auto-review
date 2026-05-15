@@ -4,7 +4,7 @@ from claude_auto_review.review.completion import apply_completed_review
 from claude_auto_review.state.models import EditRecord, ReviewCompletedRecord, ReviewMetadata, StopBlockedRecord
 from claude_auto_review.paths.path_utils import local_now_iso
 from claude_auto_review.runtime.setup import ensure_client_runtime
-from claude_auto_review.state.reviews import pending_reviews_for_entries
+from claude_auto_review.state.reviews.matching import pending_reviews_for_entries
 from claude_auto_review.state.store.read import consecutive_stop_blocks, get_unreviewed_files, load_state, was_hash_reviewed
 from claude_auto_review.state.store.write import append_review_started, append_state, mark_files_reviewed
 

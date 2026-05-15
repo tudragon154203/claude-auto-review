@@ -7,7 +7,7 @@ from claude_auto_review.paths.path_utils import local_now_iso
 from claude_auto_review.runtime.events import log_event
 from claude_auto_review.runtime.process import run_captured
 from claude_auto_review.review.completion import apply_completed_review
-from claude_auto_review.state.reviews import (
+from claude_auto_review.state.reviews.verdicts import (
     is_review_clean_content,
     normalize_review_verdict_content,
 )
