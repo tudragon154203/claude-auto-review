@@ -1,11 +1,13 @@
 import json
 import os
 import shutil
+import socketserver
 import subprocess
 import sys
 import tempfile
+import threading
 import time
-from http.server import BaseHTTPRequestHandler
+from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
 
 from claude_auto_review.runtime.client_dirs import get_client_runtime_dir
@@ -133,13 +135,12 @@ class SubprocessMixin:
 
 def make_classifier_handler(response_label="complete", response_delay=0, response_payload=None):
     """Return an isolated HTTP handler class for last-assistant-message tests."""
+    captured_requests = []
 
     class _ClassifierHandler(BaseHTTPRequestHandler):
-        requests = []
-
         def do_POST(self):
             body = self.rfile.read(int(self.headers.get("Content-Length", "0"))).decode("utf-8")
-            type(self).requests.append(
+            captured_requests.append(
                 {
                     "path": self.path,
                     "headers": dict(self.headers.items()),
@@ -164,4 +165,19 @@ def make_classifier_handler(response_label="complete", response_delay=0, respons
         def log_message(self, fmt, *args):
             return
 
+    _ClassifierHandler.requests = captured_requests
     return _ClassifierHandler
+
+
+class _ThreadedHTTPServer(socketserver.ThreadingMixIn, HTTPServer):
+    daemon_threads = True
+
+
+def start_classifier_server(label, response_payload=None, response_delay=0):
+    """Start a mock classifier HTTP server; return (server, base_url)."""
+    handler_cls = make_classifier_handler(label, response_payload=response_payload, response_delay=response_delay)
+    server = _ThreadedHTTPServer(("127.0.0.1", 0), handler_cls)
+    server.requests = handler_cls.requests
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    return server, f"http://127.0.0.1:{server.server_port}"

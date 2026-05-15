@@ -1,0 +1,132 @@
+import json
+import unittest
+
+from tests.int.hooks.support import HookTestCase
+from tests.support import start_classifier_server
+
+
+class TestStopHookFinalization(HookTestCase, unittest.TestCase):
+    def test_stop_blocked_when_review_has_findings(self):
+        project_root = self.temp_project()
+        (project_root / "src" / "app.ts").write_text("export const value = 1;\n", encoding="utf-8")
+
+        # 1. Track edit
+        self.run_python("hooks/post_tool_use.py", project_root, json.dumps({"file_path": "src/app.ts"}))
+
+        # 2. First stop creates pending review
+        stop1 = self.run_python("hooks/stop_hook.py", project_root, env_overrides={"PATH": ""}, use_fake_claude=False)
+        self.assertEqual(stop1.returncode, 2)
+
+        # 3. Complete review with findings
+        verdict = "Not Clean - security issue found."
+        findings = "Sensitive data logged to console."
+        review_path = self.complete_latest_review(project_root, verdict=verdict)
+
+        # Inject findings into the review file
+        content = review_path.read_text(encoding="utf-8")
+        new_content = content.replace(
+            "No findings yet. This file is a placeholder until Claude completes the review.",
+            findings,
+        )
+        review_path.write_text(new_content, encoding="utf-8")
+
+        # 4. Second stop should still block because of findings
+        stop2 = self.run_python("hooks/stop_hook.py", project_root, env_overrides={"PATH": ""}, use_fake_claude=False)
+        self.assertEqual(stop2.returncode, 2)
+        self.assertIn("found issues to address.", stop2.stdout)
+        self.assertIn(findings, stop2.stdout)
+
+    def test_stop_blocked_when_review_is_incomplete_artifact(self):
+        """Test the path where is_completed_review_content is True but there is no full verdict."""
+        project_root = self.temp_project()
+        (project_root / "src" / "app.ts").write_text("export const value = 1;\n", encoding="utf-8")
+
+        # 1. Track edit
+        self.run_python("hooks/post_tool_use.py", project_root, json.dumps({"file_path": "src/app.ts"}))
+
+        # 2. First stop creates pending review
+        stop1 = self.run_python("hooks/stop_hook.py", project_root, env_overrides={"PATH": ""}, use_fake_claude=False)
+        self.assertEqual(stop1.returncode, 2)
+
+        # 3. Overwrite review so it looks completed but carries no verdict
+        review_path = self.complete_latest_review(
+            project_root,
+            verdict="Some completed artifact content without markers.",
+        )
+        # The verdict string above does not start with "Clean", so
+        # is_review_clean_verdict will be False, letting the
+        # _review_has_completed_artifact branch in finalize.py fire.
+
+        # 4. Second stop should still block
+        stop2 = self.run_python("hooks/stop_hook.py", project_root, env_overrides={"PATH": ""}, use_fake_claude=False)
+        self.assertEqual(stop2.returncode, 2)
+        self.assertIn("found issues to address.", stop2.stdout)
+
+    def test_stop_allowed_when_classifier_overrides_blocking(self):
+        """Classifier says 'incomplete' → stop is allowed even when review is pending."""
+        project_root = self.temp_project()
+        (project_root / "src" / "app.ts").write_text("export const value = 1;\n", encoding="utf-8")
+
+        self.run_python("hooks/post_tool_use.py", project_root, json.dumps({"file_path": "src/app.ts"}))
+
+        server, base_url = start_classifier_server("incomplete")
+        try:
+            payload = json.dumps({"last_assistant_message": "I will finish this later."})
+            result = self.run_python(
+                "hooks/stop_hook.py",
+                project_root,
+                input_text=payload,
+                env_overrides={
+                    "ANTHROPIC_BASE_URL": base_url,
+                    "ANTHROPIC_API_KEY": "secret-key",
+                    "PATH": "",
+                },
+                use_fake_claude=False,
+            )
+            self.assertEqual(result.returncode, 0)
+        finally:
+            server.shutdown()
+            server.server_close()
+
+    def test_partial_review_allowed_when_classifier_overrides_blocking(self):
+        """Classifier 'incomplete' → allowed to stop even when review is clean but partial."""
+        project_root = self.temp_project()
+        (project_root / "src" / "a.ts").write_text("a", encoding="utf-8")
+        (project_root / "src" / "b.ts").write_text("b", encoding="utf-8")
+
+        # 1. Edit a.ts
+        self.run_python("hooks/post_tool_use.py", project_root, json.dumps({"file_path": "src/a.ts"}))
+
+        # 2. First stop creates a review covering a.ts
+        stop1 = self.run_python("hooks/stop_hook.py", project_root, env_overrides={"PATH": ""}, use_fake_claude=False)
+        self.assertEqual(stop1.returncode, 2)
+
+        # 3. New edit for b.ts → review is now partial
+        self.run_python("hooks/post_tool_use.py", project_root, json.dumps({"file_path": "src/b.ts"}))
+
+        # 4. Mark a.ts review clean
+        self.complete_latest_review(project_root, verdict="Clean - no issues found. Claude may stop.")
+
+        # 5. Classifier says incomplete → allow stop
+        server, base_url = start_classifier_server("incomplete")
+        try:
+            payload = json.dumps({"last_assistant_message": "Stopping now, b.ts will be reviewed later."})
+            result = self.run_python(
+                "hooks/stop_hook.py",
+                project_root,
+                input_text=payload,
+                env_overrides={
+                    "ANTHROPIC_BASE_URL": base_url,
+                    "ANTHROPIC_API_KEY": "secret-key",
+                    "PATH": "",
+                },
+                use_fake_claude=False,
+            )
+            self.assertEqual(result.returncode, 0)
+        finally:
+            server.shutdown()
+            server.server_close()
+
+
+if __name__ == "__main__":
+    unittest.main()

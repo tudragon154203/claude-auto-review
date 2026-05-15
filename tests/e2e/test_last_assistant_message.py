@@ -48,9 +48,9 @@ class EndToEndLastAssistantMessageTests(EndToEndTestCase):
             server.server_close()
 
         self.assertEqual(result.returncode, 2)
-        self.assertEqual(len(server.RequestHandlerClass.requests), 1)
-        self.assertEqual(server.RequestHandlerClass.requests[0]["path"], "/v1/messages")
-        self.assertEqual(server.RequestHandlerClass.requests[0]["body"]["model"], CLASSIFIER_MODEL)
+        self.assertEqual(len(server.requests), 1)
+        self.assertEqual(server.requests[0]["path"], "/v1/messages")
+        self.assertEqual(server.requests[0]["body"]["model"], CLASSIFIER_MODEL)
 
         state = load_state(project_root, "test-session")
         classifier_entries = [entry for entry in state if entry.type == "last_assistant_message_classified"]

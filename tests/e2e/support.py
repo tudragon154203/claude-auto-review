@@ -1,16 +1,9 @@
 import json
-import socketserver
 import tempfile
-import threading
 import unittest
-from http.server import HTTPServer
 from pathlib import Path
 
-from tests.support import SubprocessMixin, TempProjectMixin, client_dir, make_classifier_handler
-
-
-class _ThreadedHTTPServer(socketserver.ThreadingMixIn, HTTPServer):
-    daemon_threads = True
+from tests.support import SubprocessMixin, TempProjectMixin, client_dir, start_classifier_server
 
 
 class EndToEndTestCase(TempProjectMixin, SubprocessMixin, unittest.TestCase):
@@ -53,11 +46,7 @@ class EndToEndTestCase(TempProjectMixin, SubprocessMixin, unittest.TestCase):
         ]
 
     def start_classifier_server(self, label="complete", payload=None):
-        handler_cls = make_classifier_handler(label, response_payload=payload)
-        server = _ThreadedHTTPServer(("127.0.0.1", 0), handler_cls)
-        thread = threading.Thread(target=server.serve_forever, daemon=True)
-        thread.start()
-        return server, f"http://127.0.0.1:{server.server_port}"
+        return start_classifier_server(label, response_payload=payload)
 
     def complete_review(self, project_root, verdict="Clean - no issues found.", client_id="test-session"):
         from claude_auto_review.runtime.client_dirs import client_reviews_dir
