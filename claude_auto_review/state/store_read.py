@@ -55,11 +55,14 @@ def read_jsonl_records(path):
 
 
 def read_last_jsonl_record(path):
-    last_entry = None
-    for _, raw in read_jsonl_records(path):
-        if isinstance(raw, dict):
-            last_entry = raw
-    return last_entry
+    try:
+        last_entry = None
+        for _, raw in read_jsonl_records(path):
+            if isinstance(raw, dict):
+                last_entry = raw
+        return last_entry
+    except OSError:
+        return None
 
 
 def get_file_hash(file_path, project_root=None):

@@ -4,7 +4,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from claude_auto_review.paths import client_reviews_dir, client_run_dir, client_state_path
-from claude_auto_review.runtime.cleanup import cancel_runtime, cancel_session, cleanup_expired_pending_reviews
+from claude_auto_review.runtime.cleanup import cancel_runtime, cancel_session, cleanup_expired_pending_reviews, cleanup_stale_clients
 from claude_auto_review.runtime.setup import ensure_client_runtime, ensure_runtime
 from claude_auto_review.state.store_read import load_state
 
@@ -174,6 +174,19 @@ class TestRuntime(StateTestCase, unittest.TestCase):
         os.utime(state_path.parent, (stale_ts, stale_ts))
 
         self.assertTrue(_is_client_state_stale(state_path, timeout_hours=48))
+
+    def test_cleanup_stale_clients_skips_unreadable_state(self):
+        project_root = self.temp_project()
+        client_id = "stale-unreadable"
+        ensure_client_runtime(project_root, client_id)
+        state_path = client_state_path(project_root, client_id)
+        state_path.write_text("{}", encoding="utf-8")
+
+        with patch("claude_auto_review.state.store_read.read_jsonl_records", side_effect=OSError("boom")):
+            removed = cleanup_stale_clients(project_root)
+
+        self.assertEqual(removed, [])
+        self.assertTrue(state_path.parent.exists())
 
     def test_helpers_log_event_oserror_suppression(self):
         from claude_auto_review.runtime.events import log_event
