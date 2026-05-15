@@ -1,6 +1,6 @@
 from tests.int.support import IntegrationTestCase
 
-from claude_auto_review.review.completion import apply_completed_review
+from claude_auto_review.review.core.completion import apply_completed_review
 from claude_auto_review.state.models import EditRecord, ReviewCompletedRecord, ReviewMetadata, StopBlockedRecord
 from claude_auto_review.paths.core.path_utils import local_now_iso
 from claude_auto_review.runtime.setup import ensure_client_runtime

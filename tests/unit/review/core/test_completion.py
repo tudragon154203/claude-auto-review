@@ -3,7 +3,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from claude_auto_review.state.models import EditRecord, ReviewCompletedRecord, ReviewMetadata, StopBlockedRecord
-from claude_auto_review.review.completion import _format_duration, apply_completed_review
+from claude_auto_review.review.core.completion import _format_duration, apply_completed_review
 
 
 class TestFormatDuration(unittest.TestCase):
@@ -14,14 +14,14 @@ class TestFormatDuration(unittest.TestCase):
 
 
 class TestCompletion(unittest.TestCase):
-    @patch("claude_auto_review.review.completion.mark_files_reviewed")
-    @patch("claude_auto_review.review.completion.append_state")
+    @patch("claude_auto_review.review.core.completion.mark_files_reviewed")
+    @patch("claude_auto_review.review.core.completion.append_state")
     @patch(
-        "claude_auto_review.review.completion.get_unreviewed_files",
+        "claude_auto_review.review.core.completion.get_unreviewed_files",
         return_value=[EditRecord(timestamp="t", file="still.ts", hash="abc")],
     )
     @patch(
-        "claude_auto_review.review.completion.load_state",
+        "claude_auto_review.review.core.completion.load_state",
         side_effect=[
             [
                 ReviewMetadata(
@@ -53,11 +53,11 @@ class TestCompletion(unittest.TestCase):
         self.assertIsInstance(blocked, StopBlockedRecord)
         self.assertEqual(blocked.reason, "partial_review")
 
-    @patch("claude_auto_review.review.completion.mark_files_reviewed")
-    @patch("claude_auto_review.review.completion.append_state")
-    @patch("claude_auto_review.review.completion.get_unreviewed_files", return_value=[])
+    @patch("claude_auto_review.review.core.completion.mark_files_reviewed")
+    @patch("claude_auto_review.review.core.completion.append_state")
+    @patch("claude_auto_review.review.core.completion.get_unreviewed_files", return_value=[])
     @patch(
-        "claude_auto_review.review.completion.load_state",
+        "claude_auto_review.review.core.completion.load_state",
         side_effect=[
             [
                 ReviewMetadata(
@@ -76,11 +76,11 @@ class TestCompletion(unittest.TestCase):
         self.assertEqual(len(remaining), 0)
         self.assertEqual(mock_append.call_count, 2)
 
-    @patch("claude_auto_review.review.completion.mark_files_reviewed")
-    @patch("claude_auto_review.review.completion.append_state")
-    @patch("claude_auto_review.review.completion.get_unreviewed_files", return_value=[])
+    @patch("claude_auto_review.review.core.completion.mark_files_reviewed")
+    @patch("claude_auto_review.review.core.completion.append_state")
+    @patch("claude_auto_review.review.core.completion.get_unreviewed_files", return_value=[])
     @patch(
-        "claude_auto_review.review.completion.load_state",
+        "claude_auto_review.review.core.completion.load_state",
         side_effect=[
             [
                 ReviewMetadata(
