@@ -3,15 +3,15 @@ import shlex
 import shutil
 from pathlib import Path
 
-from claude_auto_review.paths.path_utils import (
+from claude_auto_review.paths.core.path_utils import (
     LOG_RELATIVE_PATH,
     RUNTIME_DIR,
     STATE_RELATIVE_PATH,
     get_plugin_root,
 )
-from claude_auto_review.runtime.client_dirs import get_client_runtime_dir
-from claude_auto_review.runtime.context import resolve_project_root
-from claude_auto_review.config.settings import DEFAULT_SETTINGS, _load_settings_document, _settings_path
+from claude_auto_review.runtime.core.client_dirs import get_client_runtime_dir
+from claude_auto_review.runtime.core.context import resolve_project_root
+from claude_auto_review.config.core.settings import DEFAULT_SETTINGS, _load_settings_document, _settings_path
 
 PLUGIN_SCRIPTS = frozenset(["post_tool_use.py", "stop_hook.py", "session_end.py"])
 

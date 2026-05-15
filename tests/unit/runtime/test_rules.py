@@ -4,7 +4,7 @@ import unittest
 from pathlib import Path
 
 from claude_auto_review.runtime.setup import ensure_runtime
-from claude_auto_review.config.settings import load_settings, should_skip_file
+from claude_auto_review.config.core.settings import load_settings, should_skip_file
 
 
 class RulesTests(unittest.TestCase):

@@ -5,7 +5,7 @@ import unittest
 from unittest.mock import patch
 from urllib import error
 
-from claude_auto_review.state.store_read import load_state
+from claude_auto_review.state.store.read import load_state
 from claude_auto_review.stop.classifier.models import CLASSIFICATION_EVENT
 from claude_auto_review.stop.classifier.last_assistant_message import (
     classify_last_assistant_message,

@@ -1,4 +1,4 @@
-from claude_auto_review.utils.shell_parsing import (
+from claude_auto_review.utils.core.shell_parsing import (
     SHELL_COPY_MOVE_COMMANDS,
     SHELL_DELETE_PS,
     SHELL_MULTI_ARG_COMMANDS,

@@ -1,12 +1,12 @@
 import unittest
 
-from claude_auto_review.runtime.client_dirs import client_state_path
-from claude_auto_review.paths.path_utils import get_log_path, local_now_iso
-from claude_auto_review.runtime.events import log_event
+from claude_auto_review.runtime.core.client_dirs import client_state_path
+from claude_auto_review.paths.core.path_utils import get_log_path, local_now_iso
+from claude_auto_review.runtime.core.events import log_event
 from claude_auto_review.runtime.setup import ensure_client_runtime, ensure_runtime
 from claude_auto_review.state.models import ClassificationRecord, EditRecord, ReviewCompletedRecord, ReviewFileRecord, ReviewMetadata, StopBlockedRecord
-from claude_auto_review.state.store_read import get_unreviewed_files, latest_entries_by_file, load_state, reviewed_hashes_by_file, was_hash_reviewed
-from claude_auto_review.state.store_write import append_state
+from claude_auto_review.state.store.read import get_unreviewed_files, latest_entries_by_file, load_state, reviewed_hashes_by_file, was_hash_reviewed
+from claude_auto_review.state.store.write import append_state
 
 from tests.unit.state.support import StateTestCase
 

@@ -2,7 +2,7 @@ import sys
 import unittest
 from pathlib import Path
 
-from claude_auto_review.utils.bootstrap import ensure_repo_root_on_path
+from claude_auto_review.utils.core.bootstrap import ensure_repo_root_on_path
 
 
 class TestBootstrap(unittest.TestCase):

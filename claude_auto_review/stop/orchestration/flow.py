@@ -1,9 +1,9 @@
 from pathlib import Path
 
-from claude_auto_review.runtime.client_dirs import get_client_id
-from claude_auto_review.runtime.events import log_event
+from claude_auto_review.runtime.core.client_dirs import get_client_id
+from claude_auto_review.runtime.core.events import log_event
 from claude_auto_review.runtime.setup import ensure_client_runtime
-from claude_auto_review.config.settings import (
+from claude_auto_review.config.core.settings import (
     DEFAULT_SETTINGS,
     SETTING_CLASSIFIER_ENABLED,
     SETTING_MAX_STOP_PASSES,
@@ -12,7 +12,7 @@ from claude_auto_review.config.settings import (
     get_setting_int,
     load_settings,
 )
-from claude_auto_review.state.store_read import consecutive_stop_blocks, get_unreviewed_files, load_state
+from claude_auto_review.state.store.read import consecutive_stop_blocks, get_unreviewed_files, load_state
 from claude_auto_review.stop.classifier.last_assistant_message import classify_last_assistant_message
 from claude_auto_review.stop.orchestration.context import RuntimeContext
 from claude_auto_review.stop.orchestration.finalize import finalize_review_stop

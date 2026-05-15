@@ -3,7 +3,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from claude_auto_review.state.store_read import get_file_hash
+from claude_auto_review.state.store.read import get_file_hash
 
 from tests.unit.state.support import StateTestCase
 

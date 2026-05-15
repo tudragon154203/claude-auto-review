@@ -5,22 +5,22 @@ from bootstrap import ensure_repo_root_on_path
 
 ensure_repo_root_on_path()
 
-from claude_auto_review.paths.path_utils import DELETED_FILE_HASH, get_project_root, local_now_iso
-from claude_auto_review.runtime.client_dirs import get_client_id
-from claude_auto_review.paths.uri_utils import normalize_relative_path
-from claude_auto_review.runtime.context import read_json_payload
-from claude_auto_review.runtime.events import log_event
-from claude_auto_review.runtime.process import run_fail_open
+from claude_auto_review.paths.core.path_utils import DELETED_FILE_HASH, get_project_root, local_now_iso
+from claude_auto_review.runtime.core.client_dirs import get_client_id
+from claude_auto_review.paths.core.uri_utils import normalize_relative_path
+from claude_auto_review.runtime.core.context import read_json_payload
+from claude_auto_review.runtime.core.events import log_event
+from claude_auto_review.runtime.core.process import run_fail_open
 from claude_auto_review.runtime.setup import ensure_client_runtime
-from claude_auto_review.config.settings import load_settings, should_skip_file
+from claude_auto_review.config.core.settings import load_settings, should_skip_file
 from claude_auto_review.state.hook_input import extract_file_paths_from_hook_input
 from claude_auto_review.state.models import EditRecord
-from claude_auto_review.state.store_read import (
+from claude_auto_review.state.store.read import (
     get_file_hash,
     load_state,
     was_hash_reviewed,
 )
-from claude_auto_review.state.store_write import append_state
+from claude_auto_review.state.store.write import append_state
 
 
 def _run_post_tool_use():

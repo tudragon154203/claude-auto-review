@@ -7,7 +7,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[4]
 sys.path.insert(0, str(REPO_ROOT))
 
-from claude_auto_review.state.store_read import load_state  # noqa: E402
+from claude_auto_review.state.store.read import load_state  # noqa: E402
 from tests.int.hooks.support import HookTestCase  # noqa: E402
 
 
@@ -70,7 +70,7 @@ class TestPostToolUseHook(HookTestCase, unittest.TestCase):
 
     def test_post_tool_use_ignores_runtime_review_files(self):
         project_root = self.temp_project()
-        from claude_auto_review.runtime.client_dirs import get_client_runtime_dir, get_client_id
+        from claude_auto_review.runtime.core.client_dirs import get_client_runtime_dir, get_client_id
 
         cid = get_client_id(stdin_session_id="test-session")
         runtime_review = (

@@ -1,14 +1,14 @@
 import time
 
-from claude_auto_review.config.constants import SECONDS_PER_HOUR
-from claude_auto_review.config.settings import DEFAULT_SETTINGS, SETTING_STALE_CLIENT_TIMEOUT, load_settings
-from claude_auto_review.paths.path_utils import CLIENTS_DIR
-from claude_auto_review.runtime.client_dirs import invalidate_client_runtime_dir_cache
+from claude_auto_review.config.core.constants import SECONDS_PER_HOUR
+from claude_auto_review.config.core.settings import DEFAULT_SETTINGS, SETTING_STALE_CLIENT_TIMEOUT, load_settings
+from claude_auto_review.paths.core.path_utils import CLIENTS_DIR
+from claude_auto_review.runtime.core.client_dirs import invalidate_client_runtime_dir_cache
 from claude_auto_review.runtime.cleanup.paths import _remove_tree
-from claude_auto_review.runtime.context import resolve_project_root
-from claude_auto_review.runtime.events import log_event, log_failure
-from claude_auto_review.state.store_read import read_last_jsonl_record
-from claude_auto_review.utils.datetime_utils import hours_since
+from claude_auto_review.runtime.core.context import resolve_project_root
+from claude_auto_review.runtime.core.events import log_event, log_failure
+from claude_auto_review.state.store.read import read_last_jsonl_record
+from claude_auto_review.utils.core.datetime_utils import hours_since
 
 
 def _entry_timestamp(entry):
