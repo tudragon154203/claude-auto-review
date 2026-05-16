@@ -19,10 +19,12 @@
 
 ```bash
 # Install from this repo (editable)
-pip install -e /path/to/claude-auto-review
+git clone https://github.com/tudragon154203/claude-auto-review.git
+cd claude-auto-review
+pip install -e .
 
 # Or install from git
-pip install git+https://github.com/<user>/claude-auto-review.git
+pip install git+https://github.com/tudragon154203/claude-auto-review.git
 ```
 
 Then initialize the plugin in any project:
@@ -38,7 +40,9 @@ This creates the local runtime tree and configures hooks. Run it from the projec
 From inside the project where you want reviews to run:
 
 ```bash
-pip install -e /path/to/claude-auto-review
+git clone https://github.com/tudragon154203/claude-auto-review.git
+cd claude-auto-review
+pip install -e .
 claude-auto-review install
 ```
 
@@ -66,8 +70,8 @@ This removes the `.claude/claude-auto-review/` directory, strips plugin hook ent
 1. Start a Claude Code session in the target project.
 2. Have Claude edit a tracked file.
 3. Check that a new line appeared in the per-client event log at `.claude/claude-auto-review/clients/{session-id}/state.jsonl`.
-4. When Claude tries to stop with unreviewed files, the stop hook first classifies the parent Claude session's last assistant message.
-5. If the classifier returns `incomplete`, stop is allowed to continue without invoking review generation.
-6. Otherwise, the stop hook continues into the normal review flow and will block until the unreviewed changes are reviewed.
+4. When Claude tries to stop with unreviewed files, the stop hook first resolves any pending review (generating a new review prompt if needed) and runs the auto-reviewer.
+5. After review generation completes, the classifier runs on the would-block paths and checks the parent Claude session's last assistant message.
+6. If the classifier returns `incomplete`, stop is allowed to continue and Claude can address the findings. Otherwise (`complete`, `unknown`, `error`, or `skipped`), the stop hook blocks until the unreviewed changes are reviewed.
 
 Hook lifecycle events are logged to `.claude/claude-auto-review/claude-auto-review.log`.

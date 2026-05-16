@@ -50,6 +50,8 @@ See [INSTALL.md](INSTALL.md) for full details.
 
 ```bash
 # From this repo (pip editable install + one-time init):
+git clone https://github.com/tudragon154203/claude-auto-review.git
+cd claude-auto-review
 pip install -e .
 claude-auto-review install
 ```
