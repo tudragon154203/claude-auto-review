@@ -17,7 +17,7 @@ from claude_auto_review.stop.orchestration.core.context import RuntimeContext
 
 def _persist_result(result, ctx):
     include_debug = ctx.settings.get("debug", True)
-    append_state(result.as_state_entry(include_debug=False), ctx.project_root, client_id=ctx.client_id)
+    append_state(result.as_state_entry(include_debug=include_debug), ctx.project_root, client_id=ctx.client_id)
     log_event(
         ctx.project_root,
         "last_assistant_message_classified",

@@ -13,14 +13,14 @@ SUBCOMMANDS = {
 }
 
 
-def _print_help():
+def _print_help(exit_code=0):
     self = Path(__file__).name if Path(__file__).exists() else "claude-auto-review"
     print(f"Usage: {self} <subcommand>", file=sys.stderr)
     print(file=sys.stderr)
     print("Subcommands:", file=sys.stderr)
     for name in SUBCOMMANDS:
         print(f"  {name}", file=sys.stderr)
-    return 1
+    return exit_code
 
 
 def main():
@@ -31,7 +31,7 @@ def main():
     module_path = SUBCOMMANDS.get(subcommand)
     if module_path is None:
         print(f"Unknown subcommand: {subcommand}", file=sys.stderr)
-        return _print_help()
+        return _print_help(exit_code=1)
 
     # Remove the subcommand arg so downstream sees clean argv
     sys.argv = [sys.argv[0]] + sys.argv[2:]

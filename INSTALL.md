@@ -1,5 +1,14 @@
 # Installation
 
+## CLI Commands
+
+| Command | Description |
+| --- | --- |
+| `claude-auto-review install` | Set up the plugin in the current project |
+| `claude-auto-review cancel` | Cancel the active review session |
+| `claude-auto-review prompt` | Manually trigger review prompt generation |
+| `claude-auto-review uninstall` | Remove plugin from current project |
+
 ## Prerequisites
 
 - **Claude Code** with plugin/hook support

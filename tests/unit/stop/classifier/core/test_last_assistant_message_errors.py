@@ -80,7 +80,7 @@ class TestLastAssistantMessageErrors(StateTestCase, unittest.TestCase):
 
         self.assertEqual(mock_log.call_args.kwargs["debugResponse"], debug_response)
         state = load_state(self.project_root, self.client_id)
-        self.assertIsNone(state[-1].debugResponse)
+        self.assertEqual(state[-1].debugResponse, debug_response)
 
     def test_debug_response_not_logged_when_debug_off(self):
         payload = {"content": [{"text": "unknown"}], "id": "msg-nodebug"}
@@ -93,6 +93,8 @@ class TestLastAssistantMessageErrors(StateTestCase, unittest.TestCase):
             )
 
         self.assertNotIn("debugResponse", mock_log.call_args.kwargs)
+        state = load_state(self.project_root, self.client_id)
+        self.assertIsNone(state[-1].debugResponse)
 
     def test_timeout_returns_error_without_raising(self):
         result = classify_last_assistant_message(
