@@ -156,6 +156,61 @@ class TestPostToolUseHook(HookTestCase, unittest.TestCase):
         )
         self.assertEqual(self.run_python("hooks/stop_hook.py", project_root, env_overrides={"PATH": ""}, use_fake_claude=False).returncode, 2)
 
+    def test_tracks_shell_move_source_deletion_and_destination_edit(self):
+        project_root = self.temp_project()
+        new_path = project_root / "src" / "new.ts"
+        new_path.write_text("export const renamed = true;\n", encoding="utf-8")
+        payload = {"tool_name": "Bash", "tool_input": {"command": "mv src/old.ts src/new.ts"}}
+
+        post = self.run_python("hooks/post_tool_use.py", project_root, json.dumps(payload))
+
+        self.assertEqual(post.returncode, 0)
+        state = load_state(project_root, "test-session")
+        self.assertEqual([entry.file for entry in state], ["src/old.ts", "src/new.ts"])
+        self.assertEqual(state[0].hash, "__deleted__")
+        self.assertTrue(state[0].deleted)
+        self.assertNotEqual(state[1].hash, "__deleted__")
+        self.assertFalse(state[1].deleted)
+        self.assertEqual(
+            self.run_python("hooks/stop_hook.py", project_root, env_overrides={"PATH": ""}, use_fake_claude=False).returncode,
+            2,
+        )
+
+    def test_tracks_shell_move_into_existing_directory_as_destination_file(self):
+        project_root = self.temp_project()
+        new_path = project_root / "dst" / "old.ts"
+        new_path.parent.mkdir()
+        new_path.write_text("export const moved = true;\n", encoding="utf-8")
+        payload = {"tool_name": "Bash", "tool_input": {"command": "mv src/old.ts dst"}}
+
+        post = self.run_python("hooks/post_tool_use.py", project_root, json.dumps(payload))
+
+        self.assertEqual(post.returncode, 0)
+        state = load_state(project_root, "test-session")
+        self.assertEqual([entry.file for entry in state], ["src/old.ts", "dst/old.ts"])
+        self.assertEqual(state[0].hash, "__deleted__")
+        self.assertTrue(state[0].deleted)
+        self.assertNotEqual(state[1].hash, "__deleted__")
+        self.assertFalse(state[1].deleted)
+
+    def test_tracks_multi_source_shell_move_into_directory(self):
+        project_root = self.temp_project()
+        for name in ("a.ts", "b.ts"):
+            target = project_root / "dst" / name
+            target.parent.mkdir(exist_ok=True)
+            target.write_text(f"export const {name[0]} = true;\n", encoding="utf-8")
+        payload = {"tool_name": "Bash", "tool_input": {"command": "mv src/a.ts src/b.ts dst"}}
+
+        post = self.run_python("hooks/post_tool_use.py", project_root, json.dumps(payload))
+
+        self.assertEqual(post.returncode, 0)
+        state = load_state(project_root, "test-session")
+        self.assertEqual(
+            [entry.file for entry in state],
+            ["src/a.ts", "src/b.ts", "dst/a.ts", "dst/b.ts"],
+        )
+        self.assertEqual([entry.deleted for entry in state], [True, True, False, False])
+
 
 if __name__ == "__main__":
     unittest.main()

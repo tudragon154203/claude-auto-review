@@ -26,7 +26,7 @@ def _run_post_tool_use():
     state = load_state(project_root, client_id)
     timestamp = local_now_iso()
 
-    for candidate in extract_file_paths_from_hook_input(payload):
+    for candidate in extract_file_paths_from_hook_input(payload, project_root=project_root):
         file_path = normalize_relative_path(candidate, project_root)
         if not file_path:
             log_event(project_root, "post_tool_use_ignored_path", path=candidate)

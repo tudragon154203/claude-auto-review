@@ -3,8 +3,11 @@ SHELL_REDIRECT_TOKENS = {">", ">>"}
 SHELL_WRAPPER_COMMANDS = {"bash", "sh", "zsh", "fish", "cmd", "cmd.exe", "powershell", "pwsh"}
 SHELL_WRAPPER_COMMAND_FLAGS = {"-c", "-lc", "/c", "-command"}
 SHELL_MULTI_ARG_COMMANDS = {"rm", "del"}
-SHELL_COPY_MOVE_COMMANDS = {"cp", "mv", "copy-item", "move-item"}
+SHELL_MOVE_COMMANDS = {"mv", "move", "move-item", "ren", "rename", "rename-item", "rni"}
+SHELL_COPY_COMMANDS = {"cp", "copy", "copy-item"}
+SHELL_COPY_MOVE_COMMANDS = SHELL_MOVE_COMMANDS | SHELL_COPY_COMMANDS
 SHELL_DELETE_PS = "remove-item"
+GIT_MOVE_SUBCOMMANDS = {"mv", "move"}
 SHELL_WRITE_COMMANDS = {"cat", "echo", "printf"}
 SHELL_PATH_COMMANDS = {"tee", "set-content", "out-file", "touch", "new-item"}
 

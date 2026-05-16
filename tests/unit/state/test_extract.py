@@ -83,9 +83,76 @@ class TestHookInputExtraction(StateTestCase, unittest.TestCase):
             extract_file_paths_from_hook_input(payload), ["backup.ts"]
         )
 
-    def test_extracts_destination_from_mv(self):
+    def test_extracts_source_and_destination_from_mv(self):
         payload = {"tool_input": {"command": "mv old.ts new.ts"}}
-        self.assertEqual(extract_file_paths_from_hook_input(payload), ["new.ts"])
+        self.assertEqual(
+            extract_file_paths_from_hook_input(payload), ["old.ts", "new.ts"]
+        )
+
+    def test_extracts_multi_source_mv_destination_files(self):
+        payload = {"tool_input": {"command": "mv old.ts other.ts src/"}}
+        self.assertEqual(
+            extract_file_paths_from_hook_input(payload),
+            ["old.ts", "other.ts", "src/old.ts", "src/other.ts"],
+        )
+
+    def test_extracts_mv_to_existing_directory_with_project_context(self):
+        project_root = self.temp_project()
+        (project_root / "src").mkdir()
+        payload = {"tool_input": {"command": "mv old.ts src"}}
+        self.assertEqual(
+            extract_file_paths_from_hook_input(payload, project_root=project_root),
+            ["old.ts", "src/old.ts"],
+        )
+
+    def test_extracts_source_and_destination_from_move(self):
+        payload = {"tool_input": {"command": "move old.ts new.ts"}}
+        self.assertEqual(
+            extract_file_paths_from_hook_input(payload), ["old.ts", "new.ts"]
+        )
+
+    def test_extracts_source_and_destination_from_move_item(self):
+        payload = {"tool_input": {"command": "Move-Item old.ts new.ts"}}
+        self.assertEqual(
+            extract_file_paths_from_hook_input(payload), ["old.ts", "new.ts"]
+        )
+
+    def test_extracts_source_and_destination_from_git_mv(self):
+        payload = {"tool_input": {"command": "git mv old.ts new.ts"}}
+        self.assertEqual(
+            extract_file_paths_from_hook_input(payload), ["old.ts", "new.ts"]
+        )
+
+    def test_extracts_from_git_mv_with_global_flags(self):
+        payload = {"tool_input": {"command": "git -C /some/dir mv old.ts new.ts"}}
+        self.assertEqual(
+            extract_file_paths_from_hook_input(payload), ["old.ts", "new.ts"]
+        )
+
+    def test_extracts_source_and_destination_from_git_mv_with_flags(self):
+        payload = {"tool_input": {"command": "git mv --force old.ts new.ts"}}
+        self.assertEqual(
+            extract_file_paths_from_hook_input(payload), ["old.ts", "new.ts"]
+        )
+
+    def test_extracts_multi_source_git_mv_destination_files(self):
+        payload = {"tool_input": {"command": "git mv a.ts b.ts src/"}}
+        self.assertEqual(
+            extract_file_paths_from_hook_input(payload),
+            ["a.ts", "b.ts", "src/a.ts", "src/b.ts"],
+        )
+
+    def test_extracts_from_ren(self):
+        payload = {"tool_input": {"command": "ren old.txt new.txt"}}
+        self.assertEqual(
+            extract_file_paths_from_hook_input(payload), ["old.txt", "new.txt"]
+        )
+
+    def test_extracts_from_rename_item(self):
+        payload = {"tool_input": {"command": "Rename-Item -Path old.txt -NewName new.txt"}}
+        self.assertEqual(
+            extract_file_paths_from_hook_input(payload), ["old.txt", "new.txt"]
+        )
 
     def test_extracts_path_from_touch(self):
         payload = {"tool_input": {"command": "touch deploy.lock"}}

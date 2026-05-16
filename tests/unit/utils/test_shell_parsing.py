@@ -1,7 +1,10 @@
 import unittest
 from claude_auto_review.utils.shell_parsing import (
+    GIT_MOVE_SUBCOMMANDS,
     SHELL_CONTROL_TOKENS,
+    SHELL_COPY_COMMANDS,
     SHELL_COPY_MOVE_COMMANDS,
+    SHELL_MOVE_COMMANDS,
     SHELL_MULTI_ARG_COMMANDS,
     SHELL_PATH_COMMANDS,
     SHELL_REDIRECT_TOKENS,
@@ -221,6 +224,18 @@ class TestConstants(unittest.TestCase):
 
     def test_shell_copy_move_commands_is_set(self):
         self.assertIsInstance(SHELL_COPY_MOVE_COMMANDS, set)
+
+    def test_shell_move_commands_is_set(self):
+        self.assertIsInstance(SHELL_MOVE_COMMANDS, set)
+
+    def test_shell_copy_commands_is_set(self):
+        self.assertIsInstance(SHELL_COPY_COMMANDS, set)
+
+    def test_git_move_subcommands_is_set(self):
+        self.assertIsInstance(GIT_MOVE_SUBCOMMANDS, set)
+
+    def test_copy_move_union_matches(self):
+        self.assertEqual(SHELL_COPY_MOVE_COMMANDS, SHELL_MOVE_COMMANDS | SHELL_COPY_COMMANDS)
 
     def test_shell_write_commands_is_set(self):
         self.assertIsInstance(SHELL_WRITE_COMMANDS, set)
