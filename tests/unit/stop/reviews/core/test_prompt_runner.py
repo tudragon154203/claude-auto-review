@@ -4,7 +4,7 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 from claude_auto_review.stop.orchestration.core.context import RuntimeContext
-from claude_auto_review.stop.reviews.core.prompt_runner import (
+from claude_auto_review.stop.reviews.core.review_prompt_runner import (
     _block_review_prompt_failure,
     _reload_client_state,
     _review_prompt_command,
@@ -21,12 +21,12 @@ class TestPromptRunner(unittest.TestCase):
     def test_review_prompt_command_uses_current_python(self):
         self.assertEqual(_review_prompt_command(Path("/fake/script.py")), [sys.executable, str(Path("/fake/script.py"))])
 
-    @patch("claude_auto_review.stop.reviews.core.prompt_runner.client_run_dir", return_value=Path("/fake/run"))
+    @patch("claude_auto_review.stop.reviews.core.review_prompt_runner.client_run_dir", return_value=Path("/fake/run"))
     def test_review_prompt_path_uses_client_run_dir(self, mock_client_run_dir):
         self.assertEqual(_review_prompt_path(_ctx(), "r1"), Path("/fake/run/review-r1-prompt.md"))
 
-    @patch("claude_auto_review.stop.reviews.core.prompt_runner.log_event")
-    @patch("claude_auto_review.stop.reviews.core.prompt_runner.run_captured")
+    @patch("claude_auto_review.stop.reviews.core.review_prompt_runner.log_event")
+    @patch("claude_auto_review.stop.reviews.core.review_prompt_runner.run_captured")
     def test_run_review_prompt_logs_and_returns_result(self, mock_run, mock_log):
         mock_run.return_value = MagicMock(stdout="ok", stderr="", returncode=0)
         env = {"CLAUDE_SESSION_ID": "sid"}
@@ -44,7 +44,7 @@ class TestPromptRunner(unittest.TestCase):
             returncode=0,
         )
 
-    @patch("claude_auto_review.stop.reviews.core.prompt_runner.block_response")
+    @patch("claude_auto_review.stop.reviews.core.review_prompt_runner.block_response")
     def test_block_review_prompt_failure_formats_message(self, mock_block):
         result = MagicMock(stdout="stdout text", stderr="stderr text")
 
@@ -55,8 +55,8 @@ class TestPromptRunner(unittest.TestCase):
         self.assertIn("stdout text", mock_block.call_args.args[1])
         self.assertIn("stderr text", mock_block.call_args.args[1])
 
-    @patch("claude_auto_review.stop.reviews.core.prompt_runner.get_unreviewed_files", return_value=[{"file": "a.ts"}])
-    @patch("claude_auto_review.stop.reviews.core.prompt_runner.load_state", return_value=[{"type": "edit"}])
+    @patch("claude_auto_review.stop.reviews.core.review_prompt_runner.get_unreviewed_files", return_value=[{"file": "a.ts"}])
+    @patch("claude_auto_review.stop.reviews.core.review_prompt_runner.load_state", return_value=[{"type": "edit"}])
     def test_reload_client_state_returns_state_and_unreviewed(self, mock_load_state, mock_get_unreviewed):
         state, unreviewed = _reload_client_state(_ctx())
         self.assertEqual(state, [{"type": "edit"}])

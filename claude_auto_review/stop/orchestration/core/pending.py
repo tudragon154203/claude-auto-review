@@ -6,8 +6,8 @@ from claude_auto_review.runtime.events import log_event
 from claude_auto_review.stop.feedback import build_unreviewed_files_string, block_response
 from claude_auto_review.stop.orchestration.core.context import RuntimeContext
 from claude_auto_review.stop.orchestration.core.resolution import StopFlowResolution
-from claude_auto_review.stop.reviews import find_pending_review_for_files
-from claude_auto_review.stop.reviews.core.prompt_runner import (
+from claude_auto_review.stop.reviews.core.selection import find_pending_review_for_files
+from claude_auto_review.stop.reviews.core.review_prompt_runner import (
     _block_review_prompt_failure,
     _reload_client_state,
     _run_review_prompt,

@@ -2,19 +2,16 @@ import tempfile
 import unittest
 from pathlib import Path
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
-import sys
-sys.path.insert(0, str(REPO_ROOT))
-
-from claude_auto_review.state.models import EditRecord
 from claude_auto_review.review.prompting.generation import (
     build_prompt,
-    current_file_snapshots,
-    format_review_file,
     format_review_files,
-    format_review_timestamp,
     git_diff,
 )
+from claude_auto_review.review.prompting.rendering import current_file_snapshots, format_review_timestamp
+from claude_auto_review.review.prompting.templates import format_review_file
+from claude_auto_review.state.models import EditRecord
+
+REPO_ROOT = Path(__file__).resolve().parents[4]
 
 
 class ReviewGenerationTests(unittest.TestCase):

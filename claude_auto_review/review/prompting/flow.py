@@ -5,13 +5,13 @@ from claude_auto_review.runtime.client_dirs import client_reviews_dir, client_ru
 from claude_auto_review.paths.path_utils import local_now_iso
 from claude_auto_review.review.prompting.generation import (
     build_prompt,
-    current_file_snapshots,
     format_review_files,
     git_diff,
     read_if_exists,
 )
+from claude_auto_review.review.prompting.rendering import current_file_snapshots
 from claude_auto_review.config.settings import resolve_rules_file_path
-from claude_auto_review.stop.orchestration import RuntimeContext
+from claude_auto_review.stop.orchestration.core.context import RuntimeContext
 from claude_auto_review.utils.datetime_utils import parse_iso_timestamp
 
 

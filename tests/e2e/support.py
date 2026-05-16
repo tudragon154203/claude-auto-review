@@ -3,7 +3,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from tests.support import SubprocessMixin, TempProjectMixin, client_dir, start_classifier_server
+from tests.support import SubprocessMixin, TempProjectMixin, start_classifier_server
 
 
 class EndToEndTestCase(TempProjectMixin, SubprocessMixin, unittest.TestCase):

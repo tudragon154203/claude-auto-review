@@ -45,7 +45,7 @@ class TestAutoComplete(unittest.TestCase):
         result = attempt_stop_autocomplete(
             _ctx(), review_id="r",
             review_path=Path("/fake/review.md"), prompt_file=Path("/fake/prompt.md"),
-            covered_entries=[], user_prompt="finish",
+            user_prompt="finish",
         )
         self.assertFalse(result)
         mock_log.assert_called_with(Path("/fake"), "stop_hook_claude_cli_not_found")
@@ -56,7 +56,7 @@ class TestAutoComplete(unittest.TestCase):
         result = attempt_stop_autocomplete(
             _ctx(), review_id="r",
             review_path=Path("/fake/review.md"), prompt_file=Path("/nonexistent.md"),
-            covered_entries=[], user_prompt="finish",
+            user_prompt="finish",
         )
         self.assertFalse(result)
         mock_log.assert_called_with(Path("/fake"), "stop_hook_prompt_not_found", path=str(Path("/nonexistent.md")))
@@ -69,7 +69,7 @@ class TestAutoComplete(unittest.TestCase):
         result = attempt_stop_autocomplete(
             _ctx(), review_id="r",
             review_path=Path("/fake/review.md"), prompt_file=Path("/fake/prompt.md"),
-            covered_entries=[], user_prompt="finish",
+            user_prompt="finish",
         )
         self.assertFalse(result)
         mock_log.assert_called_with(Path("/fake"), "stop_hook_claude_cli_timeout", reviewId="r")
@@ -83,7 +83,7 @@ class TestAutoComplete(unittest.TestCase):
         attempt_stop_autocomplete(
             _ctx(), review_id="r",
             review_path=Path("/fake/review.md"), prompt_file=Path("/fake/prompt.md"),
-            covered_entries=[], user_prompt="finish", reviewer_timeout_seconds=42,
+            user_prompt="finish", reviewer_timeout_seconds=42,
         )
         self.assertEqual(mock_run.call_args.kwargs["timeout"], 42.0)
 
@@ -96,7 +96,7 @@ class TestAutoComplete(unittest.TestCase):
         result = attempt_stop_autocomplete(
             _ctx(), review_id="r",
             review_path=Path("/fake/review.md"), prompt_file=Path("/fake/prompt.md"),
-            covered_entries=[], user_prompt="finish",
+            user_prompt="finish",
         )
         self.assertFalse(result)
         mock_log.assert_called_with(Path("/fake"), "stop_hook_claude_cli_error", error="boom")
@@ -111,7 +111,7 @@ class TestAutoComplete(unittest.TestCase):
         result = attempt_stop_autocomplete(
             _ctx(), review_id="r",
             review_path=Path("/fake/review.md"), prompt_file=Path("/fake/prompt.md"),
-            covered_entries=[], user_prompt="finish",
+            user_prompt="finish",
         )
         self.assertTrue(result)
         self.assertEqual(result.status, "output_written")
@@ -138,7 +138,7 @@ class TestAutoComplete(unittest.TestCase):
         result = attempt_stop_autocomplete(
             _ctx(), review_id="r",
             review_path=Path("/fake/review.md"), prompt_file=Path("/fake/prompt.md"),
-            covered_entries=[], user_prompt="finish",
+            user_prompt="finish",
         )
         self.assertTrue(result.output_written)
         self.assertIn(
@@ -156,7 +156,7 @@ class TestAutoComplete(unittest.TestCase):
         result = attempt_stop_autocomplete(
             _ctx(), review_id="r",
             review_path=Path("/fake/review.md"), prompt_file=Path("/fake/prompt.md"),
-            covered_entries=[], user_prompt="finish",
+            user_prompt="finish",
         )
         self.assertTrue(result.output_written)
 
@@ -179,7 +179,6 @@ class TestAutoComplete(unittest.TestCase):
             review_id="r",
             review_path=Path("/fake/review.md"),
             prompt_file=Path("/fake/prompt.md"),
-            covered_entries=[],
             user_prompt="finish",
         )
 
@@ -215,7 +214,6 @@ class TestAutoComplete(unittest.TestCase):
             review_id="r",
             review_path=Path("/fake/review.md"),
             prompt_file=Path("/fake/prompt.md"),
-            covered_entries=[],
             user_prompt="finish",
         )
 

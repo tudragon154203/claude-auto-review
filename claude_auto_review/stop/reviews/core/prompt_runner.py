@@ -1,17 +1,12 @@
 import shutil
 import subprocess
-import sys
 from dataclasses import dataclass
 
-from claude_auto_review.runtime.client_dirs import client_run_dir
-from claude_auto_review.paths.path_utils import local_now_iso
 from claude_auto_review.runtime.events import log_event
 from claude_auto_review.runtime.process import run_captured
 from claude_auto_review.state.reviews.verdicts import (
     normalize_review_verdict_content,
 )
-from claude_auto_review.state.store.read import get_unreviewed_files, load_state
-from claude_auto_review.stop.feedback import block_response
 from claude_auto_review.stop.orchestration.core.context import RuntimeContext
 
 
@@ -45,39 +40,6 @@ class AutocompleteResult:
         return self.output_written
 
 
-def _review_prompt_command(review_prompt_script):
-    return [sys.executable, str(review_prompt_script)]
-
-
-def _run_review_prompt(ctx: RuntimeContext, review_prompt_script, env):
-    cmd = _review_prompt_command(review_prompt_script)
-    result = run_captured(cmd, cwd=ctx.project_root, timeout=60, env=env)
-    log_event(
-        ctx.project_root,
-        "stop_hook_review_invoked",
-        stdout=result.stdout,
-        stderr=result.stderr,
-        returncode=result.returncode,
-    )
-    return result
-
-
-def _review_prompt_path(ctx: RuntimeContext, review_id):
-    return client_run_dir(ctx.project_root, ctx.client_id) / f"review-{review_id}-prompt.md"
-
-
-def _reload_client_state(ctx: RuntimeContext):
-    state = load_state(ctx.project_root, ctx.client_id)
-    return state, get_unreviewed_files(state)
-
-
-def _block_review_prompt_failure(files_str, result):
-    block_response(
-        f"Claude Auto Review: Failed to create review for {files_str}.",
-        f"review_prompt.py ran but no review was created.\n\nOutput:\n{result.stdout}\n\nErrors:\n{result.stderr}",
-    )
-
-
 def _run_claude_cli(claude_cli, prompt_file, user_prompt, cwd, timeout):
     cmd = [
         claude_cli,
@@ -94,7 +56,6 @@ def attempt_stop_autocomplete(
     review_id,
     review_path,
     prompt_file,
-    covered_entries,
     user_prompt,
     reviewer_timeout_seconds=600,
 ):

@@ -17,8 +17,9 @@ from claude_auto_review.stop.feedback import (
     build_review_completion_prompt,
     block_response,
 )
-from claude_auto_review.stop.reviews import attempt_stop_autocomplete, get_entries_covered_by_review
-from claude_auto_review.stop.reviews.core.prompt_runner import _review_prompt_path
+from claude_auto_review.stop.reviews.core.prompt_runner import attempt_stop_autocomplete
+from claude_auto_review.stop.reviews.core.selection import get_entries_covered_by_review
+from claude_auto_review.stop.reviews.core.review_prompt_runner import _review_prompt_path
 from claude_auto_review.stop.orchestration.core.response_actions import block_pending_review
 from claude_auto_review.state.snapshot import StateSnapshot
 
@@ -121,7 +122,6 @@ def finalize_review_stop(ctx: RuntimeContext, resolution):
         review_id,
         review_path,
         prompt_file,
-        covered_entries,
         user_prompt,
         reviewer_timeout_seconds=reviewer_timeout_seconds,
     )

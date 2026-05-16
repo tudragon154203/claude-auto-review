@@ -16,13 +16,8 @@ if __name__ == "__main__":
 from claude_auto_review.paths.path_utils import get_project_root
 from claude_auto_review.runtime.events import log_event
 from claude_auto_review.install.installer import ensure_gitignore_entries
-from claude_auto_review.runtime.setup import _plugin_script_from_command
+from claude_auto_review.runtime.hook_identity import command_targets_plugin
 
-PLUGIN_HOOK_PATTERNS = [
-    "claude_auto_review.hooks.post_tool_use",
-    "claude_auto_review.hooks.stop_hook",
-    "claude_auto_review.hooks.session_end",
-]
 GITIGNORE_ENTRY = ".claude/claude-auto-review/"
 
 
@@ -48,9 +43,7 @@ def _remove_plugin_hooks(settings):
             if not isinstance(nested_hooks, list):
                 # Check if the entry itself is a simple command hook
                 command = entry.get("command", "")
-                if _plugin_script_from_command(command) or any(
-                    pattern in command for pattern in PLUGIN_HOOK_PATTERNS
-                ):
+                if command_targets_plugin(command):
                     modified = True
                     continue
                 filtered.append(entry)
@@ -60,10 +53,7 @@ def _remove_plugin_hooks(settings):
             entry_modified = False
             for hook in nested_hooks:
                 command = hook.get("command", "") if isinstance(hook, dict) else ""
-                if _plugin_script_from_command(command):
-                    entry_modified = True
-                    continue
-                if any(pattern in command for pattern in PLUGIN_HOOK_PATTERNS):
+                if command_targets_plugin(command):
                     entry_modified = True
                     continue
                 kept_hooks.append(hook)

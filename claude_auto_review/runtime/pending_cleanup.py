@@ -4,20 +4,18 @@ from claude_auto_review.runtime.events import log_event, log_failure
 from claude_auto_review.config.settings import DEFAULT_SETTINGS, SETTING_PENDING_TIMEOUT, get_setting_float, load_settings
 from claude_auto_review.state.models import ReviewMetadata
 from claude_auto_review.state.reviews.expiry import is_review_expired
-from claude_auto_review.state.store.parsing import parse_event
-from claude_auto_review.state.store.read import read_jsonl_records
-from claude_auto_review.state.store.rewrite import prune_state_events
+from claude_auto_review.state.store.read import read_jsonl_state_records
+from claude_auto_review.state.store.rewrite import prune_state_records
 
 
-def _latest_review_statuses(entries):
+def _latest_review_statuses(records):
     latest = {}
-    for _, entry in entries:
-        parsed = parse_event(entry) if isinstance(entry, dict) else None
-        if not isinstance(parsed, ReviewMetadata):
+    for record in records:
+        if not isinstance(record.event, ReviewMetadata):
             continue
-        review_id = parsed.reviewId
+        review_id = record.event.reviewId
         if review_id:
-            latest[review_id] = parsed.status
+            latest[review_id] = record.event.status
     return latest
 
 
@@ -31,8 +29,8 @@ def cleanup_expired_pending_reviews(project_root=None, client_id=""):
     if not state_path.exists():
         return 0
 
-    raw_entries = read_jsonl_records(state_path)
-    latest_statuses = _latest_review_statuses(raw_entries)
+    records = read_jsonl_state_records(state_path)
+    latest_statuses = _latest_review_statuses(records)
 
     def _should_prune(event):
         return (
@@ -43,7 +41,7 @@ def cleanup_expired_pending_reviews(project_root=None, client_id=""):
         )
 
     try:
-        removed = prune_state_events(state_path, _should_prune)
+        removed = prune_state_records(state_path, records, _should_prune)
     except OSError as error:
         log_failure(
             project_root,

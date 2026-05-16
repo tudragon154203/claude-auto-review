@@ -54,7 +54,7 @@ class TestStopHookFinalization(HookTestCase, unittest.TestCase):
         self.assertEqual(stop1.returncode, 2)
 
         # 3. Overwrite review so it looks completed but carries no verdict
-        review_path = self.complete_latest_review(
+        self.complete_latest_review(
             project_root,
             verdict="Some completed artifact content without markers.",
         )

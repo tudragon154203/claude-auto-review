@@ -1,5 +1,3 @@
-import json
-from pathlib import Path
 
 from tests.e2e.support import EndToEndTestCase
 
@@ -37,7 +35,7 @@ class EndToEndMissingRulesTests(EndToEndTestCase):
 
         self.track(project_root, "src/app.ts")
 
-        stop = self.stop(project_root, use_fake_claude=False, env_overrides={"PATH": ""})
+        self.stop(project_root, use_fake_claude=False, env_overrides={"PATH": ""})
 
         clients_dir = project_root / ".claude" / "claude-auto-review" / "clients"
         client_dirs = sorted(d for d in clients_dir.iterdir() if d.is_dir() and d.name.startswith("client-"))

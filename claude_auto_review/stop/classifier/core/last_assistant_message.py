@@ -1,7 +1,6 @@
 import os
 import time
 
-from claude_auto_review.paths.path_utils import local_now_iso
 from claude_auto_review.runtime.events import log_event
 from claude_auto_review.config.settings import SETTING_CLASSIFIER_TIMEOUT, get_setting_float
 from claude_auto_review.state.store.write import append_state
@@ -9,7 +8,6 @@ from claude_auto_review.stop.classifier.core.client import call_classifier_api, 
 from claude_auto_review.stop.classifier.core.extraction import extract_last_assistant_message_text
 from claude_auto_review.stop.classifier.core.models import (
     DEFAULT_TIMEOUT_SECONDS,
-    CLASSIFIER_MODEL,
     result_factory,
 )
 from claude_auto_review.stop.orchestration.core.context import RuntimeContext

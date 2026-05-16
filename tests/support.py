@@ -54,16 +54,6 @@ class SubprocessMixin:
         timeout=None,
         stdin_session_id_payload=None,
     ):
-        stdin_session_id = None
-        if isinstance(stdin_session_id_payload, dict):
-            stdin_session_id = stdin_session_id_payload.get("session_id")
-        elif isinstance(stdin_session_id_payload, str):
-            stdin_session_id = stdin_session_id_payload
-
-        from claude_auto_review.runtime.client_dirs import get_client_id as _get_client_id
-
-        prefixed_client_id = _get_client_id(stdin_session_id=stdin_session_id or client_id)
-
         env = {
             **os.environ,
             "CLAUDE_PROJECT_DIR": str(project_root),

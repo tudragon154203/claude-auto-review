@@ -2,7 +2,6 @@ import unittest
 from claude_auto_review.utils.shell_parsing import (
     SHELL_CONTROL_TOKENS,
     SHELL_COPY_MOVE_COMMANDS,
-    SHELL_DELETE_PS,
     SHELL_MULTI_ARG_COMMANDS,
     SHELL_PATH_COMMANDS,
     SHELL_REDIRECT_TOKENS,

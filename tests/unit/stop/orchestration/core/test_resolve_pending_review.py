@@ -7,7 +7,6 @@ from claude_auto_review.state.models import EditRecord, ReviewMetadata
 from claude_auto_review.stop.orchestration.core.context import RuntimeContext
 from claude_auto_review.stop.orchestration.core.pending import resolve_pending_review
 
-from tests.unit.state.support import StateTestCase
 
 
 def _mk_edit(file: str = "a.py", hash: str = "h1") -> EditRecord:
@@ -59,7 +58,7 @@ class TestResolvePendingReview(unittest.TestCase):
         mock_result.stdout = ""
         mock_result.stderr = ""
         mock_run.return_value = mock_result
-        result = resolve_pending_review(_ctx(), **self.base_kwargs)
+        resolve_pending_review(_ctx(), **self.base_kwargs)
         mock_run.assert_called_once()
 
     @patch("claude_auto_review.stop.orchestration.core.pending.find_pending_review_for_files")

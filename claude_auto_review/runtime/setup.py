@@ -1,5 +1,4 @@
 import json
-import shlex
 import shutil
 from importlib import resources
 from pathlib import Path
@@ -12,18 +11,14 @@ from claude_auto_review.paths.path_utils import (
 )
 from claude_auto_review.runtime.client_dirs import get_client_runtime_dir
 from claude_auto_review.runtime.context import resolve_project_root
+from claude_auto_review.runtime.hook_identity import (
+    is_plugin_hook as _is_plugin_hook,
+    plugin_script_name_from_hook as _get_plugin_script_name,
+)
 
 
 def _package_resource_path(*parts):
     return resources.files("claude_auto_review").joinpath(*parts)
-
-PLUGIN_SCRIPTS = frozenset(["post_tool_use.py", "stop_hook.py", "session_end.py"])
-PLUGIN_MODULES = {
-    "claude_auto_review.hooks.post_tool_use": "post_tool_use.py",
-    "claude_auto_review.hooks.stop_hook": "stop_hook.py",
-    "claude_auto_review.hooks.session_end": "session_end.py",
-}
-
 
 def _load_hooks_document(plugin_root=None):
     hooks_path = _package_resource_path("hooks", "hooks.json") if plugin_root is None else Path(plugin_root) / "hooks" / "hooks.json"
@@ -32,44 +27,6 @@ def _load_hooks_document(plugin_root=None):
     except (OSError, json.JSONDecodeError):
         return {"hooks": {}}
     return data if isinstance(data, dict) else {"hooks": {}}
-
-
-def _plugin_script_from_command(cmd):
-    """Return the plugin script basename if cmd targets this plugin, else None."""
-    if not cmd:
-        return None
-    try:
-        parts = shlex.split(cmd, posix=False)
-    except ValueError:
-        parts = cmd.split()
-    if not parts:
-        return None
-    if len(parts) >= 3 and parts[1] == "-m":
-        return PLUGIN_MODULES.get(parts[2].strip("'\""))
-    basename = Path(parts[-1].strip("'\"")).name
-    return basename if basename in PLUGIN_SCRIPTS else None
-
-
-def _is_plugin_hook(item):
-    """Check if a hook item belongs to this plugin by exact script basename match."""
-    if not isinstance(item, dict):
-        return False
-    hooks = item.get("hooks", [])
-    if not isinstance(hooks, list):
-        return False
-    return any(_plugin_script_from_command(h.get("command", "")) for h in hooks if isinstance(h, dict))
-
-
-def _get_plugin_script_name(item):
-    """Identify which specific plugin script this hook uses."""
-    hooks = item.get("hooks", [])
-    for h in hooks:
-        if not isinstance(h, dict):
-            continue
-        name = _plugin_script_from_command(h.get("command", ""))
-        if name:
-            return name
-    return None
 
 
 def _merge_unique_list(existing_items, desired_items):

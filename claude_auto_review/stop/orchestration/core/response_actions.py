@@ -12,17 +12,6 @@ def _display_path(path, project_root):
         return str(path)
 
 
-def complete_clean_review(ctx: RuntimeContext, review_id, covered_entries, apply_completed_review):
-    remaining = apply_completed_review(ctx.project_root, ctx.client_id, review_id, covered_entries)
-    if not remaining:
-        return 0
-    block_response(
-        f"Claude Auto Review: Review {review_id} completed, but {len(remaining)} file(s) still need review.",
-        "New edits were made after the review was created. Another review will be generated on the next stop attempt.",
-    )
-    return 2
-
-
 def block_pending_review(ctx: RuntimeContext, review_id, review_path, prompt_path, unreviewed):
     files_str = build_unreviewed_files_string(unreviewed)
     review_path_rel = _display_path(review_path, ctx.project_root)

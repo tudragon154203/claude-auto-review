@@ -20,6 +20,41 @@ def _append_path_candidate(candidates, value):
         candidates.append(value)
 
 
+def _multi_arg_targets(tokens):
+    return non_flag_args(tokens[1:])
+
+
+def _copy_move_targets(tokens):
+    args = non_flag_args(tokens[1:])
+    if len(args) >= 2:
+        return [args[-1]]
+    return args[:1]
+
+
+def _write_targets(tokens):
+    target = redirection_target(tokens[1:])
+    return [target] if target else []
+
+
+def _path_command_targets(tokens):
+    target = option_value(tokens[1:], {"-path", "-literalpath", "-destination"})
+    if target is None:
+        target = first_path_token(tokens[1:])
+    return [target] if target else []
+
+
+def _handler_for_command(command_name):
+    if command_name in SHELL_MULTI_ARG_COMMANDS or command_name == SHELL_DELETE_PS:
+        return _multi_arg_targets
+    if command_name in SHELL_COPY_MOVE_COMMANDS:
+        return _copy_move_targets
+    if command_name in SHELL_WRITE_COMMANDS:
+        return _write_targets
+    if command_name in SHELL_PATH_COMMANDS:
+        return _path_command_targets
+    return None
+
+
 def _extract_paths_from_shell_command(command):
     if not isinstance(command, str) or not command.strip():
         return []
@@ -36,31 +71,9 @@ def _extract_paths_from_shell_command(command):
                 paths.extend(_extract_paths_from_shell_command(nested))
             continue
 
-        if command_name in SHELL_MULTI_ARG_COMMANDS or command_name == SHELL_DELETE_PS:
-            paths.extend(non_flag_args(tokens[1:]))
-            continue
-
-        if command_name in SHELL_COPY_MOVE_COMMANDS:
-            args = non_flag_args(tokens[1:])
-            if len(args) >= 2:
-                paths.append(args[-1])
-            elif args:
-                paths.append(args[0])
-            continue
-
-        if command_name in SHELL_WRITE_COMMANDS:
-            target = redirection_target(tokens[1:])
-            if target:
-                paths.append(target)
-            continue
-
-        if command_name in SHELL_PATH_COMMANDS:
-            target = option_value(tokens[1:], {"-path", "-literalpath", "-destination"})
-            if target is None:
-                target = first_path_token(tokens[1:])
-            if target:
-                paths.append(target)
-            continue
+        handler = _handler_for_command(command_name)
+        if handler is not None:
+            paths.extend(handler(tokens))
 
     return paths
 

@@ -11,7 +11,7 @@ from claude_auto_review.config.settings import (
     get_setting_int,
     load_settings,
 )
-from claude_auto_review.state.store.read import consecutive_stop_blocks, get_unreviewed_files, load_state, load_state_snapshot
+from claude_auto_review.state.store.read import consecutive_stop_blocks, get_unreviewed_files, load_state_snapshot
 from claude_auto_review.stop.classifier.core.last_assistant_message import classify_last_assistant_message
 from claude_auto_review.stop.orchestration.core.context import RuntimeContext
 from claude_auto_review.stop.orchestration.core.finalize import finalize_review_stop

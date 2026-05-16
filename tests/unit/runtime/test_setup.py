@@ -1,5 +1,4 @@
 import unittest
-from pathlib import Path
 
 from claude_auto_review.runtime.setup import ensure_client_runtime, ensure_runtime
 

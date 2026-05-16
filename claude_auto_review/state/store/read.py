@@ -6,7 +6,7 @@ from claude_auto_review.paths.uri_utils import normalize_relative_path
 from claude_auto_review.runtime.context import resolve_client_id, resolve_project_root
 from claude_auto_review.state.models import StateEvent
 from claude_auto_review.state.snapshot import StateSnapshot
-from claude_auto_review.state.store.parsing import parse_event
+from claude_auto_review.state.store.jsonl import parse_jsonl_state_records
 
 
 def read_jsonl_records(path):
@@ -36,15 +36,12 @@ def read_last_jsonl_record(path):
         return None
 
 
+def read_jsonl_state_records(path):
+    return parse_jsonl_state_records(read_jsonl_records(path))
+
+
 def _load_state_events(state_file):
-    state: list[StateEvent] = []
-    for _, raw in read_jsonl_records(state_file):
-        if not isinstance(raw, dict):
-            continue
-        event = parse_event(raw)
-        if event is not None:
-            state.append(event)
-    return state
+    return [record.event for record in read_jsonl_state_records(state_file) if record.event is not None]
 
 
 def _state_snapshot(state):

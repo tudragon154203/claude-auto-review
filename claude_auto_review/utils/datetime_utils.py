@@ -1,8 +1,8 @@
-from datetime import datetime, timezone
+from datetime import datetime
 
 
 def parse_iso_timestamp(ts_str: str) -> datetime:
-    """Safely parse ISO timestamp strings, handling 'Z' suffix for compatibility.
+    """Safely parse ISO timestamp strings, including a trailing 'Z' suffix.
 
     In Python versions < 3.11, fromisoformat does not support 'Z' automatically.
     """

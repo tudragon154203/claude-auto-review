@@ -1,4 +1,4 @@
-from claude_auto_review.state.models import EditRecord, ReviewMetadata, StateEvent
+from claude_auto_review.state.models import EditRecord, ReviewMetadata
 from claude_auto_review.state.reviews.matching import best_pending_review_exactly_matching_entries, review_file_hash_pairs
 from claude_auto_review.state.store.read import latest_entries_by_file
 

@@ -1,6 +1,5 @@
 import os
 import unittest
-from pathlib import Path
 from unittest.mock import patch
 
 from claude_auto_review.runtime.cleanup.stale import _is_client_state_stale, cleanup_stale_clients

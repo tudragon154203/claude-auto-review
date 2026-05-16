@@ -1,12 +1,7 @@
 import json
-import sys
-from pathlib import Path
 
-from tests.e2e.support import EndToEndTestCase
-
-REPO_ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(REPO_ROOT))
 from claude_auto_review.state.store.read import get_unreviewed_files, load_state
+from tests.e2e.support import EndToEndTestCase
 
 
 class EndToEndLifecycleTests(EndToEndTestCase):

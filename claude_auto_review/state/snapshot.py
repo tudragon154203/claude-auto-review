@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from functools import cached_property
 
 from claude_auto_review.paths.path_utils import is_runtime_relative_path
 from claude_auto_review.state.models import EditRecord, ReviewMetadata, StateEvent, StopBlockedRecord
@@ -37,7 +38,7 @@ class StateSnapshot:
     def from_events(cls, events: list[StateEvent]):
         return cls(events=list(events))
 
-    @property
+    @cached_property
     def latest_entries_by_file(self) -> dict[str, StateEvent]:
         latest: dict[str, StateEvent] = {}
         for entry in self.events:
@@ -45,7 +46,7 @@ class StateSnapshot:
                 latest[entry.file] = entry
         return latest
 
-    @property
+    @cached_property
     def latest_review_entries_by_id(self) -> dict[str, StateEvent]:
         latest: dict[str, StateEvent] = {}
         latest_keys: dict[str, tuple[object, object]] = {}
@@ -62,7 +63,7 @@ class StateSnapshot:
                 latest_keys[review_id] = entry_key
         return latest
 
-    @property
+    @cached_property
     def reviewed_hashes_by_file(self) -> dict[str, set[str]]:
         reviewed: dict[str, set[str]] = {}
         for entry in self.events:
@@ -76,7 +77,7 @@ class StateSnapshot:
     def was_hash_reviewed(self, file_path: str, file_hash: str) -> bool:
         return file_hash in self.reviewed_hashes_by_file.get(file_path, set())
 
-    @property
+    @cached_property
     def unreviewed_files(self) -> list[EditRecord]:
         return [
             entry
@@ -87,7 +88,7 @@ class StateSnapshot:
             and not is_runtime_relative_path(entry.file)
         ]
 
-    @property
+    @cached_property
     def consecutive_stop_blocks(self) -> int:
         last_reviewed_idx = -1
         for idx, entry in enumerate(self.events):

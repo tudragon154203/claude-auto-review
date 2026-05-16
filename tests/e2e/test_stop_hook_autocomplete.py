@@ -1,16 +1,11 @@
 import json
-import sys
 import unittest
 from pathlib import Path
 
-from tests.e2e.support import EndToEndTestCase
-from tests.support import real_cli_available
-
-REPO_ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(REPO_ROOT))
-from claude_auto_review.state.store.read import get_unreviewed_files, load_state
 from claude_auto_review.state.reviews.verdicts import is_review_complete
-from tests.support import client_dir
+from claude_auto_review.state.store.read import get_unreviewed_files, load_state
+from tests.e2e.support import EndToEndTestCase
+from tests.support import client_dir, real_cli_available
 
 
 class EndToEndStopHookAutocompleteTests(EndToEndTestCase):
