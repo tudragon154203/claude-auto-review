@@ -11,6 +11,7 @@ SUBCOMMANDS = {
     "cancel": "claude_auto_review.install.cancel_cli",
     "prompt": "claude_auto_review.review.prompt",
     "uninstall": "claude_auto_review.install.uninstall_cli",
+    "update": "claude_auto_review.install.update_cli",
 }
 
 
@@ -30,6 +31,7 @@ def _print_help(exit_code=0):
     print("  cancel     Cancel the active review session", file=sys.stderr)
     print("  prompt     Manually trigger review prompt generation", file=sys.stderr)
     print("  uninstall  Remove plugin from current project", file=sys.stderr)
+    print("  update     Pull latest plugin checkout and refresh current project setup", file=sys.stderr)
     print("  help       Show this help message", file=sys.stderr)
     print("  version    Show version information", file=sys.stderr)
     return exit_code
