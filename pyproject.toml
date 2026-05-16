@@ -25,7 +25,6 @@ include = ["claude_auto_review*"]
 
 [tool.setuptools.package-data]
 claude_auto_review = [
-    "hooks/*.py",
     "hooks/*.json",
     "rules/*.md",
     "agents/*.md",
