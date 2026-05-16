@@ -7,13 +7,13 @@ This repository contains a Claude Code plugin. Keep this file focused on how the
 ```mermaid
 flowchart TD
   HookPost[hooks/post_tool_use.py] --> State["client state.jsonl"]
-  HookStop[hooks/stop_hook.py] --> Flow[stop/orchestration/flow.py]
-  HookEnd[hooks/session_end.py] --> Cleanup[runtime/cleanup.py]
+  HookStop[hooks/stop_hook.py] --> Flow[stop/orchestration/core/flow.py]
+  HookEnd[hooks/session_end.py] --> Cleanup[runtime/cleanup/session.py]
 
-  Flow --> Classifier[stop/classifier/last_assistant_message.py]
+  Flow --> Classifier[stop/classifier/core/last_assistant_message.py]
   Classifier --> State
   Flow --> Pending[stop/orchestration/pending.py]
-  Pending --> ReviewGen[review/generation.py]
+  Pending --> ReviewGen[review/prompting/generation.py]
   Finalize --> AutoReview[stop/reviews/autocomplete.py]
   AutoReview --> ReviewComp[review/completion.py]
   Flow --> Finalize[stop/orchestration/finalize.py]
@@ -34,9 +34,11 @@ flowchart TD
 ### State
 
 - `claude_auto_review/state/models.py` defines the record shapes written to JSONL.
-- `claude_auto_review/state/store_read.py` loads and filters client state.
-- `claude_auto_review/state/store_write.py` appends events and computes file hashes.
-- `claude_auto_review/state/reviews.py` answers whether a file-version is reviewed.
+- `claude_auto_review/state/snapshot.py` indexes loaded events for lifecycle queries.
+- `claude_auto_review/state/store/read.py` loads and filters client state.
+- `claude_auto_review/state/store/write.py` appends events and computes file hashes.
+- `claude_auto_review/state/store/rewrite.py` rewrites JSONL state while preserving invalid lines.
+- `claude_auto_review/state/reviews/verdicts.py` parses and normalizes review verdicts.
 - `claude_auto_review/state/review_matching.py` matches pending reviews to file entries.
 - `claude_auto_review/state/review_expiry.py` handles review timeout logic.
 - `claude_auto_review/state/hook_input.py` parses hook payloads.
@@ -44,41 +46,43 @@ flowchart TD
 ### Runtime
 
 - `claude_auto_review/runtime/setup.py` creates the per-client runtime tree under `.claude/claude-auto-review/`.
-- `claude_auto_review/runtime/cleanup.py` removes per-client data and expired pending reviews.
+- `claude_auto_review/runtime/cleanup/session.py` removes per-client data.
+- `claude_auto_review/runtime/cleanup/stale.py` prunes stale client directories.
+- `claude_auto_review/runtime/hook_context.py` resolves hook project/client/settings context.
 - `claude_auto_review/runtime/helpers.py` centralizes structured event logging.
 - `claude_auto_review/runtime/pending_cleanup.py` handles pending review cleanup.
 
 ### Review Generation
 
-- `claude_auto_review/review/generation.py` builds the prompt from git diff, file snapshots, and project rules.
-- `claude_auto_review/review/prompt_flow.py` writes the prompt and review files.
+- `claude_auto_review/review/prompting/generation.py` builds the prompt from git diff, file snapshots, and project rules.
+- `claude_auto_review/review/prompting/flow.py` writes the prompt and review files.
 - `claude_auto_review/review/prompt.py` is the subprocess entry point for running a review prompt.
-- `claude_auto_review/review/prompt_templates.py` contains the prompt template strings.
-- `claude_auto_review/review/rendering.py` formats file content for review prompts.
+- `claude_auto_review/review/prompting/templates.py` contains the prompt template strings.
+- `claude_auto_review/review/prompting/rendering.py` formats file content for review prompts.
 - `claude_auto_review/review/completion.py` reads review output and marks covered file hashes reviewed.
 
 ### Stop Flow
 
-- `claude_auto_review/stop/orchestration/flow.py` coordinates the stop decision.
-- `claude_auto_review/stop/orchestration/pending.py` resolves an existing pending review or creates a new one.
-- `claude_auto_review/stop/orchestration/finalize.py` applies the review result, handles autocomplete, and finalizes the stop decision.
-- `claude_auto_review/stop/orchestration/context.py` manages stop context.
-- `claude_auto_review/stop/orchestration/resolution.py` defines resolution types.
-- `claude_auto_review/stop/orchestration/response_actions.py` defines allow/block actions.
-- `claude_auto_review/stop/reviews/selection.py` chooses which files still need review.
-- `claude_auto_review/stop/reviews/autocomplete.py` runs the Claude CLI reviewer when available.
-- `claude_auto_review/stop/reviews/prompt_runner.py` resolves the review prompt runner path.
+- `claude_auto_review/stop/orchestration/core/flow.py` coordinates the stop decision.
+- `claude_auto_review/stop/orchestration/core/pending.py` resolves an existing pending review or creates a new one.
+- `claude_auto_review/stop/orchestration/core/finalize.py` applies the review result, handles autocomplete, and finalizes the stop decision.
+- `claude_auto_review/stop/orchestration/core/context.py` manages stop context.
+- `claude_auto_review/stop/orchestration/core/resolution.py` defines resolution types.
+- `claude_auto_review/stop/orchestration/core/response_actions.py` defines allow/block actions.
+- `claude_auto_review/stop/reviews/core/selection.py` chooses which files still need review.
+- `claude_auto_review/stop/reviews/core/autocomplete.py` exposes autocomplete compatibility imports.
+- `claude_auto_review/stop/reviews/core/prompt_runner.py` resolves the review prompt runner path and runs Claude CLI autocomplete.
 - `claude_auto_review/stop/feedback.py` formats the blocking message shown back to Claude.
 - `claude_auto_review/stop/response.py` emits the JSON stop/block response.
 
 ### Classifier
 
-- `claude_auto_review/stop/classifier/last_assistant_message.py` optionally classifies the last assistant message before pending-review resolution on unreviewed stop paths.
-- `claude_auto_review/stop/classifier/extraction.py` extracts the message text from the hook payload.
-- `claude_auto_review/stop/classifier/client.py` talks to the Anthropic API.
-- `claude_auto_review/stop/classifier/models.py` defines classifier defaults and result objects.
-- `claude_auto_review/stop/classifier/request.py` builds classifier API requests.
-- `claude_auto_review/stop/classifier/response.py` parses classifier API responses.
+- `claude_auto_review/stop/classifier/core/last_assistant_message.py` optionally classifies the last assistant message before pending-review resolution on unreviewed stop paths.
+- `claude_auto_review/stop/classifier/core/extraction.py` extracts the message text from the hook payload.
+- `claude_auto_review/stop/classifier/core/client.py` talks to the Anthropic API.
+- `claude_auto_review/stop/classifier/core/models.py` defines classifier defaults and result objects.
+- `claude_auto_review/stop/classifier/core/request.py` builds classifier API requests.
+- `claude_auto_review/stop/classifier/core/response.py` parses classifier API responses.
 
 ### Paths & Utilities
 

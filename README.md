@@ -33,13 +33,13 @@ flowchart TD
 
 - **Hook entrypoints:** `hooks/post_tool_use.py`, `hooks/stop_hook.py`, `hooks/session_end.py`
 - **Core config:** `config/constants.py`, `config/settings.py`, `paths/path_utils.py`, `paths/uri_utils.py`, `runtime/client_dirs.py`, `utils/bootstrap.py`
-- **State bookkeeping:** `state/models.py`, `state/store_read.py`, `state/store_write.py`, `state/reviews.py`, `state/review_matching.py`, `state/review_expiry.py`, `state/hook_input.py`
-- **Review generation:** `review/generation.py`, `review/prompt_flow.py`, `review/prompt.py`, `review/prompt_templates.py`, `review/completion.py`, `review/rendering.py`
-- **Stop orchestration:** `stop/orchestration/flow.py`, `stop/orchestration/pending.py`, `stop/orchestration/finalize.py`, `stop/orchestration/context.py`, `stop/orchestration/resolution.py`, `stop/orchestration/response_actions.py`
+- **State bookkeeping:** `state/models.py`, `state/snapshot.py`, `state/store/read.py`, `state/store/write.py`, `state/store/rewrite.py`, `state/reviews/matching.py`, `state/reviews/expiry.py`, `state/hook_input.py`
+- **Review generation:** `review/prompting/generation.py`, `review/prompting/flow.py`, `review/prompt.py`, `review/prompting/templates.py`, `review/completion.py`, `review/prompting/rendering.py`
+- **Stop orchestration:** `stop/orchestration/core/flow.py`, `stop/orchestration/core/pending.py`, `stop/orchestration/core/finalize.py`, `stop/orchestration/core/context.py`, `stop/orchestration/core/resolution.py`, `stop/orchestration/core/response_actions.py`
 - **Stop response:** `stop/feedback.py`, `stop/response.py`
-- **Selection & autocomplete:** `stop/reviews/selection.py`, `stop/reviews/autocomplete.py`, `stop/reviews/prompt_runner.py`
-- **Classifier:** `stop/classifier/last_assistant_message.py`, `stop/classifier/extraction.py`, `stop/classifier/client.py`, `stop/classifier/models.py`, `stop/classifier/request.py`, `stop/classifier/response.py`
-- **Runtime:** `runtime/setup.py`, `runtime/cleanup.py`, `runtime/context.py`, `runtime/events.py`, `runtime/process.py`, `runtime/pending_cleanup.py`
+- **Selection & autocomplete:** `stop/reviews/core/selection.py`, `stop/reviews/core/autocomplete.py`, `stop/reviews/core/prompt_runner.py`
+- **Classifier:** `stop/classifier/core/last_assistant_message.py`, `stop/classifier/core/extraction.py`, `stop/classifier/core/client.py`, `stop/classifier/core/models.py`, `stop/classifier/core/request.py`, `stop/classifier/core/response.py`
+- **Runtime:** `runtime/setup.py`, `runtime/cleanup/`, `runtime/context.py`, `runtime/hook_context.py`, `runtime/events.py`, `runtime/process.py`, `runtime/pending_cleanup.py`
 - **Utilities:** `utils/shell_parsing.py`, `utils/datetime_utils.py`
 - **Install:** `install/installer.py`, `install/shims.py`, `install/setup_cli.py`, `install/cancel_cli.py`
 - **Support files:** `agents/reviewer.md`, `rules/review-rules.md`
@@ -74,6 +74,6 @@ python -m unittest discover -s tests
 - Dependency-free Python (standard library only)
 - Uses Claude Code PostToolUse, Stop, and SessionEnd hooks
 - Client isolation per session via `CLAUDE_SESSION_ID`
-- Circuit breaker after `maxStopPasses` blocks (default: 3)
+- Circuit breaker after `maxStopPasses` blocks (default: 5)
 - Auto-completion via Claude CLI sub-agent when available
 - Reviewer hard-cap via `reviewerTimeoutSeconds` (default: 600 seconds)

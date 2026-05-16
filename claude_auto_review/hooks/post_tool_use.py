@@ -1,15 +1,12 @@
 #!/usr/bin/env python3
 import sys
-from pathlib import Path
 
-from claude_auto_review.config.settings import load_settings, should_skip_file
-from claude_auto_review.paths.path_utils import DELETED_FILE_HASH, get_project_root, local_now_iso
+from claude_auto_review.config.settings import should_skip_file
+from claude_auto_review.paths.path_utils import DELETED_FILE_HASH, local_now_iso
 from claude_auto_review.paths.uri_utils import normalize_relative_path
-from claude_auto_review.runtime.client_dirs import get_client_id
-from claude_auto_review.runtime.context import read_json_payload
 from claude_auto_review.runtime.events import log_event
+from claude_auto_review.runtime.hook_context import build_hook_runtime_context
 from claude_auto_review.runtime.process import run_fail_open
-from claude_auto_review.runtime.setup import ensure_client_runtime
 from claude_auto_review.state.hook_input import extract_file_paths_from_hook_input
 from claude_auto_review.state.models import EditRecord
 from claude_auto_review.state.store.read import get_file_hash, load_state, was_hash_reviewed
@@ -17,12 +14,11 @@ from claude_auto_review.state.store.write import append_state
 
 
 def _run_post_tool_use():
-    project_root = get_project_root()
-    raw = sys.stdin.read()
-    payload = read_json_payload(raw)
-    client_id = get_client_id(payload.get("session_id"))
-    ensure_client_runtime(project_root, client_id)
-    settings = load_settings(project_root)
+    ctx = build_hook_runtime_context(sys.stdin.read())
+    project_root = ctx.project_root
+    client_id = ctx.client_id
+    settings = ctx.settings
+    payload = ctx.payload
     if not settings.get("enabled", True):
         log_event(project_root, "post_tool_use_disabled")
         return 0

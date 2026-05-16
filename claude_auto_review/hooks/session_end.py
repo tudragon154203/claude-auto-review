@@ -1,22 +1,18 @@
 #!/usr/bin/env python3
 import sys
-from pathlib import Path
 
 from claude_auto_review.runtime.cleanup.session import cancel_session
 from claude_auto_review.runtime.cleanup.stale import cleanup_stale_clients
-from claude_auto_review.runtime.context import get_payload_session_id, read_json_payload
-from claude_auto_review.runtime.client_dirs import get_client_id
-from claude_auto_review.paths.path_utils import get_project_root
 from claude_auto_review.runtime.events import log_event
+from claude_auto_review.runtime.hook_context import build_hook_runtime_context
 from claude_auto_review.runtime.pending_cleanup import cleanup_expired_pending_reviews
 from claude_auto_review.runtime.process import run_fail_open
 
 
 def _run_session_end():
-    project_root = get_project_root()
-    raw = sys.stdin.read()
-    payload = read_json_payload(raw)
-    client_id = get_client_id(get_payload_session_id(payload))
+    ctx = build_hook_runtime_context(sys.stdin.read(), ensure_client=False)
+    project_root = ctx.project_root
+    client_id = ctx.client_id
     expired_removed = cleanup_expired_pending_reviews(project_root, client_id=client_id)
     stale_removed = cleanup_stale_clients(project_root)
     removed = cancel_session(project_root, client_id=client_id)

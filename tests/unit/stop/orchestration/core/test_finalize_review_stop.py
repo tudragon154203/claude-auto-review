@@ -5,7 +5,7 @@ from unittest.mock import patch
 
 from claude_auto_review.state.models import EditRecord, ReviewMetadata
 from claude_auto_review.stop.orchestration.core.context import RuntimeContext
-from claude_auto_review.stop.orchestration.core.finalize import finalize_review_stop
+from claude_auto_review.stop.orchestration.core.finalize import _review_artifact_state, finalize_review_stop
 from claude_auto_review.stop.orchestration.core.resolution import StopFlowResolution
 
 
@@ -35,6 +35,36 @@ class TestFinalizeReviewStop(unittest.TestCase):
         unreviewed=[],
         review=_mk_review("r1"),
     )
+
+    def test_review_artifact_state_detects_clean_complete_review(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            review_path = Path(tmpdir) / "review.md"
+            review_path.write_text("## Verdict\nClean\n", encoding="utf-8")
+
+            artifact_state = _review_artifact_state(review_path)
+
+        self.assertEqual(artifact_state.status, "complete_clean")
+        self.assertEqual(artifact_state.verdict, "Clean")
+
+    def test_review_artifact_state_normalizes_contradictory_clean_review(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            review_path = Path(tmpdir) / "review.md"
+            review_path.write_text(
+                "## Findings\n"
+                "### [Low] Unused import\n"
+                "**Verdict:** Confirmed\n\n"
+                "## Verdict\n"
+                "Clean - no issues found. Claude may stop.\n",
+                encoding="utf-8",
+            )
+
+            artifact_state = _review_artifact_state(review_path)
+
+            self.assertEqual(artifact_state.status, "complete_findings")
+            self.assertIn(
+                "Findings present. Claude must address all findings before stopping.",
+                review_path.read_text(encoding="utf-8"),
+            )
 
     @patch("claude_auto_review.stop.orchestration.core.finalize.get_entries_covered_by_review", return_value=[])
     @patch("claude_auto_review.stop.orchestration.core.finalize.apply_completed_review", return_value=[])
@@ -82,11 +112,14 @@ class TestFinalizeReviewStop(unittest.TestCase):
             )
 
     @patch("claude_auto_review.stop.orchestration.core.finalize.get_entries_covered_by_review", return_value=[])
+    @patch("claude_auto_review.stop.orchestration.core.finalize.apply_completed_review", return_value=[])
+    @patch("claude_auto_review.stop.orchestration.core.finalize.is_review_clean", return_value=True)
     @patch("claude_auto_review.stop.orchestration.core.finalize.build_review_completion_prompt")
     @patch("claude_auto_review.stop.orchestration.core.finalize.attempt_stop_autocomplete", return_value=True)
-    @patch("claude_auto_review.stop.orchestration.core.finalize._read_review_verdict")
-    def test_pending_review_autocomplete_clean_returns_0(self, mock_verdict, mock_auto, mock_prompt, mock_covered):
-        mock_verdict.return_value = "Pending."
+    @patch("claude_auto_review.stop.orchestration.core.finalize._read_review_verdict", side_effect=["Pending.", "Clean"])
+    def test_pending_review_autocomplete_clean_returns_0(
+        self, mock_verdict, mock_auto, mock_prompt, mock_clean, mock_apply, mock_covered
+    ):
         mock_prompt.return_value = "Complete the review"
         result = finalize_review_stop(_ctx(), self.resolution)
         self.assertEqual(result, 0)

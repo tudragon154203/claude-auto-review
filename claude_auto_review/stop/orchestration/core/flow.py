@@ -37,10 +37,10 @@ def _allow_continue_after_classifier(ctx):
     return None
 
 
-def run_stop_flow(project_root, payload):
-    client_id = get_client_id(payload.get("session_id"))
+def run_stop_flow(project_root, payload, *, client_id=None, settings=None):
+    client_id = client_id or get_client_id(payload.get("session_id"))
     ensure_client_runtime(project_root, client_id)
-    settings = load_settings(project_root)
+    settings = settings or load_settings(project_root)
     timeout_hours = get_setting_float(settings, SETTING_PENDING_TIMEOUT, DEFAULT_SETTINGS[SETTING_PENDING_TIMEOUT])
 
     if not settings.get("enabled", True):

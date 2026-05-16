@@ -1,14 +1,13 @@
 import shutil
 import subprocess
 import sys
+from dataclasses import dataclass
 
 from claude_auto_review.runtime.client_dirs import client_run_dir
 from claude_auto_review.paths.path_utils import local_now_iso
 from claude_auto_review.runtime.events import log_event
 from claude_auto_review.runtime.process import run_captured
-from claude_auto_review.review.completion import apply_completed_review
 from claude_auto_review.state.reviews.verdicts import (
-    is_review_clean_content,
     normalize_review_verdict_content,
 )
 from claude_auto_review.state.store.read import get_unreviewed_files, load_state
@@ -29,6 +28,21 @@ CLAUDE_REVIEW_ARGS = [
     "--effort",
     "low",
 ]
+
+
+@dataclass(frozen=True)
+class AutocompleteResult:
+    status: str
+    stdout: str = ""
+    stderr: str = ""
+    returncode: int | None = None
+
+    @property
+    def output_written(self):
+        return self.status == "output_written"
+
+    def __bool__(self):
+        return self.output_written
 
 
 def _review_prompt_command(review_prompt_script):
@@ -87,10 +101,10 @@ def attempt_stop_autocomplete(
     claude_cli = shutil.which("claude")
     if not claude_cli:
         log_event(ctx.project_root, "stop_hook_claude_cli_not_found")
-        return False
+        return AutocompleteResult(status="cli_not_found")
     if not prompt_file.is_file():
         log_event(ctx.project_root, "stop_hook_prompt_not_found", path=str(prompt_file))
-        return False
+        return AutocompleteResult(status="prompt_not_found")
 
     try:
         cli_result = _run_claude_cli(
@@ -98,17 +112,17 @@ def attempt_stop_autocomplete(
         )
     except subprocess.TimeoutExpired:
         log_event(ctx.project_root, "stop_hook_claude_cli_timeout", reviewId=review_id)
-        return False
+        return AutocompleteResult(status="timeout")
     except (OSError, ValueError, subprocess.SubprocessError) as e:
         log_event(ctx.project_root, "stop_hook_claude_cli_error", error=str(e))
-        return False
+        return AutocompleteResult(status="error", stderr=str(e))
 
     return _process_review_result(
-        ctx, cli_result, review_path, review_id, covered_entries
+        ctx, cli_result, review_path, review_id
     )
 
 
-def _process_review_result(ctx: RuntimeContext, result, review_path, review_id, covered_entries):
+def _process_review_result(ctx: RuntimeContext, result, review_path, review_id):
     stdout_len = len(result.stdout) if result.stdout else 0
     log_event(
         ctx.project_root,
@@ -127,7 +141,12 @@ def _process_review_result(ctx: RuntimeContext, result, review_path, review_id, 
             reviewId=review_id,
             stderr=result.stderr[:500] if result.stderr else "",
         )
-        return False
+        return AutocompleteResult(
+            status="nonzero",
+            stdout=result.stdout or "",
+            stderr=result.stderr or "",
+            returncode=result.returncode,
+        )
 
     if not result.stdout.strip():
         log_event(
@@ -137,29 +156,19 @@ def _process_review_result(ctx: RuntimeContext, result, review_path, review_id, 
             stdout_len=stdout_len,
             stderr=result.stderr[:500] if result.stderr else "",
         )
-        return False
+        return AutocompleteResult(
+            status="empty_stdout",
+            stdout=result.stdout or "",
+            stderr=result.stderr or "",
+            returncode=result.returncode,
+        )
 
     normalized_output = normalize_review_verdict_content(result.stdout)
     review_path.write_text(normalized_output, encoding="utf-8", newline="\n")
-
-    if is_review_clean_content(normalized_output):
-        remaining = apply_completed_review(
-            ctx.project_root, ctx.client_id, review_id, covered_entries
-        )
-        if remaining:
-            log_event(
-                ctx.project_root,
-                "stop_hook_claude_cli_partial",
-                reviewId=review_id,
-                remaining_files=len(remaining),
-            )
-            return False
-        return True
-
-    log_event(
-        ctx.project_root,
-        "stop_hook_claude_cli_nonclean",
-        reviewId=review_id,
-        stdout_len=stdout_len,
+    log_event(ctx.project_root, "stop_hook_claude_cli_output_written", reviewId=review_id, stdout_len=stdout_len)
+    return AutocompleteResult(
+        status="output_written",
+        stdout=normalized_output,
+        stderr=result.stderr or "",
+        returncode=result.returncode,
     )
-    return False

@@ -1,4 +1,5 @@
 from pathlib import Path
+from dataclasses import dataclass
 
 from claude_auto_review.state.reviews.verdicts import (
     extract_review_verdict_text,
@@ -8,7 +9,6 @@ from claude_auto_review.state.reviews.verdicts import (
     normalize_review_verdict_content,
 )
 from claude_auto_review.review.completion import apply_completed_review, record_completed_review
-from claude_auto_review.config.constants import EXIT_REVIEW_FAILED
 from claude_auto_review.config.settings import DEFAULT_SETTINGS, SETTING_REVIEWER_TIMEOUT
 from claude_auto_review.stop.orchestration.core.context import RuntimeContext
 from claude_auto_review.stop.feedback import (
@@ -16,9 +16,15 @@ from claude_auto_review.stop.feedback import (
     build_review_completion_prompt,
     block_response,
 )
-from claude_auto_review.stop.reviews.core.selection import get_entries_covered_by_review
-from claude_auto_review.stop.reviews.core.prompt_runner import _review_prompt_path, attempt_stop_autocomplete
+from claude_auto_review.stop.reviews import attempt_stop_autocomplete, get_entries_covered_by_review
+from claude_auto_review.stop.reviews.core.prompt_runner import _review_prompt_path
 from claude_auto_review.stop.orchestration.core.response_actions import block_pending_review
+
+
+@dataclass(frozen=True)
+class ReviewArtifactState:
+    status: str
+    verdict: str | None = None
 
 
 def _read_review_verdict(review_path):
@@ -36,6 +42,17 @@ def _review_has_completed_artifact(review_path):
     if not review_path.is_file():
         return False
     return is_completed_review_content(review_path.read_text(encoding="utf-8", errors="replace"))
+
+
+def _review_artifact_state(review_path):
+    verdict = _read_review_verdict(review_path)
+    if is_review_complete_verdict(verdict) and is_review_clean(review_path):
+        return ReviewArtifactState(status="complete_clean", verdict=verdict)
+    if is_review_complete_verdict(verdict):
+        return ReviewArtifactState(status="complete_findings", verdict=verdict)
+    if _review_has_completed_artifact(review_path):
+        return ReviewArtifactState(status="complete_findings", verdict=verdict)
+    return ReviewArtifactState(status="pending", verdict=verdict)
 
 
 def _block_partial_review_remaining(review_id, remaining):
@@ -58,6 +75,16 @@ def _apply_completed_clean_review(ctx, review_id, covered_entries):
     return 2
 
 
+def _apply_artifact_state(ctx, artifact_state, review_id, review_path, covered_entries, unreviewed):
+    if artifact_state.status == "complete_clean":
+        return _apply_completed_clean_review(ctx, review_id, covered_entries)
+    if artifact_state.status == "complete_findings":
+        record_completed_review(ctx.project_root, ctx.client_id, review_id, covered_entries)
+        block_completed_review_findings(ctx, review_id, review_path, unreviewed)
+        return 2
+    return None
+
+
 def finalize_review_stop(ctx: RuntimeContext, resolution):
     state = resolution.state
     unreviewed = resolution.unreviewed
@@ -67,22 +94,13 @@ def finalize_review_stop(ctx: RuntimeContext, resolution):
     review_path = Path(ctx.project_root) / review.reviewPath
     prompt_file = _review_prompt_path(ctx, review_id)
     reviewer_timeout_seconds = ctx.settings.get(SETTING_REVIEWER_TIMEOUT, DEFAULT_SETTINGS[SETTING_REVIEWER_TIMEOUT])
-    verdict = _read_review_verdict(review_path)
-
-    if is_review_complete_verdict(verdict) and is_review_clean(review_path):
-        return _apply_completed_clean_review(ctx, review_id, covered_entries)
-
-    if is_review_complete_verdict(verdict):
-        record_completed_review(ctx.project_root, ctx.client_id, review_id, covered_entries)
-        block_completed_review_findings(ctx, review_id, review_path, unreviewed)
-        return 2
-
-    if _review_has_completed_artifact(review_path):
-        block_completed_review_findings(ctx, review_id, review_path, unreviewed)
-        return 2
+    artifact_state = _review_artifact_state(review_path)
+    action_result = _apply_artifact_state(ctx, artifact_state, review_id, review_path, covered_entries, unreviewed)
+    if action_result is not None:
+        return action_result
 
     user_prompt = build_review_completion_prompt(review_path)
-    if attempt_stop_autocomplete(
+    attempt_stop_autocomplete(
         ctx,
         review_id,
         review_path,
@@ -90,20 +108,11 @@ def finalize_review_stop(ctx: RuntimeContext, resolution):
         covered_entries,
         user_prompt,
         reviewer_timeout_seconds=reviewer_timeout_seconds,
-    ):
-        return 0
+    )
 
-    verdict = _read_review_verdict(review_path)
-    if is_review_complete_verdict(verdict) and not is_review_clean(review_path):
-        record_completed_review(ctx.project_root, ctx.client_id, review_id, covered_entries)
-        block_completed_review_findings(ctx, review_id, review_path, unreviewed)
-        return 2
-
-    if is_review_complete_verdict(verdict) and is_review_clean(review_path):
-        return _apply_completed_clean_review(ctx, review_id, covered_entries)
-
-    if _review_has_completed_artifact(review_path):
-        block_completed_review_findings(ctx, review_id, review_path, unreviewed)
-        return 2
+    artifact_state = _review_artifact_state(review_path)
+    action_result = _apply_artifact_state(ctx, artifact_state, review_id, review_path, covered_entries, unreviewed)
+    if action_result is not None:
+        return action_result
 
     return block_pending_review(ctx, review_id, review_path, prompt_file, unreviewed)

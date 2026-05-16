@@ -1,18 +1,14 @@
 #!/usr/bin/env python3
 import sys
-from pathlib import Path
 
-from claude_auto_review.paths.path_utils import get_project_root
-from claude_auto_review.runtime.context import read_json_payload
+from claude_auto_review.runtime.hook_context import build_hook_runtime_context
 from claude_auto_review.runtime.process import run_fail_open
-from claude_auto_review.stop.orchestration.core.flow import run_stop_flow
+from claude_auto_review.stop.orchestration import run_stop_flow
 
 
 def _run_stop_hook():
-    project_root = get_project_root()
-    raw = sys.stdin.read()
-    payload = read_json_payload(raw)
-    return run_stop_flow(project_root, payload)
+    ctx = build_hook_runtime_context(sys.stdin.read())
+    return run_stop_flow(ctx.project_root, ctx.payload, client_id=ctx.client_id, settings=ctx.settings)
 
 
 def main():
