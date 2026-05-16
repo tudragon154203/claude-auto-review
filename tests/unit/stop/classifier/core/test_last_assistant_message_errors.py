@@ -82,6 +82,18 @@ class TestLastAssistantMessageErrors(StateTestCase, unittest.TestCase):
         state = load_state(self.project_root, self.client_id)
         self.assertIsNone(state[-1].debugResponse)
 
+    def test_debug_response_not_logged_when_debug_off(self):
+        payload = {"content": [{"text": "unknown"}], "id": "msg-nodebug"}
+
+        with patch("claude_auto_review.stop.classifier.core.last_assistant_message.log_event") as mock_log:
+            classify_last_assistant_message(
+                _make_ctx(self.project_root, {"last_assistant_message": "Message"}, {**self.settings, "debug": False}),
+                env=self.env,
+                urlopen=lambda req, timeout: _FakeResponse(payload),
+            )
+
+        self.assertNotIn("debugResponse", mock_log.call_args.kwargs)
+
     def test_timeout_returns_error_without_raising(self):
         result = classify_last_assistant_message(
             _make_ctx(self.project_root, {"last_assistant_message": "Message"}, self.settings),

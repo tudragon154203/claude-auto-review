@@ -44,8 +44,15 @@ def _remove_plugin_hooks(settings):
                 filtered.append(entry)
                 continue
 
-            nested_hooks = entry.get("hooks", [])
+            nested_hooks = entry.get("hooks")
             if not isinstance(nested_hooks, list):
+                # Check if the entry itself is a simple command hook
+                command = entry.get("command", "")
+                if _plugin_script_from_command(command) or any(
+                    pattern in command for pattern in PLUGIN_HOOK_PATTERNS
+                ):
+                    modified = True
+                    continue
                 filtered.append(entry)
                 continue
 
