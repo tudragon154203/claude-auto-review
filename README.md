@@ -46,6 +46,8 @@ flowchart TD
 
 The classifier now runs before pending-review resolution on unreviewed stop paths: `incomplete` lets Claude continue working without invoking review generation, while `complete`, `unknown`, `error`, and `skipped` continue into the normal review/block flow.
 
+The stop flow reads the current client state into a snapshot once per stop attempt so lifecycle queries share one view of the session.
+
 **Commands:**
 - `/claude-auto-review` — Complete manual review for current unreviewed files
 - `/cancel-claude-auto-review` — Cancel all runtime state for the current session

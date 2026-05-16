@@ -35,7 +35,7 @@ flowchart TD
 
 - `claude_auto_review/state/models.py` defines the record shapes written to JSONL.
 - `claude_auto_review/state/snapshot.py` indexes loaded events for lifecycle queries.
-- `claude_auto_review/state/store/read.py` loads and filters client state.
+- `claude_auto_review/state/store/read.py` loads client state and snapshot-backed lifecycle queries.
 - `claude_auto_review/state/store/write.py` appends events and computes file hashes.
 - `claude_auto_review/state/store/rewrite.py` rewrites JSONL state while preserving invalid lines.
 - `claude_auto_review/state/reviews/verdicts.py` parses and normalizes review verdicts.
@@ -45,7 +45,7 @@ flowchart TD
 
 ### Runtime
 
-- `claude_auto_review/runtime/setup.py` creates the per-client runtime tree under `.claude/claude-auto-review/`.
+- `claude_auto_review/runtime/setup.py` creates the per-client runtime tree under `.claude/claude-auto-review/` and merges hook settings.
 - `claude_auto_review/runtime/cleanup/session.py` removes per-client data.
 - `claude_auto_review/runtime/cleanup/stale.py` prunes stale client directories.
 - `claude_auto_review/runtime/hook_context.py` resolves hook project/client/settings context.
@@ -63,7 +63,7 @@ flowchart TD
 
 ### Stop Flow
 
-- `claude_auto_review/stop/orchestration/core/flow.py` coordinates the stop decision.
+- `claude_auto_review/stop/orchestration/core/flow.py` coordinates the stop decision from one loaded client snapshot.
 - `claude_auto_review/stop/orchestration/core/pending.py` resolves an existing pending review or creates a new one.
 - `claude_auto_review/stop/orchestration/core/finalize.py` applies the review result, handles autocomplete, and finalizes the stop decision.
 - `claude_auto_review/stop/orchestration/core/context.py` manages stop context.
