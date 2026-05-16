@@ -48,9 +48,14 @@ The classifier now runs before pending-review resolution on unreviewed stop path
 
 The stop flow reads the current client state into a snapshot once per stop attempt so lifecycle queries share one view of the session.
 
-**Commands:**
-- `/claude-auto-review` — Complete manual review for current unreviewed files
-- `/cancel-claude-auto-review` — Cancel all runtime state for the current session
+## Related Projects
+
+This plugin was inspired by:
+
+- [hamelsmu/claude-review-loop](https://github.com/hamelsmu/claude-review-loop) — a stop-hook-driven automated review loop that uses Claude Code lifecycle hooks to block stops until diffs are reviewed.
+- [NTCoding/claude-skillz/automatic-code-review](https://github.com/NTCoding/claude-skillz/tree/main/automatic-code-review) — an automatic code review workflow built around session hooks, review rules, and tracked file changes.
+
+Thanks to both projects for the ideas and patterns that influenced this plugin.
 
 ## Installation
 
