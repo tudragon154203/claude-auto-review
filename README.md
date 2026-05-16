@@ -31,19 +31,6 @@ flowchart TD
     N --> P[Return blocked stop response]
 ```
 
-- **Hook entrypoints:** `hooks/post_tool_use.py`, `hooks/stop_hook.py`, `hooks/session_end.py`
-- **Core config:** `config/constants.py`, `config/settings.py`, `paths/path_utils.py`, `paths/uri_utils.py`, `runtime/client_dirs.py`
-- **State bookkeeping:** `state/models.py`, `state/snapshot.py`, `state/store/read.py`, `state/store/write.py`, `state/store/rewrite.py`, `state/reviews/matching.py`, `state/reviews/expiry.py`, `state/hook_input.py`
-- **Review generation:** `review/prompting/generation.py`, `review/prompting/flow.py`, `review/prompt.py`, `review/prompting/templates.py`, `review/completion.py`, `review/prompting/rendering.py`
-- **Stop orchestration:** `stop/orchestration/core/flow.py`, `stop/orchestration/core/pending.py`, `stop/orchestration/core/finalize.py`, `stop/orchestration/core/context.py`, `stop/orchestration/core/resolution.py`, `stop/orchestration/core/response_actions.py`
-- **Stop response:** `stop/feedback.py`, `stop/response.py`
-- **Selection & autocomplete:** `stop/reviews/core/selection.py`, `stop/reviews/core/autocomplete.py`, `stop/reviews/core/prompt_runner.py`
-- **Classifier:** `stop/classifier/core/last_assistant_message.py`, `stop/classifier/core/extraction.py`, `stop/classifier/core/client.py`, `stop/classifier/core/models.py`, `stop/classifier/core/request.py`, `stop/classifier/core/response.py`
-- **Runtime:** `runtime/setup.py`, `runtime/cleanup/`, `runtime/context.py`, `runtime/hook_context.py`, `runtime/events.py`, `runtime/process.py`, `runtime/pending_cleanup.py`
-- **Utilities:** `utils/shell_parsing.py`, `utils/datetime_utils.py`
-- **Install:** `install/installer.py`, `install/shims.py`, `install/setup_cli.py`, `install/cancel_cli.py`
-- **Support files:** `agents/reviewer.md`, `rules/review-rules.md`
-
 The classifier now runs before pending-review resolution on unreviewed stop paths: `incomplete` lets Claude continue working without invoking review generation, while `complete`, `unknown`, `error`, and `skipped` continue into the normal review/block flow.
 
 The stop flow reads the current client state into a snapshot once per stop attempt so lifecycle queries share one view of the session.
