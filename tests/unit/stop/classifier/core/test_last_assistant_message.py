@@ -97,13 +97,15 @@ class TestLastAssistantMessageClassifier(StateTestCase, unittest.TestCase):
     def test_accepts_exact_labels(self):
         for label in ("complete", "incomplete", "unknown"):
             with self.subTest(label=label):
+                response_payload = {"content": [{"text": label}]}
                 result = classify_last_assistant_message(
                     self._ctx(payload={"last_assistant_message": "Message"}),
                     env=self.env,
-                    urlopen=lambda req, timeout, value=label: _FakeResponse({"content": [{"text": value}]}),
+                    urlopen=lambda req, timeout, value=label: _FakeResponse(response_payload),
                 )
                 self.assertEqual(result.status, label)
                 self.assertEqual(result.reason, "parsed_label")
+                self.assertEqual(result.debug_response, json.dumps(response_payload, separators=(",", ":")))
 
     def test_unexpected_output_downgrades_to_unknown(self):
         payload = {"content": [{"text": "maybe"}]}
@@ -130,6 +132,7 @@ class TestLastAssistantMessageClassifier(StateTestCase, unittest.TestCase):
         )
         self.assertEqual(result.status, "complete")
         self.assertEqual(result.reason, "parsed_label")
+        self.assertEqual(result.debug_response, json.dumps(payload, separators=(",", ":")))
 
     def test_accepts_label_with_extra_text(self):
         payload = {"content": [{"type": "text", "text": "complete\nfinal answer"}]}

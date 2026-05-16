@@ -91,10 +91,10 @@ class TestSettings(StateTestCase, unittest.TestCase):
         settings = json.loads(settings_path.read_text(encoding="utf-8"))
 
         self.assertIn("hooks", settings)
-        self.assertEqual(settings["hooks"]["PostToolUse"][0]["hooks"][0]["command"], "python hooks/post_tool_use.py")
-        self.assertEqual(settings["hooks"]["Stop"][0]["hooks"][0]["command"], "python hooks/stop_hook.py")
+        self.assertEqual(settings["hooks"]["PostToolUse"][0]["hooks"][0]["command"], "python -m claude_auto_review.hooks.post_tool_use")
+        self.assertEqual(settings["hooks"]["Stop"][0]["hooks"][0]["command"], "python -m claude_auto_review.hooks.stop_hook")
         self.assertEqual(settings["hooks"]["Stop"][0]["hooks"][0]["timeout"], 660)
-        self.assertEqual(settings["hooks"]["SessionEnd"][0]["hooks"][0]["command"], "python hooks/session_end.py")
+        self.assertEqual(settings["hooks"]["SessionEnd"][0]["hooks"][0]["command"], "python -m claude_auto_review.hooks.session_end")
 
     def test_ensure_project_settings_does_not_overwrite_existing(self):
         project_root = self.temp_project()
@@ -128,7 +128,7 @@ class TestSettings(StateTestCase, unittest.TestCase):
         )
         self.assertEqual(
             settings["hooks"]["Stop"][0]["hooks"][0]["command"],
-            "python hooks/stop_hook.py",
+            "python -m claude_auto_review.hooks.stop_hook",
         )
 
     def test_ensure_project_settings_is_idempotent_even_if_timeout_changes(self):
@@ -167,7 +167,7 @@ class TestSettings(StateTestCase, unittest.TestCase):
                         "hooks": [
                             {
                                 "type": "command",
-                                "command": "python hooks/stop_hook.py",
+                                "command": "python -m claude_auto_review.hooks.stop_hook",
                                 "timeout": 660,
                                 "statusMessage": "Claude Auto Review: checking review state…",
                             }
@@ -177,7 +177,7 @@ class TestSettings(StateTestCase, unittest.TestCase):
                         "hooks": [
                             {
                                 "type": "command",
-                                "command": "python hooks/stop_hook.py",
+                                "command": "python -m claude_auto_review.hooks.stop_hook",
                                 "timeout": 660,
                                 "statusMessage": "Claude Auto Review: checking review state…",
                             }
@@ -194,7 +194,7 @@ class TestSettings(StateTestCase, unittest.TestCase):
 
         # Should collapse to a single Stop plugin hook (non-plugin preserved)
         self.assertEqual(len(settings["hooks"]["Stop"]), 1)
-        self.assertEqual(settings["hooks"]["Stop"][0]["hooks"][0]["command"], "python hooks/stop_hook.py")
+        self.assertEqual(settings["hooks"]["Stop"][0]["hooks"][0]["command"], "python -m claude_auto_review.hooks.stop_hook")
 
     def test_ensure_project_settings_treats_quoted_plugin_command_as_same_hook(self):
         project_root = self.temp_project()
@@ -222,7 +222,7 @@ class TestSettings(StateTestCase, unittest.TestCase):
         settings = json.loads(settings_path.read_text(encoding="utf-8"))
 
         self.assertEqual(len(settings["hooks"]["Stop"]), 1)
-        self.assertEqual(settings["hooks"]["Stop"][0]["hooks"][0]["command"], "python hooks/stop_hook.py")
+        self.assertEqual(settings["hooks"]["Stop"][0]["hooks"][0]["command"], "python -m claude_auto_review.hooks.stop_hook")
 
     def test_ensure_project_settings_handles_non_dict_json(self):
         project_root = self.temp_project()

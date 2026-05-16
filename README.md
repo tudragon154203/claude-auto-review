@@ -55,7 +55,9 @@ The classifier now runs before pending-review resolution on unreviewed stop path
 See [INSTALL.md](INSTALL.md) for full details.
 
 ```bash
-python /path/to/claude-auto-review/install.py
+# From this repo (pip editable install + one-time init):
+pip install -e .
+claude-auto-review install
 ```
 
 The installer creates the local `.claude/claude-auto-review/` runtime tree (with `scripts/`, `agents/`, `clients/` subdirs; `clients/*/reviews/` and `clients/*/run/` created lazily per session), copies the default rules, configures `.claude/settings.json`, and updates `.gitignore`.

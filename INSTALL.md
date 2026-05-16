@@ -6,34 +6,51 @@
 - **Python 3.10+**
 - **Git** (used for diff generation during reviews)
 
-## Install into a project
+## Option A: pip install (recommended)
+
+```bash
+# Install from this repo (editable)
+pip install -e /path/to/claude-auto-review
+
+# Or install from git
+pip install git+https://github.com/<user>/claude-auto-review.git
+```
+
+Then initialize the plugin in any project:
+
+```bash
+claude-auto-review install
+```
+
+This creates the local runtime tree and configures hooks. Run it from the project root where you want reviews to run.
+
+## Option B: Run from a checkout
 
 From inside the project where you want reviews to run:
 
 ```bash
-python /path/to/claude-auto-review/install.py
+pip install -e /path/to/claude-auto-review
+claude-auto-review install
 ```
 
-Replace `/path/to/claude-auto-review` with the actual location of this repo on your machine.
-
-**What it does** (all changes are inside the target project):
+**What the installer does** (all changes are inside the target project):
 
 1. Creates `.claude/claude-auto-review/` with `scripts/`, `agents/`, and `clients/` subdirectories (`clients/*/reviews/` and `clients/*/run/` are created lazily per session).
 2. Copies default review rules from the plugin into `.claude/claude-auto-review/review-rules.md`.
-3. Writes runtime shims under `scripts/` that delegate back to the plugin source.
+3. Writes runtime shims under `scripts/` that delegate to the installed package.
 4. Copies `agents/reviewer.md` into `.claude/claude-auto-review/agents/` (overwrites if content differs from the plugin source).
-5. Adds hook definitions (`PostToolUse`, `Stop`, `SessionEnd`) to `.claude/settings.json` (additive - existing settings are preserved).
+5. Adds hook definitions (`PostToolUse`, `Stop`, `SessionEnd`) to `.claude/settings.json` (additive — existing settings are preserved).
 6. Appends runtime paths to `.gitignore`.
 
-The installer is idempotent - running it again won't duplicate entries.
+The installer is idempotent — running it again won't duplicate entries.
 
 ## Uninstall
 
 ```bash
-python /path/to/claude-auto-review/uninstall.py
+claude-auto-review uninstall
 ```
 
-This removes runtime state for the active session. Delete `.claude/claude-auto-review/` and remove the hook entries from `.claude/settings.json` to fully uninstall.
+This removes the `.claude/claude-auto-review/` directory, strips plugin hook entries from `.claude/settings.json`, and removes the gitignore entry.
 
 ## Verify it works
 

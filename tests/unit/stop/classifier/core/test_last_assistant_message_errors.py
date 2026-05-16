@@ -67,8 +67,9 @@ class TestLastAssistantMessageErrors(StateTestCase, unittest.TestCase):
         self.assertEqual(result.status, "error")
         self.assertEqual(result.reason, "missing_api_key")
 
-    def test_unknown_debug_response_is_logged_but_not_persisted_to_state(self):
+    def test_debug_response_is_logged_for_all_labels(self):
         payload = {"content": [{"text": "unknown"}], "id": "msg-debug"}
+        debug_response = json.dumps(payload, separators=(",", ":"))
 
         with patch("claude_auto_review.stop.classifier.core.last_assistant_message.log_event") as mock_log:
             classify_last_assistant_message(
@@ -77,7 +78,7 @@ class TestLastAssistantMessageErrors(StateTestCase, unittest.TestCase):
                 urlopen=lambda req, timeout: _FakeResponse(payload),
             )
 
-        self.assertEqual(mock_log.call_args.kwargs["debugResponse"], json.dumps(payload, separators=(",", ":")))
+        self.assertEqual(mock_log.call_args.kwargs["debugResponse"], debug_response)
         state = load_state(self.project_root, self.client_id)
         self.assertIsNone(state[-1].debugResponse)
 

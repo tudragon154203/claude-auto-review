@@ -12,7 +12,7 @@ class TestSetupHelpers(unittest.TestCase):
         hooks_path.mkdir(parents=True, exist_ok=True)
         (hooks_path / "hooks.json").write_text("{not json", encoding="utf-8")
 
-        self.assertEqual(_load_hooks_document(plugin_root), {})
+        self.assertEqual(_load_hooks_document(plugin_root), {"hooks": {}})
 
     def test_merge_unique_list_preserves_order_and_deduplicates_entries(self):
         existing = [{"type": "command", "value": "one"}, "plain"]

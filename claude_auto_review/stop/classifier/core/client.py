@@ -66,7 +66,5 @@ def call_classifier_api(message_text, base_url, api_key, started_at, timeout_sec
         return result_factory("error", "bad_response", started_at, message_chars, base_url=base_url)
 
     label, reason = parse_classifier_label(response_data)
-    debug_response = None
-    if label == "unknown":
-        debug_response = response_payload_debug_json(response_data)
+    debug_response = response_payload_debug_json(response_data)
     return result_factory(label, reason, started_at, message_chars, base_url=base_url, debug_response=debug_response)

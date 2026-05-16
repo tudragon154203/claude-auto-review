@@ -24,12 +24,16 @@ class TestShims(unittest.TestCase):
 
         content = build_runpy_shim_content(script_path)
 
+        resolved = script_path.resolve()
+        script_dir = resolved.parent
+        pkg_root = str(script_dir.parent.parent)
         expected = (
             "#!/usr/bin/env python3\n"
             "import runpy\n"
             "import sys\n"
-            f"sys.path.insert(0, {str(script_path.parent.resolve())!r})\n"
-            f"runpy.run_path({str(script_path.resolve())!r}, run_name='__main__')\n"
+            f"sys.path.insert(0, {str(script_dir)!r})\n"
+            f"sys.path.insert(0, {pkg_root!r})\n"
+            f"runpy.run_path({str(resolved)!r}, run_name='__main__')\n"
         )
 
         self.assertEqual(content, expected)

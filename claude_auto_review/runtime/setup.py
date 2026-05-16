@@ -1,32 +1,41 @@
 import json
 import shlex
 import shutil
+from importlib import resources
 from pathlib import Path
 
+from claude_auto_review.config.settings import DEFAULT_SETTINGS, _load_settings_document, _settings_path
 from claude_auto_review.paths.path_utils import (
     LOG_RELATIVE_PATH,
     RUNTIME_DIR,
     STATE_RELATIVE_PATH,
-    get_plugin_root,
 )
 from claude_auto_review.runtime.client_dirs import get_client_runtime_dir
 from claude_auto_review.runtime.context import resolve_project_root
-from claude_auto_review.config.settings import DEFAULT_SETTINGS, _load_settings_document, _settings_path
+
+
+def _package_resource_path(*parts):
+    return resources.files("claude_auto_review").joinpath(*parts)
 
 PLUGIN_SCRIPTS = frozenset(["post_tool_use.py", "stop_hook.py", "session_end.py"])
+PLUGIN_MODULES = {
+    "claude_auto_review.hooks.post_tool_use": "post_tool_use.py",
+    "claude_auto_review.hooks.stop_hook": "stop_hook.py",
+    "claude_auto_review.hooks.session_end": "session_end.py",
+}
 
 
-def _load_hooks_document(plugin_root):
-    hooks_path = Path(plugin_root) / "hooks" / "hooks.json"
+def _load_hooks_document(plugin_root=None):
+    hooks_path = _package_resource_path("hooks", "hooks.json") if plugin_root is None else Path(plugin_root) / "hooks" / "hooks.json"
     try:
         data = json.loads(hooks_path.read_text(encoding="utf-8")) if hooks_path.exists() else {}
     except (OSError, json.JSONDecodeError):
-        return {}
-    return data if isinstance(data, dict) else {}
+        return {"hooks": {}}
+    return data if isinstance(data, dict) else {"hooks": {}}
 
 
 def _plugin_script_from_command(cmd):
-    """Return the plugin script basename if cmd ends with one, else None."""
+    """Return the plugin script basename if cmd targets this plugin, else None."""
     if not cmd:
         return None
     try:
@@ -35,6 +44,8 @@ def _plugin_script_from_command(cmd):
         parts = cmd.split()
     if not parts:
         return None
+    if len(parts) >= 3 and parts[1] == "-m":
+        return PLUGIN_MODULES.get(parts[2].strip("'\""))
     basename = Path(parts[-1].strip("'\"")).name
     return basename if basename in PLUGIN_SCRIPTS else None
 
@@ -124,7 +135,6 @@ def ensure_client_runtime(project_root, client_id):
 
 def ensure_runtime(project_root=None, plugin_root=None):
     project_root = resolve_project_root(project_root)
-    plugin_root = Path(plugin_root or get_plugin_root())
     base_dir = project_root / RUNTIME_DIR
     base_dir.mkdir(parents=True, exist_ok=True)
     state_path = project_root / STATE_RELATIVE_PATH
@@ -132,8 +142,11 @@ def ensure_runtime(project_root=None, plugin_root=None):
 
     rules_path = base_dir / "review-rules.md"
     if not rules_path.exists():
-        default_rules_path = plugin_root / "rules" / "review-rules.md"
-        if default_rules_path.exists():
+        if plugin_root:
+            default_rules_path = Path(plugin_root) / "rules" / "review-rules.md"
+        else:
+            default_rules_path = _package_resource_path("rules", "review-rules.md")
+        if default_rules_path.is_file():
             shutil.copyfile(default_rules_path, rules_path)
         else:
             rules_path.write_text(
@@ -151,11 +164,10 @@ def ensure_runtime(project_root=None, plugin_root=None):
 
 def ensure_project_settings(project_root=None):
     project_root = resolve_project_root(project_root)
-    plugin_root = Path(get_plugin_root())
     settings_path = _settings_path(project_root)
     settings_path.parent.mkdir(parents=True, exist_ok=True)
     settings = _load_settings_document(settings_path)
-    hooks_document = _load_hooks_document(plugin_root)
+    hooks_document = _load_hooks_document()
 
     _ensure_plugin_settings(settings)
     _merge_project_hooks(settings, hooks_document)

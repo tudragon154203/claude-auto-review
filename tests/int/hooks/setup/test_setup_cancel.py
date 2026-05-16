@@ -64,7 +64,7 @@ class TestSetupCancel(HookTestCase, unittest.TestCase):
             for hook in entry["hooks"]
         ]
         self.assertIn("python custom-stop.py", stop_commands)
-        self.assertIn("python hooks/stop_hook.py", stop_commands)
+        self.assertIn("python -m claude_auto_review.hooks.stop_hook", stop_commands)
 
     def test_setup_script_is_idempotent_for_gitignore_entries(self):
         project_root = self.temp_project()
@@ -120,6 +120,83 @@ class TestSetupCancel(HookTestCase, unittest.TestCase):
         log_content = (project_root / ".claude" / "claude-auto-review" / "claude-auto-review.log").read_text(encoding="utf-8")
         self.assertIn('"type":"cancel_completed"', log_content)
 
+    def test_uninstall_script_removes_hooks_and_legacy_gitignore_entries(self):
+        project_root = self.temp_project()
+        settings_path = project_root / ".claude" / "settings.json"
+        settings_path.parent.mkdir(parents=True, exist_ok=True)
+        settings_path.write_text(
+            json.dumps(
+                {
+                    "claude-auto-review": {"maxStopPasses": 3},
+                    "hooks": {
+                        "Stop": [
+                            {
+                                "hooks": [
+                                    {
+                                        "type": "command",
+                                        "command": "python -m claude_auto_review.hooks.stop_hook",
+                                        "timeout": 660,
+                                    }
+                                ]
+                            }
+                        ],
+                        "PostToolUse": [
+                            {
+                                "hooks": [
+                                    {
+                                        "type": "command",
+                                        "command": "python -m claude_auto_review.hooks.post_tool_use",
+                                    }
+                                ]
+                            }
+                        ],
+                    },
+                }
+            ),
+            encoding="utf-8",
+        )
+        runtime_dir = project_root / ".claude" / "claude-auto-review"
+        runtime_dir.mkdir(parents=True, exist_ok=True)
+        (project_root / ".gitignore").write_text(
+            "\n".join(
+                [
+                    ".claude/claude-auto-review/",
+                    ".claude/claude-auto-review/state.jsonl",
+                    ".claude/claude-auto-review/clients/*/run/",
+                    ".claude/claude-auto-review/clients/*/reviews/",
+                    ".claude/claude-auto-review/scripts/",
+                    ".claude/claude-auto-review/agents/",
+                    ".claude/claude-auto-review/claude-auto-review.log",
+                ]
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+
+        uninstall = subprocess.run(
+            [sys.executable, str(REPO_ROOT / "claude_auto_review" / "install" / "uninstall_cli.py")],
+            cwd=project_root,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            env={**os.environ, "CLAUDE_PROJECT_DIR": str(project_root)},
+        )
+        self.assertEqual(uninstall.returncode, 0)
+        self.assertFalse(runtime_dir.exists())
+
+        settings = json.loads(settings_path.read_text(encoding="utf-8"))
+        self.assertNotIn("claude-auto-review", settings)
+        self.assertNotIn("hooks", settings)
+
+        lines = (project_root / ".gitignore").read_text(encoding="utf-8").splitlines()
+        self.assertNotIn(".claude/claude-auto-review/", lines)
+        self.assertNotIn(".claude/claude-auto-review/state.jsonl", lines)
+        self.assertNotIn(".claude/claude-auto-review/clients/*/run/", lines)
+        self.assertNotIn(".claude/claude-auto-review/clients/*/reviews/", lines)
+        self.assertNotIn(".claude/claude-auto-review/scripts/", lines)
+        self.assertNotIn(".claude/claude-auto-review/agents/", lines)
+        self.assertNotIn(".claude/claude-auto-review/claude-auto-review.log", lines)
+
     def test_project_local_cancel_shim_runs(self):
         project_root = self.temp_project()
         self.run_python("claude_auto_review/install/setup_cli.py", project_root)
@@ -158,4 +235,3 @@ class TestSetupCancel(HookTestCase, unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-

@@ -11,30 +11,17 @@ from tests.int.hooks.support import HookTestCase  # noqa: E402
 
 class TestStopHookCircuitBreaker(HookTestCase, unittest.TestCase):
     def test_stop_hook_circuit_breaker_opens_after_max_consecutive_blocks(self):
-        """When maxStopPasses (default 5) consecutive block events accumulate, the hook allows stop."""
+        """When maxStopPasses (default 3) consecutive block events accumulate, the hook allows stop."""
         project_root = self.temp_project()
         (project_root / "src" / "app.ts").write_text("export const value = 1;\n", encoding="utf-8")
 
-        post1 = self.run_python("hooks/post_tool_use.py", project_root, json.dumps({"file_path": "src/app.ts"}))
-        self.assertEqual(post1.returncode, 0)
-        stop1 = self.run_python("hooks/stop_hook.py", project_root, env_overrides={"PATH": ""}, use_fake_claude=False)
-        self.assertEqual(stop1.returncode, 2, "First stop should be blocked")
-        state = load_state(project_root, "test-session")
-        self.assertEqual(consecutive_stop_blocks(state), 1)
+        for name in ["app", "b", "c"]:
+            (project_root / "src" / f"{name}.ts").write_text(f"export const {name} = 1;\n", encoding="utf-8")
+            post = self.run_python("hooks/post_tool_use.py", project_root, json.dumps({"file_path": f"src/{name}.ts"}))
+            self.assertEqual(post.returncode, 0)
+            stop = self.run_python("hooks/stop_hook.py", project_root, env_overrides={"PATH": ""}, use_fake_claude=False)
+            self.assertEqual(stop.returncode, 2)
 
-        (project_root / "src" / "b.ts").write_text("export const b = 2;\n", encoding="utf-8")
-        post2 = self.run_python("hooks/post_tool_use.py", project_root, json.dumps({"file_path": "src/b.ts"}))
-        self.assertEqual(post2.returncode, 0)
-        stop2 = self.run_python("hooks/stop_hook.py", project_root, env_overrides={"PATH": ""}, use_fake_claude=False)
-        self.assertEqual(stop2.returncode, 2, "Second stop should still be blocked")
-        state = load_state(project_root, "test-session")
-        self.assertEqual(consecutive_stop_blocks(state), 2)
-
-        (project_root / "src" / "c.ts").write_text("export const c = 3;\n", encoding="utf-8")
-        post3 = self.run_python("hooks/post_tool_use.py", project_root, json.dumps({"file_path": "src/c.ts"}))
-        self.assertEqual(post3.returncode, 0)
-        stop3 = self.run_python("hooks/stop_hook.py", project_root, env_overrides={"PATH": ""}, use_fake_claude=False)
-        self.assertEqual(stop3.returncode, 2, "Third stop should still be blocked (threshold not yet exceeded)")
         state = load_state(project_root, "test-session")
         self.assertEqual(consecutive_stop_blocks(state), 3)
 
@@ -42,26 +29,10 @@ class TestStopHookCircuitBreaker(HookTestCase, unittest.TestCase):
         post4 = self.run_python("hooks/post_tool_use.py", project_root, json.dumps({"file_path": "src/d.ts"}))
         self.assertEqual(post4.returncode, 0)
         stop4 = self.run_python("hooks/stop_hook.py", project_root, env_overrides={"PATH": ""}, use_fake_claude=False)
-        self.assertEqual(stop4.returncode, 2, "Fourth stop should still be blocked")
-        state = load_state(project_root, "test-session")
-        self.assertEqual(consecutive_stop_blocks(state), 4)
-
-        (project_root / "src" / "e.ts").write_text("export const e = 5;\n", encoding="utf-8")
-        post5 = self.run_python("hooks/post_tool_use.py", project_root, json.dumps({"file_path": "src/e.ts"}))
-        self.assertEqual(post5.returncode, 0)
-        stop5 = self.run_python("hooks/stop_hook.py", project_root, env_overrides={"PATH": ""}, use_fake_claude=False)
-        self.assertEqual(stop5.returncode, 2, "Fifth stop should still be blocked (threshold not yet exceeded)")
-        state = load_state(project_root, "test-session")
-        self.assertEqual(consecutive_stop_blocks(state), 5)
-
-        (project_root / "src" / "f.ts").write_text("export const f = 6;\n", encoding="utf-8")
-        post6 = self.run_python("hooks/post_tool_use.py", project_root, json.dumps({"file_path": "src/f.ts"}))
-        self.assertEqual(post6.returncode, 0)
-        stop6 = self.run_python("hooks/stop_hook.py", project_root, env_overrides={"PATH": ""}, use_fake_claude=False)
-        self.assertEqual(stop6.returncode, 0, "Sixth stop should be ALLOWED: circuit breaker tripped")
-        self.assertEqual(stop6.stdout.strip(), "", "Circuit breaker approval prints no block JSON response")
+        self.assertEqual(stop4.returncode, 0, "Fourth stop should be ALLOWED: circuit breaker tripped")
+        self.assertEqual(stop4.stdout.strip(), "", "Circuit breaker approval prints no block JSON response")
         state_after = load_state(project_root, "test-session")
-        self.assertEqual(consecutive_stop_blocks(state_after), 5)
+        self.assertEqual(consecutive_stop_blocks(state_after), 3)
 
     def test_stop_hook_circuit_breaker_settings_override(self):
         """maxStopPasses can be overridden in project settings."""
