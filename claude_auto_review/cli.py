@@ -3,6 +3,7 @@
 
 import sys
 from pathlib import Path
+from importlib.metadata import version, PackageNotFoundError
 
 
 SUBCOMMANDS = {
@@ -13,13 +14,24 @@ SUBCOMMANDS = {
 }
 
 
+def _get_version():
+    try:
+        return version("claude-auto-review")
+    except PackageNotFoundError:
+        return "unknown"
+
+
 def _print_help(exit_code=0):
     self = Path(__file__).name if Path(__file__).exists() else "claude-auto-review"
-    print(f"Usage: {self} <subcommand>", file=sys.stderr)
+    print(f"Usage: {self} <subcommand> [args]", file=sys.stderr)
     print(file=sys.stderr)
     print("Subcommands:", file=sys.stderr)
-    for name in SUBCOMMANDS:
-        print(f"  {name}", file=sys.stderr)
+    print("  install    Set up the plugin in the current project", file=sys.stderr)
+    print("  cancel     Cancel the active review session", file=sys.stderr)
+    print("  prompt     Manually trigger review prompt generation", file=sys.stderr)
+    print("  uninstall  Remove plugin from current project", file=sys.stderr)
+    print("  help       Show this help message", file=sys.stderr)
+    print("  version    Show version information", file=sys.stderr)
     return exit_code
 
 
@@ -27,7 +39,19 @@ def main():
     if len(sys.argv) < 2 or sys.argv[1] in ("-h", "--help"):
         return _print_help()
 
-    subcommand = sys.argv[1]
+    arg = sys.argv[1]
+    if arg in ("-v", "--version"):
+        print(f"claude-auto-review version {_get_version()}")
+        return 0
+
+    subcommand = arg
+
+    if subcommand == "help":
+        return _print_help()
+    if subcommand == "version":
+        print(f"claude-auto-review version {_get_version()}")
+        return 0
+
     module_path = SUBCOMMANDS.get(subcommand)
     if module_path is None:
         print(f"Unknown subcommand: {subcommand}", file=sys.stderr)
