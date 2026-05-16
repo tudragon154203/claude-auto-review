@@ -1,11 +1,15 @@
 {
   "name": "claude-auto-review",
-  "version": "1.1.6",
+  "version": "1.1.8",
   "description": "Post-edit review loop for Claude Code: automatically reviews changed files before Claude stops.",
-  "author": "claude-auto-review",
+  "author": "tudragon154203",
   "license": "MIT",
-  "tags": ["stable"],
-  "commands": ["claude-auto-review", "cancel-claude-auto-review"],
+  "tags": [
+    "stable"
+  ],
+  "commands": [
+    "claude-auto-review"
+  ],
   "hooks": {
     "PostToolUse": [
       {
@@ -30,6 +34,10 @@
       }
     ]
   },
-  "agents": ["agents/reviewer.md"],
-  "rules": ["rules/review-rules.md"]
+  "agents": [
+    "agents/reviewer.md"
+  ],
+  "rules": [
+    "rules/review-rules.md"
+  ]
 }
