@@ -124,6 +124,30 @@ def _merge_project_hooks(settings, hooks_document):
         settings["hooks"] = _merge_hooks(settings.get("hooks", {}), desired_hooks)
 
 
+def _ensure_runtime_directories(base_dir, state_path):
+    base_dir.mkdir(parents=True, exist_ok=True)
+    state_path.parent.mkdir(parents=True, exist_ok=True)
+
+
+def _ensure_rules_file(base_dir, plugin_root):
+    rules_path = base_dir / "review-rules.md"
+    if rules_path.exists():
+        return rules_path
+
+    if plugin_root:
+        default_rules_path = Path(plugin_root) / "rules" / "review-rules.md"
+    else:
+        default_rules_path = _package_resource_path("rules", "review-rules.md")
+    if default_rules_path.is_file():
+        shutil.copyfile(default_rules_path, rules_path)
+    else:
+        rules_path.write_text(
+            "# Claude Auto Review Rules\n\n- Review semantic correctness, security, and maintainability.\n",
+            encoding="utf-8",
+        )
+    return rules_path
+
+
 def ensure_client_runtime(project_root, client_id):
     client_dir = get_client_runtime_dir(project_root, client_id)
     client_dir.mkdir(parents=True, exist_ok=True)
@@ -136,23 +160,9 @@ def ensure_client_runtime(project_root, client_id):
 def ensure_runtime(project_root=None, plugin_root=None):
     project_root = resolve_project_root(project_root)
     base_dir = project_root / RUNTIME_DIR
-    base_dir.mkdir(parents=True, exist_ok=True)
     state_path = project_root / STATE_RELATIVE_PATH
-    state_path.parent.mkdir(parents=True, exist_ok=True)
-
-    rules_path = base_dir / "review-rules.md"
-    if not rules_path.exists():
-        if plugin_root:
-            default_rules_path = Path(plugin_root) / "rules" / "review-rules.md"
-        else:
-            default_rules_path = _package_resource_path("rules", "review-rules.md")
-        if default_rules_path.is_file():
-            shutil.copyfile(default_rules_path, rules_path)
-        else:
-            rules_path.write_text(
-                "# Claude Auto Review Rules\n\n- Review semantic correctness, security, and maintainability.\n",
-                encoding="utf-8",
-            )
+    _ensure_runtime_directories(base_dir, state_path)
+    rules_path = _ensure_rules_file(base_dir, plugin_root)
 
     return {
         "base_dir": base_dir,

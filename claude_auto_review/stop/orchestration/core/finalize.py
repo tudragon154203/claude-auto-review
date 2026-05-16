@@ -5,6 +5,7 @@ from claude_auto_review.state.reviews.verdicts import (
     extract_review_verdict_text,
     is_completed_review_content,
     is_review_clean,
+    is_review_clean_content,
     is_review_complete_verdict,
     normalize_review_verdict_content,
 )
@@ -19,6 +20,7 @@ from claude_auto_review.stop.feedback import (
 from claude_auto_review.stop.reviews import attempt_stop_autocomplete, get_entries_covered_by_review
 from claude_auto_review.stop.reviews.core.prompt_runner import _review_prompt_path
 from claude_auto_review.stop.orchestration.core.response_actions import block_pending_review
+from claude_auto_review.state.snapshot import StateSnapshot
 
 
 @dataclass(frozen=True)
@@ -27,30 +29,43 @@ class ReviewArtifactState:
     verdict: str | None = None
 
 
-def _read_review_verdict(review_path):
+def _read_review_content(review_path):
     if not review_path.is_file():
         return None
     content = review_path.read_text(encoding="utf-8", errors="replace")
     normalized = normalize_review_verdict_content(content)
     if normalized != content:
         review_path.write_text(normalized, encoding="utf-8", newline="\n")
-        content = normalized
+        return normalized
+    return content
+
+
+def _read_review_verdict(review_path, content=None):
+    if content is None:
+        content = _read_review_content(review_path)
+    if content is None:
+        return None
     return extract_review_verdict_text(content)
 
 
-def _review_has_completed_artifact(review_path):
-    if not review_path.is_file():
+def _review_has_completed_artifact(review_path, content=None):
+    if content is None:
+        content = _read_review_content(review_path)
+    if content is None:
         return False
-    return is_completed_review_content(review_path.read_text(encoding="utf-8", errors="replace"))
+    return is_completed_review_content(content)
 
 
 def _review_artifact_state(review_path):
-    verdict = _read_review_verdict(review_path)
-    if is_review_complete_verdict(verdict) and is_review_clean(review_path):
+    content = _read_review_content(review_path)
+    verdict = _read_review_verdict(review_path, content=content)
+    if is_review_complete_verdict(verdict) and content is not None and is_review_clean_content(content):
+        return ReviewArtifactState(status="complete_clean", verdict=verdict)
+    if is_review_complete_verdict(verdict) and content is None and is_review_clean(review_path):
         return ReviewArtifactState(status="complete_clean", verdict=verdict)
     if is_review_complete_verdict(verdict):
         return ReviewArtifactState(status="complete_findings", verdict=verdict)
-    if _review_has_completed_artifact(review_path):
+    if _review_has_completed_artifact(review_path, content=content):
         return ReviewArtifactState(status="complete_findings", verdict=verdict)
     return ReviewArtifactState(status="pending", verdict=verdict)
 
@@ -89,7 +104,8 @@ def finalize_review_stop(ctx: RuntimeContext, resolution):
     state = resolution.state
     unreviewed = resolution.unreviewed
     review = resolution.review
-    covered_entries = get_entries_covered_by_review(review, state)
+    state_snapshot = StateSnapshot.from_events(state)
+    covered_entries = get_entries_covered_by_review(review, state, latest_by_file=state_snapshot.latest_entries_by_file)
     review_id = review.reviewId
     review_path = Path(ctx.project_root) / review.reviewPath
     prompt_file = _review_prompt_path(ctx, review_id)

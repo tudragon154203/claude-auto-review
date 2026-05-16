@@ -48,15 +48,18 @@ class StateSnapshot:
     @property
     def latest_review_entries_by_id(self) -> dict[str, StateEvent]:
         latest: dict[str, StateEvent] = {}
+        latest_keys: dict[str, tuple[object, object]] = {}
         for entry in self.events:
             if not isinstance(entry, ReviewMetadata):
                 continue
             review_id = entry.reviewId
             if not review_id:
                 continue
-            current = latest.get(review_id)
-            if current is None or _timestamp_sort_key(entry) >= _timestamp_sort_key(current):
+            entry_key = _timestamp_sort_key(entry)
+            current_key = latest_keys.get(review_id)
+            if current_key is None or entry_key >= current_key:
                 latest[review_id] = entry
+                latest_keys[review_id] = entry_key
         return latest
 
     @property

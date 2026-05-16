@@ -11,7 +11,7 @@ from claude_auto_review.config.settings import (
     get_setting_int,
     load_settings,
 )
-from claude_auto_review.state.store.read import consecutive_stop_blocks, get_unreviewed_files, load_state
+from claude_auto_review.state.store.read import consecutive_stop_blocks, get_unreviewed_files, load_state, load_state_snapshot
 from claude_auto_review.stop.classifier.core.last_assistant_message import classify_last_assistant_message
 from claude_auto_review.stop.orchestration.core.context import RuntimeContext
 from claude_auto_review.stop.orchestration.core.finalize import finalize_review_stop
@@ -47,13 +47,14 @@ def run_stop_flow(project_root, payload, *, client_id=None, settings=None):
         log_event(project_root, "stop_disabled")
         return 0
 
-    state = load_state(project_root, client_id)
-    unreviewed = get_unreviewed_files(state)
+    state_snapshot = load_state_snapshot(project_root, client_id)
+    state = state_snapshot.events
+    unreviewed = get_unreviewed_files(state_snapshot)
     if not unreviewed:
         return _allow_stop(project_root, "no_unreviewed_files")
 
     max_passes = get_setting_int(settings, SETTING_MAX_STOP_PASSES, DEFAULT_SETTINGS[SETTING_MAX_STOP_PASSES])
-    block_count = consecutive_stop_blocks(state)
+    block_count = consecutive_stop_blocks(state_snapshot)
     if block_count >= max_passes:
         return _allow_stop(
             project_root,
