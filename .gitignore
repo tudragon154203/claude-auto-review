@@ -1,6 +1,5 @@
 .claude/
 node_modules/
-coverage/
 .env
 .DS_Store
 npm-debug.log*
@@ -9,10 +8,14 @@ __pycache__/
 .pytest_cache/
 .coverage
 .coverage.*
+coverage/
+
 *.egg-info/
 *.ps1
 repomix-*
 .memsearch/
+
 AGENTS.md
 CLAUDE.md
 bash.exe.stackdump
+.ruff_cache
