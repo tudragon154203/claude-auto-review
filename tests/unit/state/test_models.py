@@ -1,6 +1,6 @@
 import unittest
 
-from claude_auto_review.state.models import ClassificationRecord, EditRecord, ReviewCompletedRecord, ReviewFileRecord, ReviewMetadata, StopBlockedRecord
+from claude_auto_review.state.models import ClassificationRecord, EditRecord, ReviewAutocompleteRecord, ReviewCompletedRecord, ReviewFileRecord, ReviewMetadata, StopBlockedRecord
 
 
 class TestStateModels(unittest.TestCase):
@@ -79,3 +79,45 @@ class TestStateModels(unittest.TestCase):
         self.assertEqual(EditRecord.from_dict(edit_data).to_dict(), edit_data)
         self.assertEqual(StopBlockedRecord.from_dict(blocked_data).to_dict(), blocked_data)
         self.assertEqual(ClassificationRecord.from_dict(classified_data).to_dict(), classified_data)
+
+    def test_review_autocomplete_round_trips(self):
+        data = {
+            "timestamp": "2026-05-05T08:01:00+07:00",
+            "type": "review_autocomplete",
+            "reviewId": "rev-1",
+            "status": "empty_stdout",
+            "returncode": 0,
+            "stdout_len": 0,
+        }
+        record = ReviewAutocompleteRecord.from_dict(data)
+        self.assertEqual(record.reviewId, "rev-1")
+        self.assertEqual(record.status, "empty_stdout")
+        self.assertEqual(record.returncode, 0)
+        self.assertEqual(record.stdout_len, 0)
+        self.assertEqual(record.to_dict()["type"], "review_autocomplete")
+
+    def test_review_autocomplete_from_dict_requires_fields(self):
+        with self.assertRaises(KeyError):
+            ReviewAutocompleteRecord.from_dict({"timestamp": "t"})
+
+    def test_review_autocomplete_to_dict_omits_none_returncode(self):
+        record = ReviewAutocompleteRecord(
+            timestamp="2026-05-05T08:01:00+07:00",
+            reviewId="rev-1",
+            status="cli_not_found",
+        )
+        d = record.to_dict()
+        self.assertNotIn("returncode", d)
+        self.assertEqual(d["stdout_len"], 0)
+
+    def test_review_autocomplete_to_dict_includes_optional_fields(self):
+        record = ReviewAutocompleteRecord(
+            timestamp="2026-05-05T08:01:00+07:00",
+            reviewId="rev-1",
+            status="timeout",
+            returncode=1,
+            stdout_len=500,
+        )
+        d = record.to_dict()
+        self.assertEqual(d["returncode"], 1)
+        self.assertEqual(d["stdout_len"], 500)

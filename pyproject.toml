@@ -7,15 +7,26 @@ name = "claude-auto-review"
 version = "1.1.10"
 description = "Claude Code plugin for automatic review after Claude edits files"
 readme = "README.md"
+license = "MIT"
 requires-python = ">=3.10"
-license = {text = "MIT"}
+authors = [
+    {name = "Tany Nguyen"}
+]
+keywords = ["claude-code", "ai", "review", "hooks", "automation"]
 classifiers = [
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
 ]
+
+[project.urls]
+Homepage = "https://github.com/tudragon154203/claude-auto-review"
+Repository = "https://github.com/tudragon154203/claude-auto-review"
+Documentation = "https://github.com/tudragon154203/claude-auto-review#readme"
 
 [project.scripts]
 claude-auto-review = "claude_auto_review.cli:main"

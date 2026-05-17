@@ -47,11 +47,12 @@ def cleanup_expired_pending_reviews(project_root=None, client_id=""):
             project_root,
             "runtime_cleanup_failed",
             error,
+            client_id=client_id,
             operation="rewrite_state",
             target=str(state_path),
         )
         return 0
 
     if removed > 0:
-        log_event(project_root, "expired_reviews_cleaned", count=removed)
+        log_event(project_root, "expired_reviews_cleaned", client_id=client_id, count=removed)
     return removed

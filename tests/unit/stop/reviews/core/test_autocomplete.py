@@ -48,7 +48,7 @@ class TestAutoComplete(unittest.TestCase):
             user_prompt="finish",
         )
         self.assertFalse(result)
-        mock_log.assert_called_with(Path("/fake"), "stop_hook_claude_cli_not_found")
+        mock_log.assert_called_with(Path("/fake"), "stop_hook_claude_cli_not_found", client_id="c")
 
     @patch("claude_auto_review.stop.reviews.core.prompt_runner.log_event")
     @patch("claude_auto_review.stop.reviews.core.prompt_runner.shutil.which", return_value="/usr/bin/claude")
@@ -59,7 +59,7 @@ class TestAutoComplete(unittest.TestCase):
             user_prompt="finish",
         )
         self.assertFalse(result)
-        mock_log.assert_called_with(Path("/fake"), "stop_hook_prompt_not_found", path=str(Path("/nonexistent.md")))
+        mock_log.assert_called_with(Path("/fake"), "stop_hook_prompt_not_found", client_id="c", path=str(Path("/nonexistent.md")))
 
     @patch("claude_auto_review.stop.reviews.core.prompt_runner.log_event")
     @patch("claude_auto_review.stop.reviews.core.prompt_runner.run_captured", side_effect=subprocess.TimeoutExpired(cmd="claude", timeout=600))
@@ -72,7 +72,7 @@ class TestAutoComplete(unittest.TestCase):
             user_prompt="finish",
         )
         self.assertFalse(result)
-        mock_log.assert_called_with(Path("/fake"), "stop_hook_claude_cli_timeout", reviewId="r")
+        mock_log.assert_called_with(Path("/fake"), "stop_hook_claude_cli_timeout", client_id="c", reviewId="r")
 
     @patch("claude_auto_review.stop.reviews.core.prompt_runner.log_event")
     @patch("claude_auto_review.stop.reviews.core.prompt_runner.run_captured")
@@ -99,7 +99,7 @@ class TestAutoComplete(unittest.TestCase):
             user_prompt="finish",
         )
         self.assertFalse(result)
-        mock_log.assert_called_with(Path("/fake"), "stop_hook_claude_cli_error", error="boom")
+        mock_log.assert_called_with(Path("/fake"), "stop_hook_claude_cli_error", client_id="c", error="boom")
 
     @patch("claude_auto_review.stop.reviews.core.prompt_runner.log_event")
     @patch("claude_auto_review.stop.reviews.core.prompt_runner.run_captured")

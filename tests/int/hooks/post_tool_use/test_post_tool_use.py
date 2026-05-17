@@ -127,7 +127,9 @@ class TestPostToolUseHook(HookTestCase, unittest.TestCase):
         post = self.run_python("hooks/post_tool_use.py", project_root, json.dumps({"file_path": "src/app.ts"}))
         self.assertEqual(post.stdout, "")
         log_path = project_root / ".claude" / "claude-auto-review" / "claude-auto-review.log"
-        self.assertIn('"type":"file_tracked"', log_path.read_text(encoding="utf-8"))
+        log_content = log_path.read_text(encoding="utf-8")
+        self.assertIn('"type":"file_tracked"', log_content)
+        self.assertIn('"clientId"', log_content)
 
     def test_allows_stop_when_disabled_in_project_settings(self):
         project_root = self.temp_project()

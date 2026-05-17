@@ -44,6 +44,20 @@ class IntegrationRuntimeTests(IntegrationTestCase):
         self.assertEqual(entry["count"], 42)
         self.assertIn("timestamp", entry)
         self.assertFalse(entry["timestamp"].endswith("Z"))
+        self.assertNotIn("clientId", entry)
+
+    def test_log_event_includes_client_id_when_provided(self):
+        project_root = self.temp_project()
+
+        log_event(project_root, "test_event", client_id="session-abc", foo="bar")
+        log_path = get_log_path(project_root)
+
+        self.assertTrue(log_path.exists())
+        content = log_path.read_text(encoding="utf-8")
+        entry = json.loads(content.strip().split("\n")[-1])
+        self.assertEqual(entry["type"], "test_event")
+        self.assertEqual(entry["clientId"], "session-abc")
+        self.assertEqual(entry["foo"], "bar")
 
     def test_ensure_project_settings_preserves_user_values(self):
         project_root = self.temp_project()

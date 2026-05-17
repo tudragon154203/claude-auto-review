@@ -19,6 +19,7 @@ def _persist_result(result, ctx):
     log_event(
         ctx.project_root,
         "last_assistant_message_classified",
+        client_id=ctx.client_id,
         **result.as_state_entry(include_debug=include_debug).to_dict(),
     )
 

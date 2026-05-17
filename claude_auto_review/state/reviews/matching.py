@@ -14,10 +14,11 @@ def _sorted_by_timestamp_desc(entries: Sequence[ReviewMetadata]) -> list[ReviewM
     return sorted(entries, key=lambda entry: entry.timestamp, reverse=True)
 
 
-def _log_expired_review(project_root, review_entry: ReviewMetadata):
+def _log_expired_review(project_root, review_entry: ReviewMetadata, client_id=None):
     log_event(
         project_root,
         "stop_review_expired",
+        client_id=client_id,
         review_id=review_entry.reviewId,
         files=[f.file for f in review_entry.files],
     )

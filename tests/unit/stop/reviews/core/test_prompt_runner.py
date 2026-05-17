@@ -39,6 +39,7 @@ class TestPromptRunner(unittest.TestCase):
         mock_log.assert_called_once_with(
             Path("/fake"),
             "stop_hook_review_invoked",
+            client_id="client-1",
             stdout="ok",
             stderr="",
             returncode=0,

@@ -20,7 +20,7 @@ def _run_post_tool_use():
     settings = ctx.settings
     payload = ctx.payload
     if not settings.get("enabled", True):
-        log_event(project_root, "post_tool_use_disabled")
+        log_event(project_root, "post_tool_use_disabled", client_id=client_id)
         return 0
 
     state = load_state(project_root, client_id)
@@ -29,11 +29,11 @@ def _run_post_tool_use():
     for candidate in extract_file_paths_from_hook_input(payload, project_root=project_root):
         file_path = normalize_relative_path(candidate, project_root)
         if not file_path:
-            log_event(project_root, "post_tool_use_ignored_path", path=candidate)
+            log_event(project_root, "post_tool_use_ignored_path", client_id=client_id, path=candidate)
             continue
         if should_skip_file(file_path, settings):
             reason = "runtime" if file_path.startswith(".claude/claude-auto-review/") else "settings"
-            log_event(project_root, "post_tool_use_skipped_file", file=file_path, reason=reason)
+            log_event(project_root, "post_tool_use_skipped_file", client_id=client_id, file=file_path, reason=reason)
             continue
         file_hash = get_file_hash(file_path, project_root)
         if not file_hash:
@@ -48,7 +48,7 @@ def _run_post_tool_use():
                 project_root,
                 client_id=client_id,
             )
-            log_event(project_root, "file_deletion_tracked", file=file_path, hash=DELETED_FILE_HASH, reviewed=False)
+            log_event(project_root, "file_deletion_tracked", client_id=client_id, file=file_path, hash=DELETED_FILE_HASH, reviewed=False)
             continue
         reviewed = was_hash_reviewed(state, file_path, file_hash)
         append_state(
@@ -61,7 +61,7 @@ def _run_post_tool_use():
             project_root,
             client_id=client_id,
         )
-        log_event(project_root, "file_tracked", file=file_path, hash=file_hash, reviewed=reviewed)
+        log_event(project_root, "file_tracked", client_id=client_id, file=file_path, hash=file_hash, reviewed=reviewed)
     return 0
 
 

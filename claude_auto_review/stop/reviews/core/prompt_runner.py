@@ -61,10 +61,10 @@ def attempt_stop_autocomplete(
 ):
     claude_cli = shutil.which("claude")
     if not claude_cli:
-        log_event(ctx.project_root, "stop_hook_claude_cli_not_found")
+        log_event(ctx.project_root, "stop_hook_claude_cli_not_found", client_id=ctx.client_id)
         return AutocompleteResult(status="cli_not_found")
     if not prompt_file.is_file():
-        log_event(ctx.project_root, "stop_hook_prompt_not_found", path=str(prompt_file))
+        log_event(ctx.project_root, "stop_hook_prompt_not_found", client_id=ctx.client_id, path=str(prompt_file))
         return AutocompleteResult(status="prompt_not_found")
 
     try:
@@ -72,10 +72,10 @@ def attempt_stop_autocomplete(
             claude_cli, prompt_file, user_prompt, ctx.project_root, reviewer_timeout_seconds
         )
     except subprocess.TimeoutExpired:
-        log_event(ctx.project_root, "stop_hook_claude_cli_timeout", reviewId=review_id)
+        log_event(ctx.project_root, "stop_hook_claude_cli_timeout", client_id=ctx.client_id, reviewId=review_id)
         return AutocompleteResult(status="timeout")
     except (OSError, ValueError, subprocess.SubprocessError) as e:
-        log_event(ctx.project_root, "stop_hook_claude_cli_error", error=str(e))
+        log_event(ctx.project_root, "stop_hook_claude_cli_error", client_id=ctx.client_id, error=str(e))
         return AutocompleteResult(status="error", stderr=str(e))
 
     return _process_review_result(
@@ -88,6 +88,7 @@ def _process_review_result(ctx: RuntimeContext, result, review_path, review_id):
     log_event(
         ctx.project_root,
         "stop_hook_claude_cli_done",
+        client_id=ctx.client_id,
         returncode=result.returncode,
         stdout_len=stdout_len,
         stdout=result.stdout[:500],
@@ -98,6 +99,7 @@ def _process_review_result(ctx: RuntimeContext, result, review_path, review_id):
         log_event(
             ctx.project_root,
             "stop_hook_claude_cli_nonzero",
+            client_id=ctx.client_id,
             returncode=result.returncode,
             reviewId=review_id,
             stderr=result.stderr[:500] if result.stderr else "",
@@ -113,6 +115,7 @@ def _process_review_result(ctx: RuntimeContext, result, review_path, review_id):
         log_event(
             ctx.project_root,
             "stop_hook_claude_cli_empty",
+            client_id=ctx.client_id,
             reviewId=review_id,
             stdout_len=stdout_len,
             stderr=result.stderr[:500] if result.stderr else "",
@@ -126,7 +129,7 @@ def _process_review_result(ctx: RuntimeContext, result, review_path, review_id):
 
     normalized_output = normalize_review_verdict_content(result.stdout)
     review_path.write_text(normalized_output, encoding="utf-8", newline="\n")
-    log_event(ctx.project_root, "stop_hook_claude_cli_output_written", reviewId=review_id, stdout_len=stdout_len)
+    log_event(ctx.project_root, "stop_hook_claude_cli_output_written", client_id=ctx.client_id, reviewId=review_id, stdout_len=stdout_len)
     return AutocompleteResult(
         status="output_written",
         stdout=normalized_output,

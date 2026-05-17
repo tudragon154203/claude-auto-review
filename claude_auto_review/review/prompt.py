@@ -21,10 +21,10 @@ from claude_auto_review.state.store.write import append_review_started
 from claude_auto_review.stop.orchestration.core.context import RuntimeContext
 
 
-def _log_failure(project_root, error):
+def _log_failure(project_root, client_id, error):
     message = f"Claude Auto Review failed open: {error}"
     traceback_text = traceback.format_exc()
-    if not log_failure(project_root, "review_prompt_error", error, traceback=traceback_text):
+    if not log_failure(project_root, "review_prompt_error", client_id=client_id, error=error, traceback=traceback_text):
         print(message, file=sys.stderr)
         print(traceback_text, file=sys.stderr)
     else:
@@ -41,13 +41,13 @@ def _run_review_prompt(project_root, client_id):
 
     settings = load_settings(project_root)
     if not settings.get("enabled", True):
-        log_event(project_root, "review_prompt_disabled")
+        log_event(project_root, "review_prompt_disabled", client_id=client_id)
         print("Claude Auto Review is disabled in .claude/settings.json.")
         return 0
 
     unreviewed = get_unreviewed_files(load_state(project_root, client_id))
     if not unreviewed:
-        log_event(project_root, "review_prompt_noop")
+        log_event(project_root, "review_prompt_noop", client_id=client_id)
         print("Claude Auto Review: no unreviewed changes.")
         return 0
 
@@ -62,11 +62,11 @@ def _run_review_prompt(project_root, client_id):
     log_event(
         project_root,
         "review_prompt_created",
+        client_id=client_id,
         reviewId=artifacts.review_id,
         files=artifacts.files,
         prompt=str(artifacts.prompt_path),
         review=str(artifacts.review_path),
-        clientId=client_id,
     )
     print(f"Claude Auto Review prompt created: {artifacts.prompt_path}")
     print(f"Review file initialized: {artifacts.review_path}")
@@ -81,7 +81,7 @@ def main():
         client_id = get_client_id()
         return _run_review_prompt(project_root, client_id)
 
-    return run_fail_open(_run, on_error=lambda error: _log_failure(project_root, error), fallback=1)
+    return run_fail_open(_run, on_error=lambda error: _log_failure(project_root, None, error), fallback=1)
 
 
 if __name__ == "__main__":

@@ -25,7 +25,7 @@ def _build_review_prompt_env(payload):
 def _resolve_prompted_review(ctx, timeout_hours, files_str, result):
     state, unreviewed = _reload_client_state(ctx)
     if not unreviewed:
-        log_event(ctx.project_root, "stop_approved", reason="no_unreviewed_files_after_review")
+        log_event(ctx.project_root, "stop_approved", client_id=ctx.client_id, reason="no_unreviewed_files_after_review")
         return StopFlowResolution(state=state, unreviewed=unreviewed, exit_code=0)
 
     review = find_pending_review_for_files(state, unreviewed, ctx.project_root, timeout_hours)
@@ -47,14 +47,14 @@ def resolve_pending_review(ctx: RuntimeContext, state, unreviewed, timeout_hours
     try:
         result = _run_review_prompt(ctx, review_prompt_script, env)
     except subprocess.TimeoutExpired:
-        log_event(ctx.project_root, "stop_hook_review_timeout", script=str(review_prompt_script))
+        log_event(ctx.project_root, "stop_hook_review_timeout", client_id=ctx.client_id, script=str(review_prompt_script))
         block_response(
             f"Claude Auto Review: Timeout generating review for {files_str}.",
             "The review generation timed out. Check the logs and try again.",
         )
         return StopFlowResolution(state=state, unreviewed=unreviewed, exit_code=EXIT_REVIEW_FAILED)
     except (OSError, ValueError, subprocess.SubprocessError) as e:
-        log_event(ctx.project_root, "stop_hook_review_error", error=str(e))
+        log_event(ctx.project_root, "stop_hook_review_error", client_id=ctx.client_id, error=str(e))
         block_response(
             f"Claude Auto Review: Error generating review for {files_str}.",
             f"Failed to run review_prompt.py: {e}",

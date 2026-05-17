@@ -4,6 +4,7 @@ from typing import Any
 from claude_auto_review.state.models import (
     ClassificationRecord,
     EditRecord,
+    ReviewAutocompleteRecord,
     ReviewCompletedRecord,
     ReviewMetadata,
     StateEvent,
@@ -18,6 +19,7 @@ _PARSERS: dict[str, _ParserFn] = {
     "review": ReviewMetadata.from_dict,
     "review_completed": ReviewCompletedRecord.from_dict,
     "last_assistant_message_classified": ClassificationRecord.from_dict,
+    "review_autocomplete": ReviewAutocompleteRecord.from_dict,
 }
 
 

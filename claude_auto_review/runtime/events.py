@@ -18,11 +18,14 @@ def _json_safe(value):
     return value
 
 
-def log_event(project_root, event_type, **kwargs):
+def log_event(project_root, event_type, client_id=None, **kwargs):
     try:
         log_path = get_log_path(project_root)
         log_path.parent.mkdir(parents=True, exist_ok=True)
-        entry = _json_safe({"timestamp": local_now_iso(), "type": event_type, **kwargs})
+        entry = {"timestamp": local_now_iso(), "type": event_type}
+        if client_id:
+            entry["clientId"] = client_id
+        entry.update(_json_safe(kwargs))
         with log_path.open("a", encoding="utf-8", newline="\n") as f:
             f.write(json.dumps(entry, separators=(",", ":"), default=str) + "\n")
         return True
@@ -30,5 +33,5 @@ def log_event(project_root, event_type, **kwargs):
         return False
 
 
-def log_failure(project_root, event_type, error, **kwargs):
-    return log_event(project_root, event_type, error=str(error), **kwargs)
+def log_failure(project_root, event_type, error, client_id=None, **kwargs):
+    return log_event(project_root, event_type, client_id=client_id, error=str(error), **kwargs)

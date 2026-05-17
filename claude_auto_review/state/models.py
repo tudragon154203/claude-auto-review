@@ -229,5 +229,44 @@ class ClassificationRecord:
         )
 
 
+@dataclass(frozen=True)
+class ReviewAutocompleteRecord:
+    timestamp: str
+    reviewId: str
+    status: str
+    returncode: int | None = None
+    stdout_len: int = 0
+    type: Literal["review_autocomplete"] = "review_autocomplete"
+
+    def to_dict(self) -> dict[str, Any]:
+        d: dict[str, Any] = {
+            "timestamp": self.timestamp,
+            "type": self.type,
+            "reviewId": self.reviewId,
+            "status": self.status,
+            "stdout_len": self.stdout_len,
+        }
+        if self.returncode is not None:
+            d["returncode"] = self.returncode
+        return d
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "ReviewAutocompleteRecord":
+        # Required fields (fail fast if missing)
+        timestamp = data["timestamp"]
+        reviewId = data["reviewId"]
+        status = data["status"]
+        # Optional
+        returncode = data.get("returncode")
+        stdout_len = data.get("stdout_len", 0)
+        return cls(
+            timestamp=timestamp,
+            reviewId=reviewId,
+            status=status,
+            returncode=returncode,
+            stdout_len=stdout_len,
+        )
+
+
 # Union of all state event types for type annotations
-StateEvent = EditRecord | StopBlockedRecord | ReviewMetadata | ReviewCompletedRecord | ClassificationRecord
+StateEvent = EditRecord | StopBlockedRecord | ReviewMetadata | ReviewCompletedRecord | ClassificationRecord | ReviewAutocompleteRecord

@@ -18,22 +18,17 @@ from claude_auto_review.stop.orchestration.core.finalize import finalize_review_
 from claude_auto_review.stop.orchestration.core.pending import resolve_pending_review
 
 
-def _allow_stop(project_root, reason, **details):
-    log_event(project_root, "stop_approved", reason=reason, **details)
+def _allow_stop(project_root, reason, client_id=None, **details):
+    log_event(project_root, "stop_approved", client_id=client_id, reason=reason, **details)
     return 0
 
 
-def _allow_continue_after_classifier(ctx):
+def _check_classifier_incomplete(ctx):
     if not ctx.settings.get(SETTING_CLASSIFIER_ENABLED, DEFAULT_SETTINGS[SETTING_CLASSIFIER_ENABLED]):
         return None
     result = classify_last_assistant_message(ctx)
     if result is not None and result.status == "incomplete":
-        return _allow_stop(
-            ctx.project_root,
-            "classifier_incomplete",
-            classifier_status=result.status,
-            classifier_reason=result.reason,
-        )
+        return result
     return None
 
 
@@ -44,14 +39,14 @@ def run_stop_flow(project_root, payload, *, client_id=None, settings=None):
     timeout_hours = get_setting_float(settings, SETTING_PENDING_TIMEOUT, DEFAULT_SETTINGS[SETTING_PENDING_TIMEOUT])
 
     if not settings.get("enabled", True):
-        log_event(project_root, "stop_disabled")
+        log_event(project_root, "stop_disabled", client_id=client_id)
         return 0
 
     state_snapshot = load_state_snapshot(project_root, client_id)
     state = state_snapshot.events
     unreviewed = get_unreviewed_files(state_snapshot)
     if not unreviewed:
-        return _allow_stop(project_root, "no_unreviewed_files")
+        return _allow_stop(project_root, "no_unreviewed_files", client_id=client_id)
 
     max_passes = get_setting_int(settings, SETTING_MAX_STOP_PASSES, DEFAULT_SETTINGS[SETTING_MAX_STOP_PASSES])
     block_count = consecutive_stop_blocks(state_snapshot)
@@ -59,6 +54,7 @@ def run_stop_flow(project_root, payload, *, client_id=None, settings=None):
         return _allow_stop(
             project_root,
             "circuit_breaker",
+            client_id=client_id,
             block_count=block_count,
             max_passes=max_passes,
         )
@@ -69,9 +65,15 @@ def run_stop_flow(project_root, payload, *, client_id=None, settings=None):
         settings=settings,
         payload=payload,
     )
-    classifier_result = _allow_continue_after_classifier(ctx)
+    classifier_result = _check_classifier_incomplete(ctx)
     if classifier_result is not None:
-        return classifier_result
+        return _allow_stop(
+            ctx.project_root,
+            "classifier_incomplete",
+            client_id=ctx.client_id,
+            classifier_status=classifier_result.status,
+            classifier_reason=classifier_result.reason,
+        )
 
     resolution = resolve_pending_review(
         ctx,

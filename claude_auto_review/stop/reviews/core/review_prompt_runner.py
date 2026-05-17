@@ -18,6 +18,7 @@ def _run_review_prompt(ctx: RuntimeContext, review_prompt_script, env):
     log_event(
         ctx.project_root,
         "stop_hook_review_invoked",
+        client_id=ctx.client_id,
         stdout=result.stdout,
         stderr=result.stderr,
         returncode=result.returncode,

@@ -36,7 +36,7 @@ class TestRunStopFlow(unittest.TestCase):
         result = run_stop_flow(Path("/fake"), {"session_id": "sid"})
 
         self.assertEqual(result, 0)
-        mock_log.assert_called_once_with(Path("/fake"), "stop_disabled")
+        mock_log.assert_called_once_with(Path("/fake"), "stop_disabled", client_id="sid")
 
     @patch("claude_auto_review.stop.orchestration.core.flow.classify_last_assistant_message")
     @patch("claude_auto_review.stop.orchestration.core.flow.load_state_snapshot", return_value=_snapshot(events=[]))
