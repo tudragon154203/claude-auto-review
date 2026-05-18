@@ -57,6 +57,21 @@ class TestStateStore(StateTestCase, unittest.TestCase):
         lines = log_path.read_text(encoding="utf-8").strip().splitlines()
         self.assertEqual(len(lines), 2)
 
+    def test_log_event_with_client_writes_to_both_logs(self):
+        project_root = self.temp_project()
+        client_id = "test-dual-write"
+        ensure_client_runtime(project_root, client_id)
+        log_event(project_root, "file_tracked", client_id=client_id, file="a.ts")
+        global_path = get_state_path(project_root)
+        client_path = client_state_path(project_root, client_id)
+        global_lines = global_path.read_text(encoding="utf-8").strip().splitlines()
+        client_lines = client_path.read_text(encoding="utf-8").strip().splitlines()
+        self.assertEqual(len(global_lines), 1)
+        self.assertEqual(len(client_lines), 1)
+        self.assertIn("file_tracked", global_lines[0])
+        self.assertIn(client_id, global_lines[0])
+        self.assertIn("file_tracked", client_lines[0])
+
     def test_latest_entries_by_file_handles_missing_timestamp(self):
         state = [
             EditRecord(timestamp="2026-05-05T08:00:00+07:00", file="a.ts", hash="1"),

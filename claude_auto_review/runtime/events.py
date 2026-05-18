@@ -23,16 +23,16 @@ def _json_safe(value):
 def log_event(project_root, event_type, client_id=None, **kwargs):
     try:
         project_root = resolve_project_root(project_root)
-        if client_id:
-            client_dir = get_existing_client_runtime_dir(project_root, client_id)
-            target_path = (client_dir / "state.jsonl") if client_dir is not None else get_state_path(project_root)
-        else:
-            target_path = get_state_path(project_root)
         entry = {"timestamp": local_now_iso(), "type": event_type}
         if client_id:
             entry["clientId"] = client_id
         entry.update(_json_safe(kwargs))
-        write_jsonl_line(target_path, entry)
+        global_path = get_state_path(project_root)
+        if client_id:
+            client_dir = get_existing_client_runtime_dir(project_root, client_id)
+            if client_dir is not None:
+                write_jsonl_line(client_dir / "state.jsonl", entry)
+        write_jsonl_line(global_path, entry)
         return True
     except OSError:
         return False
