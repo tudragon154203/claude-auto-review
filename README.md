@@ -1,3 +1,5 @@
+[![coverage](https://img.shields.io/badge/coverage-high-brightgreen?style=flat-square)](tests/)
+
 # Claude Auto Review
 
 Claude Code plugin for automatic review after Claude edits files.
@@ -70,3 +72,4 @@ After installation, future Claude Code sessions will **work with claude-auto-rev
 - Circuit breaker after `maxStopPasses` blocks (default: 5)
 - Auto-completion via Claude CLI sub-agent when available
 - Reviewer hard-cap via `reviewerTimeoutSeconds` (default: 600 seconds)
+- Settings are [live-reloaded from `.claude/settings.json`](CLAUDE.md#settings) — no restart needed
