@@ -8,7 +8,7 @@ REPO_ROOT = Path(__file__).resolve().parents[4]
 sys.path.insert(0, str(REPO_ROOT))
 
 from claude_auto_review.runtime.setup import ensure_client_runtime  # noqa: E402
-from claude_auto_review.paths.path_utils import get_log_path  # noqa: E402
+from claude_auto_review.paths.path_utils import get_state_path  # noqa: E402
 from claude_auto_review.state.models import ReviewFileRecord, ReviewMetadata  # noqa: E402
 from claude_auto_review.state.store.read import load_state  # noqa: E402
 from claude_auto_review.state.store.write import append_state  # noqa: E402
@@ -28,7 +28,7 @@ class TestSessionEndHook(HookTestCase, unittest.TestCase):
         project_root = self.temp_project()
         result = self.run_python("hooks/session_end.py", project_root, input_text="{not-json")
         self.assertEqual(result.returncode, 0)
-        log_path = get_log_path(project_root)
+        log_path = get_state_path(project_root)
         self.assertTrue(log_path.exists())
         self.assertIn("session_end_error", log_path.read_text(encoding="utf-8"))
 
@@ -97,7 +97,7 @@ class TestSessionEndHook(HookTestCase, unittest.TestCase):
                         json.dumps({"tool_input": {"file_path": "src/app.ts"}}))
         result = self.run_python("hooks/session_end.py", project_root)
         self.assertEqual(result.returncode, 0)
-        log_path = get_log_path(project_root)
+        log_path = get_state_path(project_root)
         self.assertTrue(log_path.exists())
         log_content = log_path.read_text(encoding="utf-8")
         self.assertIn("session_end_cleanup", log_content)
@@ -150,7 +150,7 @@ class TestSessionEndHook(HookTestCase, unittest.TestCase):
         self.assertIn("rev-expired", [e.reviewId for e in load_state(project_root, "test-session") if e.type == "review"])
         result = self.run_python("hooks/session_end.py", project_root, client_id="test-session")
         self.assertEqual(result.returncode, 0)
-        log_path = get_log_path(project_root)
+        log_path = get_state_path(project_root)
         log_content = log_path.read_text(encoding="utf-8")
         self.assertIn("session_end_cleanup", log_content)
         self.assertIn("\"expired_removed\":1", log_content)

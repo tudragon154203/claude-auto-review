@@ -7,7 +7,7 @@ from pathlib import Path
 
 from tests.e2e.support import EndToEndTestCase
 from claude_auto_review.runtime.client_dirs import client_state_path
-from claude_auto_review.paths.path_utils import get_log_path, local_now_iso
+from claude_auto_review.paths.path_utils import get_state_path, local_now_iso
 
 
 _CLEANUP_SCRIPT = (
@@ -184,7 +184,7 @@ class ExpiredReviewCleanupE2ETests(EndToEndTestCase):
         result = self._run_cleanup(project_root, client_id)
         self.assertEqual(result.returncode, 0)
 
-        log_path = get_log_path(project_root)
+        log_path = get_state_path(project_root)
         self.assertTrue(log_path.exists())
         log_content = log_path.read_text(encoding="utf-8")
         self.assertIn("expired_reviews_cleaned", log_content)

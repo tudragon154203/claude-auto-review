@@ -4,7 +4,6 @@ from unittest.mock import patch
 
 from claude_auto_review.paths.path_utils import (
     CLIENTS_DIR,
-    get_log_path,
     get_state_path,
 )
 from claude_auto_review.runtime.client_dirs import (
@@ -56,9 +55,9 @@ class TestPathUtils(StateTestCase, unittest.TestCase):
         result = get_state_path(project_root)
         self.assertEqual(result, project_root / ".claude" / "claude-auto-review" / "state.jsonl")
 
-    def test_get_log_path_returns_correct_path(self):
+    def test_get_state_path_returns_correct_path(self):
         project_root = self.temp_project()
-        result = get_log_path(project_root)
+        result = get_state_path(project_root)
         self.assertEqual(result, project_root / ".claude" / "claude-auto-review" / "state.jsonl")
 
     def test_get_client_runtime_dir_refreshes_deleted_cached_path(self):

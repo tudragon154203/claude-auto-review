@@ -8,7 +8,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[4]
 sys.path.insert(0, str(REPO_ROOT))
 
-from claude_auto_review.paths.path_utils import get_log_path  # noqa: E402
+from claude_auto_review.paths.path_utils import get_state_path  # noqa: E402
 from claude_auto_review.state.models import EditRecord  # noqa: E402
 from claude_auto_review.state.store.write import append_state  # noqa: E402
 from tests.int.hooks.support import HookTestCase  # noqa: E402
@@ -117,7 +117,7 @@ class TestSetupCancel(HookTestCase, unittest.TestCase):
         self.assertFalse((project_root / ".claude" / "claude-auto-review" / "clients" / "client-test-session" / "state.jsonl").exists())
         self.assertFalse((project_root / ".claude" / "claude-auto-review" / "clients" / "client-test-session" / "run").exists())
         self.assertFalse((project_root / ".claude" / "claude-auto-review" / "clients" / "client-test-session" / "reviews").exists())
-        log_content = get_log_path(project_root).read_text(encoding="utf-8")
+        log_content = get_state_path(project_root).read_text(encoding="utf-8")
         self.assertIn('"type":"cancel_completed"', log_content)
 
     def test_uninstall_script_removes_hooks_and_legacy_gitignore_entries(self):

@@ -6,7 +6,7 @@ from pathlib import Path
 from tests.int.support import IntegrationTestCase, REPO_ROOT, _FakeResponse
 from tests.support import client_dir
 
-from claude_auto_review.paths.path_utils import get_log_path
+from claude_auto_review.paths.path_utils import get_state_path
 from claude_auto_review.runtime.client_dirs import client_state_path
 from claude_auto_review.runtime.events import log_event
 from claude_auto_review.runtime.cleanup.session import cancel_runtime
@@ -35,7 +35,7 @@ class IntegrationRuntimeTests(IntegrationTestCase):
         project_root = self.temp_project()
 
         log_event(project_root, "test_event", foo="bar", count=42)
-        log_path = get_log_path(project_root)
+        log_path = get_state_path(project_root)
 
         self.assertTrue(log_path.exists())
         content = log_path.read_text(encoding="utf-8")
