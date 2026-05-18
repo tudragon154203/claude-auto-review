@@ -4,7 +4,7 @@ import socket
 import unittest
 from urllib import error
 
-from claude_auto_review.stop.classifier.core.client import _parse_classifier_label, call_classifier_api, sanitize_base_url
+from claude_auto_review.stop.classifier.core.client import parse_classifier_label, call_classifier_api, sanitize_base_url
 
 
 class _FakeResponse:
@@ -30,8 +30,8 @@ class TestClassifierClient(unittest.TestCase):
         self.assertEqual(sanitize_base_url("http://token@example.test:13456/proxy/?secret=1#frag"), "http://example.test:13456/proxy")
         self.assertEqual(sanitize_base_url("http://["), "")
 
-    def test_parse_classifier_label_ignores_non_text_blocks(self):
-        label, reason = _parse_classifier_label(
+    def testparse_classifier_label_ignores_non_text_blocks(self):
+        label, reason = parse_classifier_label(
             {
                 "content": [
                     {"type": "thinking", "thinking": "maybe"},
@@ -42,8 +42,8 @@ class TestClassifierClient(unittest.TestCase):
         self.assertEqual(label, "complete")
         self.assertEqual(reason, "parsed_label")
 
-    def test_parse_classifier_label_rejects_non_objects(self):
-        label, reason = _parse_classifier_label(["not", "a", "dict"])
+    def testparse_classifier_label_rejects_non_objects(self):
+        label, reason = parse_classifier_label(["not", "a", "dict"])
         self.assertEqual(label, "unknown")
         self.assertEqual(reason, "bad_response")
 

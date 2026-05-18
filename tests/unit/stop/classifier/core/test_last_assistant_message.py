@@ -67,8 +67,9 @@ class TestLastAssistantMessageClassifier(StateTestCase, unittest.TestCase):
         self.assertEqual(result.status, "complete")
         self.assertEqual(seen["url"], "http://127.0.0.1:13456/v1/messages")
         self.assertEqual(seen["timeout"], DEFAULT_TIMEOUT_SECONDS)
-        self.assertEqual(seen["headers"]["Anthropic-version"], "2023-06-01")
-        self.assertEqual(seen["headers"]["X-api-key"], "top-secret")
+        headers_lower = {k.lower(): v for k, v in seen["headers"].items()}
+        self.assertEqual(headers_lower["anthropic-version"], "2023-06-01")
+        self.assertEqual(headers_lower["x-api-key"], "top-secret")
         self.assertEqual(seen["body"]["model"], DEFAULT_CLASSIFIER_MODEL)
         self.assertEqual(seen["body"]["max_tokens"], 8)
         self.assertEqual(seen["body"]["temperature"], 0)
@@ -101,7 +102,7 @@ class TestLastAssistantMessageClassifier(StateTestCase, unittest.TestCase):
                 result = classify_last_assistant_message(
                     self._ctx(payload={"last_assistant_message": "Message"}),
                     env=self.env,
-                    urlopen=lambda req, timeout, value=label: _FakeResponse(response_payload),
+                    urlopen=lambda req, timeout, rp=response_payload: _FakeResponse(rp),
                 )
                 self.assertEqual(result.status, label)
                 self.assertEqual(result.reason, "parsed_label")

@@ -5,8 +5,6 @@ from claude_auto_review.stop.classifier.core.models import result_factory
 from claude_auto_review.stop.classifier.core.request import build_classifier_request_body
 from claude_auto_review.stop.classifier.core.response import parse_classifier_label, response_payload_debug_json
 
-_parse_classifier_label = parse_classifier_label
-
 ANTHROPIC_API_VERSION = "2023-06-01"
 
 def sanitize_base_url(base_url):
