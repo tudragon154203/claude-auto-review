@@ -39,7 +39,13 @@ def has_review_findings(content: str | None) -> bool:
     findings = extract_review_findings_text(content)
     if not findings:
         return False
-    return not re.match(r"^(none\b|no findings\b|no issues\b|clean\b)", findings.strip(), re.IGNORECASE)
+    for line in findings.splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        if re.match(r"^(none\b|no findings\b|no issues\b|clean\b)", line, re.IGNORECASE):
+            return False
+    return True
 
 
 def normalize_review_verdict_content(content: str | None) -> str | None:
