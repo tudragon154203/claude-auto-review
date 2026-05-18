@@ -51,21 +51,16 @@ Thanks to both projects for the ideas and patterns that influenced this plugin.
 See [INSTALL.md](INSTALL.md) for full details.
 
 ```bash
-# From this repo (pip editable install + one-time init):
-git clone https://github.com/tudragon154203/claude-auto-review.git
-cd claude-auto-review
-pip install -e .
+# Install from PyPI
+pip install claude-auto-review
+
+# One-time init in your target project root
 claude-auto-review install
 ```
 
 The installer creates the local `.claude/claude-auto-review/` runtime tree (with `scripts/`, `agents/`, `clients/` subdirs; `clients/*/reviews/` and `clients/*/run/` created lazily per session), copies the default rules, configures `.claude/settings.json`, and updates `.gitignore`.
 
-## Quick Start
-
-```bash
-# Run tests
-python -m unittest discover -s tests
-```
+After installation, future Claude Code sessions will **work with claude-auto-review automatically**.
 
 ## Implementation
 

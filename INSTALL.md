@@ -2,12 +2,12 @@
 
 ## CLI Commands
 
-| Command | Description |
-| --- | --- |
-| `claude-auto-review install` | Set up the plugin in the current project |
-| `claude-auto-review cancel` | Cancel the active review session |
-| `claude-auto-review prompt` | Manually trigger review prompt generation |
-| `claude-auto-review uninstall` | Remove plugin from current project |
+| Command                          | Description                               |
+| -------------------------------- | ----------------------------------------- |
+| `claude-auto-review install`   | Set up the plugin in the current project  |
+| `claude-auto-review cancel`    | Cancel the active review session          |
+| `claude-auto-review prompt`    | Manually trigger review prompt generation |
+| `claude-auto-review uninstall` | Remove plugin from current project        |
 
 ## Prerequisites
 
@@ -15,34 +15,39 @@
 - **Python 3.10+**
 - **Git** (used for diff generation during reviews)
 
-## Option A: pip install (recommended)
+## Option A: Install from PyPI (recommended)
 
 ```bash
-# Install from this repo (editable)
-git clone https://github.com/tudragon154203/claude-auto-review.git
-cd claude-auto-review
-pip install -e .
-
-# Or install from git
-pip install git+https://github.com/tudragon154203/claude-auto-review.git
+pip install claude-auto-review
 ```
 
 Then initialize the plugin in any project:
 
 ```bash
+# cd into project
 claude-auto-review install
 ```
 
 This creates the local runtime tree and configures hooks. Run it from the project root where you want reviews to run.
 
-## Option B: Run from a checkout
+## Option B: Install from GitHub directly
 
-From inside the project where you want reviews to run:
+```bash
+pip install git+https://github.com/tudragon154203/claude-auto-review.git
+claude-auto-review install
+```
+
+## Option C: Editable install from local checkout (development)
 
 ```bash
 git clone https://github.com/tudragon154203/claude-auto-review.git
 cd claude-auto-review
 pip install -e .
+```
+
+Then run this in the project where you want reviews to run:
+
+```bash
 claude-auto-review install
 ```
 
@@ -75,5 +80,6 @@ This removes the `.claude/claude-auto-review/` directory, strips plugin hook ent
 6. If the classifier returns `incomplete`, stop is allowed to continue and Claude can address the findings. Otherwise (`complete`, `unknown`, `error`, or `skipped`), the stop hook blocks until the unreviewed changes are reviewed.
 
 Hook lifecycle events now use the same JSONL state files as the review tracker:
+
 - per-client events go to `.claude/claude-auto-review/clients/{session-id}/state.jsonl`
 - project-level lifecycle events go to `.claude/claude-auto-review/state.jsonl`
