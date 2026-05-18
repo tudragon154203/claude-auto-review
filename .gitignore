@@ -19,3 +19,5 @@ AGENTS.md
 CLAUDE.md
 bash.exe.stackdump
 .ruff_cache
+
+dist/
