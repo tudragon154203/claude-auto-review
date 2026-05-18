@@ -6,7 +6,7 @@ from claude_auto_review.runtime.events import log_event
 from claude_auto_review.runtime.setup import ensure_client_runtime, ensure_runtime
 from claude_auto_review.state.models import ClassificationRecord, EditRecord, ReviewAutocompleteRecord, ReviewCompletedRecord, ReviewFileRecord, ReviewMetadata, StopBlockedRecord
 from claude_auto_review.state.store.read import get_unreviewed_files, latest_entries_by_file, load_state, reviewed_hashes_by_file, was_hash_reviewed
-from claude_auto_review.state.store.write import append_state
+from claude_auto_review.state.store.write import append_state_event
 
 from tests.unit.state.support import StateTestCase
 
@@ -16,9 +16,9 @@ class TestStateStore(StateTestCase, unittest.TestCase):
     def test_loads_latest_unreviewed_file_entries(self):
         project_root = self.temp_project()
         ensure_runtime(project_root)
-        append_state(EditRecord(timestamp="2026-05-05T08:00:00+07:00", file="a.ts", hash="11111111"), project_root)
-        append_state(EditRecord(timestamp="2026-05-05T09:00:00+07:00", file="a.ts", hash="22222222", reviewed=True, reviewId="rev-1"), project_root)
-        append_state(EditRecord(timestamp="2026-05-05T10:00:00+07:00", file="b.ts", hash="33333333"), project_root)
+        append_state_event(EditRecord(timestamp="2026-05-05T08:00:00+07:00", file="a.ts", hash="11111111"), project_root)
+        append_state_event(EditRecord(timestamp="2026-05-05T09:00:00+07:00", file="a.ts", hash="22222222", reviewed=True, reviewId="rev-1"), project_root)
+        append_state_event(EditRecord(timestamp="2026-05-05T10:00:00+07:00", file="b.ts", hash="33333333"), project_root)
 
         self.assertEqual(get_unreviewed_files(load_state(project_root))[0].file, "b.ts")
 
@@ -174,3 +174,4 @@ class TestStateStore(StateTestCase, unittest.TestCase):
         self.assertIsInstance(state[0], ReviewAutocompleteRecord)
         self.assertEqual(state[0].status, "empty_stdout")
         self.assertEqual(state[0].reviewId, "rev-1")
+

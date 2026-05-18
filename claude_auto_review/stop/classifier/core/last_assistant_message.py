@@ -2,7 +2,7 @@ import os
 import time
 
 from claude_auto_review.config.settings import SETTING_CLASSIFIER_TIMEOUT, get_setting_float
-from claude_auto_review.state.store.write import append_state
+from claude_auto_review.state.store.write import append_state_event
 from claude_auto_review.stop.classifier.core.client import call_classifier_api, sanitize_base_url
 from claude_auto_review.stop.classifier.core.extraction import extract_last_assistant_message_text
 from claude_auto_review.stop.classifier.core.models import (
@@ -14,7 +14,7 @@ from claude_auto_review.stop.orchestration.core.context import RuntimeContext
 
 def _persist_result(result, ctx):
     include_debug = ctx.settings.get("debug", True)
-    append_state(result.as_state_entry(include_debug=include_debug), ctx.project_root, client_id=ctx.client_id)
+    append_state_event(result.as_state_entry(include_debug=include_debug), ctx.project_root, client_id=ctx.client_id)
 
 
 def classify_last_assistant_message(ctx: RuntimeContext, env=None, urlopen=None):
@@ -54,3 +54,4 @@ def classify_last_assistant_message(ctx: RuntimeContext, env=None, urlopen=None)
     )
     _persist_result(result, ctx)
     return result
+

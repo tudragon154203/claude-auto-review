@@ -3,7 +3,7 @@ from pathlib import Path
 from claude_auto_review.runtime.client_dirs import get_existing_client_runtime_dir
 from claude_auto_review.paths.path_utils import get_state_path, local_now_iso
 from claude_auto_review.runtime.context import resolve_project_root
-from claude_auto_review.state.store.write import append_jsonl_record
+from claude_auto_review.state.store.write import write_jsonl_line
 
 
 def _json_safe(value):
@@ -32,7 +32,7 @@ def log_event(project_root, event_type, client_id=None, **kwargs):
         if client_id:
             entry["clientId"] = client_id
         entry.update(_json_safe(kwargs))
-        append_jsonl_record(target_path, entry)
+        write_jsonl_line(target_path, entry)
         return True
     except OSError:
         return False

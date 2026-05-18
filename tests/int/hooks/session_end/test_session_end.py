@@ -11,7 +11,7 @@ from claude_auto_review.runtime.setup import ensure_client_runtime  # noqa: E402
 from claude_auto_review.paths.path_utils import get_state_path  # noqa: E402
 from claude_auto_review.state.models import ReviewFileRecord, ReviewMetadata  # noqa: E402
 from claude_auto_review.state.store.read import load_state  # noqa: E402
-from claude_auto_review.state.store.write import append_state  # noqa: E402
+from claude_auto_review.state.store.write import append_state_event  # noqa: E402
 from tests.int.hooks.support import HookTestCase  # noqa: E402
 from tests.support import client_dir  # noqa: E402
 
@@ -135,7 +135,7 @@ class TestSessionEndHook(HookTestCase, unittest.TestCase):
         project_root = self.temp_project()
         ensure_client_runtime(project_root, "test-session")
         old_time = (datetime.now().astimezone() - timedelta(hours=2)).isoformat()
-        append_state(
+        append_state_event(
             ReviewMetadata(
                 timestamp=old_time,
                 reviewId="rev-expired",
@@ -159,7 +159,7 @@ class TestSessionEndHook(HookTestCase, unittest.TestCase):
         project_root = self.temp_project()
         ensure_client_runtime(project_root, "payload-session")
         old_time = (datetime.now().astimezone() - timedelta(hours=2)).isoformat()
-        append_state(
+        append_state_event(
             ReviewMetadata(
                 timestamp=old_time,
                 reviewId="rev-expired-payload",
@@ -190,3 +190,4 @@ class TestSessionEndHook(HookTestCase, unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+

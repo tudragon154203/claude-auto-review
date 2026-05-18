@@ -15,7 +15,7 @@ class TestFormatDuration(unittest.TestCase):
 
 class TestCompletion(unittest.TestCase):
     @patch("claude_auto_review.review.completion.mark_files_reviewed")
-    @patch("claude_auto_review.review.completion.append_state")
+    @patch("claude_auto_review.review.completion.append_state_event")
     @patch(
         "claude_auto_review.review.completion.get_unreviewed_files",
         return_value=[EditRecord(timestamp="t", file="still.ts", hash="abc")],
@@ -54,7 +54,7 @@ class TestCompletion(unittest.TestCase):
         self.assertEqual(blocked.reason, "partial_review")
 
     @patch("claude_auto_review.review.completion.mark_files_reviewed")
-    @patch("claude_auto_review.review.completion.append_state")
+    @patch("claude_auto_review.review.completion.append_state_event")
     @patch("claude_auto_review.review.completion.get_unreviewed_files", return_value=[])
     @patch(
         "claude_auto_review.review.completion.load_state",
@@ -77,7 +77,7 @@ class TestCompletion(unittest.TestCase):
         self.assertEqual(mock_append.call_count, 2)
 
     @patch("claude_auto_review.review.completion.mark_files_reviewed")
-    @patch("claude_auto_review.review.completion.append_state")
+    @patch("claude_auto_review.review.completion.append_state_event")
     @patch("claude_auto_review.review.completion.get_unreviewed_files", return_value=[])
     @patch(
         "claude_auto_review.review.completion.load_state",
@@ -105,3 +105,4 @@ class TestCompletion(unittest.TestCase):
     def test_apply_completed_review_raises_on_missing_file(self):
         with self.assertRaises(ValueError):
             apply_completed_review(Path("/fake"), "cid", "rid", [{"hash": "123"}])
+

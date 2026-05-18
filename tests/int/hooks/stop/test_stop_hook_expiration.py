@@ -8,7 +8,7 @@ REPO_ROOT = Path(__file__).resolve().parents[4]
 sys.path.insert(0, str(REPO_ROOT))
 from claude_auto_review.state.models import ReviewFileRecord, ReviewMetadata  # noqa: E402
 from claude_auto_review.state.store.read import load_state  # noqa: E402
-from claude_auto_review.state.store.write import append_state  # noqa: E402
+from claude_auto_review.state.store.write import append_state_event  # noqa: E402
 from tests.int.hooks.support import HookTestCase  # noqa: E402
 from tests.support import client_relpath  # noqa: E402
 
@@ -22,7 +22,7 @@ class TestStopHookExpiration(HookTestCase, unittest.TestCase):
         self.run_python("hooks/post_tool_use.py", project_root, payload, client_id="env-session")
 
         old_time = (datetime.now().astimezone() - timedelta(hours=2)).isoformat()
-        append_state(
+        append_state_event(
             ReviewMetadata(
                 timestamp=old_time,
                 reviewId="expired-payload",
@@ -69,7 +69,7 @@ class TestStopHookExpiration(HookTestCase, unittest.TestCase):
         self.run_python("hooks/post_tool_use.py", project_root, json.dumps({"file_path": "src/app.ts"}))
 
         old_time = (datetime.now().astimezone() - timedelta(hours=2)).isoformat()
-        append_state(
+        append_state_event(
             ReviewMetadata(
                 timestamp=old_time,
                 reviewId="rev-expired",
@@ -104,7 +104,7 @@ class TestStopHookExpiration(HookTestCase, unittest.TestCase):
         self.run_python("hooks/post_tool_use.py", project_root, json.dumps({"file_path": "src/app.ts"}))
 
         old_time = (datetime.now().astimezone() - timedelta(minutes=1)).isoformat()
-        append_state(
+        append_state_event(
             ReviewMetadata(
                 timestamp=old_time,
                 reviewId="rev-custom-timeout",
@@ -123,3 +123,4 @@ class TestStopHookExpiration(HookTestCase, unittest.TestCase):
         state_after = load_state(project_root, client_id="test-session")
         expired_ids = [e.reviewId for e in state_after if e.type == "review" and e.status == "pending"]
         self.assertIn("rev-custom-timeout", expired_ids, "Stop hook should not remove expired reviews")
+

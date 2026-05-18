@@ -5,7 +5,7 @@ from pathlib import Path
 from claude_auto_review.paths.path_utils import local_now_iso
 from claude_auto_review.state.models import EditRecord, ReviewCompletedRecord, ReviewFileRecord, ReviewMetadata, StopBlockedRecord, StateEvent
 from claude_auto_review.state.store.read import get_unreviewed_files, load_state
-from claude_auto_review.state.store.write import append_state, mark_files_reviewed
+from claude_auto_review.state.store.write import append_state_event, mark_files_reviewed
 from claude_auto_review.config.constants import DURATION_ROUND_PRECISION, SECONDS_PER_HOUR, SECONDS_PER_MINUTE
 from claude_auto_review.utils.datetime_utils import parse_iso_timestamp
 
@@ -95,8 +95,8 @@ def record_completed_review(
     state_before = load_state(project_root, client_id)
     timestamp = local_now_iso()
     completed_review = _review_status_completed_entry(review_id, client_id)
-    append_state(completed_review, project_root, client_id=client_id)
-    append_state(
+    append_state_event(completed_review, project_root, client_id=client_id)
+    append_state_event(
         _review_completed_entry(review_id, validated_entries, state_before, timestamp, client_id),
         project_root,
         client_id=client_id,
@@ -113,7 +113,7 @@ def apply_completed_review(
     record_completed_review(project_root, client_id, review_id, covered_entries)
     remaining = get_unreviewed_files(load_state(project_root, client_id))
     if remaining:
-        append_state(
+        append_state_event(
             StopBlockedRecord(
                 timestamp=local_now_iso(),
                 reason=REASON_PARTIAL_REVIEW,
@@ -124,3 +124,4 @@ def apply_completed_review(
             client_id=client_id,
         )
     return remaining
+

@@ -6,7 +6,7 @@ from claude_auto_review.paths.path_utils import local_now_iso
 from claude_auto_review.runtime.setup import ensure_client_runtime
 from claude_auto_review.state.reviews.matching import pending_reviews_for_entries
 from claude_auto_review.state.store.read import consecutive_stop_blocks, get_unreviewed_files, load_state, was_hash_reviewed
-from claude_auto_review.state.store.write import append_review_started, append_state, mark_files_reviewed
+from claude_auto_review.state.store.write import append_review_started, append_state_event, mark_files_reviewed
 
 
 class IntegrationStateTests(IntegrationTestCase):
@@ -21,7 +21,7 @@ class IntegrationStateTests(IntegrationTestCase):
             hash="abc123",
             reviewed=False,
         )
-        append_state(entry, project_root, client_id=client_id)
+        append_state_event(entry, project_root, client_id=client_id)
 
         state = load_state(project_root, client_id)
         entries = [e for e in state if isinstance(e, EditRecord)]
@@ -43,7 +43,7 @@ class IntegrationStateTests(IntegrationTestCase):
         ensure_client_runtime(project_root, client_id)
 
         for file, h in [("a.ts", "h1"), ("b.ts", "h2"), ("c.ts", "h3")]:
-            append_state(
+            append_state_event(
                 EditRecord(timestamp=local_now_iso(), file=file, hash=h, reviewed=False),
                 project_root,
                 client_id=client_id,
@@ -75,12 +75,12 @@ class IntegrationStateTests(IntegrationTestCase):
         ensure_client_runtime(project_root, "alice")
         ensure_client_runtime(project_root, "bob")
 
-        append_state(
+        append_state_event(
             EditRecord(timestamp=local_now_iso(), file="alice.txt", hash="1111", reviewed=False),
             project_root,
             client_id="alice",
         )
-        append_state(
+        append_state_event(
             EditRecord(timestamp=local_now_iso(), file="bob.txt", hash="2222", reviewed=False),
             project_root,
             client_id="bob",
@@ -102,12 +102,12 @@ class IntegrationStateTests(IntegrationTestCase):
         client_id = "stop-blocks-reset"
         ensure_client_runtime(project_root, client_id)
 
-        append_state(
+        append_state_event(
             EditRecord(timestamp=local_now_iso(), file="a.ts", hash="h1", reviewed=False),
             project_root, client_id=client_id
         )
         for _ in range(3):
-            append_state(
+            append_state_event(
             StopBlockedRecord(timestamp=local_now_iso(), reason="x"),
             project_root, client_id=client_id
         )
@@ -115,7 +115,7 @@ class IntegrationStateTests(IntegrationTestCase):
         state = load_state(project_root, client_id)
         self.assertEqual(consecutive_stop_blocks(state), 3)
 
-        append_state(
+        append_state_event(
             EditRecord(timestamp=local_now_iso(), file="a.ts", hash="h1", reviewed=True, reviewId="r1"),
             project_root, client_id=client_id
         )
@@ -132,7 +132,7 @@ class IntegrationStateTests(IntegrationTestCase):
             EditRecord(timestamp=local_now_iso(), file="f2.ts", hash="b", reviewed=False),
         ]
         for e in entries:
-            append_state(e, project_root, client_id=client_id)
+            append_state_event(e, project_root, client_id=client_id)
 
         state_before = load_state(project_root, client_id)
         pending = pending_reviews_for_entries(state_before, state_before)
@@ -164,9 +164,9 @@ class IntegrationStateTests(IntegrationTestCase):
             reviewed=False,
         )
 
-        append_state(covered_entry, project_root, client_id=client_id)
+        append_state_event(covered_entry, project_root, client_id=client_id)
         append_review_started([covered_entry], "review-123", "reviews/review-123.md", project_root, client_id=client_id)
-        append_state(remaining_entry, project_root, client_id=client_id)
+        append_state_event(remaining_entry, project_root, client_id=client_id)
 
         remaining = apply_completed_review(project_root, client_id, "review-123", [covered_entry])
 
@@ -185,3 +185,4 @@ class IntegrationStateTests(IntegrationTestCase):
         self.assertEqual(blocked_entries[-1].files, ["src/b.ts"])
         self.assertTrue(was_hash_reviewed(state, "src/a.ts", "aaaa1111"))
         self.assertFalse(was_hash_reviewed(state, "src/b.ts", "bbbb2222"))
+

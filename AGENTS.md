@@ -36,7 +36,7 @@ flowchart TD
 - `claude_auto_review/state/models.py` defines the record shapes written to JSONL.
 - `claude_auto_review/state/snapshot.py` indexes loaded events for lifecycle queries.
 - `claude_auto_review/state/store/read.py` loads client state and snapshot-backed lifecycle queries.
-- `claude_auto_review/state/store/write.py` appends events and computes file hashes.
+- `claude_auto_review/state/store/write.py` appends state events via `append_state_event()`, writes raw JSONL lines via `write_jsonl_line()`, and computes file hashes.
 - `claude_auto_review/state/store/rewrite.py` rewrites JSONL state while preserving invalid lines.
 - `claude_auto_review/state/reviews/verdicts.py` parses and normalizes review verdicts.
 - `claude_auto_review/state/review_matching.py` matches pending reviews to file entries.

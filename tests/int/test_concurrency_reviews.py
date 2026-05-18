@@ -4,7 +4,7 @@ from claude_auto_review.runtime.client_dirs import client_reviews_dir
 from claude_auto_review.state.models import EditRecord
 from claude_auto_review.state.reviews.matching import pending_reviews_for_entries
 from claude_auto_review.state.store.read import get_unreviewed_files, load_state
-from claude_auto_review.state.store.write import append_review_started, append_state
+from claude_auto_review.state.store.write import append_review_started, append_state_event
 
 
 class ConcurrencyReviewTests(ClientIsolationTestCase):
@@ -54,8 +54,8 @@ class ConcurrencyReviewTests(ClientIsolationTestCase):
         entry_a = EditRecord(type="edit", file="a.ts", hash="hash-a", timestamp="2026-05-09T21:00:00+07:00", reviewed=False)
         entry_b = EditRecord(type="edit", file="b.ts", hash="hash-b", timestamp="2026-05-09T22:00:00+07:00", reviewed=False)
 
-        append_state(entry_a, project_root, client_id=client_a)
-        append_state(entry_b, project_root, client_id=client_b)
+        append_state_event(entry_a, project_root, client_id=client_a)
+        append_state_event(entry_b, project_root, client_id=client_b)
         append_review_started([entry_a], "rev-a-pending", "dummy-a.md", project_root, client_id=client_a)
 
         state_a = load_state(project_root, client_a)
@@ -71,3 +71,4 @@ class ConcurrencyReviewTests(ClientIsolationTestCase):
 
         self.assertEqual(len(pending_a), 1)
         self.assertEqual(len(pending_b), 0)
+

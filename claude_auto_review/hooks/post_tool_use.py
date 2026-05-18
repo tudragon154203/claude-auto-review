@@ -10,7 +10,7 @@ from claude_auto_review.runtime.process import run_fail_open
 from claude_auto_review.state.hook_input import extract_file_paths_from_hook_input
 from claude_auto_review.state.models import EditRecord
 from claude_auto_review.state.store.read import get_file_hash, load_state, was_hash_reviewed
-from claude_auto_review.state.store.write import append_state
+from claude_auto_review.state.store.write import append_state_event
 
 
 def _run_post_tool_use():
@@ -37,7 +37,7 @@ def _run_post_tool_use():
             continue
         file_hash = get_file_hash(file_path, project_root)
         if not file_hash:
-            append_state(
+            append_state_event(
                 EditRecord(
                     timestamp=timestamp,
                     file=file_path,
@@ -51,7 +51,7 @@ def _run_post_tool_use():
             log_event(project_root, "file_deletion_tracked", client_id=client_id, file=file_path, hash=DELETED_FILE_HASH, reviewed=False)
             continue
         reviewed = was_hash_reviewed(state, file_path, file_hash)
-        append_state(
+        append_state_event(
             EditRecord(
                 timestamp=timestamp,
                 file=file_path,
@@ -71,3 +71,4 @@ def main():
 
 if __name__ == "__main__":
     raise SystemExit(main())
+

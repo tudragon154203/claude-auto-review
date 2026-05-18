@@ -4,7 +4,7 @@ from claude_auto_review.runtime.client_dirs import client_state_path
 from claude_auto_review.runtime.setup import ensure_client_runtime
 from claude_auto_review.state.models import ClassificationRecord, EditRecord, StopBlockedRecord
 from claude_auto_review.state.store.read import consecutive_stop_blocks, load_state
-from claude_auto_review.state.store.write import append_state
+from claude_auto_review.state.store.write import append_state_event
 
 from tests.unit.state.support import StateTestCase
 
@@ -25,12 +25,12 @@ class TestStopBlocks(StateTestCase, unittest.TestCase):
         project_root = self.temp_project()
         client_id = "client-batch"
         self.ensure_client(project_root, client_id)
-        append_state(EditRecord(timestamp="2026-05-05T08:00:00+07:00", file="a.ts", hash="1"), project_root, client_id=client_id)
-        append_state(StopBlockedRecord(timestamp="2026-05-05T08:01:00+07:00", reason="no_pending_review"), project_root, client_id=client_id)
-        append_state(StopBlockedRecord(timestamp="2026-05-05T08:02:00+07:00", reason="review_pending"), project_root, client_id=client_id)
-        append_state(StopBlockedRecord(timestamp="2026-05-05T08:03:00+07:00", reason="review_pending"), project_root, client_id=client_id)
-        append_state(EditRecord(timestamp="2026-05-05T08:04:00+07:00", file="b.ts", hash="2"), project_root, client_id=client_id)
-        append_state(StopBlockedRecord(timestamp="2026-05-05T08:05:00+07:00", reason="no_pending_review"), project_root, client_id=client_id)
+        append_state_event(EditRecord(timestamp="2026-05-05T08:00:00+07:00", file="a.ts", hash="1"), project_root, client_id=client_id)
+        append_state_event(StopBlockedRecord(timestamp="2026-05-05T08:01:00+07:00", reason="no_pending_review"), project_root, client_id=client_id)
+        append_state_event(StopBlockedRecord(timestamp="2026-05-05T08:02:00+07:00", reason="review_pending"), project_root, client_id=client_id)
+        append_state_event(StopBlockedRecord(timestamp="2026-05-05T08:03:00+07:00", reason="review_pending"), project_root, client_id=client_id)
+        append_state_event(EditRecord(timestamp="2026-05-05T08:04:00+07:00", file="b.ts", hash="2"), project_root, client_id=client_id)
+        append_state_event(StopBlockedRecord(timestamp="2026-05-05T08:05:00+07:00", reason="no_pending_review"), project_root, client_id=client_id)
         state = load_state(project_root, client_id)
         self.assertEqual(consecutive_stop_blocks(state), 4)
 
@@ -38,12 +38,12 @@ class TestStopBlocks(StateTestCase, unittest.TestCase):
         project_root = self.temp_project()
         client_id = "client-reset"
         self.ensure_client(project_root, client_id)
-        append_state(EditRecord(timestamp="2026-05-05T08:00:00+07:00", file="x.ts", hash="x"), project_root, client_id=client_id)
-        append_state(StopBlockedRecord(timestamp="2026-05-05T08:01:00+07:00", reason="review_pending"), project_root, client_id=client_id)
-        append_state(StopBlockedRecord(timestamp="2026-05-05T08:02:00+07:00", reason="review_pending"), project_root, client_id=client_id)
-        append_state(EditRecord(timestamp="2026-05-05T08:03:00+07:00", file="x.ts", hash="x", reviewed=True, reviewId="rev-1"), project_root, client_id=client_id)
-        append_state(EditRecord(timestamp="2026-05-05T08:04:00+07:00", file="y.ts", hash="y"), project_root, client_id=client_id)
-        append_state(StopBlockedRecord(timestamp="2026-05-05T08:05:00+07:00", reason="no_pending_review"), project_root, client_id=client_id)
+        append_state_event(EditRecord(timestamp="2026-05-05T08:00:00+07:00", file="x.ts", hash="x"), project_root, client_id=client_id)
+        append_state_event(StopBlockedRecord(timestamp="2026-05-05T08:01:00+07:00", reason="review_pending"), project_root, client_id=client_id)
+        append_state_event(StopBlockedRecord(timestamp="2026-05-05T08:02:00+07:00", reason="review_pending"), project_root, client_id=client_id)
+        append_state_event(EditRecord(timestamp="2026-05-05T08:03:00+07:00", file="x.ts", hash="x", reviewed=True, reviewId="rev-1"), project_root, client_id=client_id)
+        append_state_event(EditRecord(timestamp="2026-05-05T08:04:00+07:00", file="y.ts", hash="y"), project_root, client_id=client_id)
+        append_state_event(StopBlockedRecord(timestamp="2026-05-05T08:05:00+07:00", reason="no_pending_review"), project_root, client_id=client_id)
         state = load_state(project_root, client_id)
         self.assertEqual(consecutive_stop_blocks(state), 1)
 
@@ -56,8 +56,8 @@ class TestStopBlocks(StateTestCase, unittest.TestCase):
         with state_path.open("a", encoding="utf-8", newline="\n") as fh:
             fh.write("just a string\nnull\n")
         # Add valid block entries on top
-        append_state(StopBlockedRecord(timestamp="2026-05-05T08:00:00+07:00", reason="review_pending"), project_root, client_id=client_id)
-        append_state(StopBlockedRecord(timestamp="2026-05-05T08:01:00+07:00", reason="review_pending"), project_root, client_id=client_id)
+        append_state_event(StopBlockedRecord(timestamp="2026-05-05T08:00:00+07:00", reason="review_pending"), project_root, client_id=client_id)
+        append_state_event(StopBlockedRecord(timestamp="2026-05-05T08:01:00+07:00", reason="review_pending"), project_root, client_id=client_id)
         state = load_state(project_root, client_id)
         self.assertEqual(consecutive_stop_blocks(state), 2)
 
@@ -65,8 +65,8 @@ class TestStopBlocks(StateTestCase, unittest.TestCase):
         project_root = self.temp_project()
         client_id = "client-classifier"
         self.ensure_client(project_root, client_id)
-        append_state(EditRecord(timestamp="2026-05-05T08:00:00+07:00", file="a.ts", hash="1"), project_root, client_id=client_id)
-        append_state(
+        append_state_event(EditRecord(timestamp="2026-05-05T08:00:00+07:00", file="a.ts", hash="1"), project_root, client_id=client_id)
+        append_state_event(
             ClassificationRecord(
                 timestamp="2026-05-05T08:01:00+07:00",
                 status="complete",
@@ -79,8 +79,9 @@ class TestStopBlocks(StateTestCase, unittest.TestCase):
             project_root,
             client_id=client_id,
         )
-        append_state(StopBlockedRecord(timestamp="2026-05-05T08:02:00+07:00", reason="review_pending"), project_root, client_id=client_id)
+        append_state_event(StopBlockedRecord(timestamp="2026-05-05T08:02:00+07:00", reason="review_pending"), project_root, client_id=client_id)
         state = load_state(project_root, client_id)
         self.assertEqual(consecutive_stop_blocks(state), 1)
+
 
 

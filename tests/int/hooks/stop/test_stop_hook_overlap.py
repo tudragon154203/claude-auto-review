@@ -8,7 +8,7 @@ REPO_ROOT = Path(__file__).resolve().parents[4]
 sys.path.insert(0, str(REPO_ROOT))
 from claude_auto_review.state.models import EditRecord, ReviewFileRecord, ReviewMetadata  # noqa: E402
 from claude_auto_review.state.store.read import load_state  # noqa: E402
-from claude_auto_review.state.store.write import append_state  # noqa: E402
+from claude_auto_review.state.store.write import append_state_event  # noqa: E402
 from tests.int.hooks.support import HookTestCase  # noqa: E402
 from tests.support import client_dir  # noqa: E402
 
@@ -36,7 +36,7 @@ class TestStopHookOverlap(HookTestCase, unittest.TestCase):
         ts_old = base.isoformat()
         ts_new = (base + timedelta(seconds=1)).isoformat()
 
-        append_state(
+        append_state_event(
             ReviewMetadata(
                 timestamp=ts_old,
                 reviewId="high-overlap",
@@ -51,7 +51,7 @@ class TestStopHookOverlap(HookTestCase, unittest.TestCase):
             project_root,
             client_id="test-session",
         )
-        append_state(
+        append_state_event(
             ReviewMetadata(
                 timestamp=ts_new,
                 reviewId="newer-low-overlap",
@@ -85,7 +85,7 @@ class TestStopHookOverlap(HookTestCase, unittest.TestCase):
         base = datetime.now().astimezone()
         ts_old = base.isoformat()
         ts_new = (base + timedelta(seconds=1)).isoformat()
-        append_state(
+        append_state_event(
             ReviewMetadata(
                 timestamp=ts_old,
                 reviewId="old",
@@ -97,7 +97,7 @@ class TestStopHookOverlap(HookTestCase, unittest.TestCase):
             project_root,
             client_id="test-session",
         )
-        append_state(
+        append_state_event(
             ReviewMetadata(
                 timestamp=ts_new,
                 reviewId="new",
@@ -131,7 +131,7 @@ class TestStopHookOverlap(HookTestCase, unittest.TestCase):
         review_dir.mkdir(parents=True, exist_ok=True)
         stale_path = review_dir / "review-stale.md"
         stale_path.write_text("## Verdict\n\nNot clean - fix a.ts.\n", encoding="utf-8")
-        append_state(
+        append_state_event(
             ReviewMetadata(
                 timestamp=datetime.now().astimezone().isoformat(),
                 reviewId="stale",
@@ -173,7 +173,7 @@ class TestStopHookOverlap(HookTestCase, unittest.TestCase):
 
         state = load_state(project_root, "test-session")
         current_entries = {entry.file: entry for entry in state if entry.type == "edit" and not entry.reviewed}
-        append_state(
+        append_state_event(
             EditRecord(
                 timestamp=datetime.now().astimezone().isoformat(),
                 file="src/b.ts",
@@ -193,3 +193,4 @@ class TestStopHookOverlap(HookTestCase, unittest.TestCase):
         latest_review = reviews[-1]
         self.assertEqual(latest_review.files, [ReviewFileRecord(file="src/a.ts", hash=current_entries["src/a.ts"].hash)])
         self.assertIn("Review " + latest_review.reviewId, json.loads(second_stop.stdout)["systemMessage"])
+

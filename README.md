@@ -35,6 +35,8 @@ The classifier now runs before pending-review resolution on unreviewed stop path
 
 The stop flow reads the current client state into a snapshot once per stop attempt so lifecycle queries share one view of the session.
 
+State events are written through a single semantic append path so the per-client `state.jsonl` log and the project-level lifecycle log stay aligned.
+
 ## Related Projects
 
 This plugin was inspired by:

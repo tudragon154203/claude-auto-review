@@ -10,7 +10,7 @@ sys.path.insert(0, str(REPO_ROOT))
 from claude_auto_review.state.models import EditRecord  # noqa: E402
 from claude_auto_review.runtime.setup import ensure_client_runtime  # noqa: E402
 from claude_auto_review.runtime.cleanup.stale import cleanup_stale_clients  # noqa: E402
-from claude_auto_review.state.store.write import append_state  # noqa: E402
+from claude_auto_review.state.store.write import append_state_event  # noqa: E402
 from tests.int.hooks.support import HookTestCase  # noqa: E402
 from tests.support import client_dir  # noqa: E402
 
@@ -23,7 +23,7 @@ class TestStaleCleanup(HookTestCase, unittest.TestCase):
 
         # Mock stale session with old timestamp
         stale_time = (datetime.now().astimezone() - timedelta(hours=50)).isoformat()
-        append_state(
+        append_state_event(
             EditRecord(timestamp=stale_time, file="test.txt", hash="123"),
             project_root,
             client_id="stale-session",
@@ -31,7 +31,7 @@ class TestStaleCleanup(HookTestCase, unittest.TestCase):
 
         # Mock fresh session with recent timestamp
         fresh_time = (datetime.now().astimezone() - timedelta(hours=10)).isoformat()
-        append_state(
+        append_state_event(
             EditRecord(timestamp=fresh_time, file="test.txt", hash="456"),
             project_root,
             client_id="fresh-session",
@@ -72,7 +72,7 @@ class TestStaleCleanup(HookTestCase, unittest.TestCase):
         ensure_client_runtime(project_root, "other-stale-session")
 
         stale_time = (datetime.now().astimezone() - timedelta(hours=50)).isoformat()
-        append_state(
+        append_state_event(
             EditRecord(timestamp=stale_time, file="test.txt", hash="123"),
             project_root,
             client_id="other-stale-session",
@@ -97,3 +97,4 @@ class TestStaleCleanup(HookTestCase, unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+

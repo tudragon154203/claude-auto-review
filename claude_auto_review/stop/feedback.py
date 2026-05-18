@@ -3,7 +3,7 @@ from pathlib import Path
 from claude_auto_review.paths.path_utils import local_now_iso
 from claude_auto_review.config.settings import DEFAULT_SETTINGS, get_setting_int
 from claude_auto_review.state.models import StopBlockedRecord
-from claude_auto_review.state.store.write import append_state
+from claude_auto_review.state.store.write import append_state_event
 from claude_auto_review.stop.response import block_response
 
 
@@ -64,7 +64,7 @@ def block_completed_review_findings(ctx, review_id, review_path, unreviewed):
         f"Claude Auto Review: Review {review_id} found issues to address.",
         build_review_findings_feedback(review_id, review_path, review_feedback_max_chars(ctx.settings), project_root=ctx.project_root),
     )
-    append_state(
+    append_state_event(
         StopBlockedRecord(
             timestamp=local_now_iso(),
             reason="review_findings",
@@ -74,3 +74,4 @@ def block_completed_review_findings(ctx, review_id, review_path, unreviewed):
         ctx.project_root,
         client_id=ctx.client_id,
     )
+

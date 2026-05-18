@@ -14,7 +14,7 @@ from claude_auto_review.runtime.setup import ensure_client_runtime, ensure_proje
 from claude_auto_review.config.settings import DEFAULT_TIMEOUT_SECONDS, load_settings
 from claude_auto_review.state.store.read import consecutive_stop_blocks, load_state
 from claude_auto_review.state.models import EditRecord
-from claude_auto_review.state.store.write import append_state
+from claude_auto_review.state.store.write import append_state_event
 from claude_auto_review.stop.classifier.core.last_assistant_message import classify_last_assistant_message
 from claude_auto_review.stop.orchestration.core.context import RuntimeContext
 
@@ -125,7 +125,7 @@ class IntegrationRuntimeTests(IntegrationTestCase):
         client_id = "cleanup-test"
         ensure_client_runtime(project_root, client_id)
 
-        append_state(
+        append_state_event(
             EditRecord(
                 timestamp=datetime.now().astimezone().isoformat(),
                 file="x.ts",
@@ -153,3 +153,4 @@ class IntegrationRuntimeTests(IntegrationTestCase):
         nonexistent = project_root / "nope" / "deep"
         log_event(nonexistent, "should_not_crash")
         self.assertTrue(True)
+
