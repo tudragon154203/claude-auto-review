@@ -1,45 +1,13 @@
 from dataclasses import dataclass
 from typing import Any, Literal, Optional
 
-from claude_auto_review.state.serialization import serialize_review_file_entries
+from claude_auto_review.state.file_record import (
+    ReviewFileRecord,
+    _coerce_review_file_entries,
+    _parse_review_file_entries,
+    serialize_review_file_entries,
+)
 
-
-@dataclass(frozen=True)
-class ReviewFileRecord:
-    file: str
-    hash: str
-
-    def to_dict(self) -> dict[str, Any]:
-        return {
-            "file": self.file,
-            "hash": self.hash,
-        }
-
-    @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "ReviewFileRecord":
-        return cls(file=data["file"], hash=data["hash"])
-
-
-
-def _coerce_review_file_entries(files: list[ReviewFileRecord]) -> list[ReviewFileRecord]:
-    coerced: list[ReviewFileRecord] = []
-    for item in files:
-        if not isinstance(item, ReviewFileRecord):
-            raise ValueError("files must contain ReviewFileRecord entries")
-        coerced.append(item)
-    return coerced
-
-
-def _parse_review_file_entries(files: list[dict[str, str]] | list[ReviewFileRecord]) -> list[ReviewFileRecord]:
-    parsed: list[ReviewFileRecord] = []
-    for item in files:
-        if isinstance(item, ReviewFileRecord):
-            parsed.append(item)
-            continue
-        if not isinstance(item, dict) or "file" not in item or "hash" not in item:
-            raise ValueError("files must contain file/hash entries")
-        parsed.append(ReviewFileRecord.from_dict(item))
-    return parsed
 
 
 @dataclass(frozen=True)
