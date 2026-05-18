@@ -1,6 +1,7 @@
 from pathlib import Path
 from dataclasses import dataclass
 
+from claude_auto_review.runtime.events import log_event
 from claude_auto_review.state.reviews.verdicts import (
     extract_review_verdict_text,
     is_completed_review_content,
@@ -117,18 +118,27 @@ def finalize_review_stop(ctx: RuntimeContext, resolution):
         return action_result
 
     user_prompt = build_review_completion_prompt(review_path)
-    attempt_stop_autocomplete(
-        ctx,
-        review_id,
-        review_path,
-        prompt_file,
-        user_prompt,
-        reviewer_timeout_seconds=reviewer_timeout_seconds,
-    )
+    for _attempt in range(2):
+        result = attempt_stop_autocomplete(
+            ctx,
+            review_id,
+            review_path,
+            prompt_file,
+            user_prompt,
+            reviewer_timeout_seconds=reviewer_timeout_seconds,
+        )
+        if result.status != "empty_stdout":
+            break
+        if _attempt == 0:
+            log_event(ctx.project_root, "stop_hook_claude_cli_retry", client_id=ctx.client_id, reviewId=review_id)
 
     artifact_state = _review_artifact_state(review_path)
     action_result = _apply_artifact_state(ctx, artifact_state, review_id, review_path, covered_entries, unreviewed)
     if action_result is not None:
         return action_result
+
+    if result.status == "empty_stdout":
+        log_event(ctx.project_root, "stop_hook_claude_cli_empty_approved", client_id=ctx.client_id, reviewId=review_id)
+        return 0
 
     return block_pending_review(ctx, review_id, review_path, prompt_file, unreviewed)

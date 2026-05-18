@@ -1,7 +1,7 @@
 import tempfile
 import unittest
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 from claude_auto_review.state.models import EditRecord, ReviewMetadata
 from claude_auto_review.stop.orchestration.core.context import RuntimeContext
@@ -115,7 +115,7 @@ class TestFinalizeReviewStop(unittest.TestCase):
     @patch("claude_auto_review.stop.orchestration.core.finalize.apply_completed_review", return_value=[])
     @patch("claude_auto_review.stop.orchestration.core.finalize.is_review_clean", return_value=True)
     @patch("claude_auto_review.stop.orchestration.core.finalize.build_review_completion_prompt")
-    @patch("claude_auto_review.stop.orchestration.core.finalize.attempt_stop_autocomplete", return_value=True)
+    @patch("claude_auto_review.stop.orchestration.core.finalize.attempt_stop_autocomplete", return_value=MagicMock(status="output_written"))
     @patch("claude_auto_review.stop.orchestration.core.finalize._read_review_verdict", side_effect=["Pending.", "Clean"])
     def test_pending_review_autocomplete_clean_returns_0(
         self, mock_verdict, mock_auto, mock_prompt, mock_clean, mock_apply, mock_covered
@@ -127,7 +127,7 @@ class TestFinalizeReviewStop(unittest.TestCase):
     @patch("claude_auto_review.stop.orchestration.core.finalize.get_entries_covered_by_review", return_value=[])
     @patch("claude_auto_review.stop.orchestration.core.finalize.apply_completed_review", return_value=[])
     @patch("claude_auto_review.stop.orchestration.core.finalize.build_review_completion_prompt")
-    @patch("claude_auto_review.stop.orchestration.core.finalize.attempt_stop_autocomplete", return_value=False)
+    @patch("claude_auto_review.stop.orchestration.core.finalize.attempt_stop_autocomplete", return_value=MagicMock(status="cli_not_found"))
     @patch("claude_auto_review.stop.orchestration.core.finalize._read_review_verdict", side_effect=["Pending.", "Clean"])
     @patch("claude_auto_review.stop.orchestration.core.finalize.is_review_clean", return_value=True)
     def test_pending_review_autocomplete_clean_file_returns_0(
@@ -141,7 +141,7 @@ class TestFinalizeReviewStop(unittest.TestCase):
     @patch("claude_auto_review.stop.orchestration.core.finalize.record_completed_review")
     @patch("claude_auto_review.stop.orchestration.core.finalize.block_completed_review_findings")
     @patch("claude_auto_review.stop.orchestration.core.finalize.build_review_completion_prompt")
-    @patch("claude_auto_review.stop.orchestration.core.finalize.attempt_stop_autocomplete", return_value=False)
+    @patch("claude_auto_review.stop.orchestration.core.finalize.attempt_stop_autocomplete", return_value=MagicMock(status="cli_not_found"))
     @patch("claude_auto_review.stop.orchestration.core.finalize._read_review_verdict", side_effect=["Pending.", "Not clean."])
     def test_autocomplete_completed_with_findings_blocks_completion(
         self, mock_verdict, mock_auto, mock_prompt, mock_block, mock_record, mock_covered
@@ -153,7 +153,7 @@ class TestFinalizeReviewStop(unittest.TestCase):
 
     @patch("claude_auto_review.stop.orchestration.core.finalize.get_entries_covered_by_review", return_value=[])
     @patch("claude_auto_review.stop.orchestration.core.finalize.build_review_completion_prompt")
-    @patch("claude_auto_review.stop.orchestration.core.finalize.attempt_stop_autocomplete", return_value=False)
+    @patch("claude_auto_review.stop.orchestration.core.finalize.attempt_stop_autocomplete", return_value=MagicMock(status="cli_not_found"))
     @patch("claude_auto_review.stop.orchestration.core.finalize._read_review_verdict", side_effect=["Pending.", None])
     def test_autocomplete_returns_2_on_pending(self, mock_verdict, mock_auto, mock_prompt, mock_covered):
         result = finalize_review_stop(_ctx(), self.resolution)
@@ -164,7 +164,7 @@ class TestFinalizeReviewStop(unittest.TestCase):
     @patch("claude_auto_review.stop.orchestration.core.finalize.block_completed_review_findings")
     @patch("claude_auto_review.stop.orchestration.core.finalize._review_has_completed_artifact", side_effect=[False, True])
     @patch("claude_auto_review.stop.orchestration.core.finalize.build_review_completion_prompt")
-    @patch("claude_auto_review.stop.orchestration.core.finalize.attempt_stop_autocomplete", return_value=False)
+    @patch("claude_auto_review.stop.orchestration.core.finalize.attempt_stop_autocomplete", return_value=MagicMock(status="cli_not_found"))
     @patch("claude_auto_review.stop.orchestration.core.finalize._read_review_verdict", side_effect=["Pending.", None])
     def test_autocomplete_with_non_placeholder_review_blocks_with_findings(
         self, mock_verdict, mock_auto, mock_prompt, mock_completed, mock_block, mock_record, mock_covered
@@ -182,13 +182,44 @@ class TestFinalizeReviewStop(unittest.TestCase):
     @patch("claude_auto_review.stop.orchestration.core.finalize.get_entries_covered_by_review", return_value=[])
     @patch("claude_auto_review.stop.orchestration.core.finalize.block_pending_review")
     @patch("claude_auto_review.stop.orchestration.core.finalize.build_review_completion_prompt")
-    @patch("claude_auto_review.stop.orchestration.core.finalize.attempt_stop_autocomplete", return_value=False)
+    @patch("claude_auto_review.stop.orchestration.core.finalize.attempt_stop_autocomplete", return_value=MagicMock(status="cli_not_found"))
     @patch("claude_auto_review.stop.orchestration.core.finalize._read_review_verdict", side_effect=["Pending.", None])
     def test_pending_review_blocks(self, mock_verdict, mock_auto, mock_prompt, mock_block_pending, mock_covered):
         mock_block_pending.return_value = 2
         result = finalize_review_stop(_ctx(), self.resolution)
         self.assertEqual(result, 2)
         mock_block_pending.assert_called_once()
+
+    @patch("claude_auto_review.stop.orchestration.core.finalize.get_entries_covered_by_review", return_value=[])
+    @patch("claude_auto_review.stop.orchestration.core.finalize.block_pending_review")
+    @patch("claude_auto_review.stop.orchestration.core.finalize.log_event")
+    @patch("claude_auto_review.stop.orchestration.core.finalize.build_review_completion_prompt")
+    @patch(
+        "claude_auto_review.stop.orchestration.core.finalize.attempt_stop_autocomplete",
+        side_effect=[
+            MagicMock(status="empty_stdout"),
+            MagicMock(status="empty_stdout"),
+        ],
+    )
+    @patch("claude_auto_review.stop.orchestration.core.finalize._read_review_verdict", side_effect=["Pending.", None])
+    def test_empty_stdout_after_retry_logs_approval_and_returns_0(
+        self, mock_verdict, mock_auto, mock_prompt, mock_log, mock_block_pending, mock_covered
+    ):
+        result = finalize_review_stop(_ctx(), self.resolution)
+        self.assertEqual(result, 0)
+        mock_log.assert_any_call(
+            Path("/fake"),
+            "stop_hook_claude_cli_retry",
+            client_id="c",
+            reviewId="r1",
+        )
+        mock_log.assert_any_call(
+            Path("/fake"),
+            "stop_hook_claude_cli_empty_approved",
+            client_id="c",
+            reviewId="r1",
+        )
+        mock_block_pending.assert_not_called()
 
     @patch("claude_auto_review.stop.orchestration.core.finalize.get_entries_covered_by_review", return_value=[])
     @patch("claude_auto_review.stop.orchestration.core.finalize.apply_completed_review")
