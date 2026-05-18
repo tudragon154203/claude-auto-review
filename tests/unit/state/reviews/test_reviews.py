@@ -4,6 +4,7 @@ from claude_auto_review.state.models import ReviewMetadata
 from claude_auto_review.state.reviews.expiry import is_review_expired
 from claude_auto_review.state.reviews.verdicts import (
     extract_review_verdict_text,
+    has_review_findings,
     is_completed_review_content,
     is_placeholder_review_content,
     is_review_clean,
@@ -113,6 +114,28 @@ class TestReviewCompletion(StateTestCase, unittest.TestCase):
             "Clean - no issues found.\n"
         )
         self.assertTrue(is_review_clean_content(content))
+
+    def test_is_review_clean_accepts_clean_verdict_with_note_preamble(self):
+        content = (
+            "## Findings\n"
+            "**Note:** No project rules file found. Performing a basic semantic review only.\n\n"
+            "Clean - no issues found. Claude may stop.\n\n"
+            "## Verdict\n"
+            "Clean - no issues found.\n"
+        )
+        self.assertTrue(is_review_clean_content(content))
+
+    def test_has_review_findings_detects_real_findings_after_clean_declaration(self):
+        content = (
+            "## Findings\n"
+            "Clean - no issues found.\n\n"
+            "### 1. Unused import\n"
+            "**Severity:** LOW\n"
+            "**Verdict:** Confirmed\n\n"
+            "## Verdict\n"
+            "1 issue found.\n"
+        )
+        self.assertTrue(has_review_findings(content))
 
     def test_returns_true_when_verdict_is_a_fixed_message(self):
         project_root = self.temp_project()

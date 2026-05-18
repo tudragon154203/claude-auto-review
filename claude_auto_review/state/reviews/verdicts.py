@@ -35,10 +35,14 @@ def extract_review_findings_text(content: str | None) -> str | None:
     return findings or None
 
 
+_FINDING_HEADING = re.compile(r"^###\s+(\d+\.|\[)")
+
 def has_review_findings(content: str | None) -> bool:
     findings = extract_review_findings_text(content)
     if not findings:
         return False
+    if any(_FINDING_HEADING.match(l) for l in findings.splitlines()):
+        return True
     for line in findings.splitlines():
         line = line.strip()
         if not line:
