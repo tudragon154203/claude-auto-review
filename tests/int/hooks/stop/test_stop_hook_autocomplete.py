@@ -39,7 +39,7 @@ class TestStopHookAutocomplete(HookTestCase, unittest.TestCase):
         self.assertNotIn("Pending.", content)
         self.assertTrue(is_review_complete(review_path))
 
-        log_path = project_root / ".claude" / "claude-auto-review" / "claude-auto-review.log"
+        log_path = client_dir(project_root) / "state.jsonl"
         log_content = log_path.read_text(encoding="utf-8")
         self.assertIn("stop_hook_claude_cli_done", log_content)
 

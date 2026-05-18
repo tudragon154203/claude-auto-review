@@ -59,7 +59,7 @@ class TestPathUtils(StateTestCase, unittest.TestCase):
     def test_get_log_path_returns_correct_path(self):
         project_root = self.temp_project()
         result = get_log_path(project_root)
-        self.assertEqual(result, project_root / ".claude" / "claude-auto-review" / "claude-auto-review.log")
+        self.assertEqual(result, project_root / ".claude" / "claude-auto-review" / "state.jsonl")
 
     def test_get_client_runtime_dir_refreshes_deleted_cached_path(self):
         project_root = self.temp_project()
@@ -102,4 +102,3 @@ class TestPathUtils(StateTestCase, unittest.TestCase):
         invalidate_client_runtime_dir_cache(project_root, client_id)
 
         self.assertEqual(get_client_runtime_dir(project_root, client_id), second_dir)
-

@@ -16,8 +16,14 @@ from claude_auto_review.state.models import (
 def _append_jsonl_state(entry: StateEvent, project_root, client_id):
     ensure_client_runtime(project_root, client_id)
     state_file = client_state_path(project_root, client_id)
-    with state_file.open("a", encoding="utf-8", newline="\n") as f:
-        f.write(json.dumps(entry.to_dict()) + "\n")
+    _append_jsonl_record(state_file, entry.to_dict())
+
+
+def _append_jsonl_record(path: Path, entry: dict):
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("a", encoding="utf-8", newline="\n") as f:
+        f.write(json.dumps(entry, separators=(",", ":"), default=str) + "\n")
 
 
 def _review_file_entries(entries: list[EditRecord]) -> list[ReviewFileRecord]:
@@ -59,6 +65,10 @@ def _write_context(project_root, client_id):
 def append_state(event: StateEvent, project_root=None, client_id=""):
     project_root, client_id = _write_context(project_root, client_id)
     _append_jsonl_state(event, project_root, client_id)
+
+
+def append_jsonl_record(path, entry):
+    _append_jsonl_record(Path(path), entry)
 
 
 def mark_files_reviewed(entries: list[EditRecord], review_id: str, project_root=None, client_id="", timestamp=None):

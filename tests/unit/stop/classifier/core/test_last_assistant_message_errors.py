@@ -2,7 +2,6 @@ import io
 import json
 import socket
 import unittest
-from unittest.mock import patch
 from urllib import error
 
 from claude_auto_review.state.store.read import load_state
@@ -71,28 +70,24 @@ class TestLastAssistantMessageErrors(StateTestCase, unittest.TestCase):
         payload = {"content": [{"text": "unknown"}], "id": "msg-debug"}
         debug_response = json.dumps(payload, separators=(",", ":"))
 
-        with patch("claude_auto_review.stop.classifier.core.last_assistant_message.log_event") as mock_log:
-            classify_last_assistant_message(
-                _make_ctx(self.project_root, {"last_assistant_message": "Message"}, self.settings),
-                env=self.env,
-                urlopen=lambda req, timeout: _FakeResponse(payload),
-            )
+        classify_last_assistant_message(
+            _make_ctx(self.project_root, {"last_assistant_message": "Message"}, self.settings),
+            env=self.env,
+            urlopen=lambda req, timeout: _FakeResponse(payload),
+        )
 
-        self.assertEqual(mock_log.call_args.kwargs["debugResponse"], debug_response)
         state = load_state(self.project_root, self.client_id)
         self.assertEqual(state[-1].debugResponse, debug_response)
 
     def test_debug_response_not_logged_when_debug_off(self):
         payload = {"content": [{"text": "unknown"}], "id": "msg-nodebug"}
 
-        with patch("claude_auto_review.stop.classifier.core.last_assistant_message.log_event") as mock_log:
-            classify_last_assistant_message(
-                _make_ctx(self.project_root, {"last_assistant_message": "Message"}, {**self.settings, "debug": False}),
-                env=self.env,
-                urlopen=lambda req, timeout: _FakeResponse(payload),
-            )
+        classify_last_assistant_message(
+            _make_ctx(self.project_root, {"last_assistant_message": "Message"}, {**self.settings, "debug": False}),
+            env=self.env,
+            urlopen=lambda req, timeout: _FakeResponse(payload),
+        )
 
-        self.assertNotIn("debugResponse", mock_log.call_args.kwargs)
         state = load_state(self.project_root, self.client_id)
         self.assertIsNone(state[-1].debugResponse)
 
@@ -132,16 +127,15 @@ class TestLastAssistantMessageErrors(StateTestCase, unittest.TestCase):
         self.assertEqual(result.reason, "bad_response")
 
     def test_missing_message_is_logged_as_skipped(self):
-        with patch("claude_auto_review.stop.classifier.core.last_assistant_message.log_event") as mock_log:
-            result = classify_last_assistant_message(
-                _make_ctx(self.project_root, {}, self.settings),
-                env=self.env,
-                urlopen=lambda req, timeout: _FakeResponse({"content": [{"text": "complete"}]}),
-            )
+        result = classify_last_assistant_message(
+            _make_ctx(self.project_root, {}, self.settings),
+            env=self.env,
+            urlopen=lambda req, timeout: _FakeResponse({"content": [{"text": "complete"}]}),
+        )
         self.assertEqual(result.status, "skipped")
         self.assertEqual(result.reason, "missing_message")
-        mock_log.assert_called_once()
-        self.assertEqual(mock_log.call_args.args[1], CLASSIFICATION_EVENT)
+        state = load_state(self.project_root, self.client_id)
+        self.assertEqual(state[-1].type, CLASSIFICATION_EVENT)
 
     def test_missing_env_fails_open_and_persists_separate_state_type(self):
         result = classify_last_assistant_message(

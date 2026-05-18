@@ -6,11 +6,12 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[4]
 sys.path.insert(0, str(REPO_ROOT))
 from tests.int.hooks.support import HookTestCase  # noqa: E402
+from tests.support import client_dir  # noqa: E402
 
 
 class TestStopHookClassifier(HookTestCase, unittest.TestCase):
     def _read_log_entries(self, project_root):
-        log_path = project_root / ".claude" / "claude-auto-review" / "claude-auto-review.log"
+        log_path = client_dir(project_root) / "state.jsonl"
         return [
             json.loads(line)
             for line in log_path.read_text(encoding="utf-8").splitlines()
@@ -28,7 +29,7 @@ class TestStopHookClassifier(HookTestCase, unittest.TestCase):
         payload = json.dumps({"last_assistant_message": "This should be ignored for classification."})
         stop = self.run_python("hooks/stop_hook.py", project_root, input_text=payload, use_fake_claude=False)
         self.assertEqual(stop.returncode, 0)
-        log_path = project_root / ".claude" / "claude-auto-review" / "claude-auto-review.log"
+        log_path = client_dir(project_root) / "state.jsonl"
         if log_path.exists():
             events = [e for e in self._read_log_entries(project_root) if e.get("type") == "last_assistant_message_classified"]
             self.assertEqual(events, [])
@@ -68,4 +69,3 @@ class TestStopHookClassifier(HookTestCase, unittest.TestCase):
         self.assertEqual(events[-1]["status"], "error")
         self.assertEqual(events[-1]["reason"], "missing_api_key")
         self.assertNotIn("x-api-key", json.dumps(events[-1]).lower())
-

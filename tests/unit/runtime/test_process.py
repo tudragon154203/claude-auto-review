@@ -51,10 +51,10 @@ class TestProcess(unittest.TestCase):
 
     def test_helpers_log_event_oserror_suppression(self):
         from claude_auto_review.runtime.events import log_event
-        with patch("claude_auto_review.runtime.events.get_log_path", side_effect=OSError("no write")):
+        with patch("claude_auto_review.runtime.events.append_jsonl_record", side_effect=OSError("no write")):
             self.assertFalse(log_event(Path("/fake"), "test_event"))
 
     def test_helpers_log_failure_propagates_log_failure(self):
         from claude_auto_review.runtime.events import log_failure
-        with patch("claude_auto_review.runtime.events.get_log_path", side_effect=OSError("no write")):
+        with patch("claude_auto_review.runtime.events.append_jsonl_record", side_effect=OSError("no write")):
             self.assertFalse(log_failure(Path("/fake"), "test_event", ValueError("boom")))

@@ -54,5 +54,5 @@ def cleanup_expired_pending_reviews(project_root=None, client_id=""):
         return 0
 
     if removed > 0:
-        log_event(project_root, "expired_reviews_cleaned", client_id=client_id, count=removed)
+        log_event(project_root, "expired_reviews_cleaned", count=removed)
     return removed

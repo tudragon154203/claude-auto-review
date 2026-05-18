@@ -38,7 +38,9 @@ class EndToEndTestCase(TempProjectMixin, SubprocessMixin, unittest.TestCase):
         return project_root / ".claude" / "claude-auto-review" / "scripts" / script_name
 
     def read_log_entries(self, project_root):
-        log_path = project_root / ".claude" / "claude-auto-review" / "claude-auto-review.log"
+        from claude_auto_review.runtime.client_dirs import client_state_path
+
+        log_path = client_state_path(project_root, "test-session")
         return [
             json.loads(line)
             for line in log_path.read_text(encoding="utf-8").splitlines()

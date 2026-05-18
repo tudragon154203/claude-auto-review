@@ -64,5 +64,5 @@ class EndToEndStopHookAutocompleteTests(EndToEndTestCase):
             f"Real claude should complete the review file, got:\n{content}",
         )
 
-        log_path = project_root / ".claude" / "claude-auto-review" / "claude-auto-review.log"
+        log_path = client_dir(project_root) / "state.jsonl"
         self.assertIn("stop_hook_claude_cli_done", log_path.read_text(encoding="utf-8"))

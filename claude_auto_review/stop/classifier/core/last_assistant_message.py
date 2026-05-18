@@ -1,7 +1,6 @@
 import os
 import time
 
-from claude_auto_review.runtime.events import log_event
 from claude_auto_review.config.settings import SETTING_CLASSIFIER_TIMEOUT, get_setting_float
 from claude_auto_review.state.store.write import append_state
 from claude_auto_review.stop.classifier.core.client import call_classifier_api, sanitize_base_url
@@ -16,12 +15,6 @@ from claude_auto_review.stop.orchestration.core.context import RuntimeContext
 def _persist_result(result, ctx):
     include_debug = ctx.settings.get("debug", True)
     append_state(result.as_state_entry(include_debug=include_debug), ctx.project_root, client_id=ctx.client_id)
-    log_event(
-        ctx.project_root,
-        "last_assistant_message_classified",
-        client_id=ctx.client_id,
-        **result.as_state_entry(include_debug=include_debug).to_dict(),
-    )
 
 
 def classify_last_assistant_message(ctx: RuntimeContext, env=None, urlopen=None):

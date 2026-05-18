@@ -89,11 +89,10 @@ class TestStaleCleanup(HookTestCase, unittest.TestCase):
         self.assertFalse(my_dir.exists())
         self.assertFalse(stale_dir.exists())
 
-        # Check logs
-        log_path = project_root / ".claude" / "claude-auto-review" / "claude-auto-review.log"
-        log_content = log_path.read_text(encoding="utf-8")
-        self.assertIn("stale_clients_cleaned", log_content)
-        self.assertIn("session_end_cleanup", log_content)
+        # Stale cleanup is project-level; session-end cleanup falls back to the project state file after the client dir is removed.
+        root_log = project_root / ".claude" / "claude-auto-review" / "state.jsonl"
+        self.assertIn("stale_clients_cleaned", root_log.read_text(encoding="utf-8"))
+        self.assertIn("session_end_cleanup", root_log.read_text(encoding="utf-8"))
 
 
 if __name__ == "__main__":

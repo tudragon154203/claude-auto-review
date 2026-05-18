@@ -8,6 +8,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[4]
 sys.path.insert(0, str(REPO_ROOT))
 
+from claude_auto_review.paths.path_utils import get_log_path  # noqa: E402
 from claude_auto_review.state.models import EditRecord  # noqa: E402
 from claude_auto_review.state.store.write import append_state  # noqa: E402
 from tests.int.hooks.support import HookTestCase  # noqa: E402
@@ -77,7 +78,6 @@ class TestSetupCancel(HookTestCase, unittest.TestCase):
         self.assertEqual(lines.count(".claude/claude-auto-review/clients/*/reviews/"), 0)
         self.assertEqual(lines.count(".claude/claude-auto-review/scripts/"), 0)
         self.assertEqual(lines.count(".claude/claude-auto-review/agents/"), 0)
-        self.assertEqual(lines.count(".claude/claude-auto-review/claude-auto-review.log"), 0)
 
     def test_setup_script_is_idempotent_for_hooks_entries(self):
         project_root = self.temp_project()
@@ -117,7 +117,7 @@ class TestSetupCancel(HookTestCase, unittest.TestCase):
         self.assertFalse((project_root / ".claude" / "claude-auto-review" / "clients" / "client-test-session" / "state.jsonl").exists())
         self.assertFalse((project_root / ".claude" / "claude-auto-review" / "clients" / "client-test-session" / "run").exists())
         self.assertFalse((project_root / ".claude" / "claude-auto-review" / "clients" / "client-test-session" / "reviews").exists())
-        log_content = (project_root / ".claude" / "claude-auto-review" / "claude-auto-review.log").read_text(encoding="utf-8")
+        log_content = get_log_path(project_root).read_text(encoding="utf-8")
         self.assertIn('"type":"cancel_completed"', log_content)
 
     def test_uninstall_script_removes_hooks_and_legacy_gitignore_entries(self):
@@ -166,7 +166,6 @@ class TestSetupCancel(HookTestCase, unittest.TestCase):
                     ".claude/claude-auto-review/clients/*/reviews/",
                     ".claude/claude-auto-review/scripts/",
                     ".claude/claude-auto-review/agents/",
-                    ".claude/claude-auto-review/claude-auto-review.log",
                 ]
             )
             + "\n",
@@ -195,7 +194,6 @@ class TestSetupCancel(HookTestCase, unittest.TestCase):
         self.assertNotIn(".claude/claude-auto-review/clients/*/reviews/", lines)
         self.assertNotIn(".claude/claude-auto-review/scripts/", lines)
         self.assertNotIn(".claude/claude-auto-review/agents/", lines)
-        self.assertNotIn(".claude/claude-auto-review/claude-auto-review.log", lines)
 
     def test_project_local_cancel_shim_runs(self):
         project_root = self.temp_project()

@@ -3,12 +3,13 @@ import unittest
 
 from claude_auto_review.stop.classifier.core.models import CLASSIFIER_MODEL
 from tests.int.hooks.support import HookTestCase
+from tests.support import client_dir
 from tests.support import start_classifier_server
 
 
 class TestLastAssistantMessageClassifierHook(HookTestCase, unittest.TestCase):
     def _read_log_entries(self, project_root):
-        log_path = project_root / ".claude" / "claude-auto-review" / "claude-auto-review.log"
+        log_path = client_dir(project_root) / "state.jsonl"
         return [
             json.loads(line)
             for line in log_path.read_text(encoding="utf-8").splitlines()

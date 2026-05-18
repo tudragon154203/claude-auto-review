@@ -5,7 +5,7 @@ from pathlib import Path
 STATE_RELATIVE_PATH = Path(".claude") / "claude-auto-review" / "state.jsonl"
 RUNTIME_DIR = Path(".claude") / "claude-auto-review"
 CLIENTS_DIR = RUNTIME_DIR / "clients"
-LOG_RELATIVE_PATH = RUNTIME_DIR / "claude-auto-review.log"
+LOG_RELATIVE_PATH = STATE_RELATIVE_PATH
 DELETED_FILE_HASH = "__deleted__"
 FILE_URI_PREFIX = "file://"
 
@@ -51,4 +51,4 @@ def get_state_path(project_root=None):
 
 
 def get_log_path(project_root=None):
-    return _runtime_dir_path(project_root) / LOG_RELATIVE_PATH.name
+    return _project_root_path(project_root) / LOG_RELATIVE_PATH

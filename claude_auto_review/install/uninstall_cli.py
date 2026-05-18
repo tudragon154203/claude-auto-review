@@ -106,7 +106,6 @@ def main():
                 ".claude/claude-auto-review/clients/*/reviews/",
                 ".claude/claude-auto-review/scripts/",
                 ".claude/claude-auto-review/agents/",
-                ".claude/claude-auto-review/claude-auto-review.log",
             ],
         )
 

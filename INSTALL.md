@@ -74,4 +74,6 @@ This removes the `.claude/claude-auto-review/` directory, strips plugin hook ent
 5. After review generation completes, the classifier runs on the would-block paths and checks the parent Claude session's last assistant message.
 6. If the classifier returns `incomplete`, stop is allowed to continue and Claude can address the findings. Otherwise (`complete`, `unknown`, `error`, or `skipped`), the stop hook blocks until the unreviewed changes are reviewed.
 
-Hook lifecycle events are logged to `.claude/claude-auto-review/claude-auto-review.log`.
+Hook lifecycle events now use the same JSONL state files as the review tracker:
+- per-client events go to `.claude/claude-auto-review/clients/{session-id}/state.jsonl`
+- project-level lifecycle events go to `.claude/claude-auto-review/state.jsonl`

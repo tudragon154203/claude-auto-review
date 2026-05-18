@@ -7,6 +7,7 @@ from tests.int.support import IntegrationTestCase, REPO_ROOT, _FakeResponse
 from tests.support import client_dir
 
 from claude_auto_review.paths.path_utils import get_log_path
+from claude_auto_review.runtime.client_dirs import client_state_path
 from claude_auto_review.runtime.events import log_event
 from claude_auto_review.runtime.cleanup.session import cancel_runtime
 from claude_auto_review.runtime.setup import ensure_client_runtime, ensure_project_settings, ensure_runtime
@@ -48,9 +49,10 @@ class IntegrationRuntimeTests(IntegrationTestCase):
 
     def test_log_event_includes_client_id_when_provided(self):
         project_root = self.temp_project()
+        ensure_client_runtime(project_root, "session-abc")
 
         log_event(project_root, "test_event", client_id="session-abc", foo="bar")
-        log_path = get_log_path(project_root)
+        log_path = client_state_path(project_root, "session-abc")
 
         self.assertTrue(log_path.exists())
         content = log_path.read_text(encoding="utf-8")
@@ -114,7 +116,7 @@ class IntegrationRuntimeTests(IntegrationTestCase):
         self.assertEqual(state[-1].type, "last_assistant_message_classified")
         self.assertEqual(state[-1].status, "complete")
         self.assertEqual(consecutive_stop_blocks(state), 0)
-        log_entry = json.loads(get_log_path(project_root).read_text(encoding="utf-8").splitlines()[-1])
+        log_entry = json.loads((client_state_path(project_root, client_id)).read_text(encoding="utf-8").splitlines()[-1])
         self.assertEqual(log_entry["type"], "last_assistant_message_classified")
         self.assertNotIn("secret-key", json.dumps(log_entry))
 

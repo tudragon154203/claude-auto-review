@@ -74,6 +74,16 @@ def _find_existing_client_runtime_dir(project_root: Path, client_id: str):
     return None
 
 
+def get_existing_client_runtime_dir(project_root: Path, client_id: str) -> Path | None:
+    project_root = _project_root_path(project_root)
+    if _CLIENT_RUNTIME_DIR_PATTERN.match(client_id):
+        direct = project_root / CLIENTS_DIR / client_id
+        if direct.exists() and direct.is_dir():
+            return direct
+        return None
+    return _find_existing_client_runtime_dir(project_root, client_id)
+
+
 def get_client_runtime_dir(project_root: Path, client_id: str) -> Path:
     project_root = _project_root_path(project_root)
     cache_key = _client_runtime_dir_cache_key(project_root, client_id)

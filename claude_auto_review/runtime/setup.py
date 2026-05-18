@@ -5,7 +5,6 @@ from pathlib import Path
 
 from claude_auto_review.config.settings import DEFAULT_SETTINGS, _load_settings_document, _settings_path
 from claude_auto_review.paths.path_utils import (
-    LOG_RELATIVE_PATH,
     RUNTIME_DIR,
     STATE_RELATIVE_PATH,
 )
@@ -125,7 +124,7 @@ def ensure_runtime(project_root=None, plugin_root=None):
         "base_dir": base_dir,
         "state_path": state_path,
         "rules_path": rules_path,
-        "log_path": project_root / LOG_RELATIVE_PATH,
+        "log_path": state_path,
     }
 
 

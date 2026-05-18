@@ -9,6 +9,7 @@ sys.path.insert(0, str(REPO_ROOT))
 
 from claude_auto_review.state.store.read import load_state  # noqa: E402
 from tests.int.hooks.support import HookTestCase  # noqa: E402
+from tests.support import client_dir  # noqa: E402
 
 
 class TestPostToolUseHook(HookTestCase, unittest.TestCase):
@@ -126,7 +127,7 @@ class TestPostToolUseHook(HookTestCase, unittest.TestCase):
 
         post = self.run_python("hooks/post_tool_use.py", project_root, json.dumps({"file_path": "src/app.ts"}))
         self.assertEqual(post.stdout, "")
-        log_path = project_root / ".claude" / "claude-auto-review" / "claude-auto-review.log"
+        log_path = client_dir(project_root) / "state.jsonl"
         log_content = log_path.read_text(encoding="utf-8")
         self.assertIn('"type":"file_tracked"', log_content)
         self.assertIn('"clientId"', log_content)

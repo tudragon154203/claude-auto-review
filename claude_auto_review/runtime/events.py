@@ -1,7 +1,9 @@
-import json
 from pathlib import Path
 
-from claude_auto_review.paths.path_utils import get_log_path, local_now_iso
+from claude_auto_review.runtime.client_dirs import get_existing_client_runtime_dir
+from claude_auto_review.paths.path_utils import get_state_path, local_now_iso
+from claude_auto_review.runtime.context import resolve_project_root
+from claude_auto_review.state.store.write import append_jsonl_record
 
 
 def _json_safe(value):
@@ -20,14 +22,17 @@ def _json_safe(value):
 
 def log_event(project_root, event_type, client_id=None, **kwargs):
     try:
-        log_path = get_log_path(project_root)
-        log_path.parent.mkdir(parents=True, exist_ok=True)
+        project_root = resolve_project_root(project_root)
+        if client_id:
+            client_dir = get_existing_client_runtime_dir(project_root, client_id)
+            target_path = (client_dir / "state.jsonl") if client_dir is not None else get_state_path(project_root)
+        else:
+            target_path = get_state_path(project_root)
         entry = {"timestamp": local_now_iso(), "type": event_type}
         if client_id:
             entry["clientId"] = client_id
         entry.update(_json_safe(kwargs))
-        with log_path.open("a", encoding="utf-8", newline="\n") as f:
-            f.write(json.dumps(entry, separators=(",", ":"), default=str) + "\n")
+        append_jsonl_record(target_path, entry)
         return True
     except OSError:
         return False
