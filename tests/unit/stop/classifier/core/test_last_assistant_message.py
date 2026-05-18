@@ -1,8 +1,8 @@
 import json
 import unittest
 
+from claude_auto_review.config.settings import DEFAULT_CLASSIFIER_MODEL
 from claude_auto_review.stop.classifier.core.models import (
-    CLASSIFIER_MODEL,
     DEFAULT_TIMEOUT_SECONDS,
 )
 from claude_auto_review.stop.classifier.core.last_assistant_message import (
@@ -69,7 +69,7 @@ class TestLastAssistantMessageClassifier(StateTestCase, unittest.TestCase):
         self.assertEqual(seen["timeout"], DEFAULT_TIMEOUT_SECONDS)
         self.assertEqual(seen["headers"]["Anthropic-version"], "2023-06-01")
         self.assertEqual(seen["headers"]["X-api-key"], "top-secret")
-        self.assertEqual(seen["body"]["model"], CLASSIFIER_MODEL)
+        self.assertEqual(seen["body"]["model"], DEFAULT_CLASSIFIER_MODEL)
         self.assertEqual(seen["body"]["max_tokens"], 8)
         self.assertEqual(seen["body"]["temperature"], 0)
         self.assertEqual(seen["body"]["stop_sequences"], ["\n"])

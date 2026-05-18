@@ -1,6 +1,6 @@
 import json
 
-from claude_auto_review.stop.classifier.core.models import CLASSIFIER_MODEL
+from claude_auto_review.config.settings import DEFAULT_CLASSIFIER_MODEL
 from claude_auto_review.state.store.read import load_state
 from tests.e2e.support import EndToEndTestCase
 
@@ -20,7 +20,7 @@ class EndToEndLastAssistantMessageTests(EndToEndTestCase):
                     "thinking": "\nThe user wants me to classify whether the assistant message is a true completion or",
                 }
             ],
-            "model": CLASSIFIER_MODEL,
+            "model": DEFAULT_CLASSIFIER_MODEL,
             "stop_reason": "max_tokens",
             "stop_sequence": None,
             "usage": {"input_tokens": 286, "output_tokens": 16},
@@ -45,7 +45,7 @@ class EndToEndLastAssistantMessageTests(EndToEndTestCase):
         self.assertEqual(result.returncode, 2)
         self.assertEqual(len(server.requests), 1)
         self.assertEqual(server.requests[0]["path"], "/v1/messages")
-        self.assertEqual(server.requests[0]["body"]["model"], CLASSIFIER_MODEL)
+        self.assertEqual(server.requests[0]["body"]["model"], DEFAULT_CLASSIFIER_MODEL)
 
         state = load_state(project_root, "test-session")
         classifier_entries = [entry for entry in state if entry.type == "last_assistant_message_classified"]

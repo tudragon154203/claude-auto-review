@@ -32,7 +32,7 @@ class EndToEndStopHookAutocompleteTests(EndToEndTestCase):
         self.assertIn("--print", cli_args)
         self.assertIn("--model", cli_args)
         idx = cli_args.index("--model")
-        self.assertEqual(cli_args[idx + 1], "fast")
+        self.assertEqual(cli_args[idx + 1], "claude-sonnet-4-6")
         self.assertIn("--allowedTools", cli_args)
         self.assertIn("--append-system-prompt-file", cli_args)
         prompt_idx = cli_args.index("--append-system-prompt-file")

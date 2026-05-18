@@ -28,11 +28,11 @@ def _request_url(base_url):
     return f"{sanitized}/v1/messages"
 
 
-def call_classifier_api(message_text, base_url, api_key, started_at, timeout_seconds, urlopen=None):
+def call_classifier_api(message_text, base_url, api_key, started_at, timeout_seconds, model, urlopen=None):
     message_chars = len(message_text)
     urlopen = request.urlopen if urlopen is None else urlopen
 
-    body = json.dumps(build_classifier_request_body(message_text)).encode("utf-8")
+    body = json.dumps(build_classifier_request_body(message_text, model)).encode("utf-8")
     req = request.Request(
         _request_url(base_url),
         data=body,
@@ -48,23 +48,23 @@ def call_classifier_api(message_text, base_url, api_key, started_at, timeout_sec
         with urlopen(req, timeout=timeout_seconds) as response:
             response_bytes = response.read()
     except error.HTTPError as exc:
-        return result_factory("error", "http_error", started_at, message_chars, base_url=base_url, http_status=exc.code)
+        return result_factory("error", "http_error", started_at, message_chars, model=model, base_url=base_url, http_status=exc.code)
     except (socket.timeout, TimeoutError):
-        return result_factory("error", "http_timeout", started_at, message_chars, base_url=base_url)
+        return result_factory("error", "http_timeout", started_at, message_chars, model=model, base_url=base_url)
     except error.URLError as exc:
         reason = getattr(exc, "reason", None)
         if isinstance(reason, socket.timeout):
-            return result_factory("error", "http_timeout", started_at, message_chars, base_url=base_url)
+            return result_factory("error", "http_timeout", started_at, message_chars, model=model, base_url=base_url)
         else:
-            return result_factory("error", "http_error", started_at, message_chars, base_url=base_url)
+            return result_factory("error", "http_error", started_at, message_chars, model=model, base_url=base_url)
     except (OSError, RuntimeError):
-        return result_factory("error", "http_error", started_at, message_chars, base_url=base_url)
+        return result_factory("error", "http_error", started_at, message_chars, model=model, base_url=base_url)
 
     try:
         response_data = json.loads(response_bytes.decode("utf-8"))
     except (UnicodeDecodeError, json.JSONDecodeError, TypeError, ValueError):
-        return result_factory("error", "bad_response", started_at, message_chars, base_url=base_url)
+        return result_factory("error", "bad_response", started_at, message_chars, model=model, base_url=base_url)
 
     label, reason = parse_classifier_label(response_data)
     debug_response = response_payload_debug_json(response_data)
-    return result_factory(label, reason, started_at, message_chars, base_url=base_url, debug_response=debug_response)
+    return result_factory(label, reason, started_at, message_chars, model=model, base_url=base_url, debug_response=debug_response)

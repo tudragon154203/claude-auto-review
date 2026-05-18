@@ -11,7 +11,7 @@ from claude_auto_review.state.reviews.verdicts import (
     normalize_review_verdict_content,
 )
 from claude_auto_review.review.completion import apply_completed_review, record_completed_review
-from claude_auto_review.config.settings import DEFAULT_SETTINGS, SETTING_REVIEWER_TIMEOUT
+from claude_auto_review.config.settings import DEFAULT_SETTINGS, SETTING_REVIEWER_TIMEOUT, SETTING_REVIEWER_MODEL, DEFAULT_REVIEWER_MODEL
 from claude_auto_review.stop.orchestration.core.context import RuntimeContext
 from claude_auto_review.stop.feedback import (
     block_completed_review_findings,
@@ -112,6 +112,7 @@ def finalize_review_stop(ctx: RuntimeContext, resolution):
     review_path = Path(ctx.project_root) / review.reviewPath
     prompt_file = _review_prompt_path(ctx, review_id)
     reviewer_timeout_seconds = ctx.settings.get(SETTING_REVIEWER_TIMEOUT, DEFAULT_SETTINGS[SETTING_REVIEWER_TIMEOUT])
+    reviewer_model = ctx.settings.get(SETTING_REVIEWER_MODEL, DEFAULT_REVIEWER_MODEL)
     artifact_state = _review_artifact_state(review_path)
     action_result = _apply_artifact_state(ctx, artifact_state, review_id, review_path, covered_entries, unreviewed)
     if action_result is not None:
@@ -126,6 +127,7 @@ def finalize_review_stop(ctx: RuntimeContext, resolution):
             prompt_file,
             user_prompt,
             reviewer_timeout_seconds=reviewer_timeout_seconds,
+            model=reviewer_model,
         )
         if result.status != "empty_stdout":
             break

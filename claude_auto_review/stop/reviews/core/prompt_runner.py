@@ -7,22 +7,24 @@ from claude_auto_review.runtime.process import run_captured
 from claude_auto_review.state.reviews.verdicts import (
     normalize_review_verdict_content,
 )
+from claude_auto_review.config.settings import DEFAULT_REVIEWER_MODEL
 from claude_auto_review.stop.orchestration.core.context import RuntimeContext
 
 
-CLAUDE_REVIEW_ARGS = [
-    "--print",
-    "--bare",
-    "--allowedTools",
-    "Read",
-    "Grep",
-    "Glob",
-    "Bash",
-    "--model",
-    "fast",
-    "--effort",
-    "low",
-]
+def _build_claude_review_args(model):
+    return [
+        "--print",
+        "--bare",
+        "--allowedTools",
+        "Read",
+        "Grep",
+        "Glob",
+        "Bash",
+        "--model",
+        model,
+        "--effort",
+        "low",
+    ]
 
 
 @dataclass(frozen=True)
@@ -40,10 +42,10 @@ class AutocompleteResult:
         return self.output_written
 
 
-def _run_claude_cli(claude_cli, prompt_file, user_prompt, cwd, timeout):
+def _run_claude_cli(claude_cli, prompt_file, user_prompt, cwd, timeout, model):
     cmd = [
         claude_cli,
-        *CLAUDE_REVIEW_ARGS,
+        *_build_claude_review_args(model),
         "--append-system-prompt-file",
         str(prompt_file),
         user_prompt,
@@ -58,6 +60,7 @@ def attempt_stop_autocomplete(
     prompt_file,
     user_prompt,
     reviewer_timeout_seconds=600,
+    model=DEFAULT_REVIEWER_MODEL,
 ):
     claude_cli = shutil.which("claude")
     if not claude_cli:
@@ -69,7 +72,7 @@ def attempt_stop_autocomplete(
 
     try:
         cli_result = _run_claude_cli(
-            claude_cli, prompt_file, user_prompt, ctx.project_root, reviewer_timeout_seconds
+            claude_cli, prompt_file, user_prompt, ctx.project_root, reviewer_timeout_seconds, model
         )
     except subprocess.TimeoutExpired:
         log_event(ctx.project_root, "stop_hook_claude_cli_timeout", client_id=ctx.client_id, reviewId=review_id)

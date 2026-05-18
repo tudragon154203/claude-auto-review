@@ -53,7 +53,7 @@ class TestClassifierClient(unittest.TestCase):
         def http_error(_req, timeout):
             raise error.HTTPError("https://example.test", 503, "down", hdrs=None, fp=io.BytesIO(b""))
 
-        result = call_classifier_api("message", "http://example.test", "key", started_at, 5, urlopen=http_error)
+        result = call_classifier_api("message", "http://example.test", "key", started_at, 5, "claude-3-5-haiku-20241022", urlopen=http_error)
         self.assertEqual(result.status, "error")
         self.assertEqual(result.reason, "http_error")
         self.assertEqual(result.http_status, 503)
@@ -61,7 +61,7 @@ class TestClassifierClient(unittest.TestCase):
         def timeout_error(_req, timeout):
             raise error.URLError(socket.timeout())
 
-        result = call_classifier_api("message", "http://example.test", "key", started_at, 5, urlopen=timeout_error)
+        result = call_classifier_api("message", "http://example.test", "key", started_at, 5, "claude-3-5-haiku-20241022", urlopen=timeout_error)
         self.assertEqual(result.status, "error")
         self.assertEqual(result.reason, "http_timeout")
 
@@ -71,21 +71,21 @@ class TestClassifierClient(unittest.TestCase):
         def bad_json(_req, timeout):
             return _FakeResponse(b"{not-json")
 
-        result = call_classifier_api("message", "http://example.test", "key", started_at, 5, urlopen=bad_json)
+        result = call_classifier_api("message", "http://example.test", "key", started_at, 5, "claude-3-5-haiku-20241022", urlopen=bad_json)
         self.assertEqual(result.status, "error")
         self.assertEqual(result.reason, "bad_response")
 
         def malformed_shape(_req, timeout):
             return _FakeResponse(["not", "an", "object"])
 
-        result = call_classifier_api("message", "http://example.test", "key", started_at, 5, urlopen=malformed_shape)
+        result = call_classifier_api("message", "http://example.test", "key", started_at, 5, "claude-3-5-haiku-20241022", urlopen=malformed_shape)
         self.assertEqual(result.status, "unknown")
         self.assertEqual(result.reason, "bad_response")
 
         def boom(_req, timeout):
             raise RuntimeError("boom")
 
-        result = call_classifier_api("message", "http://example.test", "key", started_at, 5, urlopen=boom)
+        result = call_classifier_api("message", "http://example.test", "key", started_at, 5, "claude-3-5-haiku-20241022", urlopen=boom)
         self.assertEqual(result.status, "error")
         self.assertEqual(result.reason, "http_error")
 

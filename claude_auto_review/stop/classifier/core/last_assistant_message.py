@@ -1,7 +1,7 @@
 import os
 import time
 
-from claude_auto_review.config.settings import SETTING_CLASSIFIER_TIMEOUT, get_setting_float
+from claude_auto_review.config.settings import SETTING_CLASSIFIER_TIMEOUT, SETTING_CLASSIFIER_MODEL, DEFAULT_CLASSIFIER_MODEL, get_setting_float
 from claude_auto_review.state.store.write import append_state_event
 from claude_auto_review.stop.classifier.core.client import call_classifier_api, sanitize_base_url
 from claude_auto_review.stop.classifier.core.extraction import extract_last_assistant_message_text
@@ -44,12 +44,14 @@ def classify_last_assistant_message(ctx: RuntimeContext, env=None, urlopen=None)
         return result
 
     timeout_seconds = get_setting_float(ctx.settings, SETTING_CLASSIFIER_TIMEOUT, DEFAULT_TIMEOUT_SECONDS)
+    model = ctx.settings.get(SETTING_CLASSIFIER_MODEL, DEFAULT_CLASSIFIER_MODEL)
     result = call_classifier_api(
         message_text,
         base_url,
         api_key,
         started_at,
         timeout_seconds,
+        model,
         urlopen=urlopen,
     )
     _persist_result(result, ctx)

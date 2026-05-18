@@ -1,7 +1,7 @@
 import json
 import unittest
 
-from claude_auto_review.stop.classifier.core.models import CLASSIFIER_MODEL
+from claude_auto_review.config.settings import DEFAULT_CLASSIFIER_MODEL
 from tests.int.hooks.support import HookTestCase
 from tests.support import client_dir
 from tests.support import start_classifier_server
@@ -40,7 +40,7 @@ class TestLastAssistantMessageClassifierHook(HookTestCase, unittest.TestCase):
 
         self.assertEqual(result.returncode, 2)
         self.assertEqual(len(server.requests), 1)
-        self.assertEqual(server.requests[0]["body"]["model"], CLASSIFIER_MODEL)
+        self.assertEqual(server.requests[0]["body"]["model"], DEFAULT_CLASSIFIER_MODEL)
         entries = [e for e in self._read_log_entries(project_root) if e.get("type") == "last_assistant_message_classified"]
         self.assertEqual(entries[-1]["status"], "complete")
         self.assertEqual(entries[-1]["reason"], "parsed_label")

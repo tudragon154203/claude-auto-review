@@ -17,7 +17,11 @@ SETTING_CLASSIFIER_ENABLED = "lastAssistantMessageClassifierEnabled"
 SETTING_CLASSIFIER_TIMEOUT = "lastAssistantMessageClassifierTimeoutSeconds"
 SETTING_STALE_CLIENT_TIMEOUT = "staleClientTimeoutHours"
 SETTING_DEBUG = "debug"
+SETTING_CLASSIFIER_MODEL = "classifierModel"
+SETTING_REVIEWER_MODEL = "reviewerModel"
 
+DEFAULT_CLASSIFIER_MODEL = "claude-3-5-haiku-20241022"
+DEFAULT_REVIEWER_MODEL = "claude-sonnet-4-6"
 DEFAULT_TIMEOUT_SECONDS = 20
 
 # Default settings for the plugin

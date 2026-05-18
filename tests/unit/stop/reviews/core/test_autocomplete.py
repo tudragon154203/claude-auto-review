@@ -15,7 +15,7 @@ class TestAutoComplete(unittest.TestCase):
     @patch("claude_auto_review.stop.reviews.core.prompt_runner.run_captured")
     def test_run_claude_cli_uses_append_system_prompt_file(self, mock_run):
         prompt_file = Path("/fake/prompt.md")
-        _run_claude_cli("/usr/bin/claude", prompt_file, "finish review", Path("/cwd"), 42)
+        _run_claude_cli("/usr/bin/claude", prompt_file, "finish review", Path("/cwd"), 42, "claude-sonnet-4-6")
 
         mock_run.assert_called_once_with(
             [
@@ -28,7 +28,7 @@ class TestAutoComplete(unittest.TestCase):
                 "Glob",
                 "Bash",
                 "--model",
-                "fast",
+                "claude-sonnet-4-6",
                 "--effort",
                 "low",
                 "--append-system-prompt-file",
