@@ -38,14 +38,65 @@ def extract_review_findings_text(content: str | None) -> str | None:
 
 
 _FINDING_HEADING = re.compile(r"^###\s+(\d+\.|\[)")
-_NO_FINDINGS_LINE = re.compile(
-    r"^(none\b|clean\b"
-    r"|no\s+(?:findings?\b|issues?\b|bugs?\b|concerns?\b|problems?\b|violations?\b)"
-    r"\b.*\b(?:found|identified|detected|yet)\b"
-    r"|no\s+semantic\s+(?:issue|bug|concern|problem|violation)s?\b"
-    r"\b.*\b(?:found|identified|detected)\b)",
+_NO_FINDINGS_PREFIXES = (
+    "no semantic issues",
+    "no semantic issue",
+    "no semantic bugs",
+    "no semantic bug",
+    "no semantic concerns",
+    "no semantic concern",
+    "no semantic problems",
+    "no semantic problem",
+    "no semantic violations",
+    "no semantic violation",
+    "no findings",
+    "no issues",
+    "no bugs",
+    "no concerns",
+    "no problems",
+    "no violations",
+    "none",
+    "clean",
+)
+_STRICT_NO_FINDINGS_PREFIXES = {"none", "clean"}
+_NO_FINDINGS_VERB_RE = re.compile(
+    r"\b(?:found|identified|detected|yet)\b",
     re.IGNORECASE,
 )
+_CONTRADICTION_RE = re.compile(
+    r"\b(?:but|however|except|although|though)\b",
+    re.IGNORECASE,
+)
+_PUNCTUATION_CHARS = ".,;:-—"
+
+
+def _is_no_findings_line(line: str) -> bool:
+    text = line.strip()
+    if not text:
+        return False
+    lowered = text.casefold()
+    for prefix in _NO_FINDINGS_PREFIXES:
+        if not lowered.startswith(prefix):
+            continue
+
+        remainder = text[len(prefix):].lstrip()
+        if not remainder:
+            return True
+
+        if prefix in _STRICT_NO_FINDINGS_PREFIXES:
+            return remainder[0] in _PUNCTUATION_CHARS and not _CONTRADICTION_RE.search(remainder)
+
+        if _CONTRADICTION_RE.search(remainder):
+            return False
+
+        if remainder[0] in _PUNCTUATION_CHARS:
+            return True
+
+        if _NO_FINDINGS_VERB_RE.search(remainder):
+            return True
+
+        return False
+    return False
 
 
 def has_review_findings(content: str | None) -> bool:
@@ -57,7 +108,7 @@ def has_review_findings(content: str | None) -> bool:
     # An explicit "no findings" negation is only trusted when no heading appears at all.
     if any(_FINDING_HEADING.match(l.strip()) for l in lines if l.strip()):
         return True
-    return not any(_NO_FINDINGS_LINE.match(l.strip()) for l in lines if l.strip())
+    return not any(_is_no_findings_line(l) for l in lines if l.strip())
 
 
 def _replace_verdict_text(content: str, new_verdict: str) -> str:

@@ -10,7 +10,7 @@ from claude_auto_review.stop.reviews.core.selection import find_pending_review_f
 from claude_auto_review.stop.reviews.core.review_prompt_runner import (
     _block_review_prompt_failure,
     _reload_client_state,
-    _run_review_prompt,
+    run_review_prompt,
 )
 
 
@@ -61,7 +61,7 @@ def resolve_pending_review(ctx: RuntimeContext, state, unreviewed, timeout_hours
     env = _build_review_prompt_env(ctx.payload)
 
     try:
-        result = _run_review_prompt(ctx, review_prompt_script, env)
+        result = run_review_prompt(ctx, review_prompt_script, env)
     except subprocess.TimeoutExpired:
         return _fail_review(ctx, files_str, EXIT_REVIEW_FAILED, "stop_hook_review_timeout", script=review_prompt_script)
     except (OSError, ValueError, subprocess.SubprocessError) as e:

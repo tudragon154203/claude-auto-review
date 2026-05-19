@@ -12,7 +12,7 @@ def _review_prompt_command(review_prompt_script):
     return [sys.executable, str(review_prompt_script)]
 
 
-def _run_review_prompt(ctx: RuntimeContext, review_prompt_script, env):
+def run_review_prompt(ctx: RuntimeContext, review_prompt_script, env):
     cmd = _review_prompt_command(review_prompt_script)
     result = run_captured(cmd, cwd=ctx.project_root, timeout=60, env=env)
     log_event(

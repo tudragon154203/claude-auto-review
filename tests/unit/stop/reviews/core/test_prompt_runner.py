@@ -9,7 +9,7 @@ from claude_auto_review.stop.reviews.core.review_prompt_runner import (
     _reload_client_state,
     _review_prompt_command,
     _review_prompt_path,
-    _run_review_prompt,
+    run_review_prompt,
 )
 
 
@@ -30,7 +30,7 @@ class TestPromptRunner(unittest.TestCase):
     def test_run_review_prompt_logs_and_returns_result(self, mock_run, mock_log):
         mock_run.return_value = MagicMock(stdout="ok", stderr="", returncode=0)
         env = {"CLAUDE_SESSION_ID": "sid"}
-        result = _run_review_prompt(_ctx(), Path("/fake/prompt.py"), env)
+        result = run_review_prompt(_ctx(), Path("/fake/prompt.py"), env)
 
         self.assertEqual(result.returncode, 0)
         mock_run.assert_called_once()

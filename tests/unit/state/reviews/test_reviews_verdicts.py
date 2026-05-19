@@ -226,14 +226,39 @@ class TestReviewsVerdicts(StateTestCase, unittest.TestCase):
         )
         self.assertFalse(has_review_findings(content))
 
-    def test_has_review_findings_detects_no_concerns_line(self):
+    def test_has_review_findings_detects_clean_negations(self):
+        cases = [
+            "No concerns identified.",
+            "No findings. The change is a mechanical visibility rename.",
+            "No semantic issues found.",
+        ]
+        for finding_line in cases:
+            with self.subTest(finding_line=finding_line):
+                content = (
+                    "## Findings\n"
+                    f"{finding_line}\n\n"
+                    "## Verdict\n"
+                    "Clean - no issues found.\n"
+                )
+                self.assertFalse(has_review_findings(content))
+
+    def test_has_review_findings_detects_no_issues_found_in_test_file(self):
         content = (
             "## Findings\n"
-            "No concerns identified.\n\n"
+            "No issues found in the test file.\n\n"
             "## Verdict\n"
             "Clean - no issues found.\n"
         )
         self.assertFalse(has_review_findings(content))
+
+    def test_has_review_findings_rejects_explicit_contradiction_after_no_issues_line(self):
+        content = (
+            "## Findings\n"
+            "No issues found in the test file, but the regression remains.\n\n"
+            "## Verdict\n"
+            "Clean - no issues found.\n"
+        )
+        self.assertTrue(has_review_findings(content))
 
     def test_normalize_rewrites_false_positive_findings_present_to_clean(self):
         content = (

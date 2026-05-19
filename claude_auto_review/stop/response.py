@@ -12,6 +12,8 @@ def approve_response(message=""):
             separators=(",", ":"),
         ),
     )
+    if message:
+        print(message, file=sys.stderr)
 
 
 def block_response(message, feedback):
