@@ -31,11 +31,12 @@ def _ctx(project_root=Path("/fake"), client_id="c", settings=None, payload=None)
 
 
 class TestFinalizeReviewDecision(unittest.TestCase):
-    resolution = StopFlowResolution(
-        state=[],
-        unreviewed=[],
-        review=_mk_review("r1"),
-    )
+    def setUp(self):
+        self.resolution = StopFlowResolution(
+            state=[],
+            unreviewed=[],
+            review=_mk_review("r1"),
+        )
 
     @patch("claude_auto_review.stop.orchestration.core.finalize.get_entries_covered_by_review", return_value=[])
     @patch("claude_auto_review.stop.orchestration.core.finalize.apply_completed_review", return_value=[])

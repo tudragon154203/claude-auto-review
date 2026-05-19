@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from claude_auto_review.utils.datetime_utils import parse_iso_timestamp
+from claude_auto_review.timestamps import parse_iso_timestamp
 
 
 _TEXT_READ_CHUNK_SIZE = 8192

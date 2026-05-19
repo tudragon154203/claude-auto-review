@@ -1,7 +1,7 @@
 import unittest
 from datetime import datetime, timezone, timedelta
 
-from claude_auto_review.utils.datetime_utils import (
+from claude_auto_review.timestamps import (
     parse_iso_timestamp,
     make_timezone_aware,
     hours_since,
@@ -40,24 +40,18 @@ class TestParseIsoTimestamp(unittest.TestCase):
 
 
 class TestMakeTimezoneAware(unittest.TestCase):
-    def test_returns_naive_datetime_unchanged_when_tzinfo_is_none(self):
+    def test_attaches_local_timezone_to_naive_datetime(self):
         dt = datetime(2024, 1, 1, 12, 0, 0)
         result = make_timezone_aware(dt)
-        # The function replaces tzinfo with the local tz; verify tzinfo is not None
         self.assertIsNotNone(result.tzinfo)
         self.assertIsInstance(result, datetime)
 
     def test_preserves_utc_timezone_aware_datetime(self):
         dt = datetime(2024, 1, 1, 12, 0, 0, tzinfo=timezone.utc)
         result = make_timezone_aware(dt)
-        self.assertIsInstance(result, datetime)
-        self.assertIsNotNone(result.tzinfo)
+        self.assertIs(result, dt)
+        self.assertEqual(result.tzinfo, timezone.utc)
 
-    def test_already_timezone_aware_returns_new_datetime(self):
-        dt = datetime(2024, 1, 1, 12, 0, 0, tzinfo=timezone.utc)
-        result = make_timezone_aware(dt)
-        # astimezone() returns a new object, not the original
-        self.assertIsNot(result, dt)
 
 
 class TestHoursSince(unittest.TestCase):
@@ -67,6 +61,9 @@ class TestHoursSince(unittest.TestCase):
         hours = hours_since(self.PARANOID_TIMESTAMP)
         self.assertIsNotNone(hours)
         self.assertGreater(hours, 0)
+
+    def test_returns_none_on_none_input(self):
+        self.assertIsNone(hours_since(None))
 
     def test_returns_none_on_malformed_string(self):
         self.assertIsNone(hours_since("not-a-timestamp"))

@@ -7,7 +7,7 @@ from claude_auto_review.state.models import EditRecord, ReviewCompletedRecord, R
 from claude_auto_review.state.store.read import get_unreviewed_files, load_state
 from claude_auto_review.state.store.write import append_state_event, mark_files_reviewed
 from claude_auto_review.config.constants import DURATION_ROUND_PRECISION, SECONDS_PER_HOUR, SECONDS_PER_MINUTE
-from claude_auto_review.utils.datetime_utils import parse_iso_timestamp
+from claude_auto_review.timestamps import parse_iso_timestamp
 
 
 REASON_PARTIAL_REVIEW = "partial_review"

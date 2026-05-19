@@ -3,7 +3,7 @@ from functools import cached_property
 
 from claude_auto_review.paths.path_utils import is_runtime_relative_path
 from claude_auto_review.state.models import EditRecord, ReviewMetadata, StateEvent, StopBlockedRecord
-from claude_auto_review.utils.datetime_utils import parse_iso_timestamp
+from claude_auto_review.timestamps import parse_iso_timestamp
 
 
 def _timestamp_value(entry: StateEvent) -> str:

@@ -8,7 +8,7 @@ from claude_auto_review.runtime.cleanup.paths import _remove_tree
 from claude_auto_review.runtime.context import resolve_project_root
 from claude_auto_review.runtime.events import log_event, log_failure
 from claude_auto_review.state.store.read import read_last_jsonl_record
-from claude_auto_review.utils.datetime_utils import hours_since
+from claude_auto_review.timestamps import hours_since
 
 
 def _entry_timestamp(entry):

@@ -12,7 +12,7 @@ from claude_auto_review.review.prompting.generation import (
 from claude_auto_review.review.prompting.rendering import current_file_snapshots
 from claude_auto_review.config.settings import resolve_rules_file_path
 from claude_auto_review.stop.orchestration.core.context import RuntimeContext
-from claude_auto_review.utils.datetime_utils import parse_iso_timestamp
+from claude_auto_review.timestamps import parse_iso_timestamp
 
 
 @dataclass(frozen=True)
