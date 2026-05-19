@@ -31,7 +31,11 @@ class ReviewArtifactState:
     verdict: str | None = None
 
 
-def _read_review_content(review_path):
+_AUTOCOMPLETE_RETRY_ATTEMPTS = 2
+
+
+def _load_and_normalize_review(review_path):
+    """Load review content and normalize verdict section if needed."""
     if not review_path.is_file():
         return None
     content = review_path.read_text(encoding="utf-8", errors="replace")
@@ -44,7 +48,7 @@ def _read_review_content(review_path):
 
 def _read_review_verdict(review_path, content=None):
     if content is None:
-        content = _read_review_content(review_path)
+        content = _load_and_normalize_review(review_path)
     if content is None:
         return None
     return extract_review_verdict_text(content)
@@ -52,14 +56,14 @@ def _read_review_verdict(review_path, content=None):
 
 def _review_has_completed_artifact(review_path, content=None):
     if content is None:
-        content = _read_review_content(review_path)
+        content = _load_and_normalize_review(review_path)
     if content is None:
         return False
     return is_completed_review_content(content)
 
 
 def _review_artifact_state(review_path):
-    content = _read_review_content(review_path)
+    content = _load_and_normalize_review(review_path)
     verdict = _read_review_verdict(review_path, content=content)
     if is_review_complete_verdict(verdict) and content is not None and is_review_clean_content(content):
         return ReviewArtifactState(status="complete_clean", verdict=verdict)
@@ -120,7 +124,8 @@ def finalize_review_stop(ctx: RuntimeContext, resolution):
         return action_result
 
     user_prompt = build_review_completion_prompt(review_path)
-    for _attempt in range(2):
+    result: object = None
+    for _attempt in range(_AUTOCOMPLETE_RETRY_ATTEMPTS):
         result = attempt_stop_autocomplete(
             ctx,
             review_id,
@@ -140,7 +145,7 @@ def finalize_review_stop(ctx: RuntimeContext, resolution):
     if action_result is not None:
         return action_result
 
-    if result.status == "empty_stdout":
+    if result is not None and result.status == "empty_stdout":
         log_event(ctx.project_root, "stop_hook_claude_cli_empty_approved", client_id=ctx.client_id, reviewId=review_id)
         approve_response(f"Claude Auto Review: review {review_id} auto-approved (empty stdout)")
         return 0
