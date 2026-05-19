@@ -1,25 +1,26 @@
-from pathlib import Path
 from dataclasses import dataclass
+from pathlib import Path
+from typing import Literal
 
 from claude_auto_review.runtime.events import log_event
 from claude_auto_review.state.reviews.verdicts import (
     extract_review_verdict_text,
     is_completed_review_content,
-    is_review_clean,
     is_review_clean_content,
     is_review_complete_verdict,
     normalize_review_verdict_content,
 )
 from claude_auto_review.review.completion import apply_completed_review, record_completed_review
-from claude_auto_review.config.settings import DEFAULT_SETTINGS, SETTING_REVIEWER_TIMEOUT, SETTING_REVIEWER_MODEL, DEFAULT_REVIEWER_MODEL
+from claude_auto_review.config.settings import DEFAULT_SETTINGS, SETTING_REVIEWER_TIMEOUT, SETTING_REVIEWER_MODEL
 from claude_auto_review.stop.orchestration.core.context import RuntimeContext
 from claude_auto_review.stop.feedback import (
     block_completed_review_findings,
     build_review_completion_prompt,
 )
-from claude_auto_review.stop.reviews.core.prompt_runner import attempt_stop_autocomplete
+from claude_auto_review.stop.reviews.core.prompt_runner import AutocompleteResult, attempt_stop_autocomplete
 from claude_auto_review.stop.reviews.core.selection import get_entries_covered_by_review
 from claude_auto_review.stop.reviews.core.review_prompt_runner import _review_prompt_path
+from claude_auto_review.stop.orchestration.core.resolution import StopFlowResolution
 from claude_auto_review.stop.orchestration.core.response_actions import block_pending_review
 from claude_auto_review.stop.response import approve_response, block_response
 from claude_auto_review.state.snapshot import StateSnapshot
@@ -27,14 +28,14 @@ from claude_auto_review.state.snapshot import StateSnapshot
 
 @dataclass(frozen=True)
 class ReviewArtifactState:
-    status: str
+    status: Literal["complete_clean", "complete_findings", "pending"]
     verdict: str | None = None
 
 
 _AUTOCOMPLETE_RETRY_ATTEMPTS = 2
 
 
-def _load_and_normalize_review(review_path):
+def _load_and_ensure_normalized_review(review_path):
     """Load review content and normalize verdict section if needed."""
     if not review_path.is_file():
         return None
@@ -48,7 +49,7 @@ def _load_and_normalize_review(review_path):
 
 def _read_review_verdict(review_path, content=None):
     if content is None:
-        content = _load_and_normalize_review(review_path)
+        content = _load_and_ensure_normalized_review(review_path)
     if content is None:
         return None
     return extract_review_verdict_text(content)
@@ -56,18 +57,16 @@ def _read_review_verdict(review_path, content=None):
 
 def _review_has_completed_artifact(review_path, content=None):
     if content is None:
-        content = _load_and_normalize_review(review_path)
+        content = _load_and_ensure_normalized_review(review_path)
     if content is None:
         return False
     return is_completed_review_content(content)
 
 
 def _review_artifact_state(review_path):
-    content = _load_and_normalize_review(review_path)
+    content = _load_and_ensure_normalized_review(review_path)
     verdict = _read_review_verdict(review_path, content=content)
     if is_review_complete_verdict(verdict) and content is not None and is_review_clean_content(content):
-        return ReviewArtifactState(status="complete_clean", verdict=verdict)
-    if is_review_complete_verdict(verdict) and content is None and is_review_clean(review_path):
         return ReviewArtifactState(status="complete_clean", verdict=verdict)
     if is_review_complete_verdict(verdict):
         return ReviewArtifactState(status="complete_findings", verdict=verdict)
@@ -107,7 +106,7 @@ def _apply_artifact_state(ctx, artifact_state, review_id, review_path, covered_e
     return None
 
 
-def finalize_review_stop(ctx: RuntimeContext, resolution):
+def finalize_review_stop(ctx: RuntimeContext, resolution: StopFlowResolution):
     state = resolution.state
     unreviewed = resolution.unreviewed
     review = resolution.review
@@ -117,14 +116,14 @@ def finalize_review_stop(ctx: RuntimeContext, resolution):
     review_path = Path(ctx.project_root) / review.reviewPath
     prompt_file = _review_prompt_path(ctx, review_id)
     reviewer_timeout_seconds = ctx.settings.get(SETTING_REVIEWER_TIMEOUT, DEFAULT_SETTINGS[SETTING_REVIEWER_TIMEOUT])
-    reviewer_model = ctx.settings.get(SETTING_REVIEWER_MODEL, DEFAULT_REVIEWER_MODEL)
+    reviewer_model = ctx.settings.get(SETTING_REVIEWER_MODEL, DEFAULT_SETTINGS[SETTING_REVIEWER_MODEL])
     artifact_state = _review_artifact_state(review_path)
     action_result = _apply_artifact_state(ctx, artifact_state, review_id, review_path, covered_entries, unreviewed)
     if action_result is not None:
         return action_result
 
     user_prompt = build_review_completion_prompt(review_path)
-    result: object = None
+    result: AutocompleteResult | None = None
     for _attempt in range(_AUTOCOMPLETE_RETRY_ATTEMPTS):
         result = attempt_stop_autocomplete(
             ctx,
