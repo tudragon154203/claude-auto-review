@@ -15,7 +15,8 @@ class EndToEndLifecycleTests(EndToEndTestCase):
         self.track(project_root, "src/main.ts")
         stop1 = self.stop(project_root)
         self.assertEqual(stop1.returncode, 0)
-        self.assertEqual(stop1.stdout.strip(), "")
+        approve = json.loads(stop1.stdout.strip())
+        self.assertEqual(approve["decision"], "approve")
 
     def test_setup_installs_runtime_artifacts_and_review_flow(self):
         project_root = self.temp_project()

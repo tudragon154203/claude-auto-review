@@ -16,10 +16,12 @@ from claude_auto_review.stop.classifier.core.last_assistant_message import class
 from claude_auto_review.stop.orchestration.core.context import RuntimeContext
 from claude_auto_review.stop.orchestration.core.finalize import finalize_review_stop
 from claude_auto_review.stop.orchestration.core.pending import resolve_pending_review
+from claude_auto_review.stop.response import approve_response
 
 
 def _allow_stop(project_root, reason, client_id=None, **details):
     log_event(project_root, "stop_approved", client_id=client_id, reason=reason, **details)
+    approve_response(f"Claude Auto Review: stop approved ({reason})")
     return 0
 
 
@@ -40,6 +42,7 @@ def run_stop_flow(project_root, payload, *, client_id=None, settings=None):
 
     if not settings.get("enabled", True):
         log_event(project_root, "stop_disabled", client_id=client_id)
+        approve_response("Claude Auto Review: stop disabled by settings")
         return 0
 
     state_snapshot = load_state_snapshot(project_root, client_id)

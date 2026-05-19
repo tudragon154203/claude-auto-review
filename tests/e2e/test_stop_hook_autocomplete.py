@@ -16,7 +16,8 @@ class EndToEndStopHookAutocompleteTests(EndToEndTestCase):
 
         stop = self.stop(project_root)
         self.assertEqual(stop.returncode, 0)
-        self.assertEqual(stop.stdout.strip(), "")
+        approve = json.loads(stop.stdout.strip())
+        self.assertEqual(approve["decision"], "approve")
 
         _cd = client_dir(project_root)
         review_path = sorted((_cd / "reviews").glob("review-*.md"))[-1]
@@ -54,7 +55,8 @@ class EndToEndStopHookAutocompleteTests(EndToEndTestCase):
         self.track(project_root, "src/app.ts")
         stop = self.stop(project_root, use_fake_claude=False)
         self.assertEqual(stop.returncode, 0, stop.stderr)
-        self.assertEqual(stop.stdout.strip(), "")
+        approve = json.loads(stop.stdout.strip())
+        self.assertEqual(approve["decision"], "approve")
 
         _cd = client_dir(project_root)
         review_path = sorted((_cd / "reviews").glob("review-*.md"))[-1]

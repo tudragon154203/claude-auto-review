@@ -30,7 +30,8 @@ class TestStopHookCircuitBreaker(HookTestCase, unittest.TestCase):
         self.assertEqual(post6.returncode, 0)
         stop6 = self.run_python("hooks/stop_hook.py", project_root, env_overrides={"PATH": ""}, use_fake_claude=False)
         self.assertEqual(stop6.returncode, 0, "Sixth stop should be ALLOWED: circuit breaker tripped")
-        self.assertEqual(stop6.stdout.strip(), "", "Circuit breaker approval prints no block JSON response")
+        approve = json.loads(stop6.stdout.strip())
+        self.assertEqual(approve["decision"], "approve", "Circuit breaker approval prints approve JSON response")
         state_after = load_state(project_root, "test-session")
         self.assertEqual(consecutive_stop_blocks(state_after), 5)
 

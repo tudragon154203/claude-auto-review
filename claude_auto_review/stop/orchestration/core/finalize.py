@@ -16,12 +16,12 @@ from claude_auto_review.stop.orchestration.core.context import RuntimeContext
 from claude_auto_review.stop.feedback import (
     block_completed_review_findings,
     build_review_completion_prompt,
-    block_response,
 )
 from claude_auto_review.stop.reviews.core.prompt_runner import attempt_stop_autocomplete
 from claude_auto_review.stop.reviews.core.selection import get_entries_covered_by_review
 from claude_auto_review.stop.reviews.core.review_prompt_runner import _review_prompt_path
 from claude_auto_review.stop.orchestration.core.response_actions import block_pending_review
+from claude_auto_review.stop.response import approve_response, block_response
 from claude_auto_review.state.snapshot import StateSnapshot
 
 
@@ -87,6 +87,7 @@ def _apply_completed_clean_review(ctx, review_id, covered_entries):
         covered_entries,
     )
     if not remaining:
+        approve_response(f"Claude Auto Review: review {review_id} clean, all files covered")
         return 0
     _block_partial_review_remaining(review_id, remaining)
     return 2
@@ -141,6 +142,7 @@ def finalize_review_stop(ctx: RuntimeContext, resolution):
 
     if result.status == "empty_stdout":
         log_event(ctx.project_root, "stop_hook_claude_cli_empty_approved", client_id=ctx.client_id, reviewId=review_id)
+        approve_response(f"Claude Auto Review: review {review_id} auto-approved (empty stdout)")
         return 0
 
     return block_pending_review(ctx, review_id, review_path, prompt_file, unreviewed)
