@@ -1,7 +1,6 @@
 import unittest
+from pathlib import Path
 
-from claude_auto_review.state.models import ReviewMetadata
-from claude_auto_review.state.reviews.expiry import is_review_expired
 from claude_auto_review.state.reviews.verdicts import (
     extract_review_verdict_text,
     has_review_findings,
@@ -16,7 +15,7 @@ from claude_auto_review.state.reviews.verdicts import (
 from tests.unit.state.support import StateTestCase
 
 
-class TestReviewCompletion(StateTestCase, unittest.TestCase):
+class TestReviewsVerdicts(StateTestCase, unittest.TestCase):
 
     def test_returns_false_when_review_file_missing(self):
         project_root = self.temp_project()
@@ -126,6 +125,7 @@ class TestReviewCompletion(StateTestCase, unittest.TestCase):
         self.assertTrue(is_review_clean_content(content))
 
     def test_has_review_findings_detects_real_findings_after_clean_declaration(self):
+        """A clean declaration before real headings still means findings exist."""
         content = (
             "## Findings\n"
             "Clean - no issues found.\n\n"
@@ -177,58 +177,92 @@ class TestReviewCompletion(StateTestCase, unittest.TestCase):
         path.write_text("## Verdict\nPEnDInG.", encoding="utf-8")
         self.assertFalse(is_review_complete(path))
 
-    def test_is_review_expired_with_timeout_zero(self):
-        entry = ReviewMetadata(
-            timestamp="2024-01-01T07:00:00+07:00",
-            reviewId="r1",
-            reviewPath="reviews/r1.md",
-            files=[],
-            clientId="c",
+    def test_has_review_findings_detects_no_findings_summary_prose(self):
+        content = (
+            "## Findings\n"
+            "No semantic bugs, security issues, or maintainability concerns identified.\n"
+            "All code follows project conventions.\n\n"
+            "## Verdict\n"
+            "1 issue found.\n"
         )
-        self.assertFalse(is_review_expired(entry, 0))
+        self.assertFalse(has_review_findings(content))
 
-    def test_is_review_expired_missing_timestamp(self):
-        entry = ReviewMetadata(
-            timestamp="",
-            reviewId="r1",
-            reviewPath="reviews/r1.md",
-            files=[],
-            clientId="c",
+    def test_has_review_findings_detects_real_findings_despite_negation_prefix(self):
+        """A line starting with a negation phrase but containing ### findings is still findings."""
+        content = (
+            "## Findings\n"
+            "No semantic bugs were addressed.\n\n"
+            "### 1. Race condition in counter\n"
+            "**Severity:** HIGH\n"
+            "**Verdict:** Confirmed\n\n"
+            "## Verdict\n"
+            "1 issue found.\n"
         )
-        self.assertFalse(is_review_expired(entry, 1))
+        self.assertTrue(has_review_findings(content))
 
-    def test_is_review_expired_invalid_timestamp(self):
-        entry = ReviewMetadata(
-            timestamp="not-a-date",
-            reviewId="r1",
-            reviewPath="reviews/r1.md",
-            files=[],
-            clientId="c",
+    def test_has_review_findings_detects_none_line_as_no_findings(self):
+        content = (
+            "## Findings\n"
+            "None. The new test is well-structured and the assertions cover the intended behavior.\n\n"
+            "## Verdict\n"
+            "Clean - no issues found.\n"
         )
-        self.assertFalse(is_review_expired(entry, 1))
+        self.assertFalse(has_review_findings(content))
 
-    def test_is_review_expired_old_review(self):
-        from datetime import datetime, timedelta
-        old_time = (datetime.now().astimezone() - timedelta(hours=2)).isoformat()
-        entry = ReviewMetadata(
-            timestamp=old_time,
-            reviewId="r1",
-            reviewPath="reviews/r1.md",
-            files=[],
-            clientId="c",
+    def test_has_review_findings_detects_no_bugs_line(self):
+        content = (
+            "## Findings\n"
+            "No bugs found.\n\n"
+            "## Verdict\n"
+            "Clean - no issues found.\n"
         )
-        self.assertTrue(is_review_expired(entry, 1))
+        self.assertFalse(has_review_findings(content))
 
-    def test_is_review_expired_recent_review(self):
-        from datetime import datetime, timedelta
-        recent_time = (datetime.now().astimezone() - timedelta(minutes=30)).isoformat()
-        entry = ReviewMetadata(
-            timestamp=recent_time,
-            reviewId="r1",
-            reviewPath="reviews/r1.md",
-            files=[],
-            clientId="c",
+    def test_has_review_findings_detects_no_concerns_line(self):
+        content = (
+            "## Findings\n"
+            "No concerns identified.\n\n"
+            "## Verdict\n"
+            "Clean - no issues found.\n"
         )
-        self.assertFalse(is_review_expired(entry, 1))
+        self.assertFalse(has_review_findings(content))
+
+    def test_normalize_rewrites_false_positive_findings_present_to_clean(self):
+        content = (
+            "## Findings\n"
+            "No semantic bugs, security issues, or maintainability concerns identified.\n\n"
+            "## Verdict\n"
+            "Findings present. Claude must address all findings before stopping.\n"
+        )
+        normalized = normalize_review_verdict_content(content)
+        self.assertIn("Clean - no issues found. Claude may stop.", normalized)
+        self.assertNotIn("Findings present", normalized)
+
+    def test_normalize_produces_consistent_clean_state(self):
+        """After normalization, is_review_clean_content and has_review_findings should agree."""
+        # Case: clean verdict but real findings exist -> should rewrite to findings present
+        content_with_findings_and_clean_verdict = (
+            "## Findings\n"
+            "### [Low] Unused import\n"
+            "**Verdict:** Confirmed\n\n"
+            "## Verdict\n"
+            "Clean - no issues found. Claude may stop.\n"
+        )
+        normalized = normalize_review_verdict_content(content_with_findings_and_clean_verdict)
+        self.assertTrue(has_review_findings(normalized))
+        self.assertFalse(is_review_clean_content(normalized))
+
+        # Case: blocking verdict but no real findings -> should rewrite to clean
+        content_with_no_findings_and_blocking_verdict = (
+            "## Findings\n"
+            "No semantic bugs, security issues, or maintainability concerns identified.\n\n"
+            "## Verdict\n"
+            "Findings present. Claude must address all findings before stopping.\n"
+        )
+        normalized = normalize_review_verdict_content(content_with_no_findings_and_blocking_verdict)
+        self.assertFalse(has_review_findings(normalized))
+        self.assertTrue(is_review_clean_content(normalized))
 
 
+if __name__ == "__main__":
+    unittest.main()

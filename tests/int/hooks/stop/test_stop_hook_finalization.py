@@ -3,6 +3,7 @@ import unittest
 
 from claude_auto_review.state.store.read import load_state, was_hash_reviewed
 from tests.int.hooks.support import HookTestCase
+from tests.support import client_dir
 from tests.support import start_classifier_server
 
 
@@ -54,13 +55,18 @@ class TestStopHookFinalization(HookTestCase, unittest.TestCase):
         self.assertEqual(stop1.returncode, 2)
 
         # 3. Overwrite review so it looks completed but carries no verdict
-        self.complete_latest_review(
-            project_root,
-            verdict="Some completed artifact content without markers.",
+        review_path = sorted(
+            (client_dir(project_root) / "reviews").glob("review-*.md")
+        )[-1]
+        content = review_path.read_text(encoding="utf-8")
+        # Replace the placeholder "no findings" text with a finding so the
+        # review looks like a completed-but-not-clean artifact.
+        content = content.replace(
+            "No findings yet. This file is a placeholder until Claude completes the review.",
+            "The change introduces a potential regression in the retry logic.",
         )
-        # The verdict string above does not start with "Clean", so
-        # is_review_clean_verdict will be False, letting the
-        # _review_has_completed_artifact branch in finalize.py fire.
+        content = content.replace("Pending.", "Some completed artifact content without markers.")
+        review_path.write_text(content, encoding="utf-8", newline="\n")
 
         # 4. Second stop should still block
         stop2 = self.run_python("hooks/stop_hook.py", project_root, env_overrides={"PATH": ""}, use_fake_claude=False)

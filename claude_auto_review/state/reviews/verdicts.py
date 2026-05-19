@@ -36,34 +36,27 @@ def extract_review_findings_text(content: str | None) -> str | None:
 
 
 _FINDING_HEADING = re.compile(r"^###\s+(\d+\.|\[)")
+_NO_FINDINGS_LINE = re.compile(
+    r"^(none\b|clean\b|no\s+(?:findings?\b|issues?\b|bugs?\b|concerns?\b|problems?\b|violations?\b)"
+    r"(?:.*\b(?:found|identified|detected)\b)?|no\s+semantic\s+(?:issue|bug|concern|problem|violation)s?\b"
+    r"(?:.*\b(?:found|identified|detected)\b)?)",
+    re.IGNORECASE,
+)
+
 
 def has_review_findings(content: str | None) -> bool:
     findings = extract_review_findings_text(content)
     if not findings:
         return False
-    if any(_FINDING_HEADING.match(l) for l in findings.splitlines()):
+    lines = findings.splitlines()
+    # A structured ### finding heading always means there are findings.
+    # An explicit "no findings" negation is only trusted when no heading appears at all.
+    if any(_FINDING_HEADING.match(l.strip()) for l in lines if l.strip()):
         return True
-    for line in findings.splitlines():
-        line = line.strip()
-        if not line:
-            continue
-        if re.match(r"^(none\b|no findings\b|no issues\b|clean\b)", line, re.IGNORECASE):
-            return False
-    return True
+    return not any(_NO_FINDINGS_LINE.match(l.strip()) for l in lines if l.strip())
 
 
-def normalize_review_verdict_content(content: str | None) -> str | None:
-    if not content:
-        return content
-    verdict = extract_review_verdict_text(content)
-    if not is_review_clean_verdict(verdict):
-        return content
-    if not has_review_findings(content):
-        return content
-    if "## Verdict" not in content:
-        return content
-
-    stricter_verdict = "Findings present. Claude must address all findings before stopping."
+def _replace_verdict_text(content: str, new_verdict: str) -> str:
     before, after = content.split("## Verdict", 1)
     lines = after.splitlines()
     replaced = False
@@ -73,13 +66,38 @@ def normalize_review_verdict_content(content: str | None) -> str | None:
             new_lines.append(line)
             continue
         if line.strip():
-            new_lines.append(line.replace(line.strip(), stricter_verdict, 1))
+            # Replace the entire first non-empty verdict line
+            new_lines.append(new_verdict)
             replaced = True
         else:
             new_lines.append(line)
     if not replaced:
-        new_lines.append(stricter_verdict)
+        new_lines.append(new_verdict)
     return before + "## Verdict\n" + "\n".join(new_lines)
+
+
+def normalize_review_verdict_content(content: str | None) -> str | None:
+    if not content:
+        return content
+    if "## Verdict" not in content:
+        return content
+    verdict = extract_review_verdict_text(content)
+    if not verdict or not is_review_complete_verdict(verdict):
+        return content
+    findings_exist = has_review_findings(content)
+
+    if is_review_clean_verdict(verdict):
+        if findings_exist:
+            return _replace_verdict_text(
+                content,
+                "Findings present. Claude must address all findings before stopping.",
+            )
+        return content
+
+    if not findings_exist:
+        return _replace_verdict_text(content, "Clean - no issues found. Claude may stop.")
+
+    return content
 
 
 def is_placeholder_review_content(content: str | None) -> bool:

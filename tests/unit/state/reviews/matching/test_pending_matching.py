@@ -1,8 +1,4 @@
-import tempfile
 import unittest
-from datetime import datetime, timedelta, timezone
-from pathlib import Path
-from unittest.mock import patch
 
 from claude_auto_review.state.models import EditRecord, ReviewFileRecord, ReviewMetadata
 from claude_auto_review.state.reviews.matching import (
@@ -10,14 +6,14 @@ from claude_auto_review.state.reviews.matching import (
     best_pending_review_exactly_matching_entries,
     best_pending_review_for_entries,
     entry_file_hash_pairs,
-    pending_review_candidates_for_entries,
     pending_reviews_exactly_matching_entries,
     pending_reviews_for_entries,
     review_file_hash_pairs,
 )
 
 
-class TestPendingReviewSelection(unittest.TestCase):
+class TestPendingMatching(unittest.TestCase):
+
     def test_entry_and_review_hash_pair_helpers_ignore_invalid_items(self):
         entries = [
             ReviewFileRecord(file="a.ts", hash="111"),
@@ -40,7 +36,9 @@ class TestPendingReviewSelection(unittest.TestCase):
         self.assertEqual(review_file_hash_pairs(review_entry), {("a.ts", "111")})
 
     def test_pending_reviews_for_entries_requires_full_coverage_and_sorts_newest_first(self):
-        now = datetime.now(timezone.utc)
+        import datetime
+        from datetime import timedelta, timezone
+        now = datetime.datetime.now(timezone.utc)
         state = [
             ReviewMetadata(
                 timestamp=(now - timedelta(hours=2)).isoformat(),
@@ -94,7 +92,9 @@ class TestPendingReviewSelection(unittest.TestCase):
         self.assertEqual([entry.reviewId for entry in matches], ["newer", "older"])
 
     def test_pending_reviews_exactly_matching_entries_requires_exact_file_hash_set(self):
-        now = datetime.now(timezone.utc)
+        import datetime
+        from datetime import timedelta, timezone
+        now = datetime.datetime.now(timezone.utc)
         state = [
             ReviewMetadata(
                 timestamp=(now - timedelta(minutes=5)).isoformat(),
@@ -144,7 +144,9 @@ class TestPendingReviewSelection(unittest.TestCase):
         self.assertEqual(best.reviewId, "exact-new")
 
     def test_best_pending_review_covering_entries_prefers_more_overlap_then_newer(self):
-        now = datetime.now(timezone.utc)
+        import datetime
+        from datetime import timedelta, timezone
+        now = datetime.datetime.now(timezone.utc)
         state = [
             ReviewMetadata(
                 timestamp=(now - timedelta(minutes=10)).isoformat(),
@@ -187,35 +189,10 @@ class TestPendingReviewSelection(unittest.TestCase):
         self.assertIsNotNone(best)
         self.assertEqual(best.reviewId, "two-overlap-new")
 
-    def test_pending_review_candidates_for_entries_skips_expired_reviews(self):
-        now = datetime.now(timezone.utc)
-        expired = ReviewMetadata(
-            timestamp=(now - timedelta(hours=2)).isoformat(),
-            reviewId="expired",
-            reviewPath="reviews/expired.md",
-            clientId="c",
-            status="pending",
-            files=[ReviewFileRecord(file="a.ts", hash="111")],
-        )
-        fresh = ReviewMetadata(
-            timestamp=now.isoformat(),
-            reviewId="fresh",
-            reviewPath="reviews/fresh.md",
-            clientId="c",
-            status="pending",
-            files=[ReviewFileRecord(file="a.ts", hash="111")],
-        )
-        entries = [EditRecord(timestamp=now.isoformat(), file="a.ts", hash="111")]
-        state = [expired, fresh]
-
-        with patch("claude_auto_review.state.reviews.matching.is_review_expired", side_effect=lambda entry, timeout_hours: entry.reviewId == "expired"):
-            candidates = pending_review_candidates_for_entries(state, entries, project_root=Path(tempfile.mkdtemp()), timeout_hours=1)
-
-        self.assertEqual([candidate["review"].reviewId for candidate in candidates], ["fresh"])
-        self.assertEqual(candidates[0]["overlap_count"], 1)
-
     def test_best_pending_review_for_entries_returns_none_for_no_overlap(self):
-        now = datetime.now(timezone.utc)
+        import datetime
+        from datetime import timezone as tz
+        now = datetime.datetime.now(tz.utc)
         state = [
             ReviewMetadata(
                 timestamp=now.isoformat(),

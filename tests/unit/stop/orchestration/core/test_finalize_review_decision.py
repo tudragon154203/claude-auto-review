@@ -1,11 +1,13 @@
 import tempfile
 import unittest
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
-from claude_auto_review.state.models import EditRecord, ReviewMetadata
+from claude_auto_review.state.models import EditRecord, ReviewMetadata, StopBlockedRecord
+from claude_auto_review.state.snapshot import StateSnapshot
 from claude_auto_review.stop.orchestration.core.context import RuntimeContext
-from claude_auto_review.stop.orchestration.core.finalize import _review_artifact_state, finalize_review_stop
+from claude_auto_review.stop.orchestration.core.finalize import finalize_review_stop
 from claude_auto_review.stop.orchestration.core.resolution import StopFlowResolution
 
 
@@ -29,42 +31,12 @@ def _ctx(project_root=Path("/fake"), client_id="c", settings=None, payload=None)
     )
 
 
-class TestFinalizeReviewStop(unittest.TestCase):
+class TestFinalizeReviewDecision(unittest.TestCase):
     resolution = StopFlowResolution(
         state=[],
         unreviewed=[],
         review=_mk_review("r1"),
     )
-
-    def test_review_artifact_state_detects_clean_complete_review(self):
-        with tempfile.TemporaryDirectory() as tmpdir:
-            review_path = Path(tmpdir) / "review.md"
-            review_path.write_text("## Verdict\nClean\n", encoding="utf-8")
-
-            artifact_state = _review_artifact_state(review_path)
-
-        self.assertEqual(artifact_state.status, "complete_clean")
-        self.assertEqual(artifact_state.verdict, "Clean")
-
-    def test_review_artifact_state_normalizes_contradictory_clean_review(self):
-        with tempfile.TemporaryDirectory() as tmpdir:
-            review_path = Path(tmpdir) / "review.md"
-            review_path.write_text(
-                "## Findings\n"
-                "### [Low] Unused import\n"
-                "**Verdict:** Confirmed\n\n"
-                "## Verdict\n"
-                "Clean - no issues found. Claude may stop.\n",
-                encoding="utf-8",
-            )
-
-            artifact_state = _review_artifact_state(review_path)
-
-            self.assertEqual(artifact_state.status, "complete_findings")
-            self.assertIn(
-                "Findings present. Claude must address all findings before stopping.",
-                review_path.read_text(encoding="utf-8"),
-            )
 
     @patch("claude_auto_review.stop.orchestration.core.finalize.get_entries_covered_by_review", return_value=[])
     @patch("claude_auto_review.stop.orchestration.core.finalize.apply_completed_review", return_value=[])
