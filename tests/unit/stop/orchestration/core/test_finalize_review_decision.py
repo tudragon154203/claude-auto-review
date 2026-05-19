@@ -1,11 +1,9 @@
 import tempfile
 import unittest
 from pathlib import Path
-from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
-from claude_auto_review.state.models import EditRecord, ReviewMetadata, StopBlockedRecord
-from claude_auto_review.state.snapshot import StateSnapshot
+from claude_auto_review.state.models import EditRecord, ReviewMetadata
 from claude_auto_review.stop.orchestration.core.context import RuntimeContext
 from claude_auto_review.stop.orchestration.core.finalize import finalize_review_stop
 from claude_auto_review.stop.orchestration.core.resolution import StopFlowResolution

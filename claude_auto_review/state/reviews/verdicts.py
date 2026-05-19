@@ -71,7 +71,7 @@ def _replace_verdict_text(content: str, new_verdict: str) -> str:
             lines[i] = new_verdict + ("\r\n" if line.endswith("\r\n") else "\n")
             break
     else:
-        lines.append(new_verdict)
+        lines.append(new_verdict + "\n")
     return before + "## Verdict" + "".join(lines)
 
 
