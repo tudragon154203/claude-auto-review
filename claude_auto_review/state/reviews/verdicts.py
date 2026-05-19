@@ -57,23 +57,20 @@ def has_review_findings(content: str | None) -> bool:
 
 
 def _replace_verdict_text(content: str, new_verdict: str) -> str:
+    if "## Verdict" not in content:
+        return content
+    # Preserve the exact whitespace sequence between ## Verdict and the first
+    # content line. The original code reconstructed with a hardcoded "\n", which
+    # would alter output if the heading was followed by \r\n or extra blank lines.
     before, after = content.split("## Verdict", 1)
-    lines = after.splitlines()
-    replaced = False
-    new_lines: list[str] = []
-    for line in lines:
-        if replaced:
-            new_lines.append(line)
-            continue
+    lines = after.splitlines(keepends=True)
+    for i, line in enumerate(lines):
         if line.strip():
-            # Replace the entire first non-empty verdict line
-            new_lines.append(new_verdict)
-            replaced = True
-        else:
-            new_lines.append(line)
-    if not replaced:
-        new_lines.append(new_verdict)
-    return before + "## Verdict\n" + "\n".join(new_lines)
+            lines[i] = new_verdict + ("\r\n" if line.endswith("\r\n") else "\n")
+            break
+    else:
+        lines.append(new_verdict)
+    return before + "## Verdict" + "".join(lines)
 
 
 def normalize_review_verdict_content(content: str | None) -> str | None:
@@ -126,10 +123,22 @@ def get_review_verdict_text(review_path: str | Path) -> str | None:
     return extract_review_verdict_text(content)
 
 
+_COMPLETE_VERDICT = re.compile(
+    r"^(clean\b|confirmed\s*\(\s*clean\s*\)|not\s+clean\b"
+    r"|\d+\s+issues?\b"
+    r"|all\s+(?:fixes?\s+)?applied\b|all\s+issues?\s+addressed\b"
+    r"|.*\bfindings?\b)",
+    re.IGNORECASE,
+)
+
+
 def is_review_complete_verdict(verdict: str | None) -> bool:
     if not verdict:
         return False
-    return verdict.strip().lower() not in ("pending", "pending.")
+    verdict = verdict.strip().lower()
+    if verdict in ("pending", "pending."):
+        return False
+    return bool(_COMPLETE_VERDICT.match(verdict))
 
 
 def is_review_clean_verdict(verdict: str | None) -> bool:

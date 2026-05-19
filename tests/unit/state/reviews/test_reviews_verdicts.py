@@ -147,6 +147,14 @@ class TestReviewsVerdicts(StateTestCase, unittest.TestCase):
         content = "## Verdict\n\nClean - no issues found.\n\nExtra notes that should be ignored.\n"
         self.assertEqual(extract_review_verdict_text(content), "Clean - no issues found.")
 
+    def test_extract_review_verdict_text_falls_back_to_findings_clean_line(self):
+        content = (
+            "## Findings\n"
+            "Confirmed (clean)\n\n"
+            "Extra notes that should be ignored.\n"
+        )
+        self.assertEqual(extract_review_verdict_text(content), "Confirmed (clean)")
+
     def test_marks_any_non_placeholder_review_content_as_completed(self):
         content = (
             "# Review rev-1\n\n"
