@@ -3,6 +3,8 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
+from claude_auto_review.runtime.events import log_event
+
 
 def extract_review_verdict_text(content: str | None) -> str | None:
     if not content:
@@ -87,14 +89,20 @@ def normalize_review_verdict_content(content: str | None) -> str | None:
 
     if is_review_clean_verdict(verdict):
         if findings_exist:
-            return _replace_verdict_text(
+            rewritten = _replace_verdict_text(
                 content,
                 "Findings present. Claude must address all findings before stopping.",
             )
+            if rewritten != content:
+                log_event(Path.cwd(), "review_verdict_normalized", original_verdict=verdict, normalized_verdict="Findings present. Claude must address all findings before stopping.")
+            return rewritten
         return content
 
     if not findings_exist:
-        return _replace_verdict_text(content, "Clean - no issues found. Claude may stop.")
+        rewritten = _replace_verdict_text(content, "Clean - no issues found. Claude may stop.")
+        if rewritten != content:
+            log_event(Path.cwd(), "review_verdict_normalized", original_verdict=verdict, normalized_verdict="Clean - no issues found. Claude may stop.")
+        return rewritten
 
     return content
 

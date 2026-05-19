@@ -3,6 +3,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
+from claude_auto_review.config.constants import EXIT_REVIEW_FAILED, EXIT_STOP_APPROVED
 from claude_auto_review.state.models import EditRecord, ReviewMetadata
 from claude_auto_review.stop.orchestration.core.context import RuntimeContext
 from claude_auto_review.stop.orchestration.core.finalize import finalize_review_stop
@@ -42,7 +43,7 @@ class TestFinalizeReviewDecision(unittest.TestCase):
     @patch("claude_auto_review.stop.orchestration.core.finalize._read_review_verdict", return_value="Clean")
     def test_completed_no_remaining_returns_0(self, mock_verdict, mock_clean, mock_apply, mock_covered):
         result = finalize_review_stop(_ctx(), self.resolution)
-        self.assertEqual(result, 0)
+        self.assertEqual(result, EXIT_STOP_APPROVED)
 
     @patch("claude_auto_review.stop.orchestration.core.finalize.get_entries_covered_by_review", return_value=[])
     @patch("claude_auto_review.stop.orchestration.core.finalize.record_completed_review")
@@ -50,7 +51,7 @@ class TestFinalizeReviewDecision(unittest.TestCase):
     @patch("claude_auto_review.stop.orchestration.core.finalize._read_review_verdict", return_value="1 issue found. Claude must address all findings before stopping.")
     def test_completed_with_findings_returns_2(self, mock_verdict, mock_block, mock_record, mock_covered):
         result = finalize_review_stop(_ctx(), self.resolution)
-        self.assertEqual(result, 2)
+        self.assertEqual(result, EXIT_REVIEW_FAILED)
         mock_block.assert_called_once()
         mock_record.assert_called_once()
 
@@ -73,7 +74,7 @@ class TestFinalizeReviewDecision(unittest.TestCase):
             )
             resolution = StopFlowResolution(state=[], unreviewed=[], review=_mk_review("r1", "fake/r.md"))
             result = finalize_review_stop(_ctx(project_root=project_root), resolution)
-            self.assertEqual(result, 2)
+            self.assertEqual(result, EXIT_REVIEW_FAILED)
             mock_record.assert_called_once()
             mock_block.assert_called_once()
             self.assertIn(
@@ -92,7 +93,7 @@ class TestFinalizeReviewDecision(unittest.TestCase):
     ):
         mock_prompt.return_value = "Complete the review"
         result = finalize_review_stop(_ctx(), self.resolution)
-        self.assertEqual(result, 0)
+        self.assertEqual(result, EXIT_STOP_APPROVED)
 
     @patch("claude_auto_review.stop.orchestration.core.finalize.get_entries_covered_by_review", return_value=[])
     @patch("claude_auto_review.stop.orchestration.core.finalize.apply_completed_review", return_value=[])
@@ -104,7 +105,7 @@ class TestFinalizeReviewDecision(unittest.TestCase):
         self, mock_clean, mock_verdict, mock_auto, mock_prompt, mock_apply, mock_covered
     ):
         result = finalize_review_stop(_ctx(), self.resolution)
-        self.assertEqual(result, 0)
+        self.assertEqual(result, EXIT_STOP_APPROVED)
         mock_apply.assert_called_once()
 
     @patch("claude_auto_review.stop.orchestration.core.finalize.get_entries_covered_by_review", return_value=[])
@@ -117,7 +118,7 @@ class TestFinalizeReviewDecision(unittest.TestCase):
         self, mock_verdict, mock_auto, mock_prompt, mock_block, mock_record, mock_covered
     ):
         result = finalize_review_stop(_ctx(), self.resolution)
-        self.assertEqual(result, 2)
+        self.assertEqual(result, EXIT_REVIEW_FAILED)
         mock_block.assert_called_once()
         mock_record.assert_called_once()
 
@@ -127,7 +128,7 @@ class TestFinalizeReviewDecision(unittest.TestCase):
     @patch("claude_auto_review.stop.orchestration.core.finalize._read_review_verdict", side_effect=["Pending.", None])
     def test_autocomplete_returns_2_on_pending(self, mock_verdict, mock_auto, mock_prompt, mock_covered):
         result = finalize_review_stop(_ctx(), self.resolution)
-        self.assertEqual(result, 2)
+        self.assertEqual(result, EXIT_REVIEW_FAILED)
 
     @patch("claude_auto_review.stop.orchestration.core.finalize.get_entries_covered_by_review", return_value=[])
     @patch("claude_auto_review.stop.orchestration.core.finalize.record_completed_review")
@@ -140,14 +141,14 @@ class TestFinalizeReviewDecision(unittest.TestCase):
         self, mock_verdict, mock_auto, mock_prompt, mock_completed, mock_block, mock_record, mock_covered
     ):
         result = finalize_review_stop(_ctx(), self.resolution)
-        self.assertEqual(result, 2)
+        self.assertEqual(result, EXIT_REVIEW_FAILED)
         mock_block.assert_called_once()
 
     @patch("claude_auto_review.stop.orchestration.core.finalize.get_entries_covered_by_review", return_value=[])
     @patch("claude_auto_review.stop.orchestration.core.finalize._read_review_verdict", return_value=None)
     def test_missing_review_file_blocks(self, mock_verdict, mock_covered):
         result = finalize_review_stop(_ctx(), self.resolution)
-        self.assertEqual(result, 2)
+        self.assertEqual(result, EXIT_REVIEW_FAILED)
 
     @patch("claude_auto_review.stop.orchestration.core.finalize.get_entries_covered_by_review", return_value=[])
     @patch("claude_auto_review.stop.orchestration.core.finalize.block_pending_review")
@@ -157,7 +158,7 @@ class TestFinalizeReviewDecision(unittest.TestCase):
     def test_pending_review_blocks(self, mock_verdict, mock_auto, mock_prompt, mock_block_pending, mock_covered):
         mock_block_pending.return_value = 2
         result = finalize_review_stop(_ctx(), self.resolution)
-        self.assertEqual(result, 2)
+        self.assertEqual(result, EXIT_REVIEW_FAILED)
         mock_block_pending.assert_called_once()
 
     @patch("claude_auto_review.stop.orchestration.core.finalize.get_entries_covered_by_review", return_value=[])
@@ -176,7 +177,7 @@ class TestFinalizeReviewDecision(unittest.TestCase):
         self, mock_verdict, mock_auto, mock_prompt, mock_log, mock_block_pending, mock_covered
     ):
         result = finalize_review_stop(_ctx(), self.resolution)
-        self.assertEqual(result, 0)
+        self.assertEqual(result, EXIT_STOP_APPROVED)
         mock_log.assert_any_call(
             Path("/fake"),
             "stop_hook_claude_cli_retry",
@@ -201,7 +202,7 @@ class TestFinalizeReviewDecision(unittest.TestCase):
     ):
         mock_apply.return_value = [EditRecord(timestamp="t", file="still.ts", hash="abc")]
         result = finalize_review_stop(_ctx(), self.resolution)
-        self.assertEqual(result, 2)
+        self.assertEqual(result, EXIT_REVIEW_FAILED)
         mock_block_response.assert_called_once()
 
 
