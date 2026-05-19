@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from datetime import datetime
 from functools import cached_property
 
 from claude_auto_review.paths.path_utils import is_runtime_relative_path
@@ -6,18 +7,13 @@ from claude_auto_review.state.models import EditRecord, ReviewMetadata, StateEve
 from claude_auto_review.timestamps import parse_iso_timestamp
 
 
-def _timestamp_value(entry: StateEvent) -> str:
-    return entry.timestamp if hasattr(entry, "timestamp") else ""
-
-
-def _timestamp_sort_key(entry: StateEvent):
-    timestamp = _timestamp_value(entry)
+def _parsed_timestamp(timestamp: str) -> datetime | None:
     if not timestamp:
-        return (0, "")
+        return None
     try:
-        return (1, parse_iso_timestamp(timestamp))
-    except (TypeError, ValueError):
-        return (0, timestamp)
+        return parse_iso_timestamp(timestamp)
+    except (AttributeError, TypeError, ValueError):
+        return None
 
 
 def _is_edit_entry(entry: StateEvent) -> bool:
@@ -49,18 +45,33 @@ class StateSnapshot:
     @cached_property
     def latest_review_entries_by_id(self) -> dict[str, StateEvent]:
         latest: dict[str, StateEvent] = {}
-        latest_keys: dict[str, tuple[object, object]] = {}
+        latest_timestamps: dict[str, datetime | None] = {}
         for entry in self.events:
             if not isinstance(entry, ReviewMetadata):
                 continue
             review_id = entry.reviewId
             if not review_id:
                 continue
-            entry_key = _timestamp_sort_key(entry)
-            current_key = latest_keys.get(review_id)
-            if current_key is None or entry_key >= current_key:
+            entry_timestamp = _parsed_timestamp(entry.timestamp)
+            current_entry = latest.get(review_id)
+            if current_entry is None:
                 latest[review_id] = entry
-                latest_keys[review_id] = entry_key
+                latest_timestamps[review_id] = entry_timestamp
+                continue
+            current_timestamp = latest_timestamps.get(review_id)
+            if current_timestamp is None and entry_timestamp is None:
+                latest[review_id] = entry
+                latest_timestamps[review_id] = entry_timestamp
+                continue
+            if current_timestamp is None:
+                latest[review_id] = entry
+                latest_timestamps[review_id] = entry_timestamp
+                continue
+            if entry_timestamp is None:
+                continue
+            if entry_timestamp >= current_timestamp:
+                latest[review_id] = entry
+                latest_timestamps[review_id] = entry_timestamp
         return latest
 
     @cached_property
@@ -90,13 +101,12 @@ class StateSnapshot:
 
     @cached_property
     def consecutive_stop_blocks(self) -> int:
-        last_reviewed_idx = -1
-        for idx, entry in enumerate(self.events):
-            if _is_edit_entry(entry) and entry.reviewed:
-                last_reviewed_idx = idx
-
         count = 0
-        for entry in self.events[last_reviewed_idx + 1 :]:
+        for entry in reversed(self.events):
             if isinstance(entry, StopBlockedRecord):
                 count += 1
+                continue
+            if isinstance(entry, ReviewMetadata) or (isinstance(entry, EditRecord) and not entry.reviewed):
+                continue
+            break
         return count

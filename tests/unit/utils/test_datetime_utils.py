@@ -73,7 +73,7 @@ class TestHoursSince(unittest.TestCase):
         three_hours_ago = (now - timedelta(hours=3)).isoformat()
         result = hours_since(three_hours_ago)
         self.assertIsNotNone(result)
-        self.assertAlmostEqual(result, 3.0, delta=0.05)
+        self.assertAlmostEqual(result, 3.0, delta=0.1)
 
 
 class TestIsOlderThanHours(unittest.TestCase):

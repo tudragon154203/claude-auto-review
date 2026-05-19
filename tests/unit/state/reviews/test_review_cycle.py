@@ -57,6 +57,30 @@ class TestReviewCycle(StateTestCase, unittest.TestCase):
         latest = latest_review_entries_by_id(state)
         self.assertEqual(latest["x"].status, "completed")
 
+    def test_latest_review_entries_by_id_keeps_valid_timestamp_over_later_invalid_timestamp(self):
+        state = [
+            ReviewMetadata(timestamp="2026-05-05T08:00:00+07:00", reviewId="x", reviewPath="reviews/x.md", clientId="c", status="pending", files=[]),
+            ReviewMetadata(timestamp="not-a-timestamp", reviewId="x", reviewPath="reviews/x.md", clientId="c", status="completed", files=[]),
+        ]
+        latest = latest_review_entries_by_id(state)
+        self.assertEqual(latest["x"].status, "pending")
+
+    def test_latest_review_entries_by_id_prefers_valid_timestamp_over_earlier_invalid_timestamp(self):
+        state = [
+            ReviewMetadata(timestamp="not-a-timestamp", reviewId="x", reviewPath="reviews/x.md", clientId="c", status="pending", files=[]),
+            ReviewMetadata(timestamp="2026-05-05T08:00:00+07:00", reviewId="x", reviewPath="reviews/x.md", clientId="c", status="completed", files=[]),
+        ]
+        latest = latest_review_entries_by_id(state)
+        self.assertEqual(latest["x"].status, "completed")
+
+    def test_latest_review_entries_by_id_prefers_later_invalid_timestamp_over_earlier_invalid_timestamp(self):
+        state = [
+            ReviewMetadata(timestamp="zzz-not-iso", reviewId="x", reviewPath="reviews/x.md", clientId="c", status="pending", files=[]),
+            ReviewMetadata(timestamp="aaa-not-iso", reviewId="x", reviewPath="reviews/x.md", clientId="c", status="completed", files=[]),
+        ]
+        latest = latest_review_entries_by_id(state)
+        self.assertEqual(latest["x"].status, "completed")
+
     def test_append_review_started_without_client_id_auto_generates(self):
         project_root = self.temp_project()
         ensure_client_runtime(project_root, "auto-id")

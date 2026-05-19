@@ -83,5 +83,28 @@ class TestStopBlocks(StateTestCase, unittest.TestCase):
         state = load_state(project_root, client_id)
         self.assertEqual(consecutive_stop_blocks(state), 1)
 
+    def test_non_stop_block_event_resets_consecutive_count(self):
+        project_root = self.temp_project()
+        client_id = "client-reset-on-event"
+        self.ensure_client(project_root, client_id)
+        append_state_event(EditRecord(timestamp="2026-05-05T08:00:00+07:00", file="a.ts", hash="1"), project_root, client_id=client_id)
+        append_state_event(StopBlockedRecord(timestamp="2026-05-05T08:01:00+07:00", reason="review_pending"), project_root, client_id=client_id)
+        append_state_event(
+            ClassificationRecord(
+                timestamp="2026-05-05T08:02:00+07:00",
+                status="complete",
+                reason="blocked",
+                latencyMs=10,
+                messageChars=42,
+                model="haiku",
+                baseUrl="https://example.test",
+            ),
+            project_root,
+            client_id=client_id,
+        )
+        append_state_event(StopBlockedRecord(timestamp="2026-05-05T08:03:00+07:00", reason="review_pending"), project_root, client_id=client_id)
+        state = load_state(project_root, client_id)
+        self.assertEqual(consecutive_stop_blocks(state), 1)
+
 
 
