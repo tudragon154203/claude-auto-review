@@ -37,9 +37,11 @@ def extract_review_findings_text(content: str | None) -> str | None:
 
 _FINDING_HEADING = re.compile(r"^###\s+(\d+\.|\[)")
 _NO_FINDINGS_LINE = re.compile(
-    r"^(none\b|clean\b|no\s+(?:findings?\b|issues?\b|bugs?\b|concerns?\b|problems?\b|violations?\b)"
-    r"(?:.*\b(?:found|identified|detected)\b)?|no\s+semantic\s+(?:issue|bug|concern|problem|violation)s?\b"
-    r"(?:.*\b(?:found|identified|detected)\b)?)",
+    r"^(none\b|clean\b"
+    r"|no\s+(?:findings?\b|issues?\b|bugs?\b|concerns?\b|problems?\b|violations?\b)"
+    r"\b.*\b(?:found|identified|detected|yet)\b"
+    r"|no\s+semantic\s+(?:issue|bug|concern|problem|violation)s?\b"
+    r"\b.*\b(?:found|identified|detected)\b)",
     re.IGNORECASE,
 )
 
@@ -123,11 +125,19 @@ def get_review_verdict_text(review_path: str | Path) -> str | None:
     return extract_review_verdict_text(content)
 
 
+# Patterns that unambiguously signal a completed review verdict.
+# Negative patterns (incomplete/pending) are checked first in is_review_complete_verdict.
 _COMPLETE_VERDICT = re.compile(
-    r"^(clean\b|confirmed\s*\(\s*clean\s*\)|not\s+clean\b"
+    r"^(?:"
+    r"clean\b"
+    r"|confirmed\s*(?:\(\s*clean\s*\))?"
+    r"|not\s+clean\b"
     r"|\d+\s+issues?\b"
-    r"|all\s+(?:fixes?\s+)?applied\b|all\s+issues?\s+addressed\b"
-    r"|.*\bfindings?\b)",
+    r"|all\s+(?:(?:fixes|issues?)\s+)?(?:applied|addressed)\b"
+    r"|findings?\s+present\b"
+    r"|has\s+findings?\b"
+    r"|issue(?:s)?\s+found\b"
+    r")",
     re.IGNORECASE,
 )
 

@@ -49,7 +49,7 @@ class TestFinalizeReviewDecision(unittest.TestCase):
     @patch("claude_auto_review.stop.orchestration.core.finalize.get_entries_covered_by_review", return_value=[])
     @patch("claude_auto_review.stop.orchestration.core.finalize.record_completed_review")
     @patch("claude_auto_review.stop.orchestration.core.finalize.block_completed_review_findings")
-    @patch("claude_auto_review.stop.orchestration.core.finalize._read_review_verdict", return_value="Has findings")
+    @patch("claude_auto_review.stop.orchestration.core.finalize._read_review_verdict", return_value="1 issue found. Claude must address all findings before stopping.")
     def test_completed_with_findings_returns_2(self, mock_verdict, mock_block, mock_record, mock_covered):
         result = finalize_review_stop(_ctx(), self.resolution)
         self.assertEqual(result, 2)
