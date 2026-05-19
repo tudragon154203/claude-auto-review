@@ -1,6 +1,10 @@
 from datetime import datetime
 
 
+def local_now_iso():
+    return datetime.now().astimezone().isoformat()
+
+
 def parse_iso_timestamp(ts_str: str) -> datetime:
     """Safely parse ISO timestamp strings, including a trailing 'Z' suffix.
 

@@ -1,12 +1,7 @@
 from pathlib import Path
 
+from claude_auto_review.install.file_utils import write_text_if_changed as _write_text_if_changed
 from claude_auto_review.install.shims import build_runpy_shim_content
-
-
-def _write_text_if_changed(path, content):
-    path = Path(path)
-    if not path.exists() or path.read_text(encoding="utf-8") != content:
-        path.write_text(content, encoding="utf-8", newline="\n")
 
 
 def copy_if_changed(source, destination):

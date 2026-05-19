@@ -22,6 +22,22 @@ def _build_review_prompt_env(payload):
     return env
 
 
+def _fail_review(ctx, files_str, exit_code, event_type, script=None, error=None):
+    log_event(ctx.project_root, event_type, client_id=ctx.client_id, script=str(script) if script else None, error=str(error) if error else None)
+    if exit_code == EXIT_REVIEW_FAILED:
+        if error:
+            block_response(
+                f"Claude Auto Review: Error generating review for {files_str}.",
+                f"Failed to run review_prompt.py: {error}",
+            )
+        else:
+            block_response(
+                f"Claude Auto Review: Timeout generating review for {files_str}.",
+                "The review generation timed out. Check the logs and try again.",
+            )
+    return StopFlowResolution(state=[], unreviewed=[], exit_code=exit_code)
+
+
 def _resolve_prompted_review(ctx, timeout_hours, files_str, result):
     state, unreviewed = _reload_client_state(ctx)
     if not unreviewed:
@@ -47,18 +63,8 @@ def resolve_pending_review(ctx: RuntimeContext, state, unreviewed, timeout_hours
     try:
         result = _run_review_prompt(ctx, review_prompt_script, env)
     except subprocess.TimeoutExpired:
-        log_event(ctx.project_root, "stop_hook_review_timeout", client_id=ctx.client_id, script=str(review_prompt_script))
-        block_response(
-            f"Claude Auto Review: Timeout generating review for {files_str}.",
-            "The review generation timed out. Check the logs and try again.",
-        )
-        return StopFlowResolution(state=state, unreviewed=unreviewed, exit_code=EXIT_REVIEW_FAILED)
+        return _fail_review(ctx, files_str, EXIT_REVIEW_FAILED, "stop_hook_review_timeout", script=review_prompt_script)
     except (OSError, ValueError, subprocess.SubprocessError) as e:
-        log_event(ctx.project_root, "stop_hook_review_error", client_id=ctx.client_id, error=str(e))
-        block_response(
-            f"Claude Auto Review: Error generating review for {files_str}.",
-            f"Failed to run review_prompt.py: {e}",
-        )
-        return StopFlowResolution(state=state, unreviewed=unreviewed, exit_code=EXIT_REVIEW_FAILED)
+        return _fail_review(ctx, files_str, EXIT_REVIEW_FAILED, "stop_hook_review_error", error=e)
 
     return _resolve_prompted_review(ctx, timeout_hours, files_str, result)

@@ -98,3 +98,34 @@ def get_setting_int(settings: dict, key: str, default: int) -> int:
         return int(default)
 
 
+def is_enabled(settings: dict) -> bool:
+    return bool(settings.get(SETTING_ENABLED, DEFAULT_SETTINGS[SETTING_ENABLED]))
+
+
+def is_classifier_enabled(settings: dict) -> bool:
+    return bool(settings.get(SETTING_CLASSIFIER_ENABLED, DEFAULT_SETTINGS[SETTING_CLASSIFIER_ENABLED]))
+
+
+def get_pending_review_timeout_hours(settings: dict) -> float:
+    return get_setting_float(settings, SETTING_PENDING_TIMEOUT, DEFAULT_SETTINGS[SETTING_PENDING_TIMEOUT])
+
+
+def get_max_stop_passes(settings: dict) -> int:
+    return get_setting_int(settings, SETTING_MAX_STOP_PASSES, DEFAULT_SETTINGS[SETTING_MAX_STOP_PASSES])
+
+
+def get_reviewer_timeout_seconds(settings: dict) -> int:
+    return get_setting_int(settings, SETTING_REVIEWER_TIMEOUT, DEFAULT_SETTINGS[SETTING_REVIEWER_TIMEOUT])
+
+
+def get_review_feedback_max_chars(settings: dict) -> int:
+    return max(0, get_setting_int(settings, SETTING_FEEDBACK_MAX_CHARS, DEFAULT_SETTINGS[SETTING_FEEDBACK_MAX_CHARS]))
+
+
+def get_reviewer_model(settings: dict) -> str:
+    return str(settings.get(SETTING_REVIEWER_MODEL, DEFAULT_SETTINGS[SETTING_REVIEWER_MODEL]))
+
+
+def get_classifier_model(settings: dict) -> str:
+    return str(settings.get(SETTING_CLASSIFIER_MODEL, DEFAULT_SETTINGS[SETTING_CLASSIFIER_MODEL]))
+

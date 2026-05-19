@@ -1,10 +1,6 @@
 from pathlib import Path
 
-
-def _write_text_if_changed(path, content):
-    path = Path(path)
-    if not path.exists() or path.read_text(encoding="utf-8") != content:
-        path.write_text(content, encoding="utf-8", newline="\n")
+from claude_auto_review.install.file_utils import write_text_if_changed as _write_text_if_changed
 
 
 def build_runpy_shim_content(target_script_path):

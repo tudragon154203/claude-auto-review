@@ -26,6 +26,26 @@ def _edit_entry_key(entry: StateEvent) -> tuple[str, str] | None:
     return entry.file, entry.hash
 
 
+def _latest_by_key(entries, key_fn, timestamp_fn=None):
+    latest = {}
+    latest_timestamps = {}
+    for entry in entries:
+        key = key_fn(entry)
+        if key is None:
+            continue
+        entry_timestamp = timestamp_fn(entry) if timestamp_fn is not None else None
+        current_entry = latest.get(key)
+        if current_entry is None:
+            latest[key] = entry
+            latest_timestamps[key] = entry_timestamp
+            continue
+        current_timestamp = latest_timestamps.get(key)
+        if current_timestamp is None or (entry_timestamp is not None and entry_timestamp >= current_timestamp):
+            latest[key] = entry
+            latest_timestamps[key] = entry_timestamp
+    return latest
+
+
 @dataclass(frozen=True)
 class StateSnapshot:
     events: list[StateEvent]
@@ -36,43 +56,15 @@ class StateSnapshot:
 
     @cached_property
     def latest_entries_by_file(self) -> dict[str, StateEvent]:
-        latest: dict[str, StateEvent] = {}
-        for entry in self.events:
-            if _is_edit_entry(entry):
-                latest[entry.file] = entry
-        return latest
+        return {entry.file: entry for entry in self.events if _is_edit_entry(entry)}
 
     @cached_property
     def latest_review_entries_by_id(self) -> dict[str, StateEvent]:
-        latest: dict[str, StateEvent] = {}
-        latest_timestamps: dict[str, datetime | None] = {}
-        for entry in self.events:
-            if not isinstance(entry, ReviewMetadata):
-                continue
-            review_id = entry.reviewId
-            if not review_id:
-                continue
-            entry_timestamp = _parsed_timestamp(entry.timestamp)
-            current_entry = latest.get(review_id)
-            if current_entry is None:
-                latest[review_id] = entry
-                latest_timestamps[review_id] = entry_timestamp
-                continue
-            current_timestamp = latest_timestamps.get(review_id)
-            if current_timestamp is None and entry_timestamp is None:
-                latest[review_id] = entry
-                latest_timestamps[review_id] = entry_timestamp
-                continue
-            if current_timestamp is None:
-                latest[review_id] = entry
-                latest_timestamps[review_id] = entry_timestamp
-                continue
-            if entry_timestamp is None:
-                continue
-            if entry_timestamp >= current_timestamp:
-                latest[review_id] = entry
-                latest_timestamps[review_id] = entry_timestamp
-        return latest
+        return _latest_by_key(
+            self.events,
+            key_fn=lambda e: e.reviewId if isinstance(e, ReviewMetadata) and e.reviewId else None,
+            timestamp_fn=lambda e: _parsed_timestamp(e.timestamp),
+        )
 
     @cached_property
     def reviewed_hashes_by_file(self) -> dict[str, set[str]]:
