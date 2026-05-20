@@ -4,6 +4,7 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
 
+from claude_auto_review.config.models import PluginSettings
 from claude_auto_review.state.models import EditRecord, StopBlockedRecord
 from claude_auto_review.state.snapshot import StateSnapshot
 from claude_auto_review.stop.orchestration.core.context import RuntimeContext
@@ -30,12 +31,12 @@ class TestFlowClassifier(unittest.TestCase):
         mock_state,
         mock_classify,
     ):
-        mock_settings.return_value = {
-            "enabled": True,
-            "pendingReviewTimeoutHours": 1,
-            "maxStopPasses": 5,
-            "lastAssistantMessageClassifierEnabled": True,
-        }
+        mock_settings.return_value = PluginSettings(
+            enabled=True,
+            pending_review_timeout_hours=1,
+            max_stop_passes=5,
+            last_assistant_message_classifier_enabled=True,
+        )
 
         result = run_stop_flow(Path("/fake"), {"session_id": "sid", "last_assistant_message": "done"})
 
@@ -61,12 +62,12 @@ class TestFlowClassifier(unittest.TestCase):
         mock_state,
         mock_classify,
     ):
-        mock_settings.return_value = {
-            "enabled": True,
-            "pendingReviewTimeoutHours": 1,
-            "maxStopPasses": 5,
-            "lastAssistantMessageClassifierEnabled": True,
-        }
+        mock_settings.return_value = PluginSettings(
+            enabled=True,
+            pending_review_timeout_hours=1,
+            max_stop_passes=5,
+            last_assistant_message_classifier_enabled=True,
+        )
 
         result = run_stop_flow(Path("/fake"), {"session_id": "sid", "last_assistant_message": "done"})
 
@@ -86,12 +87,12 @@ class TestFlowClassifier(unittest.TestCase):
         mock_resolve,
         mock_classify,
     ):
-        mock_settings.return_value = {
-            "enabled": True,
-            "pendingReviewTimeoutHours": 1,
-            "maxStopPasses": 5,
-            "lastAssistantMessageClassifierEnabled": True,
-        }
+        mock_settings.return_value = PluginSettings(
+            enabled=True,
+            pending_review_timeout_hours=1,
+            max_stop_passes=5,
+            last_assistant_message_classifier_enabled=True,
+        )
         mock_classify.return_value = SimpleNamespace(status="complete", reason="parsed_label")
         mock_resolve.return_value.is_terminal = True
         mock_resolve.return_value.exit_code = 0
@@ -114,12 +115,12 @@ class TestFlowClassifier(unittest.TestCase):
         mock_resolve,
         mock_classify,
     ):
-        mock_settings.return_value = {
-            "enabled": True,
-            "pendingReviewTimeoutHours": 1,
-            "maxStopPasses": 5,
-            "lastAssistantMessageClassifierEnabled": True,
-        }
+        mock_settings.return_value = PluginSettings(
+            enabled=True,
+            pending_review_timeout_hours=1,
+            max_stop_passes=5,
+            last_assistant_message_classifier_enabled=True,
+        )
         mock_classify.return_value = SimpleNamespace(status="incomplete", reason="parsed_label")
 
         result = run_stop_flow(Path("/fake"), {"session_id": "sid", "last_assistant_message": "done"})
@@ -140,12 +141,12 @@ class TestFlowClassifier(unittest.TestCase):
         mock_resolve,
         mock_classify,
     ):
-        mock_settings.return_value = {
-            "enabled": True,
-            "pendingReviewTimeoutHours": 1,
-            "maxStopPasses": 5,
-            "lastAssistantMessageClassifierEnabled": False,
-        }
+        mock_settings.return_value = PluginSettings(
+            enabled=True,
+            pending_review_timeout_hours=1,
+            max_stop_passes=5,
+            last_assistant_message_classifier_enabled=False,
+        )
         mock_resolve.return_value.is_terminal = True
         mock_resolve.return_value.exit_code = 2
 

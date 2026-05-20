@@ -1,15 +1,11 @@
 import unittest
 
-from claude_auto_review.config.settings import (
+from claude_auto_review.config.models import (
     DEFAULT_CLAUDE_REVIEWER_MODEL,
     DEFAULT_CODEX_REVIEWER_MODEL,
     DEFAULT_REVIEWER_BACKEND,
-    DEFAULT_SETTINGS,
+    PluginSettings,
     REVIEWER_BACKENDS,
-    SETTING_REVIEWER_BACKEND,
-    SETTING_REVIEWER_MODEL,
-    get_reviewer_backend,
-    get_reviewer_model,
 )
 
 
@@ -18,48 +14,51 @@ class TestReviewerBackendSetting(unittest.TestCase):
         self.assertEqual(DEFAULT_REVIEWER_BACKEND, "claude")
 
     def test_default_settings_includes_backend(self):
-        self.assertEqual(DEFAULT_SETTINGS[SETTING_REVIEWER_BACKEND], "claude")
+        self.assertEqual(PluginSettings().to_mapping()["reviewerBackend"], "claude")
 
     def test_default_settings_does_not_pin_single_reviewer_model(self):
-        self.assertNotIn(SETTING_REVIEWER_MODEL, DEFAULT_SETTINGS)
+        self.assertNotIn("reviewerModel", PluginSettings().to_mapping())
 
     def test_reviewer_backends_contains_claude_and_codex(self):
-        self.assertEqual(REVIEWER_BACKENDS, {"claude", "codex"})
+        self.assertEqual(REVIEWER_BACKENDS, frozenset({"claude", "codex"}))
 
     def test_get_reviewer_backend_returns_claude_when_unset(self):
-        self.assertEqual(get_reviewer_backend({}), "claude")
+        self.assertEqual(PluginSettings().resolved_reviewer_backend(), "claude")
 
     def test_get_reviewer_backend_returns_codex_when_set(self):
-        self.assertEqual(get_reviewer_backend({SETTING_REVIEWER_BACKEND: "codex"}), "codex")
+        self.assertEqual(
+            PluginSettings.from_mapping({"reviewerBackend": "codex"}).resolved_reviewer_backend(),
+            "codex",
+        )
 
     def test_get_reviewer_backend_normalizes_case(self):
-        self.assertEqual(get_reviewer_backend({SETTING_REVIEWER_BACKEND: "CODEX"}), "codex")
+        self.assertEqual(
+            PluginSettings.from_mapping({"reviewerBackend": "CODEX"}).resolved_reviewer_backend(),
+            "codex",
+        )
 
     def test_get_reviewer_backend_rejects_unknown(self):
         with self.assertRaises(ValueError):
-            get_reviewer_backend({SETTING_REVIEWER_BACKEND: "unknown"})
+            PluginSettings.from_mapping({"reviewerBackend": "unknown"}).resolved_reviewer_backend()
 
     def test_get_reviewer_backend_rejects_typo(self):
         with self.assertRaises(ValueError):
-            get_reviewer_backend({SETTING_REVIEWER_BACKEND: "codyx"})
+            PluginSettings.from_mapping({"reviewerBackend": "codyx"}).resolved_reviewer_backend()
 
     def test_get_reviewer_model_defaults_for_claude_backend(self):
-        self.assertEqual(get_reviewer_model({}), DEFAULT_CLAUDE_REVIEWER_MODEL)
+        self.assertEqual(PluginSettings().resolved_reviewer_model(), DEFAULT_CLAUDE_REVIEWER_MODEL)
 
     def test_get_reviewer_model_defaults_for_codex_backend(self):
         self.assertEqual(
-            get_reviewer_model({SETTING_REVIEWER_BACKEND: "codex"}),
+            PluginSettings.from_mapping({"reviewerBackend": "codex"}).resolved_reviewer_model(),
             DEFAULT_CODEX_REVIEWER_MODEL,
         )
 
     def test_get_reviewer_model_prefers_explicit_override(self):
         self.assertEqual(
-            get_reviewer_model(
-                {
-                    SETTING_REVIEWER_BACKEND: "codex",
-                    SETTING_REVIEWER_MODEL: "custom-reviewer-model",
-                }
-            ),
+            PluginSettings.from_mapping(
+                {"reviewerBackend": "codex", "reviewerModel": "custom-reviewer-model"}
+            ).resolved_reviewer_model(),
             "custom-reviewer-model",
         )
 

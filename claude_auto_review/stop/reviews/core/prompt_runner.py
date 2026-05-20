@@ -8,7 +8,7 @@ from claude_auto_review.runtime.process import run_captured
 from claude_auto_review.state.reviews.verdicts import (
     normalize_review_verdict_content,
 )
-from claude_auto_review.config.settings import DEFAULT_REVIEWER_MODEL, REVIEWER_BACKENDS
+from claude_auto_review.config.models import DEFAULT_REVIEWER_MODEL
 from claude_auto_review.stop.orchestration.core.context import RuntimeContext
 
 

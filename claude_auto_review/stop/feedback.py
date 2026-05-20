@@ -1,7 +1,7 @@
 from pathlib import Path
 
+from claude_auto_review.config.models import PluginSettings
 from claude_auto_review.paths.path_utils import local_now_iso
-from claude_auto_review.config.settings import DEFAULT_SETTINGS, get_review_feedback_max_chars
 from claude_auto_review.state.models import StopBlockedRecord
 
 from claude_auto_review.state.store.write import append_state_event
@@ -28,12 +28,12 @@ def build_review_completion_prompt(review_path):
 
 
 def review_feedback_max_chars(settings):
-    return get_review_feedback_max_chars(settings)
+    return settings.review_feedback_max_chars
 
 
 def read_review_feedback(review_path, max_chars=None, project_root=None):
     if max_chars is None:
-        max_chars = DEFAULT_SETTINGS["reviewFeedbackMaxChars"]
+        max_chars = PluginSettings().review_feedback_max_chars
     path = Path(review_path)
     display = path.relative_to(project_root).as_posix() if project_root else str(path)
     if not path.is_file():
@@ -75,4 +75,3 @@ def block_completed_review_findings(ctx, review_id, review_path, unreviewed):
         ctx.project_root,
         client_id=ctx.client_id,
     )
-

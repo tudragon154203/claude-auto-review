@@ -2,7 +2,7 @@ import time
 from dataclasses import dataclass
 
 from claude_auto_review.config.constants import MS_PER_SECOND
-from claude_auto_review.config.settings import DEFAULT_CLASSIFIER_MODEL
+from claude_auto_review.config.models import DEFAULT_CLASSIFIER_MODEL
 from claude_auto_review.paths.path_utils import local_now_iso
 from claude_auto_review.state.models import ClassificationRecord
 

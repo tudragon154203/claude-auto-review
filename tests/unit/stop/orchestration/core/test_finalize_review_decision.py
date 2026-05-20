@@ -4,6 +4,7 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 from claude_auto_review.config.constants import EXIT_REVIEW_FAILED, EXIT_STOP_APPROVED
+from claude_auto_review.config.models import PluginSettings
 from claude_auto_review.state.models import EditRecord, ReviewMetadata
 from claude_auto_review.stop.orchestration.core.context import RuntimeContext
 from claude_auto_review.stop.orchestration.core.finalize import finalize_review_stop
@@ -25,7 +26,7 @@ def _ctx(project_root=Path("/fake"), client_id="c", settings=None, payload=None)
     return RuntimeContext(
         project_root=project_root,
         client_id=client_id,
-        settings=settings if settings is not None else {},
+        settings=settings if settings is not None else PluginSettings(),
         payload=payload if payload is not None else {},
     )
 
@@ -192,7 +193,7 @@ class TestFinalizeReviewDecision(unittest.TestCase):
         self, mock_log, mock_block_response, mock_covered
     ):
         result = finalize_review_stop(
-            _ctx(settings={"reviewerBackend": "codyx"}),
+            _ctx(settings=PluginSettings.from_mapping({"reviewerBackend": "codyx"})),
             self.resolution,
         )
         self.assertEqual(result, EXIT_REVIEW_FAILED)

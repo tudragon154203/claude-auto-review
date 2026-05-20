@@ -3,6 +3,7 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
 
+from claude_auto_review.config.models import PluginSettings
 from claude_auto_review.state.models import EditRecord, StopBlockedRecord
 from claude_auto_review.state.snapshot import StateSnapshot
 from claude_auto_review.stop.orchestration.core.flow import run_stop_flow
@@ -27,11 +28,11 @@ class TestFlowFinalize(unittest.TestCase):
         mock_state,
         mock_log,
     ):
-        mock_settings.return_value = {
-            "enabled": False,
-            "pendingReviewTimeoutHours": 1,
-            "maxStopPasses": 5,
-        }
+        mock_settings.return_value = PluginSettings(
+            enabled=False,
+            pending_review_timeout_hours=1,
+            max_stop_passes=5,
+        )
 
         result = run_stop_flow(Path("/fake"), {"session_id": "sid"})
 
@@ -53,12 +54,12 @@ class TestFlowFinalize(unittest.TestCase):
         mock_finalize,
         mock_classify,
     ):
-        mock_settings.return_value = {
-            "enabled": True,
-            "pendingReviewTimeoutHours": 1,
-            "maxStopPasses": 5,
-            "lastAssistantMessageClassifierEnabled": True,
-        }
+        mock_settings.return_value = PluginSettings(
+            enabled=True,
+            pending_review_timeout_hours=1,
+            max_stop_passes=5,
+            last_assistant_message_classifier_enabled=True,
+        )
         mock_classify.return_value = SimpleNamespace(status="complete", reason="parsed_label")
         mock_resolve.return_value.is_terminal = False
         mock_resolve.return_value.exit_code = None
@@ -81,11 +82,13 @@ class TestFlowFinalize(unittest.TestCase):
         mock_resolve,
         mock_classify,
     ):
-        mock_settings.return_value = {
-            "enabled": True,
-            "pendingReviewTimeoutHours": "not-a-number",
-            "maxStopPasses": "also-bad",
-        }
+        mock_settings.return_value = PluginSettings.from_mapping(
+            {
+                "enabled": True,
+                "pendingReviewTimeoutHours": "not-a-number",
+                "maxStopPasses": "also-bad",
+            }
+        )
         mock_classify.return_value = None
         mock_resolve.return_value.is_terminal = True
         mock_resolve.return_value.exit_code = 2

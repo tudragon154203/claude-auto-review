@@ -1,6 +1,6 @@
 import json
 
-from claude_auto_review.config.settings import DEFAULT_CLASSIFIER_MODEL
+from claude_auto_review.config.models import DEFAULT_CLASSIFIER_MODEL
 from claude_auto_review.state.store.read import load_state
 from tests.e2e.support import EndToEndTestCase
 

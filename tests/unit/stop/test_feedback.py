@@ -2,6 +2,7 @@ import json
 import unittest
 from unittest.mock import patch
 from pathlib import Path
+from claude_auto_review.config.models import PluginSettings
 from claude_auto_review.state.models import EditRecord
 from claude_auto_review.stop.feedback import (
     block_response,
@@ -50,10 +51,16 @@ class TestFeedback(unittest.TestCase):
             self.assertIn(str(review_path), feedback)
 
     def test_review_feedback_max_chars_uses_settings(self):
-        self.assertEqual(review_feedback_max_chars({"reviewFeedbackMaxChars": "42"}), 42)
+        self.assertEqual(
+            review_feedback_max_chars(PluginSettings.from_mapping({"reviewFeedbackMaxChars": "42"})),
+            42,
+        )
 
     def test_review_feedback_max_chars_falls_back_for_invalid_value(self):
-        self.assertEqual(review_feedback_max_chars({"reviewFeedbackMaxChars": "nope"}), 9000)
+        self.assertEqual(
+            review_feedback_max_chars(PluginSettings.from_mapping({"reviewFeedbackMaxChars": "nope"})),
+            9000,
+        )
 
     def test_build_review_findings_feedback_truncates_to_configured_limit(self):
         import tempfile

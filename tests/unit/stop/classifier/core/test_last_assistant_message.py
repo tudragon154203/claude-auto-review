@@ -1,7 +1,7 @@
 import json
 import unittest
 
-from claude_auto_review.config.settings import DEFAULT_CLASSIFIER_MODEL
+from claude_auto_review.config.models import DEFAULT_CLASSIFIER_MODEL, PluginSettings
 from claude_auto_review.stop.classifier.core.models import (
     DEFAULT_TIMEOUT_SECONDS,
 )
@@ -31,10 +31,10 @@ class TestLastAssistantMessageClassifier(StateTestCase, unittest.TestCase):
     def setUp(self):
         self.project_root = self.temp_project()
         self.client_id = "classifier-client"
-        self.settings = {
-            "lastAssistantMessageClassifierEnabled": True,
-            "lastAssistantMessageClassifierTimeoutSeconds": DEFAULT_TIMEOUT_SECONDS,
-        }
+        self.settings = PluginSettings(
+            last_assistant_message_classifier_enabled=True,
+            last_assistant_message_classifier_timeout_seconds=DEFAULT_TIMEOUT_SECONDS,
+        )
         self.env = {
             "ANTHROPIC_BASE_URL": "http://127.0.0.1:13456",
             "ANTHROPIC_API_KEY": "top-secret",
@@ -87,7 +87,12 @@ class TestLastAssistantMessageClassifier(StateTestCase, unittest.TestCase):
 
         result = classify_last_assistant_message(
             self._ctx(
-                settings={"lastAssistantMessageClassifierEnabled": True, "lastAssistantMessageClassifierTimeoutSeconds": "nope"},
+                settings=PluginSettings.from_mapping(
+                    {
+                        "lastAssistantMessageClassifierEnabled": True,
+                        "lastAssistantMessageClassifierTimeoutSeconds": "nope",
+                    }
+                ),
             ),
             env=self.env,
             urlopen=fake_urlopen,

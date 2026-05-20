@@ -11,7 +11,8 @@ from claude_auto_review.runtime.client_dirs import client_state_path
 from claude_auto_review.runtime.events import log_event
 from claude_auto_review.runtime.cleanup.session import cancel_runtime
 from claude_auto_review.runtime.setup import ensure_client_runtime, ensure_project_settings, ensure_runtime
-from claude_auto_review.config.settings import DEFAULT_TIMEOUT_SECONDS, load_settings
+from claude_auto_review.config.io import load_settings
+from claude_auto_review.config.models import DEFAULT_TIMEOUT_SECONDS, PluginSettings
 from claude_auto_review.state.store.read import consecutive_stop_blocks, load_state
 from claude_auto_review.state.models import EditRecord
 from claude_auto_review.state.store.write import append_state_event
@@ -66,7 +67,7 @@ class IntegrationRuntimeTests(IntegrationTestCase):
 
         ensure_project_settings(project_root)
         settings = load_settings(project_root)
-        self.assertTrue(settings["enabled"])
+        self.assertTrue(settings.enabled)
 
         settings_file = project_root / ".claude" / "settings.json"
         settings_file.write_text(
@@ -83,11 +84,11 @@ class IntegrationRuntimeTests(IntegrationTestCase):
 
         ensure_project_settings(project_root)
         settings = load_settings(project_root)
-        self.assertFalse(settings["enabled"])
-        self.assertEqual(settings["customKey"], "value")
-        self.assertEqual(settings["reviewerTimeoutSeconds"], 600)
-        self.assertTrue(settings["lastAssistantMessageClassifierEnabled"])
-        self.assertEqual(settings["lastAssistantMessageClassifierTimeoutSeconds"], DEFAULT_TIMEOUT_SECONDS)
+        self.assertFalse(settings.enabled)
+        self.assertEqual(settings.extras["customKey"], "value")
+        self.assertEqual(settings.reviewer_timeout_seconds, 600)
+        self.assertTrue(settings.last_assistant_message_classifier_enabled)
+        self.assertEqual(settings.last_assistant_message_classifier_timeout_seconds, DEFAULT_TIMEOUT_SECONDS)
 
     def test_classifier_appends_separate_state_entry_and_log(self):
         project_root = self.temp_project()
@@ -98,10 +99,10 @@ class IntegrationRuntimeTests(IntegrationTestCase):
             RuntimeContext(
                 project_root=project_root,
                 client_id=client_id,
-                settings={
-                    "lastAssistantMessageClassifierEnabled": True,
-                    "lastAssistantMessageClassifierTimeoutSeconds": 10,
-                },
+                settings=PluginSettings(
+                    last_assistant_message_classifier_enabled=True,
+                    last_assistant_message_classifier_timeout_seconds=10,
+                ),
                 payload={"last_assistant_message": "Final answer."},
             ),
             env={

@@ -1,7 +1,7 @@
 from claude_auto_review.runtime.client_dirs import client_state_path
 from claude_auto_review.runtime.context import resolve_client_id, resolve_project_root
 from claude_auto_review.runtime.events import log_event, log_failure
-from claude_auto_review.config.settings import DEFAULT_SETTINGS, SETTING_PENDING_TIMEOUT, get_setting_float, load_settings
+from claude_auto_review.config.io import load_settings
 from claude_auto_review.state.models import ReviewMetadata
 from claude_auto_review.state.reviews.expiry import is_review_expired
 from claude_auto_review.state.store.read import read_jsonl_state_records
@@ -23,7 +23,7 @@ def cleanup_expired_pending_reviews(project_root=None, client_id=""):
     project_root = resolve_project_root(project_root)
     client_id = resolve_client_id(client_id)
     settings = load_settings(project_root)
-    timeout_hours = get_setting_float(settings, SETTING_PENDING_TIMEOUT, DEFAULT_SETTINGS[SETTING_PENDING_TIMEOUT])
+    timeout_hours = settings.pending_review_timeout_hours
 
     state_path = client_state_path(project_root, client_id)
     if not state_path.exists():

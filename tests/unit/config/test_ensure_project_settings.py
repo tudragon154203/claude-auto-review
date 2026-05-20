@@ -77,6 +77,21 @@ class TestEnsureProjectSettings(StateTestCase, unittest.TestCase):
             "python -m claude_auto_review.hooks.stop_hook",
         )
 
+    def test_ensure_project_settings_preserves_unknown_plugin_keys(self):
+        project_root = self.temp_project()
+        settings_path = project_root / ".claude" / "settings.json"
+        settings_path.parent.mkdir(parents=True, exist_ok=True)
+        settings_path.write_text(
+            json.dumps({"claude-auto-review": {"customKey": "value"}}),
+            encoding="utf-8",
+        )
+
+        ensure_project_settings(project_root)
+        settings = json.loads(settings_path.read_text(encoding="utf-8"))
+
+        self.assertEqual(settings["claude-auto-review"]["customKey"], "value")
+        self.assertEqual(settings["claude-auto-review"]["reviewerTimeoutSeconds"], 600)
+
     def test_ensure_project_settings_is_idempotent_even_if_timeout_changes(self):
         project_root = self.temp_project()
         settings_path = project_root / ".claude" / "settings.json"

@@ -1,7 +1,6 @@
 import os
 import time
 
-from claude_auto_review.config.settings import SETTING_CLASSIFIER_TIMEOUT, SETTING_CLASSIFIER_MODEL, DEFAULT_CLASSIFIER_MODEL, get_setting_float
 from claude_auto_review.state.store.write import append_state_event
 from claude_auto_review.stop.classifier.core.client import call_classifier_api, sanitize_base_url
 from claude_auto_review.stop.classifier.core.extraction import extract_last_assistant_message_text
@@ -13,12 +12,12 @@ from claude_auto_review.stop.orchestration.core.context import RuntimeContext
 
 
 def _persist_result(result, ctx):
-    include_debug = ctx.settings.get("debug", True)
+    include_debug = ctx.settings.debug
     append_state_event(result.as_state_entry(include_debug=include_debug), ctx.project_root, client_id=ctx.client_id)
 
 
 def classify_last_assistant_message(ctx: RuntimeContext, env=None, urlopen=None):
-    if not ctx.settings.get("lastAssistantMessageClassifierEnabled", True):
+    if not ctx.settings.last_assistant_message_classifier_enabled:
         return None
 
     started_at = time.monotonic()
@@ -43,8 +42,8 @@ def classify_last_assistant_message(ctx: RuntimeContext, env=None, urlopen=None)
         _persist_result(result, ctx)
         return result
 
-    timeout_seconds = get_setting_float(ctx.settings, SETTING_CLASSIFIER_TIMEOUT, DEFAULT_TIMEOUT_SECONDS)
-    model = ctx.settings.get(SETTING_CLASSIFIER_MODEL, DEFAULT_CLASSIFIER_MODEL)
+    timeout_seconds = ctx.settings.last_assistant_message_classifier_timeout_seconds
+    model = ctx.settings.classifier_model
     result = call_classifier_api(
         message_text,
         base_url,
@@ -56,4 +55,3 @@ def classify_last_assistant_message(ctx: RuntimeContext, env=None, urlopen=None)
     )
     _persist_result(result, ctx)
     return result
-

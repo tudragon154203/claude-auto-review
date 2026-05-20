@@ -5,13 +5,10 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from unittest.mock import patch
 
-from claude_auto_review.config.settings import (
-    DEFAULT_SETTINGS,
-    DEFAULT_TIMEOUT_SECONDS,
-    load_settings,
-    resolve_rules_file_path,
-    should_skip_file,
-)
+from claude_auto_review.config.file_filters import should_skip_file
+from claude_auto_review.config.io import load_settings
+from claude_auto_review.config.models import DEFAULT_TIMEOUT_SECONDS, PluginSettings
+from claude_auto_review.config.rules import resolve_rules_file_path
 
 from tests.unit.state.support import StateTestCase
 
@@ -21,12 +18,12 @@ class TestSettingsLoader(StateTestCase, unittest.TestCase):
     def test_load_settings_defaults_when_file_missing(self):
         project_root = self.temp_project()
         result = load_settings(project_root)
-        self.assertTrue(result["enabled"])
-        self.assertEqual(result["maxStopPasses"], 5)
-        self.assertEqual(result["reviewerTimeoutSeconds"], 600)
-        self.assertEqual(result["reviewFeedbackMaxChars"], 9000)
-        self.assertTrue(result["lastAssistantMessageClassifierEnabled"])
-        self.assertEqual(result["lastAssistantMessageClassifierTimeoutSeconds"], DEFAULT_TIMEOUT_SECONDS)
+        self.assertTrue(result.enabled)
+        self.assertEqual(result.max_stop_passes, 5)
+        self.assertEqual(result.reviewer_timeout_seconds, 600)
+        self.assertEqual(result.review_feedback_max_chars, 9000)
+        self.assertTrue(result.last_assistant_message_classifier_enabled)
+        self.assertEqual(result.last_assistant_message_classifier_timeout_seconds, DEFAULT_TIMEOUT_SECONDS)
 
     def test_load_settings_merges_project_settings(self):
         project_root = self.temp_project()
@@ -47,26 +44,26 @@ class TestSettingsLoader(StateTestCase, unittest.TestCase):
             encoding="utf-8",
         )
         result = load_settings(project_root)
-        self.assertEqual(result["maxStopPasses"], 5)
-        self.assertEqual(result["reviewerTimeoutSeconds"], 120)
-        self.assertEqual(result["reviewFeedbackMaxChars"], 321)
-        self.assertFalse(result["lastAssistantMessageClassifierEnabled"])
-        self.assertEqual(result["lastAssistantMessageClassifierTimeoutSeconds"], 3)
+        self.assertEqual(result.max_stop_passes, 5)
+        self.assertEqual(result.reviewer_timeout_seconds, 120)
+        self.assertEqual(result.review_feedback_max_chars, 321)
+        self.assertFalse(result.last_assistant_message_classifier_enabled)
+        self.assertEqual(result.last_assistant_message_classifier_timeout_seconds, 3)
 
     def test_should_skip_file_no_extension(self):
-        self.assertFalse(should_skip_file("README", DEFAULT_SETTINGS))
+        self.assertFalse(should_skip_file("README", PluginSettings()))
 
     def test_should_skip_file_include_extensions_allows(self):
-        settings = {"includeExtensions": ["py"], "skipExtensions": []}
+        settings = PluginSettings(include_extensions=("py",))
         self.assertFalse(should_skip_file("script.py", settings))
 
     def test_should_skip_file_include_extensions_blocks_others(self):
-        settings = {"includeExtensions": ["py"], "skipExtensions": []}
+        settings = PluginSettings(include_extensions=("py",))
         self.assertTrue(should_skip_file("script.ts", settings))
 
     def test_resolve_rules_file_path_uses_project_relative_path_when_configured(self):
         project_root = self.temp_project()
-        settings = {"rulesFile": "relative/rules.md"}
+        settings = PluginSettings(rules_file="relative/rules.md")
         self.assertEqual(
             resolve_rules_file_path(project_root, settings),
             project_root / "relative" / "rules.md",
@@ -75,7 +72,7 @@ class TestSettingsLoader(StateTestCase, unittest.TestCase):
     def test_resolve_rules_file_path_defaults_to_runtime_rules(self):
         project_root = self.temp_project()
         self.assertEqual(
-            resolve_rules_file_path(project_root, {}),
+            resolve_rules_file_path(project_root, PluginSettings()),
             project_root / ".claude" / "claude-auto-review" / "review-rules.md",
         )
 
@@ -85,7 +82,7 @@ class TestSettingsLoader(StateTestCase, unittest.TestCase):
         settings_path.mkdir(parents=True, exist_ok=True)
         (settings_path / "settings.json").write_text("not valid json", encoding="utf-8")
         result = load_settings(project_root)
-        self.assertTrue(result["enabled"])
+        self.assertTrue(result.enabled)
 
     def test_load_settings_handles_oserror(self):
         project_root = self.temp_project()
@@ -96,7 +93,25 @@ class TestSettingsLoader(StateTestCase, unittest.TestCase):
         # Make a nonexistent path to trigger fallback in another way
         other_root = self.temp_project()
         result = load_settings(other_root)
-        self.assertTrue(result["enabled"])
+        self.assertTrue(result.enabled)
+
+    def test_load_settings_preserves_unknown_plugin_keys_in_extras(self):
+        project_root = self.temp_project()
+        settings_dir = project_root / ".claude"
+        settings_dir.mkdir()
+        (settings_dir / "settings.json").write_text(
+            json.dumps({"claude-auto-review": {"customKey": "value"}}),
+            encoding="utf-8",
+        )
+
+        result = load_settings(project_root)
+
+        self.assertEqual(result.extras["customKey"], "value")
+
+    def test_plugin_settings_to_mapping_omits_unset_reviewer_model(self):
+        result = PluginSettings().to_mapping()
+
+        self.assertNotIn("reviewerModel", result)
 
 
 if __name__ == "__main__":

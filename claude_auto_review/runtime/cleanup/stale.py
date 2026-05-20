@@ -1,7 +1,7 @@
 import time
 
 from claude_auto_review.config.constants import SECONDS_PER_HOUR
-from claude_auto_review.config.settings import DEFAULT_SETTINGS, SETTING_STALE_CLIENT_TIMEOUT, load_settings
+from claude_auto_review.config.io import load_settings
 from claude_auto_review.paths.path_utils import CLIENTS_DIR
 from claude_auto_review.runtime.client_dirs import invalidate_client_runtime_dir_cache
 from claude_auto_review.runtime.cleanup.paths import _remove_tree
@@ -69,7 +69,7 @@ def cleanup_stale_clients(project_root=None):
     """Remove client directories that have not seen any activity for a while."""
     project_root = resolve_project_root(project_root)
     settings = load_settings(project_root)
-    timeout_hours = settings.get(SETTING_STALE_CLIENT_TIMEOUT, DEFAULT_SETTINGS[SETTING_STALE_CLIENT_TIMEOUT])
+    timeout_hours = settings.stale_client_timeout_hours
 
     clients_dir = project_root / CLIENTS_DIR
     if not clients_dir.is_dir():

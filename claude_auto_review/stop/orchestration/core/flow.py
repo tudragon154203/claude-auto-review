@@ -1,10 +1,4 @@
-from claude_auto_review.config.settings import (
-    get_max_stop_passes,
-    get_pending_review_timeout_hours,
-    is_classifier_enabled,
-    is_enabled,
-    load_settings,
-)
+from claude_auto_review.config.io import load_settings
 from claude_auto_review.paths.path_utils import get_reviewer_prompt_script
 from claude_auto_review.runtime.client_dirs import get_client_id
 from claude_auto_review.runtime.events import log_event
@@ -24,7 +18,7 @@ def _allow_stop(project_root, reason, client_id=None, **details):
 
 
 def _check_classifier_incomplete(ctx):
-    if not is_classifier_enabled(ctx.settings):
+    if not ctx.settings.last_assistant_message_classifier_enabled:
         return None
     result = classify_last_assistant_message(ctx)
     if result is not None and result.status == "incomplete":
@@ -37,19 +31,19 @@ def run_stop_flow(project_root, payload, *, client_id=None, settings=None):
     ensure_client_runtime(project_root, client_id)
     settings = settings or load_settings(project_root)
 
-    if not is_enabled(settings):
+    if not settings.enabled:
         log_event(project_root, "stop_disabled", client_id=client_id)
         approve_response("Claude Auto Review: stop disabled by settings")
         return 0
 
-    timeout_hours = get_pending_review_timeout_hours(settings)
+    timeout_hours = settings.pending_review_timeout_hours
     state_snapshot = load_state_snapshot(project_root, client_id)
     state = state_snapshot.events
     unreviewed = get_unreviewed_files(state_snapshot)
     if not unreviewed:
         return _allow_stop(project_root, "no_unreviewed_files", client_id=client_id)
 
-    max_passes = get_max_stop_passes(settings)
+    max_passes = settings.max_stop_passes
     block_count = consecutive_stop_blocks(state_snapshot)
     if block_count >= max_passes:
         return _allow_stop(

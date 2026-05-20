@@ -3,8 +3,10 @@ import tempfile
 import unittest
 from pathlib import Path
 
+from claude_auto_review.config.file_filters import should_skip_file
+from claude_auto_review.config.io import load_settings
+from claude_auto_review.config.models import PluginSettings
 from claude_auto_review.runtime.setup import ensure_runtime
-from claude_auto_review.config.settings import load_settings, should_skip_file
 
 
 class RulesTests(unittest.TestCase):
@@ -27,12 +29,12 @@ class RulesTests(unittest.TestCase):
         self.assertFalse(should_skip_file("src/app.ts", settings))
 
     def test_include_extensions_allowlist_filters_unlisted_files(self):
-        settings = {"includeExtensions": ["py"], "skipExtensions": []}
+        settings = PluginSettings(include_extensions=("py",))
         self.assertFalse(should_skip_file("claude_auto_review/paths.py", settings))
         self.assertTrue(should_skip_file("src/app.ts", settings))
 
     def test_skip_extensions_override_include_extensions(self):
-        settings = {"includeExtensions": ["py"], "skipExtensions": ["py"]}
+        settings = PluginSettings(include_extensions=("py",), skip_extensions=("py",))
         self.assertTrue(should_skip_file("claude_auto_review/paths.py", settings))
 
     def test_malformed_settings_fall_back_to_defaults(self):
@@ -42,8 +44,8 @@ class RulesTests(unittest.TestCase):
         (settings_dir / "settings.json").write_text("{not-json", encoding="utf-8")
 
         settings = load_settings(project_root)
-        self.assertTrue(settings["enabled"])
-        self.assertEqual(settings["skipExtensions"], [])
+        self.assertTrue(settings.enabled)
+        self.assertEqual(settings.skip_extensions, ())
 
 
 if __name__ == "__main__":

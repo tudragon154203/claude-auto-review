@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import sys
 
-from claude_auto_review.config.settings import should_skip_file
+from claude_auto_review.config.file_filters import should_skip_file
 from claude_auto_review.paths.path_utils import DELETED_FILE_HASH, local_now_iso
 from claude_auto_review.paths.uri_utils import normalize_relative_path
 from claude_auto_review.runtime.events import log_event
@@ -19,7 +19,7 @@ def _run_post_tool_use():
     client_id = ctx.client_id
     settings = ctx.settings
     payload = ctx.payload
-    if not settings.get("enabled", True):
+    if not settings.enabled:
         log_event(project_root, "post_tool_use_disabled", client_id=client_id)
         return 0
 

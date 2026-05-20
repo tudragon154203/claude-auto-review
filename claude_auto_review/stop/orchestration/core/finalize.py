@@ -2,7 +2,6 @@ from pathlib import Path
 from dataclasses import dataclass
 from typing import Literal
 
-from claude_auto_review.config.settings import get_reviewer_backend, get_reviewer_model, get_reviewer_timeout_seconds
 from claude_auto_review.review.completion import apply_completed_review, record_completed_review
 from claude_auto_review.runtime.events import log_event
 from claude_auto_review.state.reviews.verdicts import (
@@ -113,9 +112,9 @@ def finalize_review_stop(ctx: RuntimeContext, resolution: StopFlowResolution):
     review_id = review.reviewId
     review_path = Path(ctx.project_root) / review.reviewPath
     prompt_file = _review_prompt_path(ctx, review_id)
-    reviewer_timeout_seconds = get_reviewer_timeout_seconds(ctx.settings)
+    reviewer_timeout_seconds = ctx.settings.reviewer_timeout_seconds
     try:
-        reviewer_backend = get_reviewer_backend(ctx.settings)
+        reviewer_backend = ctx.settings.resolved_reviewer_backend()
     except ValueError as error:
         log_event(
             ctx.project_root,
@@ -128,7 +127,7 @@ def finalize_review_stop(ctx: RuntimeContext, resolution: StopFlowResolution):
             str(error),
         )
         return 2
-    reviewer_model = get_reviewer_model(ctx.settings, backend=reviewer_backend)
+    reviewer_model = ctx.settings.resolved_reviewer_model(backend=reviewer_backend)
     # Phase 1: classify existing artifact
     artifact_state = _review_artifact_state(review_path)
     action_result = _apply_artifact_state(ctx, artifact_state, review_id, review_path, covered_entries, unreviewed)

@@ -8,7 +8,7 @@ if __name__ == "__main__":
     if str(_plugin_root) not in sys.path:
         sys.path.insert(0, str(_plugin_root))
 
-from claude_auto_review.config.settings import load_settings
+from claude_auto_review.config.io import load_settings
 from claude_auto_review.install.shims import write_project_script_shim
 from claude_auto_review.paths.path_utils import get_project_root
 from claude_auto_review.review.prompting.flow import create_review_prompt_files
@@ -40,7 +40,7 @@ def _run_review_prompt(project_root, client_id):
     )
 
     settings = load_settings(project_root)
-    if not settings.get("enabled", True):
+    if not settings.enabled:
         log_event(project_root, "review_prompt_disabled", client_id=client_id)
         print("Claude Auto Review is disabled in .claude/settings.json.")
         return 0

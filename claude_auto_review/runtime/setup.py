@@ -3,7 +3,8 @@ import shutil
 from importlib import resources
 from pathlib import Path
 
-from claude_auto_review.config.settings import DEFAULT_SETTINGS, _load_settings_document, _settings_path
+from claude_auto_review.config.io import _load_settings_document, _settings_path
+from claude_auto_review.config.models import PluginSettings
 from claude_auto_review.paths.path_utils import (
     RUNTIME_DIR,
     STATE_RELATIVE_PATH,
@@ -70,8 +71,8 @@ def _merge_hooks(existing_hooks, desired_hooks):
 
 
 def _ensure_plugin_settings(settings):
-    if "claude-auto-review" not in settings:
-        settings["claude-auto-review"] = dict(DEFAULT_SETTINGS)
+    plugin_settings = settings.get("claude-auto-review", {})
+    settings["claude-auto-review"] = PluginSettings.from_mapping(plugin_settings).to_mapping()
 
 
 def _merge_project_hooks(settings, hooks_document):

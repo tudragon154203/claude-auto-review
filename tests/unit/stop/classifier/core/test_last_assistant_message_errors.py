@@ -4,6 +4,7 @@ import socket
 import unittest
 from urllib import error
 
+from claude_auto_review.config.models import PluginSettings
 from claude_auto_review.state.store.read import load_state
 from claude_auto_review.stop.classifier.core.models import CLASSIFICATION_EVENT
 from claude_auto_review.stop.classifier.core.last_assistant_message import (
@@ -32,7 +33,7 @@ def _make_ctx(project_root, payload=None, settings=None):
     return RuntimeContext(
         project_root=project_root,
         client_id="classifier-client",
-        settings=settings if settings is not None else {},
+        settings=settings if settings is not None else PluginSettings(),
         payload=payload if payload is not None else {"last_assistant_message": "some message"},
     )
 
@@ -41,9 +42,7 @@ class TestLastAssistantMessageErrors(StateTestCase, unittest.TestCase):
     def setUp(self):
         self.project_root = self.temp_project()
         self.client_id = "classifier-client"
-        self.settings = {
-            "lastAssistantMessageClassifierEnabled": True,
-        }
+        self.settings = PluginSettings(last_assistant_message_classifier_enabled=True)
         self.env = {
             "ANTHROPIC_BASE_URL": "http://127.0.0.1:13456",
             "ANTHROPIC_API_KEY": "top-secret",
@@ -51,7 +50,11 @@ class TestLastAssistantMessageErrors(StateTestCase, unittest.TestCase):
 
     def test_classifier_disabled_returns_none(self):
         result = classify_last_assistant_message(
-            _make_ctx(self.project_root, {"last_assistant_message": "Ship it."}, {"lastAssistantMessageClassifierEnabled": False}),
+            _make_ctx(
+                self.project_root,
+                {"last_assistant_message": "Ship it."},
+                PluginSettings(last_assistant_message_classifier_enabled=False),
+            ),
             env=self.env,
             urlopen=lambda req, timeout: _FakeResponse({"content": [{"text": "complete"}]}),
         )
@@ -83,7 +86,14 @@ class TestLastAssistantMessageErrors(StateTestCase, unittest.TestCase):
         payload = {"content": [{"text": "unknown"}], "id": "msg-nodebug"}
 
         classify_last_assistant_message(
-            _make_ctx(self.project_root, {"last_assistant_message": "Message"}, {**self.settings, "debug": False}),
+            _make_ctx(
+                self.project_root,
+                {"last_assistant_message": "Message"},
+                PluginSettings(
+                    last_assistant_message_classifier_enabled=True,
+                    debug=False,
+                ),
+            ),
             env=self.env,
             urlopen=lambda req, timeout: _FakeResponse(payload),
         )
