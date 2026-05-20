@@ -42,10 +42,18 @@ class TestFinalizeReviewDecision(unittest.TestCase):
     @patch("claude_auto_review.stop.orchestration.core.finalize.apply_completed_review", return_value=[])
     @patch("claude_auto_review.stop.orchestration.core.finalize._load_and_ensure_normalized_review", return_value="## Verdict\nClean - no issues found. Claude may stop.\n")
     @patch("claude_auto_review.stop.orchestration.core.finalize.approve_response")
-    def test_completed_no_remaining_returns_0(self, mock_approve, mock_load, mock_apply, mock_covered):
+    @patch("claude_auto_review.stop.orchestration.core.finalize.log_event")
+    def test_completed_no_remaining_returns_0(self, mock_log, mock_approve, mock_load, mock_apply, mock_covered):
         result = finalize_review_stop(_ctx(), self.resolution)
         self.assertEqual(result, EXIT_STOP_APPROVED)
         mock_approve.assert_called_once_with("Claude Auto Review: review r1 clean, all files covered")
+        mock_log.assert_any_call(
+            Path("/fake"),
+            "stop_approved",
+            client_id="c",
+            reason="review_clean",
+            reviewId="r1",
+        )
 
     @patch("claude_auto_review.stop.orchestration.core.finalize.get_entries_covered_by_review", return_value=[])
     @patch("claude_auto_review.stop.orchestration.core.finalize.record_completed_review")
@@ -92,13 +100,21 @@ class TestFinalizeReviewDecision(unittest.TestCase):
     @patch("claude_auto_review.stop.orchestration.core.finalize.attempt_stop_autocomplete", return_value=MagicMock(status="output_written"))
     @patch("claude_auto_review.stop.orchestration.core.finalize._read_review_verdict", side_effect=["Pending.", "Clean"])
     @patch("claude_auto_review.stop.orchestration.core.finalize.approve_response")
+    @patch("claude_auto_review.stop.orchestration.core.finalize.log_event")
     def test_pending_review_autocomplete_clean_returns_0(
-        self, mock_approve, mock_verdict, mock_auto, mock_prompt, mock_completed, mock_load, mock_apply, mock_covered
+        self, mock_log, mock_approve, mock_verdict, mock_auto, mock_prompt, mock_completed, mock_load, mock_apply, mock_covered
     ):
         mock_prompt.return_value = "Complete the review"
         result = finalize_review_stop(_ctx(), self.resolution)
         self.assertEqual(result, EXIT_STOP_APPROVED)
         mock_approve.assert_called_once_with("Claude Auto Review: review r1 clean, all files covered")
+        mock_log.assert_any_call(
+            Path("/fake"),
+            "stop_approved",
+            client_id="c",
+            reason="review_clean",
+            reviewId="r1",
+        )
 
     @patch("claude_auto_review.stop.orchestration.core.finalize.get_entries_covered_by_review", return_value=[])
     @patch("claude_auto_review.stop.orchestration.core.finalize.apply_completed_review", return_value=[])
@@ -198,6 +214,13 @@ class TestFinalizeReviewDecision(unittest.TestCase):
             Path("/fake"),
             "stop_hook_claude_cli_empty_approved",
             client_id="c",
+            reviewId="r1",
+        )
+        mock_log.assert_any_call(
+            Path("/fake"),
+            "stop_approved",
+            client_id="c",
+            reason="review_auto_approved_empty_stdout",
             reviewId="r1",
         )
         mock_block_pending.assert_not_called()
