@@ -22,12 +22,20 @@ class EndToEndTestCase(TempProjectMixin, SubprocessMixin, unittest.TestCase):
             client_id=client_id,
         )
 
-    def stop(self, project_root, client_id="test-session", use_fake_claude=None, env_overrides=None):
+    def stop(
+        self,
+        project_root,
+        client_id="test-session",
+        use_fake_claude=None,
+        use_fake_codex=False,
+        env_overrides=None,
+    ):
         return self.run_python(
             "hooks/stop_hook.py",
             project_root,
             client_id=client_id,
             use_fake_claude=use_fake_claude,
+            use_fake_codex=use_fake_codex,
             env_overrides=env_overrides,
         )
 

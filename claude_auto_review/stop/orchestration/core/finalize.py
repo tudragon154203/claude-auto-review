@@ -2,7 +2,7 @@ from pathlib import Path
 from dataclasses import dataclass
 from typing import Literal
 
-from claude_auto_review.config.settings import get_reviewer_model, get_reviewer_timeout_seconds
+from claude_auto_review.config.settings import get_reviewer_backend, get_reviewer_model, get_reviewer_timeout_seconds
 from claude_auto_review.review.completion import apply_completed_review, record_completed_review
 from claude_auto_review.runtime.events import log_event
 from claude_auto_review.state.reviews.verdicts import (
@@ -114,8 +114,21 @@ def finalize_review_stop(ctx: RuntimeContext, resolution: StopFlowResolution):
     review_path = Path(ctx.project_root) / review.reviewPath
     prompt_file = _review_prompt_path(ctx, review_id)
     reviewer_timeout_seconds = get_reviewer_timeout_seconds(ctx.settings)
-    reviewer_model = get_reviewer_model(ctx.settings)
-
+    try:
+        reviewer_backend = get_reviewer_backend(ctx.settings)
+    except ValueError as error:
+        log_event(
+            ctx.project_root,
+            "stop_hook_invalid_reviewer_backend",
+            client_id=ctx.client_id,
+            error=str(error),
+        )
+        block_response(
+            "Claude Auto Review: invalid reviewerBackend setting",
+            str(error),
+        )
+        return 2
+    reviewer_model = get_reviewer_model(ctx.settings, backend=reviewer_backend)
     # Phase 1: classify existing artifact
     artifact_state = _review_artifact_state(review_path)
     action_result = _apply_artifact_state(ctx, artifact_state, review_id, review_path, covered_entries, unreviewed)
@@ -134,11 +147,12 @@ def finalize_review_stop(ctx: RuntimeContext, resolution: StopFlowResolution):
             user_prompt,
             reviewer_timeout_seconds=reviewer_timeout_seconds,
             model=reviewer_model,
+            backend=reviewer_backend,
         )
         if result.status != "empty_stdout":
             break
         if attempt == 0:
-            log_event(ctx.project_root, "stop_hook_claude_cli_retry", client_id=ctx.client_id, reviewId=review_id)
+            log_event(ctx.project_root, "stop_hook_reviewer_retry", client_id=ctx.client_id, reviewId=review_id)
 
     # Phase 3: re-evaluate after retry
     artifact_state = _review_artifact_state(review_path)
@@ -147,7 +161,7 @@ def finalize_review_stop(ctx: RuntimeContext, resolution: StopFlowResolution):
         return action_result
 
     if result is not None and result.status == "empty_stdout":
-        log_event(ctx.project_root, "stop_hook_claude_cli_empty_approved", client_id=ctx.client_id, reviewId=review_id)
+        log_event(ctx.project_root, "stop_hook_reviewer_empty_approved", client_id=ctx.client_id, reviewId=review_id)
         log_event(
             ctx.project_root,
             "stop_approved",

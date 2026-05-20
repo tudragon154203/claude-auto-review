@@ -22,7 +22,7 @@ class TestAutoCompleteCLI(unittest.TestCase):
             user_prompt="finish",
         )
         self.assertFalse(result)
-        mock_log.assert_called_with(Path("/fake"), "stop_hook_claude_cli_not_found", client_id="c")
+        mock_log.assert_called_with(Path("/fake"), "stop_hook_reviewer_not_found", client_id="c", backend="claude")
 
     @patch("claude_auto_review.stop.reviews.core.prompt_runner.log_event")
     @patch("claude_auto_review.stop.reviews.core.prompt_runner.shutil.which", return_value="/usr/bin/claude")
@@ -46,7 +46,7 @@ class TestAutoCompleteCLI(unittest.TestCase):
             user_prompt="finish",
         )
         self.assertFalse(result)
-        mock_log.assert_called_with(Path("/fake"), "stop_hook_claude_cli_timeout", client_id="c", reviewId="r")
+        mock_log.assert_called_with(Path("/fake"), "stop_hook_reviewer_timeout", client_id="c", reviewId="r", backend="claude")
 
     @patch("claude_auto_review.stop.reviews.core.prompt_runner.log_event")
     @patch("claude_auto_review.stop.reviews.core.prompt_runner.run_captured")
@@ -73,7 +73,7 @@ class TestAutoCompleteCLI(unittest.TestCase):
             user_prompt="finish",
         )
         self.assertFalse(result)
-        mock_log.assert_called_with(Path("/fake"), "stop_hook_claude_cli_error", client_id="c", error="boom")
+        mock_log.assert_called_with(Path("/fake"), "stop_hook_reviewer_error", client_id="c", error="boom", backend="claude", reviewId="r")
 
     @patch("claude_auto_review.stop.reviews.core.prompt_runner.run_captured")
     def test_run_claude_cli_uses_append_system_prompt_file(self, mock_run):
@@ -101,6 +101,7 @@ class TestAutoCompleteCLI(unittest.TestCase):
             ],
             cwd=Path("/cwd"),
             timeout=42.0,
+            input=None,
         )
 
 

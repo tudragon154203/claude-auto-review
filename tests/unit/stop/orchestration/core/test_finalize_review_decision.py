@@ -186,6 +186,28 @@ class TestFinalizeReviewDecision(unittest.TestCase):
         mock_block_pending.assert_called_once()
 
     @patch("claude_auto_review.stop.orchestration.core.finalize.get_entries_covered_by_review", return_value=[])
+    @patch("claude_auto_review.stop.orchestration.core.finalize.block_response")
+    @patch("claude_auto_review.stop.orchestration.core.finalize.log_event")
+    def test_invalid_reviewer_backend_blocks_instead_of_approving(
+        self, mock_log, mock_block_response, mock_covered
+    ):
+        result = finalize_review_stop(
+            _ctx(settings={"reviewerBackend": "codyx"}),
+            self.resolution,
+        )
+        self.assertEqual(result, EXIT_REVIEW_FAILED)
+        mock_block_response.assert_called_once_with(
+            "Claude Auto Review: invalid reviewerBackend setting",
+            "Unsupported reviewer backend: codyx",
+        )
+        mock_log.assert_any_call(
+            Path("/fake"),
+            "stop_hook_invalid_reviewer_backend",
+            client_id="c",
+            error="Unsupported reviewer backend: codyx",
+        )
+
+    @patch("claude_auto_review.stop.orchestration.core.finalize.get_entries_covered_by_review", return_value=[])
     @patch("claude_auto_review.stop.orchestration.core.finalize.block_pending_review")
     @patch("claude_auto_review.stop.orchestration.core.finalize.log_event")
     @patch("claude_auto_review.stop.orchestration.core.finalize.build_review_completion_prompt")
@@ -206,13 +228,13 @@ class TestFinalizeReviewDecision(unittest.TestCase):
         mock_approve.assert_called_once_with("Claude Auto Review: review r1 auto-approved (empty stdout)")
         mock_log.assert_any_call(
             Path("/fake"),
-            "stop_hook_claude_cli_retry",
+            "stop_hook_reviewer_retry",
             client_id="c",
             reviewId="r1",
         )
         mock_log.assert_any_call(
             Path("/fake"),
-            "stop_hook_claude_cli_empty_approved",
+            "stop_hook_reviewer_empty_approved",
             client_id="c",
             reviewId="r1",
         )

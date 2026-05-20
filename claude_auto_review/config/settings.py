@@ -19,10 +19,20 @@ SETTING_STALE_CLIENT_TIMEOUT = "staleClientTimeoutHours"
 SETTING_DEBUG = "debug"
 SETTING_CLASSIFIER_MODEL = "classifierModel"
 SETTING_REVIEWER_MODEL = "reviewerModel"
+SETTING_REVIEWER_BACKEND = "reviewerBackend"
 
 DEFAULT_CLASSIFIER_MODEL = "claude-haiku-4-5"
-DEFAULT_REVIEWER_MODEL = "claude-sonnet-4-6"
+DEFAULT_REVIEWER_BACKEND = "claude"
+DEFAULT_CLAUDE_REVIEWER_MODEL = "claude-sonnet-4-6"
+DEFAULT_CODEX_REVIEWER_MODEL = "gpt-5.3-codex"
+DEFAULT_REVIEWER_MODELS = {
+    "claude": DEFAULT_CLAUDE_REVIEWER_MODEL,
+    "codex": DEFAULT_CODEX_REVIEWER_MODEL,
+}
+DEFAULT_REVIEWER_MODEL = DEFAULT_REVIEWER_MODELS[DEFAULT_REVIEWER_BACKEND]
 DEFAULT_TIMEOUT_SECONDS = 20
+
+REVIEWER_BACKENDS = {"claude", "codex"}
 
 # Default settings for the plugin
 DEFAULT_SETTINGS = {
@@ -33,13 +43,13 @@ DEFAULT_SETTINGS = {
     SETTING_MAX_STOP_PASSES: 5,
     SETTING_PENDING_TIMEOUT: 1,
     SETTING_REVIEWER_TIMEOUT: 600,
-    SETTING_REVIEWER_MODEL: DEFAULT_REVIEWER_MODEL,
     SETTING_CLASSIFIER_MODEL: DEFAULT_CLASSIFIER_MODEL,
     SETTING_FEEDBACK_MAX_CHARS: 9000,
     SETTING_CLASSIFIER_ENABLED: True,
     SETTING_CLASSIFIER_TIMEOUT: DEFAULT_TIMEOUT_SECONDS,
     SETTING_STALE_CLIENT_TIMEOUT: 48,
-    SETTING_DEBUG: True,
+    SETTING_REVIEWER_BACKEND: DEFAULT_REVIEWER_BACKEND,
+    SETTING_DEBUG: True
 }
 
 
@@ -122,10 +132,21 @@ def get_review_feedback_max_chars(settings: dict) -> int:
     return max(0, get_setting_int(settings, SETTING_FEEDBACK_MAX_CHARS, DEFAULT_SETTINGS[SETTING_FEEDBACK_MAX_CHARS]))
 
 
-def get_reviewer_model(settings: dict) -> str:
-    return str(settings.get(SETTING_REVIEWER_MODEL, DEFAULT_SETTINGS[SETTING_REVIEWER_MODEL]))
+def get_reviewer_model(settings: dict, *, backend: str | None = None) -> str:
+    model = settings.get(SETTING_REVIEWER_MODEL)
+    if model not in (None, ""):
+        return str(model)
+    resolved_backend = backend or get_reviewer_backend(settings)
+    return DEFAULT_REVIEWER_MODELS.get(resolved_backend, DEFAULT_REVIEWER_MODEL)
 
 
 def get_classifier_model(settings: dict) -> str:
     return str(settings.get(SETTING_CLASSIFIER_MODEL, DEFAULT_SETTINGS[SETTING_CLASSIFIER_MODEL]))
+
+
+def get_reviewer_backend(settings: dict) -> str:
+    backend = str(settings.get(SETTING_REVIEWER_BACKEND, DEFAULT_REVIEWER_BACKEND)).lower()
+    if backend not in REVIEWER_BACKENDS:
+        raise ValueError(f"Unsupported reviewer backend: {backend}")
+    return backend
 
