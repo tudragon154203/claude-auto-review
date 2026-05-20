@@ -32,6 +32,7 @@ def _build_codex_review_args(model):
     return [
         "exec",
         "--json",
+        "--skip-git-repo-check",
         "--sandbox",
         "read-only",
         "--model",
@@ -71,9 +72,16 @@ def _extract_codex_final_message(stdout):
             event = json.loads(line)
         except (json.JSONDecodeError, ValueError):
             continue
-        if event.get("type") != "turn.completed":
+        event_type = event.get("type")
+        msg = None
+        if event_type == "turn.completed":
+            msg = event.get("message") or event.get("output") or event.get("content")
+        elif event_type == "item.completed":
+            item = event.get("item")
+            if isinstance(item, dict) and item.get("type") == "agent_message":
+                msg = item.get("text") or item.get("message") or item.get("content")
+        if msg is None:
             continue
-        msg = event.get("message") or event.get("output") or event.get("content")
         if isinstance(msg, str) and msg.strip():
             last_message = msg.strip()
         elif isinstance(msg, dict):

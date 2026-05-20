@@ -19,7 +19,7 @@ class TestPromptRunnerCodex(unittest.TestCase):
     def test_build_codex_review_args(self):
         self.assertEqual(
             _build_codex_review_args('gpt-5'),
-            ['exec', '--json', '--sandbox', 'read-only', '--model', 'gpt-5', '-'],
+            ['exec', '--json', '--skip-git-repo-check', '--sandbox', 'read-only', '--model', 'gpt-5', '-'],
         )
 
     def test_build_claude_review_args(self):
@@ -38,6 +38,17 @@ class TestPromptRunnerCodex(unittest.TestCase):
 
         stdout_list = '{"type":"turn.completed","message":[{"text":"Clean from list dict."}]}\n'
         self.assertEqual(_extract_codex_final_message(stdout_list), 'Clean from list dict.')
+
+    def test_extract_codex_final_message_handles_agent_message_item(self):
+        stdout = (
+            '{"type":"thread.started","thread_id":"t1"}\n'
+            '{"type":"item.completed","item":{"type":"agent_message","text":"# Review\\n\\n## Verdict\\n\\nClean - no issues found. Claude may stop."}}\n'
+            '{"type":"turn.completed","usage":{"input_tokens":1,"output_tokens":1}}\n'
+        )
+        self.assertEqual(
+            _extract_codex_final_message(stdout),
+            '# Review\n\n## Verdict\n\nClean - no issues found. Claude may stop.',
+        )
 
     def test_extract_codex_final_message_uses_last_completed_message(self):
         stdout = (
@@ -91,6 +102,7 @@ class TestPromptRunnerCodex(unittest.TestCase):
         self.assertEqual(result.status, 'output_written')
         mock_which.assert_called_once_with('codex')
         self.assertIn('--json', mock_run.call_args.args[0])
+        self.assertIn('--skip-git-repo-check', mock_run.call_args.args[0])
         self.assertEqual(mock_run.call_args.kwargs['input'], 'system prompt\n\nuser prompt')
 
     @patch('claude_auto_review.stop.reviews.core.prompt_runner.normalize_review_verdict_content', side_effect=lambda s: s)
