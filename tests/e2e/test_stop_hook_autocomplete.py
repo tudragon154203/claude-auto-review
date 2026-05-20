@@ -17,7 +17,8 @@ class EndToEndStopHookAutocompleteTests(EndToEndTestCase):
         stop = self.stop(project_root)
         self.assertEqual(stop.returncode, 0)
         approve = json.loads(stop.stdout.strip())
-        self.assertEqual(approve["decision"], "approve")
+        self.assertNotIn("decision", approve)
+        self.assertIn("Claude Auto Review", approve["systemMessage"])
 
         _cd = client_dir(project_root)
         review_path = sorted((_cd / "reviews").glob("review-*.md"))[-1]
@@ -56,7 +57,8 @@ class EndToEndStopHookAutocompleteTests(EndToEndTestCase):
         stop = self.stop(project_root, use_fake_claude=False)
         self.assertEqual(stop.returncode, 0, stop.stderr)
         approve = json.loads(stop.stdout.strip())
-        self.assertEqual(approve["decision"], "approve")
+        self.assertNotIn("decision", approve)
+        self.assertIn("Claude Auto Review", approve["systemMessage"])
 
         _cd = client_dir(project_root)
         review_path = sorted((_cd / "reviews").glob("review-*.md"))[-1]

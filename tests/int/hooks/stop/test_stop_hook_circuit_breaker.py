@@ -45,7 +45,9 @@ class TestStopHookCircuitBreaker(HookTestCase, unittest.TestCase):
         stop6 = self.run_python("hooks/stop_hook.py", project_root, env_overrides={"PATH": ""}, use_fake_claude=False)
         self.assertEqual(stop6.returncode, 0, "Sixth stop should be ALLOWED: circuit breaker tripped")
         approve = json.loads(stop6.stdout.strip())
-        self.assertEqual(approve["decision"], "approve", "Circuit breaker approval prints approve JSON response")
+        self.assertNotIn("decision", approve, "allow-path should not include decision field")
+        self.assertIn("Claude Auto Review", approve["systemMessage"])
+        self.assertEqual(approve["systemMessage"], "Claude Auto Review: stop approved (circuit_breaker)")
         state_after = load_state(project_root, client_id)
         self.assertEqual(consecutive_stop_blocks(state_after), 5)
 
@@ -63,8 +65,8 @@ class TestStopHookCircuitBreaker(HookTestCase, unittest.TestCase):
         stop_reset = self.run_python("hooks/stop_hook.py", project_root, env_overrides={"PATH": ""}, use_fake_claude=False)
         reset_decision = json.loads(stop_reset.stdout.strip())
         self.assertEqual(stop_reset.returncode, 0)
-        self.assertEqual(reset_decision["decision"], "approve")
-        self.assertEqual(reset_decision["reason"], "Claude Auto Review: stop approved (no_unreviewed_files)")
+        self.assertNotIn("decision", reset_decision)
+        self.assertEqual(reset_decision["systemMessage"], "Claude Auto Review: stop approved (no_unreviewed_files)")
         state_reset = load_state(project_root, client_id)
         self.assertEqual(consecutive_stop_blocks(state_reset), 0)
 

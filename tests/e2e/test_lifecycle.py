@@ -16,7 +16,8 @@ class EndToEndLifecycleTests(EndToEndTestCase):
         stop1 = self.stop(project_root)
         self.assertEqual(stop1.returncode, 0)
         approve = json.loads(stop1.stdout.strip())
-        self.assertEqual(approve["decision"], "approve")
+        self.assertNotIn("decision", approve)
+        self.assertIn("Claude Auto Review", approve["systemMessage"])
 
     def test_setup_installs_runtime_artifacts_and_review_flow(self):
         project_root = self.temp_project()

@@ -19,7 +19,8 @@ class TestStopHookLifecycle(HookTestCase, unittest.TestCase):
         stop = self.run_python("hooks/stop_hook.py", project_root)
         self.assertEqual(stop.returncode, 0)
         approve = json.loads(stop.stdout.strip())
-        self.assertEqual(approve["decision"], "approve")
+        self.assertNotIn("decision", approve)
+        self.assertIn("Claude Auto Review", approve["systemMessage"])
 
         _cd = client_dir(project_root)
         run_files = list((_cd / "run").iterdir())
@@ -60,7 +61,8 @@ class TestStopHookLifecycle(HookTestCase, unittest.TestCase):
         stop = self.run_python("hooks/stop_hook.py", project_root)
         self.assertEqual(stop.returncode, 0)
         approve = json.loads(stop.stdout.strip())
-        self.assertEqual(approve["decision"], "approve")
+        self.assertNotIn("decision", approve)
+        self.assertIn("Claude Auto Review", approve["systemMessage"])
         self.assertTrue(load_state(project_root, "test-session")[-1].reviewed)
 
     def test_stop_hook_outputs_strict_json_when_blocking(self):

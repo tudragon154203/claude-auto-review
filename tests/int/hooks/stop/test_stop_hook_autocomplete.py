@@ -31,7 +31,8 @@ class TestStopHookAutocomplete(HookTestCase, unittest.TestCase):
 
         self.assertEqual(stop.returncode, 0, f"stop should succeed; stdout={stop.stdout[:200]}; stderr={stop.stderr[:200]}")
         approve = json.loads(stop.stdout.strip())
-        self.assertEqual(approve["decision"], "approve")
+        self.assertNotIn("decision", approve)
+        self.assertIn("Claude Auto Review", approve["systemMessage"])
 
         review_dir = client_dir(project_root) / "reviews"
         review_path = sorted(review_dir.glob("review-*.md"))[-1]

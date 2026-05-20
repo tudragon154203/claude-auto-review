@@ -3,15 +3,7 @@ import sys
 
 
 def approve_response(message=""):
-    print(
-        json.dumps(
-            {
-                "decision": "approve",
-                "reason": message,
-            },
-            separators=(",", ":"),
-        ),
-    )
+    print(json.dumps({"systemMessage": message}, separators=(",", ":")))
     if message:
         print(message, file=sys.stderr)
 
