@@ -78,8 +78,9 @@ class TestResolvePendingReview(unittest.TestCase):
     @patch("claude_auto_review.stop.orchestration.core.pending._reload_client_state")
     @patch("claude_auto_review.stop.orchestration.core.pending.find_pending_review_for_files")
     @patch("claude_auto_review.stop.orchestration.core.pending.run_review_prompt")
+    @patch("claude_auto_review.stop.orchestration.core.pending.approve_response")
     @patch("claude_auto_review.stop.orchestration.core.pending._block_review_prompt_failure")
-    def test_prompt_runs_but_no_review_created_blocks(self, mock_block, mock_run, mock_find, mock_reload):
+    def test_prompt_runs_but_no_review_created_blocks(self, mock_block, mock_approve, mock_run, mock_find, mock_reload):
         mock_find.return_value = None
         mock_result = MagicMock()
         mock_result.stdout = ""
@@ -92,6 +93,23 @@ class TestResolvePendingReview(unittest.TestCase):
         result = resolve_pending_review(_ctx(), **self.base_kwargs)
         self.assertEqual(result.exit_code, 2)
         mock_block.assert_called_once()
+        mock_approve.assert_not_called()
+
+    @patch("claude_auto_review.stop.orchestration.core.pending._reload_client_state")
+    @patch("claude_auto_review.stop.orchestration.core.pending.find_pending_review_for_files", return_value=None)
+    @patch("claude_auto_review.stop.orchestration.core.pending.run_review_prompt")
+    @patch("claude_auto_review.stop.orchestration.core.pending.approve_response")
+    def test_prompt_can_clear_unreviewed_and_emits_approval_response(self, mock_approve, mock_run, mock_find, mock_reload):
+        mock_result = MagicMock()
+        mock_result.stdout = ""
+        mock_result.stderr = ""
+        mock_run.return_value = mock_result
+        mock_reload.return_value = ([], [])
+
+        result = resolve_pending_review(_ctx(), **self.base_kwargs)
+
+        self.assertEqual(result.exit_code, 0)
+        mock_approve.assert_called_once_with("Claude Auto Review: stop approved (no_unreviewed_files_after_review)")
 
 
 if __name__ == "__main__":

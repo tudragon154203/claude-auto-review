@@ -7,6 +7,7 @@ from claude_auto_review.stop.feedback import build_unreviewed_files_string, bloc
 from claude_auto_review.stop.orchestration.core.context import RuntimeContext
 from claude_auto_review.stop.orchestration.core.resolution import StopFlowResolution
 from claude_auto_review.stop.reviews.core.selection import find_pending_review_for_files
+from claude_auto_review.stop.response import approve_response
 from claude_auto_review.stop.reviews.core.review_prompt_runner import (
     _block_review_prompt_failure,
     _reload_client_state,
@@ -42,6 +43,7 @@ def _resolve_prompted_review(ctx, timeout_hours, files_str, result):
     state, unreviewed = _reload_client_state(ctx)
     if not unreviewed:
         log_event(ctx.project_root, "stop_approved", client_id=ctx.client_id, reason="no_unreviewed_files_after_review")
+        approve_response("Claude Auto Review: stop approved (no_unreviewed_files_after_review)")
         return StopFlowResolution(state=state, unreviewed=unreviewed, exit_code=0)
 
     review = find_pending_review_for_files(state, unreviewed, ctx.project_root, timeout_hours)
