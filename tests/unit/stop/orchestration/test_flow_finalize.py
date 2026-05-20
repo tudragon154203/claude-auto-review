@@ -6,7 +6,7 @@ from unittest.mock import patch
 from claude_auto_review.config.models import PluginSettings
 from claude_auto_review.state.models import EditRecord, StopBlockedRecord
 from claude_auto_review.state.snapshot import StateSnapshot
-from claude_auto_review.stop.orchestration.core.flow import run_stop_flow
+from claude_auto_review.stop.orchestration.flow import run_stop_flow
 
 _STATE = [EditRecord(timestamp="2026-05-11T10:00:00+07:00", file="a.ts", hash="1", reviewed=False)]
 
@@ -17,10 +17,10 @@ def _snapshot(*, events=_STATE):
 
 class TestFlowFinalize(unittest.TestCase):
 
-    @patch("claude_auto_review.stop.orchestration.core.flow.log_event")
-    @patch("claude_auto_review.stop.orchestration.core.flow.load_state_snapshot", return_value=_snapshot())
-    @patch("claude_auto_review.stop.orchestration.core.flow.ensure_client_runtime")
-    @patch("claude_auto_review.stop.orchestration.core.flow.load_settings")
+    @patch("claude_auto_review.stop.orchestration.flow.log_event")
+    @patch("claude_auto_review.stop.orchestration.flow.load_state_snapshot", return_value=_snapshot())
+    @patch("claude_auto_review.stop.orchestration.flow.ensure_client_runtime")
+    @patch("claude_auto_review.stop.orchestration.flow.load_settings")
     def test_disabled_setting_returns_0_and_logs_stop_disabled(
         self,
         mock_settings,
@@ -39,12 +39,12 @@ class TestFlowFinalize(unittest.TestCase):
         self.assertEqual(result, 0)
         mock_log.assert_called_once_with(Path("/fake"), "stop_disabled", client_id="sid")
 
-    @patch("claude_auto_review.stop.orchestration.core.flow.classify_last_assistant_message")
-    @patch("claude_auto_review.stop.orchestration.core.flow.finalize_review_stop", return_value=2)
-    @patch("claude_auto_review.stop.orchestration.core.flow.resolve_pending_review")
-    @patch("claude_auto_review.stop.orchestration.core.flow.load_state_snapshot", return_value=_snapshot())
-    @patch("claude_auto_review.stop.orchestration.core.flow.ensure_client_runtime")
-    @patch("claude_auto_review.stop.orchestration.core.flow.load_settings")
+    @patch("claude_auto_review.stop.orchestration.flow.classify_last_assistant_message")
+    @patch("claude_auto_review.stop.orchestration.flow.finalize_review_stop", return_value=2)
+    @patch("claude_auto_review.stop.orchestration.flow.resolve_pending_review")
+    @patch("claude_auto_review.stop.orchestration.flow.load_state_snapshot", return_value=_snapshot())
+    @patch("claude_auto_review.stop.orchestration.flow.ensure_client_runtime")
+    @patch("claude_auto_review.stop.orchestration.flow.load_settings")
     def test_non_terminal_resolution_is_forwarded_to_finalize(
         self,
         mock_settings,
@@ -69,11 +69,11 @@ class TestFlowFinalize(unittest.TestCase):
         self.assertEqual(result, 2)
         mock_finalize.assert_called_once()
 
-    @patch("claude_auto_review.stop.orchestration.core.flow.classify_last_assistant_message")
-    @patch("claude_auto_review.stop.orchestration.core.flow.resolve_pending_review")
-    @patch("claude_auto_review.stop.orchestration.core.flow.load_state_snapshot", return_value=_snapshot())
-    @patch("claude_auto_review.stop.orchestration.core.flow.ensure_client_runtime")
-    @patch("claude_auto_review.stop.orchestration.core.flow.load_settings")
+    @patch("claude_auto_review.stop.orchestration.flow.classify_last_assistant_message")
+    @patch("claude_auto_review.stop.orchestration.flow.resolve_pending_review")
+    @patch("claude_auto_review.stop.orchestration.flow.load_state_snapshot", return_value=_snapshot())
+    @patch("claude_auto_review.stop.orchestration.flow.ensure_client_runtime")
+    @patch("claude_auto_review.stop.orchestration.flow.load_settings")
     def test_invalid_numeric_settings_fall_back_to_defaults(
         self,
         mock_settings,

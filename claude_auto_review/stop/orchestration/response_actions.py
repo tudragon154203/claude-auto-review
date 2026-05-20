@@ -1,7 +1,7 @@
 from claude_auto_review.paths.path_utils import local_now_iso
 from claude_auto_review.state.models import StopBlockedRecord
 from claude_auto_review.state.store.write import append_state_event
-from claude_auto_review.stop.orchestration.core.context import RuntimeContext
+from claude_auto_review.stop.orchestration.context import RuntimeContext
 from claude_auto_review.stop.feedback import block_response, build_unreviewed_files_string
 
 

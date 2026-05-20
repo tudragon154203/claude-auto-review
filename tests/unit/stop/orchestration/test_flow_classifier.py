@@ -7,8 +7,8 @@ from unittest.mock import patch
 from claude_auto_review.config.models import PluginSettings
 from claude_auto_review.state.models import EditRecord, StopBlockedRecord
 from claude_auto_review.state.snapshot import StateSnapshot
-from claude_auto_review.stop.orchestration.core.context import RuntimeContext
-from claude_auto_review.stop.orchestration.core.flow import run_stop_flow
+from claude_auto_review.stop.orchestration.context import RuntimeContext
+from claude_auto_review.stop.orchestration.flow import run_stop_flow
 
 _UNREVIEWED = [EditRecord(timestamp="2026-05-11T10:00:00+07:00", file="a.ts", hash="1")]
 _STATE = [EditRecord(timestamp="2026-05-11T10:00:00+07:00", file="a.ts", hash="1", reviewed=False)]
@@ -20,10 +20,10 @@ def _snapshot(*, events=_STATE):
 
 class TestFlowClassifier(unittest.TestCase):
 
-    @patch("claude_auto_review.stop.orchestration.core.flow.classify_last_assistant_message")
-    @patch("claude_auto_review.stop.orchestration.core.flow.load_state_snapshot", return_value=_snapshot(events=[]))
-    @patch("claude_auto_review.stop.orchestration.core.flow.ensure_client_runtime")
-    @patch("claude_auto_review.stop.orchestration.core.flow.load_settings")
+    @patch("claude_auto_review.stop.orchestration.flow.classify_last_assistant_message")
+    @patch("claude_auto_review.stop.orchestration.flow.load_state_snapshot", return_value=_snapshot(events=[]))
+    @patch("claude_auto_review.stop.orchestration.flow.ensure_client_runtime")
+    @patch("claude_auto_review.stop.orchestration.flow.load_settings")
     def test_classifier_skipped_when_no_unreviewed_files(
         self,
         mock_settings,
@@ -43,8 +43,8 @@ class TestFlowClassifier(unittest.TestCase):
         self.assertEqual(result, 0)
         mock_classify.assert_not_called()
 
-    @patch("claude_auto_review.stop.orchestration.core.flow.classify_last_assistant_message")
-    @patch("claude_auto_review.stop.orchestration.core.flow.load_state_snapshot", return_value=_snapshot(events=[
+    @patch("claude_auto_review.stop.orchestration.flow.classify_last_assistant_message")
+    @patch("claude_auto_review.stop.orchestration.flow.load_state_snapshot", return_value=_snapshot(events=[
         EditRecord(timestamp="2026-05-11T09:00:00+07:00", file="a.ts", hash="1", reviewed=True),
         StopBlockedRecord(timestamp="2026-05-11T10:00:00+07:00"),
         StopBlockedRecord(timestamp="2026-05-11T10:01:00+07:00"),
@@ -53,8 +53,8 @@ class TestFlowClassifier(unittest.TestCase):
         StopBlockedRecord(timestamp="2026-05-11T10:04:00+07:00"),
         EditRecord(timestamp="2026-05-11T10:05:00+07:00", file="a.ts", hash="2", reviewed=False),
     ]))
-    @patch("claude_auto_review.stop.orchestration.core.flow.ensure_client_runtime")
-    @patch("claude_auto_review.stop.orchestration.core.flow.load_settings")
+    @patch("claude_auto_review.stop.orchestration.flow.ensure_client_runtime")
+    @patch("claude_auto_review.stop.orchestration.flow.load_settings")
     def test_classifier_skipped_when_circuit_breaker_allows_stop(
         self,
         mock_settings,
@@ -74,11 +74,11 @@ class TestFlowClassifier(unittest.TestCase):
         self.assertEqual(result, 0)
         mock_classify.assert_not_called()
 
-    @patch("claude_auto_review.stop.orchestration.core.flow.classify_last_assistant_message")
-    @patch("claude_auto_review.stop.orchestration.core.flow.resolve_pending_review")
-    @patch("claude_auto_review.stop.orchestration.core.flow.load_state_snapshot", return_value=_snapshot())
-    @patch("claude_auto_review.stop.orchestration.core.flow.ensure_client_runtime")
-    @patch("claude_auto_review.stop.orchestration.core.flow.load_settings")
+    @patch("claude_auto_review.stop.orchestration.flow.classify_last_assistant_message")
+    @patch("claude_auto_review.stop.orchestration.flow.resolve_pending_review")
+    @patch("claude_auto_review.stop.orchestration.flow.load_state_snapshot", return_value=_snapshot())
+    @patch("claude_auto_review.stop.orchestration.flow.ensure_client_runtime")
+    @patch("claude_auto_review.stop.orchestration.flow.load_settings")
     def test_classifier_invoked_when_enabled(
         self,
         mock_settings,
@@ -102,11 +102,11 @@ class TestFlowClassifier(unittest.TestCase):
         self.assertEqual(result, 0)
         mock_classify.assert_called_once()
 
-    @patch("claude_auto_review.stop.orchestration.core.flow.classify_last_assistant_message")
-    @patch("claude_auto_review.stop.orchestration.core.flow.resolve_pending_review")
-    @patch("claude_auto_review.stop.orchestration.core.flow.load_state_snapshot", return_value=_snapshot())
-    @patch("claude_auto_review.stop.orchestration.core.flow.ensure_client_runtime")
-    @patch("claude_auto_review.stop.orchestration.core.flow.load_settings")
+    @patch("claude_auto_review.stop.orchestration.flow.classify_last_assistant_message")
+    @patch("claude_auto_review.stop.orchestration.flow.resolve_pending_review")
+    @patch("claude_auto_review.stop.orchestration.flow.load_state_snapshot", return_value=_snapshot())
+    @patch("claude_auto_review.stop.orchestration.flow.ensure_client_runtime")
+    @patch("claude_auto_review.stop.orchestration.flow.load_settings")
     def test_classifier_incomplete_allows_stop_before_review_resolution(
         self,
         mock_settings,
@@ -128,11 +128,11 @@ class TestFlowClassifier(unittest.TestCase):
         self.assertEqual(result, 0)
         mock_resolve.assert_not_called()
 
-    @patch("claude_auto_review.stop.orchestration.core.flow.classify_last_assistant_message")
-    @patch("claude_auto_review.stop.orchestration.core.flow.resolve_pending_review")
-    @patch("claude_auto_review.stop.orchestration.core.flow.load_state_snapshot", return_value=_snapshot())
-    @patch("claude_auto_review.stop.orchestration.core.flow.ensure_client_runtime")
-    @patch("claude_auto_review.stop.orchestration.core.flow.load_settings")
+    @patch("claude_auto_review.stop.orchestration.flow.classify_last_assistant_message")
+    @patch("claude_auto_review.stop.orchestration.flow.resolve_pending_review")
+    @patch("claude_auto_review.stop.orchestration.flow.load_state_snapshot", return_value=_snapshot())
+    @patch("claude_auto_review.stop.orchestration.flow.ensure_client_runtime")
+    @patch("claude_auto_review.stop.orchestration.flow.load_settings")
     def test_disabled_setting_bypasses_classifier_without_changing_result(
         self,
         mock_settings,

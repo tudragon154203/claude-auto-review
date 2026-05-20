@@ -17,7 +17,7 @@ from claude_auto_review.state.store.read import consecutive_stop_blocks, load_st
 from claude_auto_review.state.models import EditRecord
 from claude_auto_review.state.store.write import append_state_event
 from claude_auto_review.stop.classifier.last_assistant_message import classify_last_assistant_message
-from claude_auto_review.stop.orchestration.core.context import RuntimeContext
+from claude_auto_review.stop.orchestration.context import RuntimeContext
 
 
 class IntegrationRuntimeTests(IntegrationTestCase):

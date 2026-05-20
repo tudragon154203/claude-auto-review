@@ -5,7 +5,7 @@ from claude_auto_review.runtime.events import log_event
 from claude_auto_review.runtime.process import run_captured
 from claude_auto_review.state.store.read import get_unreviewed_files, load_state
 from claude_auto_review.stop.feedback import block_response
-from claude_auto_review.stop.orchestration.core.context import RuntimeContext
+from claude_auto_review.stop.orchestration.context import RuntimeContext
 
 
 def _review_prompt_command(review_prompt_script):

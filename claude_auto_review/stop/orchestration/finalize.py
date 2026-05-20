@@ -4,20 +4,20 @@ from typing import Literal
 
 from claude_auto_review.review.completion import apply_completed_review, record_completed_review
 from claude_auto_review.runtime.events import log_event
-from claude_auto_review.state.reviews.verdicts import (
-    extract_review_verdict_text,
+from claude_auto_review.state.reviews.completion import (
     is_completed_review_content,
     is_review_complete_verdict,
-    has_blocking_review_findings,
-    normalize_review_verdict_content,
 )
+from claude_auto_review.state.reviews.findings import has_blocking_review_findings
+from claude_auto_review.state.reviews.normalization import normalize_review_verdict_content
+from claude_auto_review.state.reviews.review_text import extract_review_verdict_text
 from claude_auto_review.stop.feedback import block_completed_review_findings, build_review_completion_prompt
 from claude_auto_review.stop.reviews.prompt_runner import AutocompleteResult, attempt_stop_autocomplete
 from claude_auto_review.stop.reviews.review_prompt_runner import _review_prompt_path
 from claude_auto_review.stop.reviews.selection import get_entries_covered_by_review
-from claude_auto_review.stop.orchestration.core.context import RuntimeContext
-from claude_auto_review.stop.orchestration.core.resolution import StopFlowResolution
-from claude_auto_review.stop.orchestration.core.response_actions import block_pending_review
+from claude_auto_review.stop.orchestration.context import RuntimeContext
+from claude_auto_review.stop.orchestration.resolution import StopFlowResolution
+from claude_auto_review.stop.orchestration.response_actions import block_pending_review
 from claude_auto_review.stop.response import approve_response, block_response
 from claude_auto_review.state.snapshot import StateSnapshot
 

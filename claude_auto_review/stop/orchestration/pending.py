@@ -4,8 +4,8 @@ import subprocess
 from claude_auto_review.config.constants import EXIT_REVIEW_FAILED
 from claude_auto_review.runtime.events import log_event
 from claude_auto_review.stop.feedback import build_unreviewed_files_string, block_response
-from claude_auto_review.stop.orchestration.core.context import RuntimeContext
-from claude_auto_review.stop.orchestration.core.resolution import StopFlowResolution
+from claude_auto_review.stop.orchestration.context import RuntimeContext
+from claude_auto_review.stop.orchestration.resolution import StopFlowResolution
 from claude_auto_review.stop.reviews.selection import find_pending_review_for_files
 from claude_auto_review.stop.response import approve_response
 from claude_auto_review.stop.reviews.review_prompt_runner import (

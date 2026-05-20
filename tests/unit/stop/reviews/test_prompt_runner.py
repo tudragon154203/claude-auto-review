@@ -3,7 +3,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-from claude_auto_review.stop.orchestration.core.context import RuntimeContext
+from claude_auto_review.stop.orchestration.context import RuntimeContext
 from claude_auto_review.stop.reviews.review_prompt_runner import (
     _block_review_prompt_failure,
     _reload_client_state,

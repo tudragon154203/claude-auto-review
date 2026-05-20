@@ -1,18 +1,20 @@
 import unittest
 from pathlib import Path
 
-from claude_auto_review.state.reviews.verdicts import (
-    extract_review_verdict_text,
-    has_review_findings,
-    has_blocking_review_findings,
+from claude_auto_review.state.reviews.completion import (
     is_completed_review_content,
     is_placeholder_review_content,
     is_review_clean,
     is_review_clean_content,
     is_review_complete,
-    parse_review_findings,
-    normalize_review_verdict_content,
 )
+from claude_auto_review.state.reviews.findings import (
+    has_blocking_review_findings,
+    has_review_findings,
+    parse_review_findings,
+)
+from claude_auto_review.state.reviews.normalization import normalize_review_verdict_content
+from claude_auto_review.state.reviews.review_text import extract_review_verdict_text
 
 from tests.unit.state.support import StateTestCase
 

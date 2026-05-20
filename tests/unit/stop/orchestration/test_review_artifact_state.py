@@ -3,7 +3,7 @@ import unittest
 from pathlib import Path
 
 from claude_auto_review.state.models import ReviewMetadata
-from claude_auto_review.stop.orchestration.core.finalize import _review_artifact_state
+from claude_auto_review.stop.orchestration.finalize import _review_artifact_state
 
 
 def _mk_review(reviewId: str = "r1", reviewPath: str = "/fake/r.md") -> ReviewMetadata:

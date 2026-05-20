@@ -4,7 +4,7 @@ import subprocess
 from claude_auto_review.runtime.events import log_event
 from claude_auto_review.runtime.process import run_captured
 from claude_auto_review.config.models import DEFAULT_REVIEWER_MODEL
-from claude_auto_review.stop.orchestration.core.context import RuntimeContext
+from claude_auto_review.stop.orchestration.context import RuntimeContext
 from claude_auto_review.stop.reviews.codex_output import (
     _extract_codex_final_message,
 )

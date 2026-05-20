@@ -12,7 +12,7 @@ from claude_auto_review.review.prompting.flow import (
     _review_prompt_paths,
     create_review_prompt_files,
 )
-from claude_auto_review.stop.orchestration.core.context import RuntimeContext
+from claude_auto_review.stop.orchestration.context import RuntimeContext
 
 
 class TestReviewPromptFlow(unittest.TestCase):

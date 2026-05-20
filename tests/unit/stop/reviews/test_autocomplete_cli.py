@@ -3,7 +3,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch, MagicMock
 
-from claude_auto_review.stop.orchestration.core.context import RuntimeContext
+from claude_auto_review.stop.orchestration.context import RuntimeContext
 from claude_auto_review.stop.reviews.prompt_runner import attempt_stop_autocomplete
 
 

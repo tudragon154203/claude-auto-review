@@ -1,5 +1,5 @@
 import unittest
-from claude_auto_review.stop.orchestration.core.resolution import StopFlowResolution
+from claude_auto_review.stop.orchestration.resolution import StopFlowResolution
 
 
 class TestStopFlowResolution(unittest.TestCase):

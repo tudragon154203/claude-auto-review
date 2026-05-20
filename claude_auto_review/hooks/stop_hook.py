@@ -3,7 +3,7 @@ import sys
 
 from claude_auto_review.runtime.hook_context import build_hook_runtime_context
 from claude_auto_review.runtime.process import run_fail_open
-from claude_auto_review.stop.orchestration.core.flow import run_stop_flow
+from claude_auto_review.stop.orchestration.flow import run_stop_flow
 
 
 def _run_stop_hook():

@@ -1,8 +1,8 @@
 from dataclasses import dataclass
 
 from claude_auto_review.runtime.events import log_event
-from claude_auto_review.state.reviews.verdicts import normalize_review_verdict_content
-from claude_auto_review.stop.orchestration.core.context import RuntimeContext
+from claude_auto_review.state.reviews.normalization import normalize_review_verdict_content
+from claude_auto_review.stop.orchestration.context import RuntimeContext
 
 
 @dataclass(frozen=True)

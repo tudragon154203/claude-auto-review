@@ -8,7 +8,7 @@ from claude_auto_review.stop.classifier.models import (
     DEFAULT_TIMEOUT_SECONDS,
     result_factory,
 )
-from claude_auto_review.stop.orchestration.core.context import RuntimeContext
+from claude_auto_review.stop.orchestration.context import RuntimeContext
 
 
 def _persist_result(result, ctx):

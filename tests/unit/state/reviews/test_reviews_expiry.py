@@ -3,10 +3,8 @@ from datetime import datetime, timedelta
 
 from claude_auto_review.state.models import ReviewMetadata
 from claude_auto_review.state.reviews.expiry import is_review_expired
-from claude_auto_review.state.reviews.verdicts import (
-    is_review_clean_content,
-    normalize_review_verdict_content,
-)
+from claude_auto_review.state.reviews.completion import is_review_clean_content
+from claude_auto_review.state.reviews.normalization import normalize_review_verdict_content
 
 
 class TestReviewsExpiry(unittest.TestCase):
