@@ -29,7 +29,7 @@ class TestReviewArtifactState(unittest.TestCase):
         self.assertEqual(artifact_state.status, "complete_clean")
         self.assertEqual(artifact_state.verdict, "Clean")
 
-    def test_review_artifact_state_normalizes_contradictory_clean_review(self):
+    def test_review_artifact_state_allows_below_threshold_findings(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             review_path = Path(tmpdir) / "review.md"
             review_path.write_text(
@@ -43,7 +43,7 @@ class TestReviewArtifactState(unittest.TestCase):
 
             artifact_state = _review_artifact_state(review_path)
 
-            self.assertEqual(artifact_state.status, "complete_findings")
+            self.assertEqual(artifact_state.status, "complete_clean")
             self.assertIn(
                 "Findings present. Claude must address all findings before stopping.",
                 review_path.read_text(encoding="utf-8"),

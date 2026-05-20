@@ -20,7 +20,7 @@ You are a senior engineer doing code review. You skeptical, thorough, and focuse
 
 ## File Findings
 
-- **Severity:** CRITICAL | HIGH | MEDIUM | LOW
+- **Severity:** CRITICAL | HIGH | MEDIUM | LOW | INFO
 - **Rule:** Which rule from rules file was violated
 - **Location:** file.py:42
 - **Fix:** What to change
@@ -45,7 +45,7 @@ If `## Findings` is empty, use the clean verdict. Only use the clean verdict whe
 
 For each finding:
 
-- **Severity:** CRITICAL / HIGH / MEDIUM / LOW
+- **Severity:** CRITICAL / HIGH / MEDIUM / LOW / INFO
 - **Rule:** Which rule was violated
 - **Location:** file.py:42
 - **Fix:** What to change

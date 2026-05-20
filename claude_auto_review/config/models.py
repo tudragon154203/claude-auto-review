@@ -18,6 +18,7 @@ from claude_auto_review.config.utils.schema import (
     SETTING_DEBUG,
     SETTING_ENABLED,
     SETTING_FEEDBACK_MAX_CHARS,
+    SETTING_MINIMUM_BLOCKING_SEVERITY,
     SETTING_INCLUDE_EXTS,
     SETTING_MAX_STOP_PASSES,
     SETTING_PENDING_TIMEOUT,
@@ -32,6 +33,8 @@ from claude_auto_review.config.utils.schema import (
 DEFAULT_CLASSIFIER_MODEL = "claude-haiku-4-5"
 
 DEFAULT_REVIEWER_BACKEND = "claude"
+DEFAULT_MINIMUM_BLOCKING_SEVERITY = "medium"
+MINIMUM_BLOCKING_SEVERITIES = frozenset({"info", "low", "medium", "high", "critical"})
 
 # API names for reviewer models, keyed by backend
 DEFAULT_CLAUDE_REVIEWER_MODEL = "claude-sonnet-4-6"
@@ -48,6 +51,15 @@ DEFAULT_TIMEOUT_SECONDS = 20
 REVIEWER_BACKENDS = frozenset(DEFAULT_REVIEWER_MODELS)
 
 
+def coerce_minimum_blocking_severity(value: Any) -> str:
+    if value is None:
+        return DEFAULT_MINIMUM_BLOCKING_SEVERITY
+    severity = str(value).strip().lower()
+    if severity in MINIMUM_BLOCKING_SEVERITIES:
+        return severity
+    return DEFAULT_MINIMUM_BLOCKING_SEVERITY
+
+
 @dataclass(frozen=True)
 class PluginSettings:
     enabled: bool = True
@@ -58,6 +70,7 @@ class PluginSettings:
     pending_review_timeout_hours: float = 1
     reviewer_timeout_seconds: int = 600
     review_feedback_max_chars: int = 9000
+    minimum_blocking_severity: str = DEFAULT_MINIMUM_BLOCKING_SEVERITY
     last_assistant_message_classifier_enabled: bool = True
     last_assistant_message_classifier_timeout_seconds: float = DEFAULT_TIMEOUT_SECONDS
     stale_client_timeout_hours: float = 48
@@ -81,6 +94,9 @@ class PluginSettings:
             pending_review_timeout_hours=coerce_float(data.get(SETTING_PENDING_TIMEOUT), 1),
             reviewer_timeout_seconds=coerce_int(data.get(SETTING_REVIEWER_TIMEOUT), 600),
             review_feedback_max_chars=max(0, coerce_int(data.get(SETTING_FEEDBACK_MAX_CHARS), 9000)),
+            minimum_blocking_severity=coerce_minimum_blocking_severity(
+                data.get(SETTING_MINIMUM_BLOCKING_SEVERITY)
+            ),
             last_assistant_message_classifier_enabled=coerce_bool(
                 data.get(SETTING_CLASSIFIER_ENABLED),
                 True,
@@ -107,6 +123,7 @@ class PluginSettings:
             SETTING_PENDING_TIMEOUT: self.pending_review_timeout_hours,
             SETTING_REVIEWER_TIMEOUT: self.reviewer_timeout_seconds,
             SETTING_FEEDBACK_MAX_CHARS: self.review_feedback_max_chars,
+            SETTING_MINIMUM_BLOCKING_SEVERITY: self.minimum_blocking_severity,
             SETTING_CLASSIFIER_ENABLED: self.last_assistant_message_classifier_enabled,
             SETTING_CLASSIFIER_TIMEOUT: self.last_assistant_message_classifier_timeout_seconds,
             SETTING_STALE_CLIENT_TIMEOUT: self.stale_client_timeout_hours,

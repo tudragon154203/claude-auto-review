@@ -47,8 +47,24 @@ class TestFeedback(unittest.TestCase):
             feedback = build_review_findings_feedback("rev1", review_path)
 
             self.assertIn("Act on the review below before stopping", feedback)
+            self.assertIn("Fix each blocking Confirmed finding", feedback)
             self.assertIn("Bug here", feedback)
             self.assertIn(str(review_path), feedback)
+
+    def test_build_review_findings_feedback_describes_threshold(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as temp_dir:
+            review_path = Path(temp_dir) / "review.md"
+            review_path.write_text("## Findings\nBug here\n\n## Verdict\n1 issue found.", encoding="utf-8")
+
+            feedback = build_review_findings_feedback(
+                "rev1",
+                review_path,
+                minimum_blocking_severity="high",
+            )
+
+            self.assertIn("Confirmed findings at High severity or higher block stopping.", feedback)
+            self.assertIn("Lower-severity Confirmed findings are advisory", feedback)
 
     def test_review_feedback_max_chars_uses_settings(self):
         self.assertEqual(

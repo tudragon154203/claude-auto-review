@@ -68,6 +68,7 @@ class IntegrationRuntimeTests(IntegrationTestCase):
         ensure_project_settings(project_root)
         settings = load_settings(project_root)
         self.assertTrue(settings.enabled)
+        self.assertEqual(settings.minimum_blocking_severity, "medium")
 
         settings_file = project_root / ".claude" / "settings.json"
         settings_file.write_text(
@@ -76,6 +77,7 @@ class IntegrationRuntimeTests(IntegrationTestCase):
                     "claude-auto-review": {
                         "enabled": False,
                         "customKey": "value",
+                        "minimumBlockingSeverity": "high",
                     },
                 }
             ),
@@ -86,6 +88,7 @@ class IntegrationRuntimeTests(IntegrationTestCase):
         settings = load_settings(project_root)
         self.assertFalse(settings.enabled)
         self.assertEqual(settings.extras["customKey"], "value")
+        self.assertEqual(settings.minimum_blocking_severity, "high")
         self.assertEqual(settings.reviewer_timeout_seconds, 600)
         self.assertTrue(settings.last_assistant_message_classifier_enabled)
         self.assertEqual(settings.last_assistant_message_classifier_timeout_seconds, DEFAULT_TIMEOUT_SECONDS)

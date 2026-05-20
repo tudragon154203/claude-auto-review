@@ -18,6 +18,7 @@ class TestEnsureProjectSettings(StateTestCase, unittest.TestCase):
         settings = json.loads(settings_path.read_text(encoding="utf-8"))
         self.assertIn("claude-auto-review", settings)
         self.assertEqual(settings["claude-auto-review"]["maxStopPasses"], 5)
+        self.assertEqual(settings["claude-auto-review"]["minimumBlockingSeverity"], "medium")
         self.assertIn("hooks", settings)
         self.assertIn("PostToolUse", settings["hooks"])
         self.assertIn("Stop", settings["hooks"])
@@ -44,7 +45,7 @@ class TestEnsureProjectSettings(StateTestCase, unittest.TestCase):
         settings_path.write_text(
             json.dumps(
                 {
-                    "claude-auto-review": {"maxStopPasses": 99},
+                    "claude-auto-review": {"maxStopPasses": 99, "minimumBlockingSeverity": "critical"},
                     "hooks": {
                         "PostToolUse": [
                             {
@@ -62,6 +63,7 @@ class TestEnsureProjectSettings(StateTestCase, unittest.TestCase):
         ensure_project_settings(project_root)
         settings = json.loads(settings_path.read_text(encoding="utf-8"))
         self.assertEqual(settings["claude-auto-review"]["maxStopPasses"], 99)
+        self.assertEqual(settings["claude-auto-review"]["minimumBlockingSeverity"], "critical")
         self.assertIn("hooks", settings)
         # Custom PostToolUse hook must be preserved
         post_use_commands = [
@@ -91,6 +93,7 @@ class TestEnsureProjectSettings(StateTestCase, unittest.TestCase):
 
         self.assertEqual(settings["claude-auto-review"]["customKey"], "value")
         self.assertEqual(settings["claude-auto-review"]["reviewerTimeoutSeconds"], 600)
+        self.assertEqual(settings["claude-auto-review"]["minimumBlockingSeverity"], "medium")
 
     def test_ensure_project_settings_is_idempotent_even_if_timeout_changes(self):
         project_root = self.temp_project()

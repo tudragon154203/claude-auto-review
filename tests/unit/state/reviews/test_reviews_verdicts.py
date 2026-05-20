@@ -4,11 +4,13 @@ from pathlib import Path
 from claude_auto_review.state.reviews.verdicts import (
     extract_review_verdict_text,
     has_review_findings,
+    has_blocking_review_findings,
     is_completed_review_content,
     is_placeholder_review_content,
     is_review_clean,
     is_review_clean_content,
     is_review_complete,
+    parse_review_findings,
     normalize_review_verdict_content,
 )
 
@@ -208,6 +210,70 @@ class TestReviewsVerdicts(StateTestCase, unittest.TestCase):
         )
         self.assertTrue(has_review_findings(content))
 
+    def test_parse_review_findings_extracts_structured_severity_and_verdict(self):
+        content = (
+            "## Findings\n"
+            "### 1. [Info] Documentation note\n"
+            "**Verdict:** Confirmed\n\n"
+            "### 2. [Low] Optional cleanup\n"
+            "**Verdict:** Skipped\n"
+        )
+        findings = parse_review_findings(content)
+
+        self.assertEqual(len(findings), 2)
+        self.assertEqual(findings[0].severity, "info")
+        self.assertEqual(findings[0].verdict, "Confirmed")
+        self.assertEqual(findings[1].severity, "low")
+        self.assertEqual(findings[1].verdict, "Skipped")
+
+    def test_has_blocking_review_findings_respects_threshold(self):
+        content = (
+            "## Findings\n"
+            "### 1. [Info] Note\n"
+            "**Verdict:** Confirmed\n\n"
+            "### 2. [Low] Cleanup\n"
+            "**Verdict:** Confirmed\n"
+        )
+        self.assertFalse(has_blocking_review_findings(content, "medium"))
+        self.assertTrue(has_blocking_review_findings(content, "low"))
+
+    def test_has_blocking_review_findings_skipped_findings_never_block(self):
+        content = (
+            "## Findings\n"
+            "### 1. [Critical] Safety issue\n"
+            "**Verdict:** Skipped\n"
+        )
+        self.assertFalse(has_blocking_review_findings(content, "info"))
+
+    def test_has_blocking_review_findings_missing_severity_blocks(self):
+        content = (
+            "## Findings\n"
+            "### 1. Missing severity heading\n"
+            "**Verdict:** Confirmed\n"
+        )
+        self.assertTrue(has_blocking_review_findings(content, "critical"))
+
+    def test_has_blocking_review_findings_unparseable_confirmed_severity_blocks(self):
+        content = (
+            "## Findings\n"
+            "### 1. [Mystery] Unexpected label\n"
+            "**Verdict:** Confirmed\n"
+        )
+        self.assertTrue(has_blocking_review_findings(content, "medium"))
+
+    def test_has_blocking_review_findings_mixed_severities_block_only_at_threshold(self):
+        content = (
+            "## Findings\n"
+            "### 1. [Info] Advisory note\n"
+            "**Verdict:** Confirmed\n\n"
+            "### 2. [Low] Another advisory note\n"
+            "**Verdict:** Confirmed\n\n"
+            "### 3. [Medium] Blocking note\n"
+            "**Verdict:** Confirmed\n"
+        )
+        self.assertFalse(has_blocking_review_findings(content, "high"))
+        self.assertTrue(has_blocking_review_findings(content, "medium"))
+
     def test_has_review_findings_detects_none_line_as_no_findings(self):
         content = (
             "## Findings\n"
@@ -257,6 +323,16 @@ class TestReviewsVerdicts(StateTestCase, unittest.TestCase):
             "No issues found in the test file, but the regression remains.\n\n"
             "## Verdict\n"
             "Clean - no issues found.\n"
+        )
+        self.assertTrue(has_review_findings(content))
+
+    def test_has_review_findings_detects_mixed_prose_with_placeholder_line(self):
+        content = (
+            "## Findings\n"
+            "Sensitive data logged to console.\n\n"
+            "Completed review from /tmp/prompt.md\n\n"
+            "## Verdict\n"
+            "Not Clean - security issue found.\n"
         )
         self.assertTrue(has_review_findings(content))
 

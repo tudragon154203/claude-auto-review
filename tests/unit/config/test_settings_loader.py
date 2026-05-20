@@ -22,6 +22,7 @@ class TestSettingsLoader(StateTestCase, unittest.TestCase):
         self.assertEqual(result.max_stop_passes, 5)
         self.assertEqual(result.reviewer_timeout_seconds, 600)
         self.assertEqual(result.review_feedback_max_chars, 9000)
+        self.assertEqual(result.minimum_blocking_severity, "medium")
         self.assertTrue(result.last_assistant_message_classifier_enabled)
         self.assertEqual(result.last_assistant_message_classifier_timeout_seconds, DEFAULT_TIMEOUT_SECONDS)
 
@@ -36,6 +37,7 @@ class TestSettingsLoader(StateTestCase, unittest.TestCase):
                         "maxStopPasses": 5,
                         "reviewerTimeoutSeconds": 120,
                         "reviewFeedbackMaxChars": 321,
+                        "minimumBlockingSeverity": "high",
                         "lastAssistantMessageClassifierEnabled": False,
                         "lastAssistantMessageClassifierTimeoutSeconds": 3,
                     }
@@ -47,8 +49,22 @@ class TestSettingsLoader(StateTestCase, unittest.TestCase):
         self.assertEqual(result.max_stop_passes, 5)
         self.assertEqual(result.reviewer_timeout_seconds, 120)
         self.assertEqual(result.review_feedback_max_chars, 321)
+        self.assertEqual(result.minimum_blocking_severity, "high")
         self.assertFalse(result.last_assistant_message_classifier_enabled)
         self.assertEqual(result.last_assistant_message_classifier_timeout_seconds, 3)
+
+    def test_load_settings_falls_back_to_medium_for_invalid_threshold(self):
+        project_root = self.temp_project()
+        settings_dir = project_root / ".claude"
+        settings_dir.mkdir()
+        (settings_dir / "settings.json").write_text(
+            json.dumps({"claude-auto-review": {"minimumBlockingSeverity": "invalid"}}),
+            encoding="utf-8",
+        )
+
+        result = load_settings(project_root)
+
+        self.assertEqual(result.minimum_blocking_severity, "medium")
 
     def test_should_skip_file_no_extension(self):
         self.assertFalse(should_skip_file("README", PluginSettings()))
@@ -108,10 +124,23 @@ class TestSettingsLoader(StateTestCase, unittest.TestCase):
 
         self.assertEqual(result.extras["customKey"], "value")
 
+    def test_plugin_settings_minimum_blocking_severity_round_trips(self):
+        for severity in ("info", "low", "medium", "high", "critical"):
+            with self.subTest(severity=severity):
+                settings = PluginSettings.from_mapping({"minimumBlockingSeverity": severity.upper()})
+                self.assertEqual(settings.minimum_blocking_severity, severity)
+                self.assertEqual(settings.to_mapping()["minimumBlockingSeverity"], severity)
+
+    def test_plugin_settings_invalid_minimum_blocking_severity_uses_default(self):
+        settings = PluginSettings.from_mapping({"minimumBlockingSeverity": "mystery"})
+        self.assertEqual(settings.minimum_blocking_severity, "medium")
+        self.assertEqual(settings.to_mapping()["minimumBlockingSeverity"], "medium")
+
     def test_plugin_settings_to_mapping_omits_unset_reviewer_model(self):
         result = PluginSettings().to_mapping()
 
         self.assertNotIn("reviewerModel", result)
+        self.assertEqual(result["minimumBlockingSeverity"], "medium")
 
 
 if __name__ == "__main__":

@@ -31,6 +31,18 @@ def review_feedback_max_chars(settings):
     return settings.review_feedback_max_chars
 
 
+def _minimum_blocking_severity_message(minimum_blocking_severity):
+    severity = str(minimum_blocking_severity or "").strip().lower()
+    if not severity:
+        severity = PluginSettings().minimum_blocking_severity
+    if severity == "info":
+        return "All Confirmed findings block stopping."
+    return (
+        f"Confirmed findings at {severity.title()} severity or higher block stopping. "
+        "Lower-severity Confirmed findings are advisory at the current threshold."
+    )
+
+
 def read_review_feedback(review_path, max_chars=None, project_root=None):
     if max_chars is None:
         max_chars = PluginSettings().review_feedback_max_chars
@@ -47,15 +59,22 @@ def read_review_feedback(review_path, max_chars=None, project_root=None):
     )
 
 
-def build_review_findings_feedback(review_id, review_path, max_chars=None, project_root=None):
+def build_review_findings_feedback(
+    review_id,
+    review_path,
+    max_chars=None,
+    project_root=None,
+    minimum_blocking_severity=None,
+):
     review_text = read_review_feedback(review_path, max_chars=max_chars, project_root=project_root)
     display = Path(review_path).relative_to(project_root).as_posix() if project_root else review_path
     return (
         f"Claude Auto Review completed review {review_id} and found blocking findings.\n\n"
         f"Review file: {display}\n\n"
-        "Act on the review below before stopping. Fix each Confirmed finding, "
+        "Act on the review below before stopping. Fix each blocking Confirmed finding, "
         "or make a narrowly justified code change that renders it inapplicable. "
-        "After making changes, try stopping again so the changed files are reviewed.\n\n"
+        f"{_minimum_blocking_severity_message(minimum_blocking_severity)} "
+        "Skipped findings never block. After making changes, try stopping again so the changed files are reviewed.\n\n"
         f"{review_text}"
     )
 
@@ -63,7 +82,13 @@ def build_review_findings_feedback(review_id, review_path, max_chars=None, proje
 def block_completed_review_findings(ctx, review_id, review_path, unreviewed):
     block_response(
         f"Claude Auto Review: Review {review_id} found issues to address.",
-        build_review_findings_feedback(review_id, review_path, review_feedback_max_chars(ctx.settings), project_root=ctx.project_root),
+        build_review_findings_feedback(
+            review_id,
+            review_path,
+            review_feedback_max_chars(ctx.settings),
+            project_root=ctx.project_root,
+            minimum_blocking_severity=ctx.settings.minimum_blocking_severity,
+        ),
     )
     append_state_event(
         StopBlockedRecord(

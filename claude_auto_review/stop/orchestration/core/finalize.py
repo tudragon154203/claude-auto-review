@@ -7,8 +7,8 @@ from claude_auto_review.runtime.events import log_event
 from claude_auto_review.state.reviews.verdicts import (
     extract_review_verdict_text,
     is_completed_review_content,
-    is_review_clean_content,
     is_review_complete_verdict,
+    has_blocking_review_findings,
     normalize_review_verdict_content,
 )
 from claude_auto_review.stop.feedback import block_completed_review_findings, build_review_completion_prompt
@@ -55,18 +55,22 @@ def _review_has_completed_artifact(content):
     return is_completed_review_content(content)
 
 
-def _classify_artifact_state(verdict, content):
-    if is_review_complete_verdict(verdict) and content is not None and is_review_clean_content(content):
+def _classify_artifact_state(verdict, content, minimum_blocking_severity):
+    if content is None:
+        return ReviewArtifactState(status="pending", verdict=verdict)
+    if is_review_complete_verdict(verdict):
+        if has_blocking_review_findings(content, minimum_blocking_severity):
+            return ReviewArtifactState(status="complete_findings", verdict=verdict)
         return ReviewArtifactState(status="complete_clean", verdict=verdict)
-    if is_review_complete_verdict(verdict) or _review_has_completed_artifact(content):
+    if _review_has_completed_artifact(content):
         return ReviewArtifactState(status="complete_findings", verdict=verdict)
     return ReviewArtifactState(status="pending", verdict=verdict)
 
 
-def _review_artifact_state(review_path):
+def _review_artifact_state(review_path, minimum_blocking_severity="medium"):
     content = _load_and_ensure_normalized_review(review_path)
     verdict = _read_review_verdict(content)
-    return _classify_artifact_state(verdict, content)
+    return _classify_artifact_state(verdict, content, minimum_blocking_severity)
 
 
 def _apply_completed_clean_review(ctx, review_id, covered_entries):
@@ -129,7 +133,7 @@ def finalize_review_stop(ctx: RuntimeContext, resolution: StopFlowResolution):
         return 2
     reviewer_model = ctx.settings.resolved_reviewer_model(backend=reviewer_backend)
     # Phase 1: classify existing artifact
-    artifact_state = _review_artifact_state(review_path)
+    artifact_state = _review_artifact_state(review_path, ctx.settings.minimum_blocking_severity)
     action_result = _apply_artifact_state(ctx, artifact_state, review_id, review_path, covered_entries, unreviewed)
     if action_result is not None:
         return action_result
@@ -154,7 +158,7 @@ def finalize_review_stop(ctx: RuntimeContext, resolution: StopFlowResolution):
             log_event(ctx.project_root, "stop_hook_reviewer_retry", client_id=ctx.client_id, reviewId=review_id)
 
     # Phase 3: re-evaluate after retry
-    artifact_state = _review_artifact_state(review_path)
+    artifact_state = _review_artifact_state(review_path, ctx.settings.minimum_blocking_severity)
     action_result = _apply_artifact_state(ctx, artifact_state, review_id, review_path, covered_entries, unreviewed)
     if action_result is not None:
         return action_result
