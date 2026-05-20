@@ -4,11 +4,14 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 from claude_auto_review.stop.orchestration.core.context import RuntimeContext
+from claude_auto_review.stop.reviews.core.codex_output import _extract_codex_final_message
 from claude_auto_review.stop.reviews.core.prompt_runner import (
+    _run_claude_cli,
+    attempt_stop_autocomplete,
+)
+from claude_auto_review.stop.reviews.core.review_args import (
     _build_claude_review_args,
     _build_codex_review_args,
-    _extract_codex_final_message,
-    attempt_stop_autocomplete,
 )
 
 
@@ -74,7 +77,7 @@ class TestPromptRunnerCodex(unittest.TestCase):
                 backend='codexx',
             )
 
-    @patch('claude_auto_review.stop.reviews.core.prompt_runner.normalize_review_verdict_content', side_effect=lambda s: s)
+    @patch('claude_auto_review.stop.reviews.core.review_result.normalize_review_verdict_content', side_effect=lambda s: s)
     @patch('claude_auto_review.stop.reviews.core.prompt_runner.run_captured')
     @patch('claude_auto_review.stop.reviews.core.prompt_runner.shutil.which', return_value='/usr/bin/codex')
     def test_attempt_stop_autocomplete_uses_codex_backend(self, mock_which, mock_run, _mock_norm):
@@ -105,7 +108,7 @@ class TestPromptRunnerCodex(unittest.TestCase):
         self.assertIn('--skip-git-repo-check', mock_run.call_args.args[0])
         self.assertEqual(mock_run.call_args.kwargs['input'], 'system prompt\n\nuser prompt')
 
-    @patch('claude_auto_review.stop.reviews.core.prompt_runner.normalize_review_verdict_content', side_effect=lambda s: s)
+    @patch('claude_auto_review.stop.reviews.core.review_result.normalize_review_verdict_content', side_effect=lambda s: s)
     @patch('claude_auto_review.stop.reviews.core.prompt_runner.run_captured')
     @patch('claude_auto_review.stop.reviews.core.prompt_runner.shutil.which', return_value='/usr/bin/claude')
     def test_attempt_stop_autocomplete_uses_claude_backend(self, mock_which, mock_run, _mock_norm):
