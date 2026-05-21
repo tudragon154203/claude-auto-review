@@ -27,7 +27,7 @@ class TestStateStore(StateTestCase, unittest.TestCase):
         client_id = "test-corrupt"
         ensure_client_runtime(project_root, client_id)
         state_path = client_state_path(project_root, client_id)
-        state_path.write_text('{"type":"edit","file":"a.ts","hash":"1","reviewed":false}\nnot-json\n', encoding="utf-8")
+        state_path.write_text('{"type":"edit","timestamp":"2026-05-05T08:00:00+07:00","file":"a.ts","hash":"1","reviewed":false}\nnot-json\n', encoding="utf-8")
         self.assertEqual(len(load_state(project_root, client_id)), 1)
 
     def test_local_now_iso_returns_valid_iso_format(self):
@@ -143,7 +143,7 @@ class TestStateStore(StateTestCase, unittest.TestCase):
         ensure_client_runtime(project_root, client_id)
         state_path = client_state_path(project_root, client_id)
         state_path.write_text(
-            '{"type":"edit","file":"a.ts","hash":"1","reviewed":false}\n\n{"type":"edit","file":"b.ts","hash":"2","reviewed":false}\n',
+            '{"type":"edit","timestamp":"2026-05-05T08:00:00+07:00","file":"a.ts","hash":"1","reviewed":false}\n\n{"type":"edit","timestamp":"2026-05-05T09:00:00+07:00","file":"b.ts","hash":"2","reviewed":false}\n',
             encoding="utf-8",
         )
         state = load_state(project_root, client_id)
