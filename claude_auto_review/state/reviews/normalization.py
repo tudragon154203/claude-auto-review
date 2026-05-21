@@ -69,5 +69,3 @@ def normalize_review_verdict_content(content: str | None, client_id: str | None 
         return rewritten
 
     return content
-
-    return content
