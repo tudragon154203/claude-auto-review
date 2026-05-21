@@ -67,17 +67,17 @@ class PluginSettings:
     include_extensions: tuple[str, ...] = ()
     skip_extensions: tuple[str, ...] = ()
     max_stop_passes: int = 5
-    pending_review_timeout_hours: float = 1
-    reviewer_timeout_seconds: int = 600
-    review_feedback_max_chars: int = 9000
     minimum_blocking_severity: str = DEFAULT_MINIMUM_BLOCKING_SEVERITY
-    last_assistant_message_classifier_enabled: bool = True
-    last_assistant_message_classifier_timeout_seconds: float = DEFAULT_TIMEOUT_SECONDS
-    stale_client_timeout_hours: float = 48
-    debug: bool = True
-    classifier_model: str = DEFAULT_CLASSIFIER_MODEL
+    pending_review_timeout_hours: float = 1
     reviewer_backend: str = DEFAULT_REVIEWER_BACKEND
     reviewer_model: str | None = None
+    reviewer_timeout_seconds: int = 600
+    review_feedback_max_chars: int = 9000
+    last_assistant_message_classifier_enabled: bool = True
+    last_assistant_message_classifier_timeout_seconds: float = DEFAULT_TIMEOUT_SECONDS
+    classifier_model: str = DEFAULT_CLASSIFIER_MODEL
+    stale_client_timeout_hours: float = 48
+    debug: bool = True
     extras: dict[str, Any] = field(default_factory=dict)
 
     @classmethod
@@ -91,12 +91,14 @@ class PluginSettings:
             include_extensions=coerce_extensions(data.get(SETTING_INCLUDE_EXTS)),
             skip_extensions=coerce_extensions(data.get(SETTING_SKIP_EXTS)),
             max_stop_passes=coerce_int(data.get(SETTING_MAX_STOP_PASSES), 5),
-            pending_review_timeout_hours=coerce_float(data.get(SETTING_PENDING_TIMEOUT), 1),
-            reviewer_timeout_seconds=coerce_int(data.get(SETTING_REVIEWER_TIMEOUT), 600),
-            review_feedback_max_chars=max(0, coerce_int(data.get(SETTING_FEEDBACK_MAX_CHARS), 9000)),
             minimum_blocking_severity=coerce_minimum_blocking_severity(
                 data.get(SETTING_MINIMUM_BLOCKING_SEVERITY)
             ),
+            pending_review_timeout_hours=coerce_float(data.get(SETTING_PENDING_TIMEOUT), 1),
+            reviewer_backend=str(data.get(SETTING_REVIEWER_BACKEND, DEFAULT_REVIEWER_BACKEND)).lower(),
+            reviewer_model=None if reviewer_model in (None, "") else str(reviewer_model),
+            reviewer_timeout_seconds=coerce_int(data.get(SETTING_REVIEWER_TIMEOUT), 600),
+            review_feedback_max_chars=max(0, coerce_int(data.get(SETTING_FEEDBACK_MAX_CHARS), 9000)),
             last_assistant_message_classifier_enabled=coerce_bool(
                 data.get(SETTING_CLASSIFIER_ENABLED),
                 True,
@@ -105,11 +107,9 @@ class PluginSettings:
                 data.get(SETTING_CLASSIFIER_TIMEOUT),
                 DEFAULT_TIMEOUT_SECONDS,
             ),
+            classifier_model=str(data.get(SETTING_CLASSIFIER_MODEL, DEFAULT_CLASSIFIER_MODEL)),
             stale_client_timeout_hours=coerce_float(data.get(SETTING_STALE_CLIENT_TIMEOUT), 48),
             debug=coerce_bool(data.get(SETTING_DEBUG), True),
-            classifier_model=str(data.get(SETTING_CLASSIFIER_MODEL, DEFAULT_CLASSIFIER_MODEL)),
-            reviewer_backend=str(data.get(SETTING_REVIEWER_BACKEND, DEFAULT_REVIEWER_BACKEND)).lower(),
-            reviewer_model=None if reviewer_model in (None, "") else str(reviewer_model),
             extras=extras,
         )
 
@@ -120,16 +120,16 @@ class PluginSettings:
             SETTING_INCLUDE_EXTS: list(self.include_extensions),
             SETTING_SKIP_EXTS: list(self.skip_extensions),
             SETTING_MAX_STOP_PASSES: self.max_stop_passes,
+            SETTING_MINIMUM_BLOCKING_SEVERITY: self.minimum_blocking_severity,
             SETTING_PENDING_TIMEOUT: self.pending_review_timeout_hours,
+            SETTING_REVIEWER_BACKEND: self.reviewer_backend,
             SETTING_REVIEWER_TIMEOUT: self.reviewer_timeout_seconds,
             SETTING_FEEDBACK_MAX_CHARS: self.review_feedback_max_chars,
-            SETTING_MINIMUM_BLOCKING_SEVERITY: self.minimum_blocking_severity,
             SETTING_CLASSIFIER_ENABLED: self.last_assistant_message_classifier_enabled,
             SETTING_CLASSIFIER_TIMEOUT: self.last_assistant_message_classifier_timeout_seconds,
+            SETTING_CLASSIFIER_MODEL: self.classifier_model,
             SETTING_STALE_CLIENT_TIMEOUT: self.stale_client_timeout_hours,
             SETTING_DEBUG: self.debug,
-            SETTING_CLASSIFIER_MODEL: self.classifier_model,
-            SETTING_REVIEWER_BACKEND: self.reviewer_backend,
         }
         if self.reviewer_model is not None:
             mapping[SETTING_REVIEWER_MODEL] = self.reviewer_model
