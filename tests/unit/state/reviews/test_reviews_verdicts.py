@@ -341,13 +341,26 @@ class TestReviewsVerdicts(StateTestCase, unittest.TestCase):
     def test_normalize_rewrites_false_positive_findings_present_to_clean(self):
         content = (
             "## Findings\n"
-            "No semantic bugs, security issues, or maintainability concerns identified.\n\n"
+            "No issues found. The `pyproject.toml` is well-structured and complete.\n\n"
             "## Verdict\n"
             "Findings present. Claude must address all findings before stopping.\n"
         )
         normalized = normalize_review_verdict_content(content)
         self.assertIn("Clean - no issues found. Claude may stop.", normalized)
         self.assertNotIn("Findings present", normalized)
+
+    def test_normalize_keeps_blocking_verdict_when_real_findings_exist(self):
+        content = (
+            "## Findings\n"
+            "### 1. [Low] Unused import\n"
+            "**Verdict:** Confirmed\n\n"
+            "## Verdict\n"
+            "Findings present. Claude must address all findings before stopping.\n"
+        )
+        normalized = normalize_review_verdict_content(content)
+        self.assertIn("Findings present. Claude must address all findings before stopping.", normalized)
+        self.assertTrue(has_review_findings(normalized))
+        self.assertFalse(is_review_clean_content(normalized))
 
     def test_normalize_produces_consistent_clean_state(self):
         """After normalization, is_review_clean_content and has_review_findings should agree."""

@@ -73,8 +73,12 @@ End with one of:
 - `Clean - no issues found. Claude may stop.`
 - `N issues found. Claude must address all findings before stopping.`
 
-If `## Findings` contains any actual finding entry, you must not emit the clean verdict. Only use the clean verdict when the findings section is effectively empty or explicitly says there were no findings.
+If `## Findings` says there were no issues, use the clean verdict. If `## Findings` contains one or more actual finding entries, use the blocking verdict.
 
+**Important:** The Findings section and Verdict section must agree.
+- If Findings says "No issues found" (or similar), Verdict MUST say `Clean - no issues found. Claude may stop.`
+- If Findings contains one or more finding entries, Verdict MUST say `N issues found. Claude must address all findings before stopping.`
+- Do not mix a no-issues summary in Findings with a blocking verdict in Verdict.
 ## Constraints
 
 - Do not review files outside the request.

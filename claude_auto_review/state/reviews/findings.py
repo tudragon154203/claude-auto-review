@@ -178,7 +178,10 @@ def has_review_findings(content: str | None) -> bool:
     lines = findings.splitlines()
     if any(_FINDING_HEADING.match(l.strip()) for l in lines if l.strip()):
         return True
-    return not all(_is_no_findings_line(line) for line in lines if line.strip())
+    meaningful_lines = [line for line in lines if line.strip()]
+    if not meaningful_lines:
+        return False
+    return not all(_is_no_findings_line(line) for line in meaningful_lines)
 
 
 def has_blocking_review_findings(content: str | None, minimum_blocking_severity: str = DEFAULT_MINIMUM_BLOCKING_SEVERITY) -> bool:
