@@ -32,7 +32,37 @@ class TestAutoCompleteOutput(unittest.TestCase):
     @patch("claude_auto_review.stop.reviews.prompt_runner.shutil.which", return_value="/usr/bin/claude")
     @patch("pathlib.Path.write_text")
     @patch("pathlib.Path.is_file", return_value=True)
-    def test_contradictory_clean_verdict_with_findings_does_not_complete(
+    def test_contradictory_clean_verdict_with_blocking_findings_does_not_complete(
+        self, mock_is_file, mock_write_text, mock_which, mock_run, mock_log
+    ):
+        mock_run.return_value = MagicMock(
+            returncode=0,
+            stdout=(
+                "## Findings\n"
+                "### [Medium] Security issue\n"
+                "**Verdict:** Confirmed\n\n"
+                "## Verdict\n"
+                "Clean - no issues found. Claude may stop.\n"
+            ),
+            stderr="",
+        )
+        result = attempt_stop_autocomplete(
+            _ctx(), review_id="r",
+            review_path=Path("/fake/review.md"), prompt_file=Path("/fake/prompt.md"),
+            user_prompt="finish",
+        )
+        self.assertTrue(result.output_written)
+        self.assertIn(
+            "Findings present. Claude must address all findings before stopping.",
+            mock_write_text.call_args.args[0],
+        )
+
+    @patch("claude_auto_review.stop.reviews.prompt_runner.log_event")
+    @patch("claude_auto_review.stop.reviews.prompt_runner.run_captured")
+    @patch("claude_auto_review.stop.reviews.prompt_runner.shutil.which", return_value="/usr/bin/claude")
+    @patch("pathlib.Path.write_text")
+    @patch("pathlib.Path.is_file", return_value=True)
+    def test_clean_verdict_with_low_findings_kept_as_clean(
         self, mock_is_file, mock_write_text, mock_which, mock_run, mock_log
     ):
         mock_run.return_value = MagicMock(
@@ -52,8 +82,12 @@ class TestAutoCompleteOutput(unittest.TestCase):
             user_prompt="finish",
         )
         self.assertTrue(result.output_written)
+        self.assertNotIn(
+            "Findings present",
+            mock_write_text.call_args.args[0],
+        )
         self.assertIn(
-            "Findings present. Claude must address all findings before stopping.",
+            "Clean - no issues found. Claude may stop.",
             mock_write_text.call_args.args[0],
         )
 

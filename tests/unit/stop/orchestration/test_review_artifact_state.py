@@ -44,8 +44,8 @@ class TestReviewArtifactState(unittest.TestCase):
             artifact_state = _review_artifact_state(review_path)
 
             self.assertEqual(artifact_state.status, "complete_clean")
-            self.assertIn(
-                "Findings present. Claude must address all findings before stopping.",
+            self.assertNotIn(
+                "Findings present",
                 review_path.read_text(encoding="utf-8"),
             )
 

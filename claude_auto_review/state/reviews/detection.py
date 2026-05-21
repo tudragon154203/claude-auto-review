@@ -28,7 +28,10 @@ _NO_FINDINGS_PREFIXES = (
     "clean",
 )
 _STRICT_NO_FINDINGS_PREFIXES = {"none", "clean"}
-_ALWAYS_NO_FINDINGS_PREFIXES = {"completed review from"}
+# Prefixes that match as no-findings without requiring punctuation or a verb tail.
+# Contradiction words (but/however/…) in the remainder still override to False.
+_UNQUALIFIED_NO_FINDINGS_PREFIXES = {"completed review from"}
+_DEFINITIVE_NO_FINDINGS_PREFIXES = _STRICT_NO_FINDINGS_PREFIXES | _UNQUALIFIED_NO_FINDINGS_PREFIXES
 _NO_FINDINGS_VERB_RE = re.compile(
     r"\b(?:found|identified|detected|yet)\b",
     re.IGNORECASE,
@@ -56,8 +59,11 @@ def _is_no_findings_line(line: str) -> bool:
         if not lowered.startswith(prefix):
             continue
 
-        if prefix in _ALWAYS_NO_FINDINGS_PREFIXES:
-            return True
+        if prefix in _UNQUALIFIED_NO_FINDINGS_PREFIXES:
+            remainder = text[len(prefix):].lstrip()
+            if not remainder:
+                return True
+            return not _CONTRADICTION_RE.search(remainder)
 
         remainder = text[len(prefix):].lstrip()
         if not remainder:
@@ -105,4 +111,15 @@ def has_review_findings(content: str | None) -> bool:
         meaningful_lines.append(line)
     if not meaningful_lines:
         return False
+    # If the first meaningful line is a definitive "no findings" marker
+    # (e.g., "None." or "Clean.") with no contradictions anywhere in the
+    # section, short-circuit to avoid re-checking every line.
+    # ###-prefixed findings were already caught by _FINDING_HEADING above.
+    first = meaningful_lines[0]
+    first_lower = first.strip().casefold()
+    for prefix in _DEFINITIVE_NO_FINDINGS_PREFIXES:
+        if first_lower.startswith(prefix) and _is_no_findings_line(first):
+            if not any(_CONTRADICTION_RE.search(line) for line in meaningful_lines[1:]):
+                return False
+            break
     return not all(_is_no_findings_line(line) for line in meaningful_lines)

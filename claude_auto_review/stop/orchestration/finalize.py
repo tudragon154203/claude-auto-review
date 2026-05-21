@@ -8,6 +8,7 @@ from claude_auto_review.state.reviews.completion import (
     is_completed_review_content,
     is_review_complete_verdict,
 )
+from claude_auto_review.config.models import DEFAULT_MINIMUM_BLOCKING_SEVERITY
 from claude_auto_review.state.reviews.findings import has_blocking_review_findings
 from claude_auto_review.state.reviews.normalization import normalize_review_verdict_content
 from claude_auto_review.state.reviews.review_text import extract_review_verdict_text
@@ -31,12 +32,12 @@ class ReviewArtifactState:
 _AUTOCOMPLETE_RETRY_ATTEMPTS = 2
 
 
-def _load_and_ensure_normalized_review(review_path, client_id=None):
+def _load_and_ensure_normalized_review(review_path, client_id=None, minimum_blocking_severity=DEFAULT_MINIMUM_BLOCKING_SEVERITY):
     """Load review content and normalize verdict section if needed."""
     if not review_path.is_file():
         return None
     content = review_path.read_text(encoding="utf-8", errors="replace")
-    normalized = normalize_review_verdict_content(content, client_id=client_id)
+    normalized = normalize_review_verdict_content(content, client_id=client_id, minimum_blocking_severity=minimum_blocking_severity)
     if normalized != content:
         review_path.write_text(normalized, encoding="utf-8", newline="\n")
         return normalized
@@ -67,8 +68,8 @@ def _classify_artifact_state(verdict, content, minimum_blocking_severity):
     return ReviewArtifactState(status="pending", verdict=verdict)
 
 
-def _review_artifact_state(review_path, minimum_blocking_severity="medium", client_id=None):
-    content = _load_and_ensure_normalized_review(review_path, client_id=client_id)
+def _review_artifact_state(review_path, minimum_blocking_severity=DEFAULT_MINIMUM_BLOCKING_SEVERITY, client_id=None):
+    content = _load_and_ensure_normalized_review(review_path, client_id=client_id, minimum_blocking_severity=minimum_blocking_severity)
     verdict = _read_review_verdict(content)
     return _classify_artifact_state(verdict, content, minimum_blocking_severity)
 

@@ -67,7 +67,11 @@ def _process_review_result(ctx: RuntimeContext, result, review_path, review_id, 
             returncode=result.returncode,
         )
 
-    normalized_output = normalize_review_verdict_content(result.stdout, client_id=ctx.client_id)
+    normalized_output = normalize_review_verdict_content(
+        result.stdout,
+        client_id=ctx.client_id,
+        minimum_blocking_severity=ctx.settings.minimum_blocking_severity,
+    )
     review_path.write_text(normalized_output, encoding="utf-8", newline="\n")
     log_event(
         ctx.project_root,

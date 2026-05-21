@@ -10,7 +10,7 @@ from claude_auto_review.state.reviews.blocking import (
     has_blocking_review_findings as has_blocking_review_findings,
 )
 from claude_auto_review.state.reviews.detection import (
-    _ALWAYS_NO_FINDINGS_PREFIXES as _ALWAYS_NO_FINDINGS_PREFIXES,
+    _UNQUALIFIED_NO_FINDINGS_PREFIXES as _UNQUALIFIED_NO_FINDINGS_PREFIXES,
     _CONTRADICTION_RE as _CONTRADICTION_RE,
     _FINDING_HEADING as _FINDING_HEADING,
     _NO_FINDINGS_PREFIXES as _NO_FINDINGS_PREFIXES,
@@ -35,7 +35,7 @@ __all__ = [
     "_FINDING_HEADING",
     "_NO_FINDINGS_PREFIXES",
     "_STRICT_NO_FINDINGS_PREFIXES",
-    "_ALWAYS_NO_FINDINGS_PREFIXES",
+    "_UNQUALIFIED_NO_FINDINGS_PREFIXES",
     "_NO_FINDINGS_VERB_RE",
     "_CONTRADICTION_RE",
     "_PUNCTUATION_CHARS",

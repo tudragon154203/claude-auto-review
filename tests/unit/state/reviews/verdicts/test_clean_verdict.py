@@ -84,10 +84,22 @@ class TestIsReviewCleanContent(unittest.TestCase):
 
 
 class TestNormalizeCleanContradictions(unittest.TestCase):
-    def test_normalize_rewrites_clean_verdict_when_findings_exist(self):
+    def test_normalize_keeps_clean_verdict_when_only_low_findings_exist(self):
         content = (
             "## Findings\n"
             "### [Low] Unused import\n"
+            "**Verdict:** Confirmed\n\n"
+            "## Verdict\n"
+            "Clean - no issues found. Claude may stop.\n"
+        )
+        normalized = normalize_review_verdict_content(content)
+        self.assertIn("Clean - no issues found. Claude may stop.", normalized)
+        self.assertNotIn("Findings present", normalized)
+
+    def test_normalize_rewrites_clean_verdict_when_medium_findings_exist(self):
+        content = (
+            "## Findings\n"
+            "### [Medium] Bug\n"
             "**Verdict:** Confirmed\n\n"
             "## Verdict\n"
             "Clean - no issues found. Claude may stop.\n"
@@ -119,10 +131,10 @@ class TestNormalizeCleanContradictions(unittest.TestCase):
         self.assertIn("Clean - no issues found. Claude may stop.", normalized)
         self.assertNotIn("Findings present", normalized)
 
-    def test_normalize_keeps_blocking_verdict_when_real_findings_exist(self):
+    def test_normalize_keeps_blocking_verdict_when_medium_findings_exist(self):
         content = (
             "## Findings\n"
-            "### 1. [Low] Unused import\n"
+            "### 1. [Medium] Bug\n"
             "**Verdict:** Confirmed\n\n"
             "## Verdict\n"
             "Findings present. Claude must address all findings before stopping.\n"
@@ -132,18 +144,32 @@ class TestNormalizeCleanContradictions(unittest.TestCase):
 
     def test_normalize_produces_consistent_clean_state(self):
         """After normalization, is_review_clean_content and has_review_findings should agree."""
-        from claude_auto_review.state.reviews.findings import has_review_findings
+        from claude_auto_review.state.reviews.findings import (
+            has_blocking_review_findings,
+            has_review_findings,
+        )
 
-        content_with_findings_and_clean_verdict = (
+        content_with_low_findings_and_clean_verdict = (
             "## Findings\n"
             "### [Low] Unused import\n"
             "**Verdict:** Confirmed\n\n"
             "## Verdict\n"
             "Clean - no issues found. Claude may stop.\n"
         )
-        normalized = normalize_review_verdict_content(content_with_findings_and_clean_verdict)
+        normalized = normalize_review_verdict_content(content_with_low_findings_and_clean_verdict)
         self.assertTrue(has_review_findings(normalized))
-        self.assertFalse(is_review_clean_content(normalized))
+        self.assertFalse(has_blocking_review_findings(normalized))
+
+        content_with_medium_findings_and_clean_verdict = (
+            "## Findings\n"
+            "### [Medium] Bug\n"
+            "**Verdict:** Confirmed\n\n"
+            "## Verdict\n"
+            "Clean - no issues found. Claude may stop.\n"
+        )
+        normalized = normalize_review_verdict_content(content_with_medium_findings_and_clean_verdict)
+        self.assertTrue(has_review_findings(normalized))
+        self.assertTrue(has_blocking_review_findings(normalized))
 
         content_with_no_findings_and_blocking_verdict = (
             "## Findings\n"

@@ -263,7 +263,7 @@ class TestNormalizeReviewVerdictContent(unittest.TestCase):
     @patch("claude_auto_review.state.reviews.normalization.log_event")
     def test_logs_event_when_rewriting_clean_to_findings(self, mock_log):
         content = (
-            "## Findings\n### 1. [Low] Bug\n**Verdict:** Confirmed\n\n"
+            "## Findings\n### 1. [Medium] Bug\n**Verdict:** Confirmed\n\n"
             "## Verdict\nClean - no issues found. Claude may stop.\n"
         )
         rewritten = normalize_review_verdict_content(content, client_id="c1")

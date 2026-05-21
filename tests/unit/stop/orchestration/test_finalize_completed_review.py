@@ -82,6 +82,9 @@ class TestFinalizeCompletedReview(unittest.TestCase):
     def test_completed_clean_verdict_with_low_findings_approves_at_default_threshold(
         self, mock_block, mock_approve, mock_apply, mock_covered
     ):
+        # _load_and_ensure_normalized_review is intentionally NOT mocked so the real
+        # normalization pipeline runs against the temp file, exercising
+        # has_blocking_review_findings end-to-end through finalize_review_stop.
         with tempfile.TemporaryDirectory() as tmpdir:
             project_root = Path(tmpdir)
             review_dir = project_root / "fake"
@@ -101,7 +104,7 @@ class TestFinalizeCompletedReview(unittest.TestCase):
             mock_block.assert_not_called()
             mock_apply.assert_called_once()
             mock_approve.assert_called_once_with("Claude Auto Review: review r1 clean, all files covered")
-            self.assertIn(
+            self.assertNotIn(
                 "Findings present. Claude must address all findings before stopping.",
                 review_path.read_text(encoding="utf-8"),
             )
