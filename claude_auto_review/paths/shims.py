@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from claude_auto_review.install.file_utils import write_text_if_changed as _write_text_if_changed
+from claude_auto_review.paths.file_utils import write_text_if_changed as _write_text_if_changed
 
 
 def build_runpy_shim_content(target_script_path):

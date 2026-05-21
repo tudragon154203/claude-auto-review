@@ -1,6 +1,6 @@
 from pathlib import Path, PurePath
 
-from claude_auto_review.utils.shell_parsing import (
+from claude_auto_review.paths.shell_parsing import (
     GIT_MOVE_SUBCOMMANDS,
     SHELL_COPY_COMMANDS,
     SHELL_DELETE_PS,

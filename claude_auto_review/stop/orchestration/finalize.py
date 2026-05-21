@@ -31,12 +31,12 @@ class ReviewArtifactState:
 _AUTOCOMPLETE_RETRY_ATTEMPTS = 2
 
 
-def _load_and_ensure_normalized_review(review_path):
+def _load_and_ensure_normalized_review(review_path, client_id=None):
     """Load review content and normalize verdict section if needed."""
     if not review_path.is_file():
         return None
     content = review_path.read_text(encoding="utf-8", errors="replace")
-    normalized = normalize_review_verdict_content(content)
+    normalized = normalize_review_verdict_content(content, client_id=client_id)
     if normalized != content:
         review_path.write_text(normalized, encoding="utf-8", newline="\n")
         return normalized
@@ -67,8 +67,8 @@ def _classify_artifact_state(verdict, content, minimum_blocking_severity):
     return ReviewArtifactState(status="pending", verdict=verdict)
 
 
-def _review_artifact_state(review_path, minimum_blocking_severity="medium"):
-    content = _load_and_ensure_normalized_review(review_path)
+def _review_artifact_state(review_path, minimum_blocking_severity="medium", client_id=None):
+    content = _load_and_ensure_normalized_review(review_path, client_id=client_id)
     verdict = _read_review_verdict(content)
     return _classify_artifact_state(verdict, content, minimum_blocking_severity)
 
@@ -133,7 +133,7 @@ def finalize_review_stop(ctx: RuntimeContext, resolution: StopFlowResolution):
         return 2
     reviewer_model = ctx.settings.resolved_reviewer_model(backend=reviewer_backend)
     # Phase 1: classify existing artifact
-    artifact_state = _review_artifact_state(review_path, ctx.settings.minimum_blocking_severity)
+    artifact_state = _review_artifact_state(review_path, ctx.settings.minimum_blocking_severity, client_id=ctx.client_id)
     action_result = _apply_artifact_state(ctx, artifact_state, review_id, review_path, covered_entries, unreviewed)
     if action_result is not None:
         return action_result
@@ -158,7 +158,7 @@ def finalize_review_stop(ctx: RuntimeContext, resolution: StopFlowResolution):
             log_event(ctx.project_root, "stop_hook_reviewer_retry", client_id=ctx.client_id, reviewId=review_id)
 
     # Phase 3: re-evaluate after retry
-    artifact_state = _review_artifact_state(review_path, ctx.settings.minimum_blocking_severity)
+    artifact_state = _review_artifact_state(review_path, ctx.settings.minimum_blocking_severity, client_id=ctx.client_id)
     action_result = _apply_artifact_state(ctx, artifact_state, review_id, review_path, covered_entries, unreviewed)
     if action_result is not None:
         return action_result

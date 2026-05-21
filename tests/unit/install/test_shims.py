@@ -2,7 +2,8 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from claude_auto_review.install.shims import _write_text_if_changed, build_runpy_shim_content, write_project_script_shim
+from claude_auto_review.paths.file_utils import write_text_if_changed as _write_text_if_changed
+from claude_auto_review.paths.shims import build_runpy_shim_content, write_project_script_shim
 
 
 class TestShims(unittest.TestCase):

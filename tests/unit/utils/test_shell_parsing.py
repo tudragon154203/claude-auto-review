@@ -1,5 +1,5 @@
 import unittest
-from claude_auto_review.utils.shell_parsing import (
+from claude_auto_review.paths.shell_parsing import (
     GIT_MOVE_SUBCOMMANDS,
     SHELL_CONTROL_TOKENS,
     SHELL_COPY_COMMANDS,

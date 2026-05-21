@@ -9,7 +9,7 @@ if __name__ == "__main__":
         sys.path.insert(0, str(_plugin_root))
 
 from claude_auto_review.config.io import load_settings
-from claude_auto_review.install.shims import write_project_script_shim
+from claude_auto_review.paths.shims import write_project_script_shim
 from claude_auto_review.paths.path_utils import get_project_root
 from claude_auto_review.review.prompting.flow import create_review_prompt_files
 from claude_auto_review.runtime.client_dirs import get_client_id

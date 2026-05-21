@@ -25,7 +25,16 @@ def _replace_verdict_text(content: str, new_verdict: str) -> str:
     return before + "## Verdict" + "".join(lines)
 
 
-def normalize_review_verdict_content(content: str | None) -> str | None:
+def normalize_review_verdict_content(content: str | None, client_id: str | None = None) -> str | None:
+    """
+    Normalize review verdict text to ensure consistent blocking behavior.
+
+    Args:
+        content: The review markdown content to normalize.
+        client_id: Optional client ID for logging. Pass None when client context
+            is unavailable (e.g., called outside stop hook flow). When None,
+            log_event will omit clientId from the event entry.
+    """
     if not content:
         return content
     if "## Verdict" not in content:
@@ -42,14 +51,14 @@ def normalize_review_verdict_content(content: str | None) -> str | None:
                 "Findings present. Claude must address all findings before stopping.",
             )
             if rewritten != content:
-                log_event(Path.cwd(), "review_verdict_normalized", original_verdict=verdict, normalized_verdict="Findings present. Claude must address all findings before stopping.")
+                log_event(Path.cwd(), "review_verdict_normalized", client_id=client_id, original_verdict=verdict, normalized_verdict="Findings present. Claude must address all findings before stopping.")
             return rewritten
         return content
 
     if not findings_exist:
         rewritten = _replace_verdict_text(content, "Clean - no issues found. Claude may stop.")
         if rewritten != content:
-            log_event(Path.cwd(), "review_verdict_normalized", original_verdict=verdict, normalized_verdict="Clean - no issues found. Claude may stop.")
+            log_event(Path.cwd(), "review_verdict_normalized", client_id=client_id, original_verdict=verdict, normalized_verdict="Clean - no issues found. Claude may stop.")
         return rewritten
 
     return content
