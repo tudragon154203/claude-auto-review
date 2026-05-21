@@ -79,6 +79,7 @@ If `## Findings` says there were no issues, use the clean verdict. If `## Findin
 - If Findings says "No issues found" (or similar), Verdict MUST say `Clean - no issues found. Claude may stop.`
 - If Findings contains one or more finding entries, Verdict MUST say `N issues found. Claude must address all findings before stopping.`
 - Do not mix a no-issues summary in Findings with a blocking verdict in Verdict.
+- Do NOT put notes, commentary, or summaries inside the `## Findings` section. If you want to add context or notes, put them OUTSIDE `## Findings` (before it or between `## Files Reviewed` and `## Verdict`), so the stop hook parser does not mistake them for findings.
 ## Constraints
 
 - Do not review files outside the request.

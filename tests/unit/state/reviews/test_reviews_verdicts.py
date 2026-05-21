@@ -285,6 +285,29 @@ class TestReviewsVerdicts(StateTestCase, unittest.TestCase):
         )
         self.assertFalse(has_review_findings(content))
 
+    def test_has_review_findings_ignores_notes_section(self):
+        content = (
+            "## Findings\n"
+            "No issues found.\n\n"
+            "**Notes:**\n"
+            "- completion.py uses consistent naming\n"
+            "- test coverage is comprehensive\n\n"
+            "## Verdict\n"
+            "Clean - no issues found. Claude may stop.\n"
+        )
+        self.assertFalse(has_review_findings(content))
+
+    def test_has_review_findings_detects_real_findings_despite_notes(self):
+        content = (
+            "## Findings\n"
+            "### 1. Unused variable\n"
+            "**Verdict:** Confirmed\n\n"
+            "**Notes:** Minor observation only.\n\n"
+            "## Verdict\n"
+            "1 issues found. Claude must address all findings before stopping.\n"
+        )
+        self.assertTrue(has_review_findings(content))
+
     def test_has_review_findings_detects_no_bugs_line(self):
         content = (
             "## Findings\n"

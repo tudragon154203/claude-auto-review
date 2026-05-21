@@ -178,7 +178,21 @@ def has_review_findings(content: str | None) -> bool:
     lines = findings.splitlines()
     if any(_FINDING_HEADING.match(l.strip()) for l in lines if l.strip()):
         return True
-    meaningful_lines = [line for line in lines if line.strip()]
+    meaningful_lines = []
+    skipping_notes = False
+    for line in lines:
+        stripped = line.strip()
+        if not stripped:
+            continue
+        if stripped.lower().startswith("**notes:**") or stripped.lower().startswith("notes:"):
+            skipping_notes = True
+            continue
+        if skipping_notes:
+            if stripped.startswith("## "):
+                skipping_notes = False
+            else:
+                continue
+        meaningful_lines.append(line)
     if not meaningful_lines:
         return False
     return not all(_is_no_findings_line(line) for line in meaningful_lines)
