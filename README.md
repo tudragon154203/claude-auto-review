@@ -6,6 +6,14 @@ Claude Code plugin for automatic review after Claude edits files.
 
 After each file edit (Write/Edit/MultiEdit/Delete), the plugin tracks the file hash. When Claude tries to stop, the plugin blocks until the changes have been reviewed — either manually in-session or automatically via a reviewer CLI backend.
 
+## Features
+
+- Tracks file edits through Claude Code hooks and blocks stop until changes are reviewed.
+- Supports reviewer CLI backends via `reviewerBackend` (`claude` or `codex`).
+- Uses a last-message classifier to skip review generation when Claude should keep working.
+- Enforces a stop circuit breaker with `maxStopPasses`.
+- Live-reloads `.claude/settings.json` without a restart.
+
 ## Architecture
 
 The implementation is split into small modules instead of one monolith:
@@ -20,8 +28,9 @@ flowchart TD
     F -- No --> G[Allow stop]
     F -- Yes --> H[Classify last assistant message]
     H --> I{Classifier says incomplete?}
-    I -- Yes --> G
+    I -- Yes --> Q[Continue working without review generation]
     I -- No --> J{Pending review exists?}
+
     J -- Yes --> K[Reuse pending review]
     J -- No --> L[Run review prompt script]
     L --> M{Review generation succeeded?}
@@ -72,5 +81,5 @@ After installation, future Claude Code sessions will **work with claude-auto-rev
 - Circuit breaker after `maxStopPasses` blocks (default: 5)
 - Auto-completion via Claude or Codex CLI reviewer backend when available
 - Reviewer hard-cap via `reviewerTimeoutSeconds` (default: 600 seconds)
-- Reviewer backend selection via `reviewerBackend` with backend-specific default reviewer models
+- Reviewer backend selection via `reviewerBackend` (`claude` or `codex`) with backend-specific default reviewer models
 - Settings are [live-reloaded from `.claude/settings.json`](CLAUDE.md#settings) — no restart needed
