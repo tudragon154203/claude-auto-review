@@ -42,23 +42,87 @@ class TestPromptRunnerCodex(unittest.TestCase):
         stdout_list = '{"type":"turn.completed","message":[{"text":"Clean from list dict."}]}\n'
         self.assertEqual(_extract_codex_final_message(stdout_list), 'Clean from list dict.')
 
-    def test_extract_codex_final_message_handles_agent_message_item(self):
+    def test_extract_codex_final_message_handles_interleaved_raw_text(self):
+        # Case from gpt-5.4-mini where it starts with raw text then emits JSON events
         stdout = (
+            "Looking at the diff and current file snapshots, I'll analyze the changes...\n"
             '{"type":"thread.started","thread_id":"t1"}\n'
-            '{"type":"item.completed","item":{"type":"agent_message","text":"# Review\\n\\n## Verdict\\n\\nClean - no issues found. Claude may stop."}}\n'
-            '{"type":"turn.completed","usage":{"input_tokens":1,"output_tokens":1}}\n'
+            '{"type":"turn.started"}\n'
+            '{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"\\n"}}\n'
+            '{"type":"turn.completed","usage":{"input_tokens":100,"output_tokens":56}}\n'
+        )
+        result = _extract_codex_final_message(stdout)
+        self.assertIn("Looking at the diff", result)
+        self.assertNotIn("turn.started", result)  # JSON control events are skipped
+
+    def test_extract_codex_final_message_keeps_brace_prefixed_lines(self):
+        # Lines starting with { but not valid JSON should be kept as raw text
+        stdout = (
+            "First line of output\n"
+            "{not valid json but should be kept}\n"
+            "Second line of output\n"
         )
         self.assertEqual(
             _extract_codex_final_message(stdout),
-            '# Review\n\n## Verdict\n\nClean - no issues found. Claude may stop.',
+            "First line of output\n{not valid json but should be kept}\nSecond line of output"
         )
 
-    def test_extract_codex_final_message_uses_last_completed_message(self):
+    def test_extract_codex_final_message_preserves_non_dict_json_as_raw(self):
+        # Lines that parse as JSON but aren't dicts may contain user content - preserve them
         stdout = (
-            '{"type":"turn.completed","message":"First"}\n'
-            '{"type":"turn.completed","message":"Second"}\n'
+            "First line\n"
+            '["a", "b"]\n'
+            '"just a string"\n'
+            "Second line\n"
         )
-        self.assertEqual(_extract_codex_final_message(stdout), 'Second')
+        self.assertEqual(
+            _extract_codex_final_message(stdout),
+            "First line\n[\"a\", \"b\"]\n\"just a string\"\nSecond line"
+        )
+
+    def test_extract_codex_final_message_strips_preamble_if_header_found(self):
+        stdout = (
+            "Certainly! I will review the changes now.\n"
+            "# Review rev-123 - 2026-05-25\n"
+            "## Findings\n"
+            "None."
+        )
+        result = _extract_codex_final_message(stdout)
+        self.assertTrue(result.startswith("# Review rev-123 - 2026-05-25"))
+
+    def test_extract_codex_final_message_uses_last_review_header(self):
+        # Model may discuss format before actual review - we want the last occurrence
+        stdout = (
+            "The format should be: # Review rev-OLD - old date\n"
+            "No wait, the format is different. Let me check: # Review rev-123 - 2026-05-25\n"
+            "## Findings\n"
+            "None."
+        )
+        self.assertEqual(
+            _extract_codex_final_message(stdout),
+            "# Review rev-123 - 2026-05-25\n## Findings\nNone."
+        )
+
+    def test_extract_codex_final_message_accumulates_all_parts(self):
+        stdout = (
+            '{"type":"item.completed","item":{"type":"agent_message","text":"Part 1"}}\n'
+            '{"type":"item.completed","item":{"type":"agent_message","text":"Part 2"}}\n'
+        )
+        self.assertEqual(_extract_codex_final_message(stdout), "Part 1\nPart 2")
+
+    def test_extract_codex_final_message_skips_empty_parts(self):
+        # Empty/whitespace-only messages from JSON are skipped
+        stdout = (
+            '{"type":"item.completed","item":{"type":"agent_message","text":"Real content"}}\n'
+            '{"type":"item.completed","item":{"id":"i1","type":"agent_message","text":"   "}}\n'
+        )
+        self.assertEqual(_extract_codex_final_message(stdout), "Real content")
+
+    def test_extract_codex_final_message_falls_back_to_raw_if_no_meaningful_json(self):
+        # When JSON events have no recognized message content, fall back to raw stdout
+        stdout = '{"type":"turn.started"}\n{"type":"turn.completed"}\n'
+        # These are skipped, so messages is empty, fallback returns original stdout
+        self.assertEqual(_extract_codex_final_message(stdout), stdout)
 
     def test_attempt_stop_autocomplete_rejects_unknown_backend(self):
         review_path = Path(tempfile.gettempdir()) / 'review-unknown.md'
