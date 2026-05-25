@@ -97,7 +97,7 @@ def has_review_findings(content: str | None) -> bool:
     skipping_notes = False
     for line in lines:
         stripped = line.strip()
-        if not stripped:
+        if not stripped or stripped == '```':
             continue
         if stripped.lower().startswith("**notes:**") or stripped.lower().startswith("notes:"):
             skipping_notes = True

@@ -1,5 +1,7 @@
 import shutil
 import subprocess
+import tempfile
+from pathlib import Path
 
 from claude_auto_review.runtime.events import log_event
 from claude_auto_review.runtime.process import run_captured
@@ -104,10 +106,19 @@ def _attempt_codex_autocomplete(
         log_event(ctx.project_root, "stop_hook_prompt_not_found", client_id=ctx.client_id, path=str(prompt_file))
         return AutocompleteResult(status="prompt_not_found")
 
+    output_file = None
     args = _build_codex_review_args(model)
     prompt_content = prompt_file.read_text(encoding="utf-8") if prompt_file.is_file() else ""
     full_input = f"{prompt_content}\n\n{user_prompt}" if prompt_content else user_prompt
     try:
+        with tempfile.NamedTemporaryFile(
+            mode="w",
+            encoding="utf-8",
+            suffix="-codex-last-message.md",
+            delete=False,
+        ) as temp_output:
+            output_file = Path(temp_output.name)
+        args = [*args[:-1], "--output-last-message", str(output_file), args[-1]]
         cli_result = _run_review_cli(
             codex_cli, args, cwd=ctx.project_root, timeout=reviewer_timeout_seconds,
             input_text=full_input,
@@ -119,12 +130,19 @@ def _attempt_codex_autocomplete(
         log_event(ctx.project_root, "stop_hook_reviewer_error", client_id=ctx.client_id, reviewId=review_id, backend="codex", error=str(e))
         return AutocompleteResult(status="error", stderr=str(e))
 
+    file_output = ""
+    if output_file is not None and output_file.is_file():
+        file_output = output_file.read_text(encoding="utf-8", errors="replace").strip()
+
     raw_stdout = cli_result.stdout or ""
-    extracted = _extract_codex_final_message(raw_stdout)
+    extracted = file_output or _extract_codex_final_message(raw_stdout)
     if extracted and extracted != raw_stdout.strip():
         cli_result = subprocess.CompletedProcess(
             cli_result.args, cli_result.returncode,
             stdout=extracted, stderr=cli_result.stderr,
         )
-
-    return _process_review_result(ctx, cli_result, review_path, review_id, "codex")
+    try:
+        return _process_review_result(ctx, cli_result, review_path, review_id, "codex")
+    finally:
+        if output_file is not None:
+            output_file.unlink(missing_ok=True)

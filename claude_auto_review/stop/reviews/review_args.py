@@ -17,7 +17,6 @@ def _build_claude_review_args(model):
 def _build_codex_review_args(model):
     return [
         "exec",
-        "--json",
         "--skip-git-repo-check",
         "--sandbox",
         "read-only",

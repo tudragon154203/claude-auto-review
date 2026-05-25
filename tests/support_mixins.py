@@ -79,6 +79,10 @@ class SubprocessMixin:
             "    path.parent.mkdir(parents=True, exist_ok=True)\n"
             "    path.write_text(stdin_text, encoding='utf-8')\n"
             "review = '''# Review fake-codex\n\n## Files Reviewed\n- fake.ts (hash: deadbeef)\n\n## Findings\n\nClean - no issues found. Claude may stop.\n\n## Verdict\n\nClean - no issues found. Claude may stop.\n'''\n"
+            "args = sys.argv[1:]\n"
+            "if '--output-last-message' in args:\n"
+            "    idx = args.index('--output-last-message')\n"
+            "    Path(args[idx + 1]).write_text(review, encoding='utf-8')\n"
             "print(json.dumps({'type': 'turn.completed', 'message': {'text': review}}))\n",
             encoding="utf-8",
             newline="\n",

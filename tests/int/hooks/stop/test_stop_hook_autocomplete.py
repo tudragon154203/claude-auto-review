@@ -84,11 +84,12 @@ class TestStopHookAutocomplete(HookTestCase, unittest.TestCase):
         run_dir = client_dir(project_root) / "run"
         cli_args = json.loads((run_dir / "codex-cli-args.json").read_text(encoding="utf-8"))
         self.assertEqual(
-            cli_args[:6],
-            ["exec", "--json", "--skip-git-repo-check", "--sandbox", "read-only", "--model"],
+            cli_args[:5],
+            ["exec", "--skip-git-repo-check", "--sandbox", "read-only", "--model"],
         )
-        self.assertEqual(cli_args[6], "gpt-5.3-codex")
+        self.assertEqual(cli_args[5], "gpt-5.3-codex")
         self.assertEqual(cli_args[-1], "-")
+        self.assertIn("--output-last-message", cli_args)
         stdin_text = (run_dir / "codex-cli-stdin.txt").read_text(encoding="utf-8")
         self.assertIn("# Claude Auto Review Request", stdin_text)
         self.assertIn("Complete the review", stdin_text)
