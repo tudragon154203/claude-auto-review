@@ -131,8 +131,7 @@ class PluginSettings:
             SETTING_STALE_CLIENT_TIMEOUT: self.stale_client_timeout_hours,
             SETTING_DEBUG: self.debug,
         }
-        if self.reviewer_model is not None:
-            mapping[SETTING_REVIEWER_MODEL] = self.reviewer_model
+        mapping[SETTING_REVIEWER_MODEL] = self.reviewer_model or self.resolved_reviewer_model()
         mapping.update(self.extras)
         return mapping
 

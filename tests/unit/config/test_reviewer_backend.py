@@ -16,8 +16,8 @@ class TestReviewerBackendSetting(unittest.TestCase):
     def test_default_settings_includes_backend(self):
         self.assertEqual(PluginSettings().to_mapping()["reviewerBackend"], "claude")
 
-    def test_default_settings_does_not_pin_single_reviewer_model(self):
-        self.assertNotIn("reviewerModel", PluginSettings().to_mapping())
+    def test_default_settings_includes_resolved_reviewer_model(self):
+        self.assertEqual(PluginSettings().to_mapping()["reviewerModel"], DEFAULT_CLAUDE_REVIEWER_MODEL)
 
     def test_reviewer_backends_contains_claude_and_codex(self):
         self.assertEqual(REVIEWER_BACKENDS, frozenset({"claude", "codex"}))

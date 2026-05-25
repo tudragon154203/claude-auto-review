@@ -19,6 +19,7 @@ class TestEnsureProjectSettings(StateTestCase, unittest.TestCase):
         self.assertIn("claude-auto-review", settings)
         self.assertEqual(settings["claude-auto-review"]["maxStopPasses"], 5)
         self.assertEqual(settings["claude-auto-review"]["minimumBlockingSeverity"], "medium")
+        self.assertIn("reviewerModel", settings["claude-auto-review"])
         self.assertIn("hooks", settings)
         self.assertIn("PostToolUse", settings["hooks"])
         self.assertIn("Stop", settings["hooks"])

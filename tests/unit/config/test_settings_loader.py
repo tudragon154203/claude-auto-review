@@ -136,10 +136,10 @@ class TestSettingsLoader(StateTestCase, unittest.TestCase):
         self.assertEqual(settings.minimum_blocking_severity, "medium")
         self.assertEqual(settings.to_mapping()["minimumBlockingSeverity"], "medium")
 
-    def test_plugin_settings_to_mapping_omits_unset_reviewer_model(self):
+    def test_plugin_settings_to_mapping_includes_resolved_reviewer_model(self):
         result = PluginSettings().to_mapping()
 
-        self.assertNotIn("reviewerModel", result)
+        self.assertEqual(result["reviewerModel"], "claude-sonnet-4-6")
         self.assertEqual(result["minimumBlockingSeverity"], "medium")
 
 
