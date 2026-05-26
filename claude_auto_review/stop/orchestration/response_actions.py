@@ -1,6 +1,6 @@
 from claude_auto_review.paths.path_utils import local_now_iso
 from claude_auto_review.state.models import StopBlockedRecord
-from claude_auto_review.state.store.write import append_state_event
+from claude_auto_review.state.store.writer import StateEventWriter
 from claude_auto_review.stop.orchestration.context import RuntimeContext
 from claude_auto_review.stop.feedback import block_response, build_unreviewed_files_string
 
@@ -27,14 +27,11 @@ def block_pending_review(ctx: RuntimeContext, review_id, review_path, prompt_pat
             "stopping will be allowed."
         ),
     )
-    append_state_event(
+    StateEventWriter(ctx.project_root, ctx.client_id).append(
         StopBlockedRecord(
             timestamp=local_now_iso(),
             reason="review_pending",
             files=[entry.file for entry in unreviewed],
-        ),
-        ctx.project_root,
-        client_id=ctx.client_id,
+        )
     )
     return 2
-

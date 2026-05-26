@@ -4,7 +4,7 @@ from claude_auto_review.config.models import PluginSettings
 from claude_auto_review.paths.path_utils import local_now_iso
 from claude_auto_review.state.models import StopBlockedRecord
 
-from claude_auto_review.state.store.write import append_state_event
+from claude_auto_review.state.store.writer import StateEventWriter
 from claude_auto_review.stop.response import block_response
 
 
@@ -90,13 +90,11 @@ def block_completed_review_findings(ctx, review_id, review_path, unreviewed):
             minimum_blocking_severity=ctx.settings.minimum_blocking_severity,
         ),
     )
-    append_state_event(
+    StateEventWriter(ctx.project_root, ctx.client_id).append(
         StopBlockedRecord(
             timestamp=local_now_iso(),
             reason="review_findings",
             reviewId=review_id,
             files=[_file_of(entry) for entry in unreviewed],
-        ),
-        ctx.project_root,
-        client_id=ctx.client_id,
+        )
     )
