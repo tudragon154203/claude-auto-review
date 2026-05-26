@@ -9,6 +9,12 @@ from claude_auto_review.install import config_cli
 
 
 class TestConfigCli(unittest.TestCase):
+    def test_severity_choices_use_semantic_order(self):
+        self.assertEqual(config_cli.SEVERITY_CHOICES, ["info", "low", "medium", "high", "critical"])
+        parser = config_cli._build_parser()
+        severity_action = next(action for action in parser._actions if action.dest == "severity")
+        self.assertEqual(list(severity_action.choices), config_cli.SEVERITY_CHOICES)
+
     def test_is_initialized_requires_runtime_rules_and_settings(self):
         with tempfile.TemporaryDirectory() as tmp:
             project_root = Path(tmp)
@@ -57,6 +63,30 @@ class TestConfigCli(unittest.TestCase):
 
         self.assertEqual(updated.reviewer_backend, "codex")
         self.assertEqual(updated.reviewer_model, "gpt-5.3-codex")
+
+    def test_apply_args_switches_codex_default_back_to_claude_default(self):
+        settings = config_cli.PluginSettings(reviewer_backend="claude", reviewer_model="gpt-5.3-codex")
+        args = config_cli._build_parser().parse_args(["--backend", "claude", "--non-interactive"])
+
+        updated = config_cli._apply_args(settings, args)
+
+        self.assertEqual(updated.reviewer_backend, "claude")
+        self.assertEqual(updated.reviewer_model, "claude-sonnet-4-6")
+
+    def test_wizard_uses_claude_default_model_for_claude_backend(self):
+        settings = config_cli.PluginSettings(reviewer_backend="codex", reviewer_model="gpt-5.3-codex")
+        prompts = []
+
+        def fake_input(prompt):
+            prompts.append(prompt)
+            return "" if len(prompts) > 1 else "claude"
+
+        with patch("builtins.input", side_effect=fake_input):
+            updated = config_cli._run_wizard(settings)
+
+        self.assertEqual(updated.reviewer_backend, "claude")
+        self.assertEqual(updated.reviewer_model, "claude-sonnet-4-6")
+        self.assertTrue(any("Reviewer model (claude-sonnet-4-6)" in prompt for prompt in prompts))
 
     def test_wizard_prompts_for_important_settings_only(self):
         settings = config_cli.PluginSettings()

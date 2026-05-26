@@ -35,6 +35,8 @@ ADVANCED_SETTING_KEYS = tuple(sorted(KNOWN_SETTING_KEYS - {
     SETTING_MAX_STOP_PASSES,
 }))
 
+SEVERITY_CHOICES = ["info", "low", "medium", "high", "critical"]
+
 SETTING_DESCRIPTIONS = {
     "enabled": "Enable or disable the plugin",
     "rulesFile": "Review rules markdown file path",
@@ -64,7 +66,7 @@ def _build_parser():
     parser.add_argument("--model", help="Set reviewer model")
     parser.add_argument(
         "--severity",
-        choices=sorted(MINIMUM_BLOCKING_SEVERITIES),
+        choices=SEVERITY_CHOICES,
         help="Set minimum blocking severity",
     )
     parser.add_argument("--max-stop-passes", type=int, help="Set maxStopPasses")
@@ -149,11 +151,13 @@ def _apply_args(settings: PluginSettings, args) -> PluginSettings:
     updated = settings.to_mapping()
     if args.backend:
         previous_backend = settings.resolved_reviewer_backend()
+        known_default_models = set(DEFAULT_REVIEWER_MODELS.values())
         previous_default_model = DEFAULT_REVIEWER_MODELS[previous_backend]
         updated[SETTING_REVIEWER_BACKEND] = args.backend
         if not args.model and (
             settings.reviewer_model is None
             or settings.reviewer_model == previous_default_model
+            or settings.reviewer_model in known_default_models
         ):
             updated[SETTING_REVIEWER_MODEL] = DEFAULT_REVIEWER_MODELS[args.backend]
     if args.model:
@@ -173,11 +177,22 @@ def _run_wizard(settings: PluginSettings) -> PluginSettings:
         sorted(DEFAULT_REVIEWER_MODELS),
         backend_default,
     )
-    model_default = settings.resolved_reviewer_model(backend=backend)
+    normalized_settings = PluginSettings.from_mapping(
+        {
+            **settings.to_mapping(),
+            SETTING_REVIEWER_BACKEND: backend,
+            SETTING_REVIEWER_MODEL: settings.reviewer_model,
+        }
+    )
+    normalized_settings = _apply_args(
+        normalized_settings,
+        argparse.Namespace(backend=backend, model=None, severity=None, max_stop_passes=None, non_interactive=False),
+    )
+    model_default = normalized_settings.resolved_reviewer_model(backend=backend)
     model = _prompt_text("Reviewer model", model_default)
     severity = _prompt_choice(
         "Minimum blocking severity",
-        sorted(MINIMUM_BLOCKING_SEVERITIES),
+        SEVERITY_CHOICES,
         settings.minimum_blocking_severity,
     )
     max_stop_passes = _prompt_int("Max stop passes before circuit breaker", settings.max_stop_passes)
