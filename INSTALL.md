@@ -4,12 +4,31 @@
 
 | Command                          | Description                               |
 | -------------------------------- | ----------------------------------------- |
+| `claude-auto-review config`    | Guided setup and important config wizard  |
 | `claude-auto-review install`   | Set up the plugin in the current project  |
 | `claude-auto-review cancel`    | Cancel the active review session          |
 | `claude-auto-review prompt`    | Manually trigger review prompt generation |
 | `claude-auto-review uninstall` | Remove plugin from current project        |
 
-`car` is an alias for `claude-auto-review`, so the same commands also work as `car install`, `car cancel`, `car prompt`, and `car uninstall`.
+`car` is an alias for `claude-auto-review`, so the same commands also work as `car config`, `car install`, `car cancel`, `car prompt`, and `car uninstall`.
+
+## Guided Config
+
+```bash
+claude-auto-review config
+```
+
+This command is interactive by default. It:
+
+1. Initializes the current project first if needed.
+2. Prompts only for the most important settings: `reviewerBackend`, `reviewerModel`, `minimumBlockingSeverity`, and `maxStopPasses`.
+3. Prints the `.claude/settings.json` location and lists the remaining advanced settings you can edit manually later.
+
+You can also use non-interactive flags now:
+
+```bash
+claude-auto-review config --backend codex --severity high --max-stop-passes 7 --non-interactive
+```
 
 ## Prerequisites
 

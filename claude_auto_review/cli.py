@@ -7,6 +7,7 @@ from importlib.metadata import version, PackageNotFoundError
 
 
 SUBCOMMANDS = {
+    "config": "claude_auto_review.install.config_cli",
     "install": "claude_auto_review.install.setup_cli",
     "cancel": "claude_auto_review.install.cancel_cli",
     "prompt": "claude_auto_review.review.prompt",
@@ -27,6 +28,7 @@ def _print_help(exit_code=0):
     print(f"Usage: {self} <subcommand> [args]", file=sys.stderr)
     print(file=sys.stderr)
     print("Subcommands:", file=sys.stderr)
+    print("  config     Guide setup and configure important project settings", file=sys.stderr)
     print("  install    Set up the plugin in the current project", file=sys.stderr)
     print("  cancel     Cancel the active review session", file=sys.stderr)
     print("  prompt     Manually trigger review prompt generation", file=sys.stderr)

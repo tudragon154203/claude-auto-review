@@ -73,7 +73,9 @@ claude-auto-review install
 
 The installer creates the local `.claude/claude-auto-review/` runtime tree (with `scripts/`, `agents/`, `clients/` subdirs; `clients/*/reviews/` and `clients/*/run/` created lazily per session), copies the default rules, configures `.claude/settings.json`, and updates `.gitignore`.
 
-`car` is a shorter alias for `claude-auto-review`, so the same install and management commands can be run as `car install`, `car cancel`, `car prompt`, and `car uninstall`.
+`car` is a shorter alias for `claude-auto-review`, so the same install and management commands can be run as `car config`, `car install`, `car cancel`, `car prompt`, and `car uninstall`.
+
+You can also run `claude-auto-review config` to get an interactive setup wizard. It initializes the project first when needed, asks only for the key settings (`reviewerBackend`, `reviewerModel`, `minimumBlockingSeverity`, `maxStopPasses`), then prints the path to `.claude/settings.json` plus the other advanced keys you can tweak manually.
 
 After installation, future Claude Code sessions will **work with claude-auto-review automatically**.
 

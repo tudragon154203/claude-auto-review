@@ -99,6 +99,37 @@ class TestSetupFlow(HookTestCase, unittest.TestCase):
         self.complete_latest_review(project_root)
         self.assertEqual(self.run_python("hooks/stop_hook.py", project_root).returncode, 0)
 
+    def test_config_command_initializes_and_updates_settings_non_interactively(self):
+        project_root = self.temp_project()
+        result = subprocess.run(
+            [
+                sys.executable,
+                "-m",
+                "claude_auto_review.cli",
+                "config",
+                "--backend",
+                "codex",
+                "--severity",
+                "high",
+                "--max-stop-passes",
+                "7",
+                "--non-interactive",
+            ],
+            cwd=project_root,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            env={**subprocess.os.environ, "PYTHONPATH": str(Path(__file__).resolve().parents[4])},
+        )
+        self.assertEqual(result.returncode, 0, msg=result.stderr)
+        self.assertTrue((project_root / ".claude" / "claude-auto-review" / "review-rules.md").exists())
+        settings = json.loads((project_root / ".claude" / "settings.json").read_text(encoding="utf-8"))
+        self.assertEqual(settings["claude-auto-review"]["reviewerBackend"], "codex")
+        self.assertEqual(settings["claude-auto-review"]["reviewerModel"], "gpt-5.3-codex")
+        self.assertEqual(settings["claude-auto-review"]["minimumBlockingSeverity"], "high")
+        self.assertEqual(settings["claude-auto-review"]["maxStopPasses"], 7)
+        self.assertIn("Full config location", result.stdout)
+
 
 if __name__ == "__main__":
     unittest.main()

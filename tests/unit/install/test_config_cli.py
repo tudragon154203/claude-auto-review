@@ -1,0 +1,257 @@
+import io
+import json
+import tempfile
+import unittest
+from pathlib import Path
+from unittest.mock import patch
+
+from claude_auto_review.install import config_cli
+
+
+class TestConfigCli(unittest.TestCase):
+    def test_is_initialized_requires_runtime_rules_and_settings(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project_root = Path(tmp)
+            settings_path = project_root / ".claude" / "settings.json"
+            settings_path.parent.mkdir(parents=True, exist_ok=True)
+            settings_path.write_text(
+                json.dumps({"claude-auto-review": {}, "hooks": {"Stop": []}}),
+                encoding="utf-8",
+            )
+            self.assertFalse(config_cli._is_initialized(project_root))
+
+            runtime_dir = project_root / ".claude" / "claude-auto-review"
+            runtime_dir.mkdir(parents=True, exist_ok=True)
+            self.assertFalse(config_cli._is_initialized(project_root))
+
+            (runtime_dir / "review-rules.md").write_text("# rules\n", encoding="utf-8")
+            self.assertTrue(config_cli._is_initialized(project_root))
+
+    def test_apply_args_updates_selected_fields(self):
+        settings = config_cli.PluginSettings()
+        args = config_cli._build_parser().parse_args(
+            ["--backend", "codex", "--severity", "high", "--max-stop-passes", "7", "--non-interactive"]
+        )
+
+        updated = config_cli._apply_args(settings, args)
+
+        self.assertEqual(updated.reviewer_backend, "codex")
+        self.assertEqual(updated.resolved_reviewer_model(), "gpt-5.3-codex")
+        self.assertEqual(updated.minimum_blocking_severity, "high")
+        self.assertEqual(updated.max_stop_passes, 7)
+
+    def test_apply_args_keeps_explicit_model_when_backend_changes(self):
+        settings = config_cli.PluginSettings(reviewer_model="custom-model")
+        args = config_cli._build_parser().parse_args(["--backend", "codex", "--non-interactive"])
+
+        updated = config_cli._apply_args(settings, args)
+
+        self.assertEqual(updated.reviewer_backend, "codex")
+        self.assertEqual(updated.reviewer_model, "custom-model")
+
+    def test_apply_args_replaces_old_backend_default_model(self):
+        settings = config_cli.PluginSettings(reviewer_backend="claude", reviewer_model="claude-sonnet-4-6")
+        args = config_cli._build_parser().parse_args(["--backend", "codex", "--non-interactive"])
+
+        updated = config_cli._apply_args(settings, args)
+
+        self.assertEqual(updated.reviewer_backend, "codex")
+        self.assertEqual(updated.reviewer_model, "gpt-5.3-codex")
+
+    def test_wizard_prompts_for_important_settings_only(self):
+        settings = config_cli.PluginSettings()
+        answers = iter(["codex", "my-model", "high", "8"])
+
+        with patch("builtins.input", side_effect=lambda _: next(answers)):
+            updated = config_cli._run_wizard(settings)
+
+        self.assertEqual(updated.reviewer_backend, "codex")
+        self.assertEqual(updated.reviewer_model, "my-model")
+        self.assertEqual(updated.minimum_blocking_severity, "high")
+        self.assertEqual(updated.max_stop_passes, 8)
+
+    def test_wizard_accepts_defaults_on_empty_answers(self):
+        settings = config_cli.PluginSettings()
+
+        with patch("builtins.input", side_effect=["", "", "", ""]):
+            updated = config_cli._run_wizard(settings)
+
+        self.assertEqual(updated.reviewer_backend, settings.reviewer_backend)
+        self.assertEqual(updated.resolved_reviewer_model(), settings.resolved_reviewer_model())
+        self.assertEqual(updated.minimum_blocking_severity, settings.minimum_blocking_severity)
+        self.assertEqual(updated.max_stop_passes, settings.max_stop_passes)
+
+    def test_prompt_choice_retries_on_invalid_answer(self):
+        stdout = io.StringIO()
+        with patch("builtins.input", side_effect=["bad", "codex"]), patch("sys.stdout", stdout):
+            result = config_cli._prompt_choice("Reviewer backend", ["claude", "codex"], "claude")
+
+        self.assertEqual(result, "codex")
+        self.assertIn("Please choose one of", stdout.getvalue())
+
+    def test_prompt_int_retries_until_valid_non_negative_number(self):
+        stdout = io.StringIO()
+        with patch("builtins.input", side_effect=["abc", "-2", "9"]), patch("sys.stdout", stdout):
+            result = config_cli._prompt_int("Max stop passes", 5)
+
+        self.assertEqual(result, 9)
+        output = stdout.getvalue()
+        self.assertIn("Please enter a whole number.", output)
+        self.assertIn("Please enter 0 or a positive number.", output)
+
+    def test_print_advanced_settings_lists_non_wizard_keys(self):
+        stdout = io.StringIO()
+        with patch("sys.stdout", stdout):
+            config_cli._print_advanced_settings(Path("/tmp/settings.json"))
+
+        output = stdout.getvalue()
+        self.assertIn("enabled", output)
+        self.assertIn("rulesFile", output)
+        self.assertIn("lastAssistantMessageClassifierEnabled", output)
+        self.assertNotIn("reviewerBackend: Reviewer CLI backend\n", output)
+
+    def test_main_initializes_then_updates_non_interactive(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project_root = Path(tmp)
+            settings_path = project_root / ".claude" / "settings.json"
+            settings_path.parent.mkdir(parents=True, exist_ok=True)
+            settings_path.write_text(json.dumps({"other": {"keep": True}}), encoding="utf-8")
+
+            runtime_dir = project_root / ".claude" / "claude-auto-review"
+
+            def fake_runtime(_project_root):
+                runtime_dir.mkdir(parents=True, exist_ok=True)
+                (runtime_dir / "review-rules.md").write_text("# rules\n", encoding="utf-8")
+                return {"base_dir": runtime_dir}
+
+            def fake_project_settings(_project_root):
+                document = json.loads(settings_path.read_text(encoding="utf-8"))
+                document.setdefault("hooks", {"Stop": []})
+                document.setdefault("claude-auto-review", {})
+                settings_path.write_text(json.dumps(document), encoding="utf-8")
+                return settings_path
+
+            stdout = io.StringIO()
+            with patch("claude_auto_review.install.config_cli.get_project_root", return_value=project_root), patch(
+                "claude_auto_review.install.config_cli.ensure_runtime", side_effect=fake_runtime
+            ), patch(
+                "claude_auto_review.install.config_cli.ensure_project_settings", side_effect=fake_project_settings
+            ), patch(
+                "claude_auto_review.install.config_cli.log_event"
+            ) as mock_log, patch("sys.stdout", stdout):
+                result = config_cli.main(["--backend", "codex", "--severity", "high", "--max-stop-passes", "7", "--non-interactive"])
+
+            self.assertEqual(result, 0)
+            saved = json.loads(settings_path.read_text(encoding="utf-8"))
+            plugin_settings = saved["claude-auto-review"]
+            self.assertEqual(plugin_settings["reviewerBackend"], "codex")
+            self.assertEqual(plugin_settings["reviewerModel"], "gpt-5.3-codex")
+            self.assertEqual(plugin_settings["minimumBlockingSeverity"], "high")
+            self.assertEqual(plugin_settings["maxStopPasses"], 7)
+            self.assertEqual(saved["other"], {"keep": True})
+            mock_log.assert_called_once_with(project_root, "config_updated", initialized=True)
+            self.assertIn("initialized now", stdout.getvalue())
+            self.assertIn("lastAssistantMessageClassifierEnabled", stdout.getvalue())
+
+    def test_main_non_interactive_skips_wizard(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project_root = Path(tmp)
+            runtime_dir = project_root / ".claude" / "claude-auto-review"
+            runtime_dir.mkdir(parents=True, exist_ok=True)
+            (runtime_dir / "review-rules.md").write_text("# rules\n", encoding="utf-8")
+            settings_path = project_root / ".claude" / "settings.json"
+            settings_path.parent.mkdir(parents=True, exist_ok=True)
+            settings_path.write_text(
+                json.dumps({"hooks": {"Stop": []}, "claude-auto-review": {}}),
+                encoding="utf-8",
+            )
+
+            with patch("claude_auto_review.install.config_cli.get_project_root", return_value=project_root), patch(
+                "claude_auto_review.install.config_cli._run_wizard"
+            ) as mock_wizard, patch("claude_auto_review.install.config_cli.log_event"):
+                result = config_cli.main(["--non-interactive"])
+
+            self.assertEqual(result, 0)
+            mock_wizard.assert_not_called()
+
+    def test_main_runs_wizard_by_default(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project_root = Path(tmp)
+            runtime_dir = project_root / ".claude" / "claude-auto-review"
+            runtime_dir.mkdir(parents=True, exist_ok=True)
+            (runtime_dir / "review-rules.md").write_text("# rules\n", encoding="utf-8")
+            settings_path = project_root / ".claude" / "settings.json"
+            settings_path.parent.mkdir(parents=True, exist_ok=True)
+            settings_path.write_text(
+                json.dumps({"hooks": {"Stop": []}, "claude-auto-review": {}}),
+                encoding="utf-8",
+            )
+
+            stdout = io.StringIO()
+            with patch("claude_auto_review.install.config_cli.get_project_root", return_value=project_root), patch(
+                "builtins.input", side_effect=["", "", "", ""]
+            ), patch("claude_auto_review.install.config_cli.log_event"), patch("sys.stdout", stdout):
+                result = config_cli.main([])
+
+            self.assertEqual(result, 0)
+            self.assertIn("setup wizard", stdout.getvalue())
+
+    def test_main_preserves_unrelated_settings_and_hooks_when_already_initialized(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project_root = Path(tmp)
+            runtime_dir = project_root / ".claude" / "claude-auto-review"
+            runtime_dir.mkdir(parents=True, exist_ok=True)
+            (runtime_dir / "review-rules.md").write_text("# rules\n", encoding="utf-8")
+            settings_path = project_root / ".claude" / "settings.json"
+            settings_path.parent.mkdir(parents=True, exist_ok=True)
+            settings_path.write_text(
+                json.dumps(
+                    {
+                        "hooks": {"Stop": [{"hooks": [{"command": "python custom.py"}]}]},
+                        "other": {"keep": True},
+                        "claude-auto-review": {"reviewerBackend": "claude"},
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            with patch("claude_auto_review.install.config_cli.get_project_root", return_value=project_root), patch(
+                "claude_auto_review.install.config_cli.log_event"
+            ):
+                result = config_cli.main(["--backend", "codex", "--non-interactive"])
+
+            self.assertEqual(result, 0)
+            saved = json.loads(settings_path.read_text(encoding="utf-8"))
+            self.assertEqual(saved["other"], {"keep": True})
+            self.assertEqual(saved["hooks"]["Stop"][0]["hooks"][0]["command"], "python custom.py")
+
+    def test_main_wizard_after_flag_uses_flag_values_as_defaults(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project_root = Path(tmp)
+            runtime_dir = project_root / ".claude" / "claude-auto-review"
+            runtime_dir.mkdir(parents=True, exist_ok=True)
+            (runtime_dir / "review-rules.md").write_text("# rules\n", encoding="utf-8")
+            settings_path = project_root / ".claude" / "settings.json"
+            settings_path.parent.mkdir(parents=True, exist_ok=True)
+            settings_path.write_text(
+                json.dumps({"hooks": {"Stop": []}, "claude-auto-review": {}}),
+                encoding="utf-8",
+            )
+
+            with patch("claude_auto_review.install.config_cli.get_project_root", return_value=project_root), patch(
+                "builtins.input", side_effect=["", "", "", ""]
+            ), patch("claude_auto_review.install.config_cli.log_event"):
+                result = config_cli.main(["--backend", "codex"])
+
+            self.assertEqual(result, 0)
+            saved = json.loads(settings_path.read_text(encoding="utf-8"))
+            self.assertEqual(saved["claude-auto-review"]["reviewerBackend"], "codex")
+            self.assertEqual(saved["claude-auto-review"]["reviewerModel"], "gpt-5.3-codex")
+
+    def test_negative_max_stop_passes_is_rejected(self):
+        with self.assertRaises(SystemExit):
+            config_cli.main(["--max-stop-passes", "-1", "--non-interactive"])
+
+
+if __name__ == "__main__":
+    unittest.main()
