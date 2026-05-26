@@ -67,9 +67,12 @@ pip install claude-auto-review
 
 # One-time init in your target project root
 claude-auto-review install
+# or: car install
 ```
 
 The installer creates the local `.claude/claude-auto-review/` runtime tree (with `scripts/`, `agents/`, `clients/` subdirs; `clients/*/reviews/` and `clients/*/run/` created lazily per session), copies the default rules, configures `.claude/settings.json`, and updates `.gitignore`.
+
+`car` is a shorter alias for `claude-auto-review`, so the same install and management commands can be run as `car install`, `car cancel`, `car prompt`, and `car uninstall`.
 
 After installation, future Claude Code sessions will **work with claude-auto-review automatically**.
 

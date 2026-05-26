@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "claude-auto-review"
-version = "1.8.1"
+version = "1.8.3"
 description = "Claude Code plugin for automatic review after Claude edits files"
 readme = "README.md"
 license = "MIT"
@@ -29,6 +29,7 @@ Documentation = "https://github.com/tudragon154203/claude-auto-review#readme"
 
 [project.scripts]
 claude-auto-review = "claude_auto_review.cli:main"
+car = "claude_auto_review.cli:main"
 
 [tool.setuptools.packages.find]
 include = ["claude_auto_review*"]

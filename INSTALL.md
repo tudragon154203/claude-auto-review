@@ -9,6 +9,8 @@
 | `claude-auto-review prompt`    | Manually trigger review prompt generation |
 | `claude-auto-review uninstall` | Remove plugin from current project        |
 
+`car` is an alias for `claude-auto-review`, so the same commands also work as `car install`, `car cancel`, `car prompt`, and `car uninstall`.
+
 ## Prerequisites
 
 - **Claude Code** with plugin/hook support
@@ -26,6 +28,7 @@ Then initialize the plugin in any project:
 ```bash
 # cd into project
 claude-auto-review install
+# or: car install
 ```
 
 This creates the local runtime tree and configures hooks. Run it from the project root where you want reviews to run.
@@ -35,6 +38,7 @@ This creates the local runtime tree and configures hooks. Run it from the projec
 ```bash
 pip install git+https://github.com/tudragon154203/claude-auto-review.git
 claude-auto-review install
+# or: car install
 ```
 
 ## Option C: Editable install from local checkout (development)
@@ -49,6 +53,7 @@ Then run this in the project where you want reviews to run:
 
 ```bash
 claude-auto-review install
+# or: car install
 ```
 
 **What the installer does** (all changes are inside the target project):
