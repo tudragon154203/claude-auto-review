@@ -1,4 +1,5 @@
 [![coverage](https://img.shields.io/badge/coverage-high-brightgreen?style=flat-square)](tests/)
+[![PyPI version](https://img.shields.io/pypi/v/claude-auto-review.svg)](https://pypi.org/project/claude-auto-review/)
 
 # Claude Auto Review
 
