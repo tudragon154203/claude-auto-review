@@ -193,6 +193,109 @@ class TestHasReviewFindings(unittest.TestCase):
         )
         self.assertTrue(has_review_findings(content))
 
+    def test_has_review_findings_basic_semantic_review_only_note(self):
+        content = (
+            "## Findings\n"
+            "**Note:** basic semantic review only, no semantic issues found.\n\n"
+            "## Verdict\n"
+            "Clean - no issues found.\n"
+        )
+        self.assertFalse(has_review_findings(content))
+
+    def test_has_review_findings_no_project_rules_file_note(self):
+        content = (
+            "## Findings\n"
+            "**Note:** no project rules file found, basic review only.\n\n"
+            "## Verdict\n"
+            "Clean - no issues found.\n"
+        )
+        self.assertFalse(has_review_findings(content))
+
+    def test_has_review_findings_generic_note_not_no_findings(self):
+        content = (
+            "## Findings\n"
+            "**Note:** some minor observation.\n\n"
+            "## Verdict\n"
+            "Clean - no issues found.\n"
+        )
+        self.assertTrue(has_review_findings(content))
+
+    def test_has_review_findings_note_with_contradiction(self):
+        content = (
+            "## Findings\n"
+            "**Note:** basic semantic review only, but a bug exists.\n\n"
+            "## Verdict\n"
+            "Clean - no issues found.\n"
+        )
+        # Note special bypass: "basic semantic review only" makes it a "no findings" line
+        self.assertFalse(has_review_findings(content))
+
+    def test_has_review_findings_with_prose_contradiction(self):
+        content = (
+            "## Findings\n"
+            "No issues found, but an edge case remains.\n\n"
+            "## Verdict\n"
+            "Clean - no issues found.\n"
+        )
+        self.assertTrue(has_review_findings(content))
+
+    def test_has_review_findings_no_findings_prefix_with_verb(self):
+        content = (
+            "## Findings\n"
+            "No issues found were identified.\n\n"
+            "## Verdict\n"
+            "Clean - no issues found.\n"
+        )
+        self.assertFalse(has_review_findings(content))
+
+    def test_has_review_findings_strict_prefix_no_punct(self):
+        content = (
+            "## Findings\n"
+            "clean\n\n"
+            "## Verdict\n"
+            "Clean - no issues found.\n"
+        )
+        self.assertFalse(has_review_findings(content))
+
+    def test_has_review_findings_unqualified_prefix_no_remainder(self):
+        content = (
+            "## Findings\n"
+            "Completed review from /tmp/prompt.md\n\n"
+            "## Verdict\n"
+            "Clean - no issues found.\n"
+        )
+        self.assertFalse(has_review_findings(content))
+
+    def test_has_review_findings_unqualified_prefix_with_contradiction(self):
+        content = (
+            "## Findings\n"
+            "Completed review from /tmp/prompt.md but issues remain.\n\n"
+            "## Verdict\n"
+            "Clean - no issues found.\n"
+        )
+        self.assertTrue(has_review_findings(content))
+
+    def test_parse_review_findings_heading_severity_from_numbered_heading(self):
+        content = "## Findings\n### 1. [Critical] Issue\n**Verdict:** Confirmed\n"
+        findings = parse_review_findings(content)
+        self.assertEqual(len(findings), 1)
+        self.assertEqual(findings[0].severity, "critical")
+
+    def test_parse_review_findings_heading_severity_from_plain_heading(self):
+        content = "## Findings\n### Major Problem\n**Verdict:** Confirmed\n"
+        findings = parse_review_findings(content)
+        self.assertIsNone(findings[0].severity)
+
+    def test_parse_review_findings_severity_fallback_to_field(self):
+        content = "## Findings\n### [Unknown] Something\n**Severity:** High\n**Verdict:** Confirmed\n"
+        findings = parse_review_findings(content)
+        self.assertEqual(findings[0].severity, "high")
+
+    def test_parse_review_findings_normalizes_unknown_severity_to_none(self):
+        content = "## Findings\n### [Mystery] Something\n**Verdict:** Confirmed\n"
+        findings = parse_review_findings(content)
+        self.assertIsNone(findings[0].severity)
+
 
 if __name__ == "__main__":
     unittest.main()

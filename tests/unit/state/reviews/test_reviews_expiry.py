@@ -61,6 +61,11 @@ class TestReviewsExpiry(unittest.TestCase):
         )
         self.assertFalse(is_review_expired(entry, 1))
 
+    def test_is_review_expired_non_review_metadata_fallback(self):
+        from claude_auto_review.state.models import EditRecord
+        entry = EditRecord(timestamp="2024-01-01T07:00:00+07:00", file="a.ts", hash="aaa")
+        self.assertFalse(is_review_expired(entry, 1))
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -1,6 +1,8 @@
 import unittest
 
 from claude_auto_review.state.hook_input import extract_file_paths_from_hook_input
+from claude_auto_review.state.serialization import serialize_review_file_entries
+from claude_auto_review.state.models import ReviewFileRecord
 
 from tests.unit.state.support import StateTestCase
 
@@ -195,6 +197,21 @@ class TestHookInputExtraction(StateTestCase, unittest.TestCase):
         }
         self.assertEqual(
             extract_file_paths_from_hook_input(payload), ["a.ts", "b.ts"]
+        )
+
+    def test_copy_targets_with_exactly_two_args(self):
+        payload = {"tool_input": {"command": "cp src.ts dest.ts"}}
+        self.assertEqual(extract_file_paths_from_hook_input(payload), ["dest.ts"])
+
+    def test_serialize_review_file_entries_with_to_dict_protocol(self):
+        entries = [
+            ReviewFileRecord(file="a.ts", hash="aaa"),
+            ReviewFileRecord(file="b.ts", hash="bbb"),
+        ]
+        result = serialize_review_file_entries(entries)
+        self.assertEqual(
+            result,
+            [{"file": "a.ts", "hash": "aaa"}, {"file": "b.ts", "hash": "bbb"}]
         )
 
 
