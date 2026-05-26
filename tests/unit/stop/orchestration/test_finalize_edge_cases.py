@@ -3,7 +3,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-from claude_auto_review.config.constants import EXIT_REVIEW_FAILED, EXIT_STOP_APPROVED
+from claude_auto_review.config.constants import EXIT_REVIEW_FAILED
 from claude_auto_review.config.models import PluginSettings
 from claude_auto_review.state.models import EditRecord, ReviewMetadata
 from claude_auto_review.stop.orchestration.context import RuntimeContext
@@ -80,14 +80,13 @@ class TestFinalizeEdgeCases(unittest.TestCase):
         ],
     )
     @patch("claude_auto_review.stop.orchestration.finalize.classify_review_artifact_state")
-    @patch("claude_auto_review.stop.orchestration.finalize.approve_response")
-    def test_empty_stdout_after_retry_logs_approval_and_returns_0(
-        self, mock_approve, mock_classify, mock_auto, mock_prompt, mock_log, mock_block_pending, mock_covered
+    def test_empty_stdout_after_retry_blocks_pending_review(
+        self, mock_classify, mock_auto, mock_prompt, mock_log, mock_block_pending, mock_covered
     ):
         mock_classify.side_effect = [MagicMock(status="pending"), MagicMock(status="pending")]
+        mock_block_pending.return_value = EXIT_REVIEW_FAILED
         result = finalize_review_stop(_ctx(), self.resolution)
-        self.assertEqual(result, EXIT_STOP_APPROVED)
-        mock_approve.assert_called_once_with("Claude Auto Review: review r1 auto-approved (empty stdout)")
+        self.assertEqual(result, EXIT_REVIEW_FAILED)
         mock_log.assert_any_call(
             Path("/fake"),
             "stop_hook_reviewer_retry",
@@ -96,18 +95,11 @@ class TestFinalizeEdgeCases(unittest.TestCase):
         )
         mock_log.assert_any_call(
             Path("/fake"),
-            "stop_hook_reviewer_empty_approved",
+            "stop_hook_reviewer_empty_blocked",
             client_id="c",
             reviewId="r1",
         )
-        mock_log.assert_any_call(
-            Path("/fake"),
-            "stop_approved",
-            client_id="c",
-            reason="review_auto_approved_empty_stdout",
-            reviewId="r1",
-        )
-        mock_block_pending.assert_not_called()
+        mock_block_pending.assert_called_once()
 
     @patch("claude_auto_review.stop.orchestration.finalize.get_entries_covered_by_review", return_value=[])
     @patch("claude_auto_review.stop.orchestration.finalize.apply_completed_review")

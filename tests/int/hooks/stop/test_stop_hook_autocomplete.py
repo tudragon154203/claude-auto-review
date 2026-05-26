@@ -99,6 +99,50 @@ class TestStopHookAutocomplete(HookTestCase, unittest.TestCase):
         self.assertIn("stop_hook_reviewer_done", log_content)
         self.assertIn('"backend":"codex"', log_content)
 
+    def test_stop_hook_with_empty_codex_output_blocks_pending_review(self):
+        project_root = self.temp_project()
+        (project_root / "src" / "app.ts").write_text("export const value = 1;\n", encoding="utf-8")
+        settings_dir = project_root / ".claude"
+        settings_dir.mkdir(parents=True, exist_ok=True)
+        (settings_dir / "settings.json").write_text(
+            json.dumps({"claude-auto-review": {"reviewerBackend": "codex"}}),
+            encoding="utf-8",
+        )
+
+        self.run_python(
+            "hooks/post_tool_use.py",
+            project_root,
+            input_text=json.dumps({"file_path": "src/app.ts"}),
+        )
+
+        stop = self.run_python(
+            "hooks/stop_hook.py",
+            project_root,
+            use_fake_claude=False,
+            use_fake_codex=True,
+            env_overrides={"CODEX_FAKE_MODE": "empty"},
+            timeout=660,
+        )
+
+        self.assertEqual(stop.returncode, 2, f"stop should block; stdout={stop.stdout[:200]}; stderr={stop.stderr[:200]}")
+        response = json.loads(stop.stdout.strip())
+        self.assertEqual(response["decision"], "block")
+        self.assertIn("Claude Auto Review: Review", response["systemMessage"])
+
+        review_dir = client_dir(project_root) / "reviews"
+        review_path = sorted(review_dir.glob("review-*.md"))[-1]
+        content = review_path.read_text(encoding="utf-8")
+        self.assertIn("## Verdict", content)
+        self.assertIn("Pending.", content)
+        self.assertFalse(is_review_complete(review_path))
+
+        log_path = client_dir(project_root) / "state.jsonl"
+        log_content = log_path.read_text(encoding="utf-8")
+        self.assertEqual(log_content.count("stop_hook_reviewer_empty"), 3)
+        self.assertIn('"type":"stop_hook_reviewer_empty"', log_content)
+        self.assertIn("stop_hook_reviewer_empty_blocked", log_content)
+        self.assertNotIn('"type":"stop_approved"', log_content)
+
     def test_stop_hook_blocks_invalid_reviewer_backend(self):
         project_root = self.temp_project()
         (project_root / "src" / "app.ts").write_text("export const value = 1;\n", encoding="utf-8")
@@ -130,4 +174,3 @@ class TestStopHookAutocomplete(HookTestCase, unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-

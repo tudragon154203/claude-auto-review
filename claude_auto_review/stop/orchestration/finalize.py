@@ -116,15 +116,6 @@ def finalize_review_stop(ctx: RuntimeContext, resolution: StopFlowResolution):
         return action_result
 
     if result is not None and result.status == "empty_stdout":
-        log_event(ctx.project_root, "stop_hook_reviewer_empty_approved", client_id=ctx.client_id, reviewId=review_id)
-        log_event(
-            ctx.project_root,
-            "stop_approved",
-            client_id=ctx.client_id,
-            reason="review_auto_approved_empty_stdout",
-            reviewId=review_id,
-        )
-        approve_response(f"Claude Auto Review: review {review_id} auto-approved (empty stdout)")
-        return 0
+        log_event(ctx.project_root, "stop_hook_reviewer_empty_blocked", client_id=ctx.client_id, reviewId=review_id)
 
     return block_pending_review(ctx, review_id, review_path, prompt_file, unreviewed)
