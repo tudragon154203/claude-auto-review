@@ -119,19 +119,19 @@ class PluginSettings:
             SETTING_RULES_FILE: self.rules_file,
             SETTING_INCLUDE_EXTS: list(self.include_extensions),
             SETTING_SKIP_EXTS: list(self.skip_extensions),
+            SETTING_REVIEWER_BACKEND: self.reviewer_backend,
+            SETTING_REVIEWER_MODEL: self.reviewer_model or self.resolved_reviewer_model(),
+            SETTING_REVIEWER_TIMEOUT: self.reviewer_timeout_seconds,
+            SETTING_FEEDBACK_MAX_CHARS: self.review_feedback_max_chars,
             SETTING_MAX_STOP_PASSES: self.max_stop_passes,
             SETTING_MINIMUM_BLOCKING_SEVERITY: self.minimum_blocking_severity,
             SETTING_PENDING_TIMEOUT: self.pending_review_timeout_hours,
-            SETTING_REVIEWER_BACKEND: self.reviewer_backend,
-            SETTING_REVIEWER_TIMEOUT: self.reviewer_timeout_seconds,
-            SETTING_FEEDBACK_MAX_CHARS: self.review_feedback_max_chars,
             SETTING_CLASSIFIER_ENABLED: self.last_assistant_message_classifier_enabled,
-            SETTING_CLASSIFIER_TIMEOUT: self.last_assistant_message_classifier_timeout_seconds,
             SETTING_CLASSIFIER_MODEL: self.classifier_model,
+            SETTING_CLASSIFIER_TIMEOUT: self.last_assistant_message_classifier_timeout_seconds,
             SETTING_STALE_CLIENT_TIMEOUT: self.stale_client_timeout_hours,
             SETTING_DEBUG: self.debug,
         }
-        mapping[SETTING_REVIEWER_MODEL] = self.reviewer_model or self.resolved_reviewer_model()
         mapping.update(self.extras)
         return mapping
 

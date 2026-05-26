@@ -19,6 +19,29 @@ class TestReviewerBackendSetting(unittest.TestCase):
     def test_default_settings_includes_resolved_reviewer_model(self):
         self.assertEqual(PluginSettings().to_mapping()["reviewerModel"], DEFAULT_CLAUDE_REVIEWER_MODEL)
 
+    def test_to_mapping_orders_related_keys_together(self):
+        self.assertEqual(
+            list(PluginSettings().to_mapping().keys()),
+            [
+                "enabled",
+                "rulesFile",
+                "includeExtensions",
+                "skipExtensions",
+                "reviewerBackend",
+                "reviewerModel",
+                "reviewerTimeoutSeconds",
+                "reviewFeedbackMaxChars",
+                "maxStopPasses",
+                "minimumBlockingSeverity",
+                "pendingReviewTimeoutHours",
+                "lastAssistantMessageClassifierEnabled",
+                "classifierModel",
+                "lastAssistantMessageClassifierTimeoutSeconds",
+                "staleClientTimeoutHours",
+                "debug",
+            ],
+        )
+
     def test_reviewer_backends_contains_claude_and_codex(self):
         self.assertEqual(REVIEWER_BACKENDS, frozenset({"claude", "codex"}))
 
