@@ -2,19 +2,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from claude_auto_review.state.models import ReviewMetadata
-from claude_auto_review.stop.orchestration.finalize import _review_artifact_state
-
-
-def _mk_review(reviewId: str = "r1", reviewPath: str = "/fake/r.md") -> ReviewMetadata:
-    return ReviewMetadata(
-        timestamp="2026-05-11T10:00:00+07:00",
-        reviewId=reviewId,
-        reviewPath=reviewPath,
-        files=[],
-        clientId="c",
-        status="pending",
-    )
+from claude_auto_review.stop.orchestration.review_artifact_evaluator import classify_review_artifact_state
 
 
 class TestReviewArtifactState(unittest.TestCase):
@@ -24,7 +12,7 @@ class TestReviewArtifactState(unittest.TestCase):
             review_path = Path(tmpdir) / "review.md"
             review_path.write_text("## Verdict\nClean\n", encoding="utf-8")
 
-            artifact_state = _review_artifact_state(review_path)
+            artifact_state = classify_review_artifact_state(review_path)
 
         self.assertEqual(artifact_state.status, "complete_clean")
         self.assertEqual(artifact_state.verdict, "Clean")
@@ -41,7 +29,7 @@ class TestReviewArtifactState(unittest.TestCase):
                 encoding="utf-8",
             )
 
-            artifact_state = _review_artifact_state(review_path)
+            artifact_state = classify_review_artifact_state(review_path)
 
             self.assertEqual(artifact_state.status, "complete_clean")
             self.assertNotIn(

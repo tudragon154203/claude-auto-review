@@ -40,8 +40,9 @@ class TestFinalizeEdgeCases(unittest.TestCase):
         )
 
     @patch("claude_auto_review.stop.orchestration.finalize.get_entries_covered_by_review", return_value=[])
-    @patch("claude_auto_review.stop.orchestration.finalize._read_review_verdict", return_value=None)
-    def test_missing_review_file_blocks(self, mock_verdict, mock_covered):
+    @patch("claude_auto_review.stop.orchestration.finalize.classify_review_artifact_state")
+    def test_missing_review_file_blocks(self, mock_classify, mock_covered):
+        mock_classify.side_effect = [MagicMock(status="pending"), MagicMock(status="pending")]
         result = finalize_review_stop(_ctx(), self.resolution)
         self.assertEqual(result, EXIT_REVIEW_FAILED)
 
@@ -78,11 +79,12 @@ class TestFinalizeEdgeCases(unittest.TestCase):
             MagicMock(status="empty_stdout"),
         ],
     )
-    @patch("claude_auto_review.stop.orchestration.finalize._read_review_verdict", side_effect=["Pending.", None])
+    @patch("claude_auto_review.stop.orchestration.finalize.classify_review_artifact_state")
     @patch("claude_auto_review.stop.orchestration.finalize.approve_response")
     def test_empty_stdout_after_retry_logs_approval_and_returns_0(
-        self, mock_approve, mock_verdict, mock_auto, mock_prompt, mock_log, mock_block_pending, mock_covered
+        self, mock_approve, mock_classify, mock_auto, mock_prompt, mock_log, mock_block_pending, mock_covered
     ):
+        mock_classify.side_effect = [MagicMock(status="pending"), MagicMock(status="pending")]
         result = finalize_review_stop(_ctx(), self.resolution)
         self.assertEqual(result, EXIT_STOP_APPROVED)
         mock_approve.assert_called_once_with("Claude Auto Review: review r1 auto-approved (empty stdout)")

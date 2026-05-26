@@ -1,77 +1,20 @@
 from pathlib import Path
-from dataclasses import dataclass
-from typing import Literal
-
 from claude_auto_review.review.completion import apply_completed_review, record_completed_review
 from claude_auto_review.runtime.events import log_event
-from claude_auto_review.state.reviews.completion import (
-    is_completed_review_content,
-    is_review_complete_verdict,
-)
-from claude_auto_review.config.models import DEFAULT_MINIMUM_BLOCKING_SEVERITY
-from claude_auto_review.state.reviews.findings import has_blocking_review_findings
-from claude_auto_review.state.reviews.normalization import normalize_review_verdict_content
-from claude_auto_review.state.reviews.review_text import extract_review_verdict_text
 from claude_auto_review.stop.feedback import block_completed_review_findings, build_review_completion_prompt
 from claude_auto_review.stop.reviews.prompt_runner import AutocompleteResult, attempt_stop_autocomplete
 from claude_auto_review.stop.reviews.review_prompt_runner import _review_prompt_path
 from claude_auto_review.stop.reviews.selection import get_entries_covered_by_review
 from claude_auto_review.stop.orchestration.context import RuntimeContext
+from claude_auto_review.stop.orchestration.review_artifact_evaluator import classify_review_artifact_state
 from claude_auto_review.stop.orchestration.resolution import StopFlowResolution
 from claude_auto_review.stop.orchestration.response_actions import block_pending_review
 from claude_auto_review.stop.response import approve_response, block_response
 from claude_auto_review.state.snapshot import StateSnapshot
 
 
-@dataclass(frozen=True)
-class ReviewArtifactState:
-    status: Literal["complete_clean", "complete_findings", "pending"]
-    verdict: str | None = None
-
-
 _AUTOCOMPLETE_RETRY_ATTEMPTS = 2
 
-
-def _load_and_ensure_normalized_review(review_path, client_id=None, minimum_blocking_severity=DEFAULT_MINIMUM_BLOCKING_SEVERITY):
-    """Load review content and normalize verdict section if needed."""
-    if not review_path.is_file():
-        return None
-    content = review_path.read_text(encoding="utf-8", errors="replace")
-    normalized = normalize_review_verdict_content(content, client_id=client_id, minimum_blocking_severity=minimum_blocking_severity)
-    if normalized != content:
-        review_path.write_text(normalized, encoding="utf-8", newline="\n")
-        return normalized
-    return content
-
-
-def _read_review_verdict(content):
-    if content is None:
-        return None
-    return extract_review_verdict_text(content)
-
-
-def _review_has_completed_artifact(content):
-    if content is None:
-        return False
-    return is_completed_review_content(content)
-
-
-def _classify_artifact_state(verdict, content, minimum_blocking_severity):
-    if content is None:
-        return ReviewArtifactState(status="pending", verdict=verdict)
-    if is_review_complete_verdict(verdict):
-        if has_blocking_review_findings(content, minimum_blocking_severity):
-            return ReviewArtifactState(status="complete_findings", verdict=verdict)
-        return ReviewArtifactState(status="complete_clean", verdict=verdict)
-    if _review_has_completed_artifact(content):
-        return ReviewArtifactState(status="complete_findings", verdict=verdict)
-    return ReviewArtifactState(status="pending", verdict=verdict)
-
-
-def _review_artifact_state(review_path, minimum_blocking_severity=DEFAULT_MINIMUM_BLOCKING_SEVERITY, client_id=None):
-    content = _load_and_ensure_normalized_review(review_path, client_id=client_id, minimum_blocking_severity=minimum_blocking_severity)
-    verdict = _read_review_verdict(content)
-    return _classify_artifact_state(verdict, content, minimum_blocking_severity)
 
 
 def _apply_completed_clean_review(ctx, review_id, covered_entries):
@@ -134,7 +77,11 @@ def finalize_review_stop(ctx: RuntimeContext, resolution: StopFlowResolution):
         return 2
     reviewer_model = ctx.settings.resolved_reviewer_model(backend=reviewer_backend)
     # Phase 1: classify existing artifact
-    artifact_state = _review_artifact_state(review_path, ctx.settings.minimum_blocking_severity, client_id=ctx.client_id)
+    artifact_state = classify_review_artifact_state(
+        review_path,
+        minimum_blocking_severity=ctx.settings.minimum_blocking_severity,
+        client_id=ctx.client_id,
+    )
     action_result = _apply_artifact_state(ctx, artifact_state, review_id, review_path, covered_entries, unreviewed)
     if action_result is not None:
         return action_result
@@ -159,7 +106,11 @@ def finalize_review_stop(ctx: RuntimeContext, resolution: StopFlowResolution):
             log_event(ctx.project_root, "stop_hook_reviewer_retry", client_id=ctx.client_id, reviewId=review_id)
 
     # Phase 3: re-evaluate after retry
-    artifact_state = _review_artifact_state(review_path, ctx.settings.minimum_blocking_severity, client_id=ctx.client_id)
+    artifact_state = classify_review_artifact_state(
+        review_path,
+        minimum_blocking_severity=ctx.settings.minimum_blocking_severity,
+        client_id=ctx.client_id,
+    )
     action_result = _apply_artifact_state(ctx, artifact_state, review_id, review_path, covered_entries, unreviewed)
     if action_result is not None:
         return action_result

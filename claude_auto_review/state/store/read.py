@@ -50,6 +50,10 @@ def _state_snapshot(state):
     return StateSnapshot.from_events(state)
 
 
+def ensure_state_snapshot(state_or_snapshot):
+    return _state_snapshot(state_or_snapshot)
+
+
 def load_state_snapshot(project_root=None, client_id=None):
     from claude_auto_review.runtime.client_dirs import client_state_path
 
@@ -91,8 +95,8 @@ def was_hash_reviewed(state: list[StateEvent], file_path: str, file_hash: str) -
 
 
 def get_unreviewed_files(state: list[StateEvent]):
-    return _state_snapshot(state).unreviewed_files
+    return ensure_state_snapshot(state).unreviewed_files
 
 
 def consecutive_stop_blocks(state: list[StateEvent]) -> int:
-    return _state_snapshot(state).consecutive_stop_blocks
+    return ensure_state_snapshot(state).consecutive_stop_blocks

@@ -41,10 +41,11 @@ class TestFinalizeCompletedReview(unittest.TestCase):
 
     @patch("claude_auto_review.stop.orchestration.finalize.get_entries_covered_by_review", return_value=[])
     @patch("claude_auto_review.stop.orchestration.finalize.apply_completed_review", return_value=[])
-    @patch("claude_auto_review.stop.orchestration.finalize._load_and_ensure_normalized_review", return_value="## Verdict\nClean - no issues found. Claude may stop.\n")
+    @patch("claude_auto_review.stop.orchestration.finalize.classify_review_artifact_state")
     @patch("claude_auto_review.stop.orchestration.finalize.approve_response")
     @patch("claude_auto_review.stop.orchestration.finalize.log_event")
-    def test_completed_no_remaining_returns_0(self, mock_log, mock_approve, mock_load, mock_apply, mock_covered):
+    def test_completed_no_remaining_returns_0(self, mock_log, mock_approve, mock_classify, mock_apply, mock_covered):
+        mock_classify.return_value.status = "complete_clean"
         result = finalize_review_stop(_ctx(), self.resolution)
         self.assertEqual(result, EXIT_STOP_APPROVED)
         mock_approve.assert_called_once_with("Claude Auto Review: review r1 clean, all files covered")
@@ -59,17 +60,9 @@ class TestFinalizeCompletedReview(unittest.TestCase):
     @patch("claude_auto_review.stop.orchestration.finalize.get_entries_covered_by_review", return_value=[])
     @patch("claude_auto_review.stop.orchestration.finalize.record_completed_review")
     @patch("claude_auto_review.stop.orchestration.finalize.block_completed_review_findings")
-    @patch(
-        "claude_auto_review.stop.orchestration.finalize._load_and_ensure_normalized_review",
-        return_value=(
-            "## Findings\n"
-            "### 1. [Medium] Unused import\n"
-            "**Verdict:** Confirmed\n\n"
-            "## Verdict\n"
-            "Clean - no issues found. Claude may stop.\n"
-        ),
-    )
-    def test_completed_with_findings_returns_2(self, mock_load, mock_block, mock_record, mock_covered):
+    @patch("claude_auto_review.stop.orchestration.finalize.classify_review_artifact_state")
+    def test_completed_with_findings_returns_2(self, mock_classify, mock_block, mock_record, mock_covered):
+        mock_classify.return_value.status = "complete_findings"
         result = finalize_review_stop(_ctx(), self.resolution)
         self.assertEqual(result, EXIT_REVIEW_FAILED)
         mock_block.assert_called_once()

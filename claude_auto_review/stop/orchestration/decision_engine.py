@@ -10,6 +10,14 @@ from claude_auto_review.stop.classifier.last_assistant_message import classify_l
 from claude_auto_review.stop.orchestration.context import RuntimeContext
 from claude_auto_review.stop.orchestration.finalize import finalize_review_stop
 from claude_auto_review.stop.orchestration.pending import resolve_pending_review
+from claude_auto_review.stop.orchestration.stages import (
+    run_allow_no_unreviewed_stage,
+    run_classifier_stage,
+    run_circuit_breaker_stage,
+    run_enabled_stage,
+    run_pending_stage,
+    run_state_stage,
+)
 
 
 @dataclass(frozen=True)
@@ -72,54 +80,53 @@ class StopDecisionEngine:
         )
 
     def evaluate(self):
-        settings = self.ctx.settings
-        if not settings.enabled:
-            self._log_event(self.ctx.project_root, "stop_disabled", client_id=self.ctx.client_id)
-            return StopDecision(kind="allow", reason="disabled")
+        stage_result = run_enabled_stage(self.ctx, log_event_fn=self._log_event)
+        if stage_result is not None:
+            return StopDecision(kind=stage_result.kind, reason=stage_result.reason)
 
-        timeout_hours = settings.pending_review_timeout_hours
-        state_snapshot = self._load_state_snapshot(self.ctx.project_root, self.ctx.client_id)
-        state = state_snapshot.events
-        unreviewed = self._get_unreviewed_files(state_snapshot)
+        state_snapshot, state, unreviewed = run_state_stage(
+            self.ctx,
+            load_state_snapshot_fn=self._load_state_snapshot,
+            get_unreviewed_files_fn=self._get_unreviewed_files,
+        )
 
-        if not unreviewed:
-            return StopDecision(kind="allow", reason="no_unreviewed_files")
+        stage_result = run_allow_no_unreviewed_stage(unreviewed)
+        if stage_result is not None:
+            return StopDecision(kind=stage_result.kind, reason=stage_result.reason)
 
-        block_count = self._consecutive_stop_blocks(state_snapshot)
-        if block_count >= settings.max_stop_passes:
+        stage_result = run_circuit_breaker_stage(
+            self.ctx,
+            state_snapshot,
+            consecutive_stop_blocks_fn=self._consecutive_stop_blocks,
+        )
+        if stage_result is not None:
             return StopDecision(
-                kind="allow",
-                reason="circuit_breaker",
-                details={"block_count": block_count, "max_passes": settings.max_stop_passes},
+                kind=stage_result.kind,
+                reason=stage_result.reason,
+                details=stage_result.details,
             )
 
-        classifier_result = self._check_classifier_incomplete()
-        if classifier_result is not None:
+        classifier_outcome = run_classifier_stage(
+            self.ctx,
+            classify_last_assistant_message_fn=self._classify_last_assistant_message,
+        )
+        if classifier_outcome is not None:
             return StopDecision(
-                kind="allow",
-                reason="classifier_incomplete",
-                details={"classifier_status": classifier_result.status, "classifier_reason": classifier_result.reason},
+                kind=classifier_outcome.kind,
+                reason=classifier_outcome.reason,
+                details=classifier_outcome.details,
             )
 
-        resolution = self._resolve_pending_review(
+        stage_result = run_pending_stage(
             self.ctx,
             state,
             unreviewed,
-            timeout_hours,
-            self._get_reviewer_prompt_script(),
+            resolve_pending_review_fn=self._resolve_pending_review,
+            get_reviewer_prompt_script_fn=self._get_reviewer_prompt_script,
         )
-        if resolution.is_terminal:
-            return StopDecision(kind="terminal", details={"exit_code": resolution.exit_code})
-
-        return StopDecision(kind="finalize", details={"resolution": resolution})
-
-    def _check_classifier_incomplete(self):
-        if not self.ctx.settings.last_assistant_message_classifier_enabled:
-            return None
-        result = self._classify_last_assistant_message(self.ctx)
-        if result is not None and result.status == "incomplete":
-            return result
-        return None
+        if stage_result.kind == "terminal":
+            return StopDecision(kind="terminal", details={"exit_code": stage_result.exit_code})
+        return StopDecision(kind="finalize", details={"resolution": stage_result.resolution})
 
     def finalize(self, resolution):
         return self._finalize_review_stop(self.ctx, resolution)
