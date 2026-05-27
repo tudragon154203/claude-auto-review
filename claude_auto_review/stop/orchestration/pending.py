@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from claude_auto_review.review.lifecycle import ReviewLifecycleService
 from claude_auto_review.stop.feedback import build_unreviewed_files_string
 from claude_auto_review.stop.orchestration.context import RuntimeContext

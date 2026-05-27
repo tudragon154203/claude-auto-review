@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from pathlib import Path
 
 from claude_auto_review.timestamps import parse_iso_timestamp

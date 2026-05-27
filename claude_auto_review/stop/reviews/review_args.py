@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 def _build_claude_review_args(model):
     return [
         "--print",

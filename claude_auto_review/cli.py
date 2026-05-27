@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """Single entry point for ``claude-auto-review`` CLI with subcommands."""
 
+from __future__ import annotations
+
 import sys
 from pathlib import Path
 from importlib.metadata import version, PackageNotFoundError

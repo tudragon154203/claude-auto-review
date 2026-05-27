@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from dataclasses import dataclass
 
 from claude_auto_review.stop.orchestration.resolution import FinalizeAction, FinalizeResult

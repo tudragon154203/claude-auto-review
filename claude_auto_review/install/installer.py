@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from pathlib import Path
 
 from claude_auto_review.paths.file_utils import write_text_if_changed as _write_text_if_changed

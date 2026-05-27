@@ -11,6 +11,7 @@ class _HasToDict(Protocol):
 
 @dataclass(frozen=True)
 class ReviewFileRecord:
+    """A file and its content hash tracked by a review run."""
     file: str
     hash: str
 

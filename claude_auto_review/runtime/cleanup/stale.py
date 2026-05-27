@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import time
 
 from claude_auto_review.config.constants import SECONDS_PER_HOUR

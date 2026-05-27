@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from claude_auto_review.state.store.read import read_jsonl_state_records
 
 

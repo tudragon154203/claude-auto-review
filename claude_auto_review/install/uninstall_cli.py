@@ -3,6 +3,8 @@
 
 Removes runtime data, cleans up .claude/settings.json and .gitignore.
 """
+from __future__ import annotations
+
 import json
 import sys
 import shutil

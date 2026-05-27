@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from claude_auto_review.state.edit_record import EditRecord, StopBlockedRecord
 from claude_auto_review.state.file_record import (
     ReviewFileRecord,

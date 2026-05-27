@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from pathlib import Path, PurePath
 
 from claude_auto_review.paths.shell_parsing import (

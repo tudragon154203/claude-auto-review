@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 _REVIEW_PROMPT_TEMPLATE = """# Claude Auto Review Request {review_id}
 
 You must review the changed files before stopping. Use the reviewer agent behavior from `agents/reviewer.md`: focus on semantic bugs, security, maintainability, and project rules. Do not nitpick formatting.

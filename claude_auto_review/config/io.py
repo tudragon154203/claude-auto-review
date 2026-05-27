@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import json
 
 from claude_auto_review.config.models import PluginSettings

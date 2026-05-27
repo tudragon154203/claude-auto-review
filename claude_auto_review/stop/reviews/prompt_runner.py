@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import shutil
 import subprocess
 import tempfile
@@ -135,7 +137,8 @@ def _attempt_codex_autocomplete(
         file_output = output_file.read_text(encoding="utf-8", errors="replace").strip()
 
     raw_stdout = cli_result.stdout or ""
-    extracted = file_output or _extract_codex_final_message(raw_stdout)
+    stdout_extracted = _extract_codex_final_message(raw_stdout)
+    extracted = file_output if file_output and not file_output.startswith("</") else stdout_extracted
     if extracted and extracted != raw_stdout.strip():
         cli_result = subprocess.CompletedProcess(
             cli_result.args, cli_result.returncode,

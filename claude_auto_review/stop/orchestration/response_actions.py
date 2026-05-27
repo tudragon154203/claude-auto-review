@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from claude_auto_review.paths.path_utils import local_now_iso
 from claude_auto_review.state.models import StopBlockedRecord
 from claude_auto_review.state.store.writer import StateEventWriter

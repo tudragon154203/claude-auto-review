@@ -1,6 +1,9 @@
+from __future__ import annotations
+
 from dataclasses import dataclass
 from datetime import datetime
 from functools import cached_property
+from typing import Any, Callable
 
 from claude_auto_review.paths.path_utils import is_runtime_relative_path
 from claude_auto_review.state.models import EditRecord, ReviewMetadata, StateEvent, StopBlockedRecord
@@ -26,9 +29,9 @@ def _edit_entry_key(entry: StateEvent) -> tuple[str, str] | None:
     return entry.file, entry.hash
 
 
-def _latest_by_key(entries, key_fn, timestamp_fn=None):
-    latest = {}
-    latest_timestamps = {}
+def _latest_by_key(entries: list[StateEvent], key_fn: Callable[[StateEvent], Any], timestamp_fn: Callable[[StateEvent], datetime | None] | None = None) -> dict[Any, StateEvent]:
+    latest: dict[Any, StateEvent] = {}
+    latest_timestamps: dict[Any, datetime | None] = {}
     for entry in entries:
         key = key_fn(entry)
         if key is None:
@@ -48,10 +51,11 @@ def _latest_by_key(entries, key_fn, timestamp_fn=None):
 
 @dataclass(frozen=True)
 class StateSnapshot:
+    """Immutable view over the append-only event log, with cached property accessors."""
     events: list[StateEvent]
 
     @classmethod
-    def from_events(cls, events: list[StateEvent]):
+    def from_events(cls, events: list[StateEvent]) -> StateSnapshot:
         return cls(events=list(events))
 
     @cached_property

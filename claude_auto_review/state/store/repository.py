@@ -41,7 +41,7 @@ class StateRepository:
     def mark_files_reviewed(self, entries: list[EditRecord], review_id: str, *, timestamp=None) -> None:
         mark_files_reviewed(entries, review_id, self.project_root, client_id=self.client_id, timestamp=timestamp)
 
-    def get_file_hash(self, file_path: str):
+    def get_file_hash(self, file_path: str) -> str | None:
         return get_file_hash(file_path, self.project_root)
 
 

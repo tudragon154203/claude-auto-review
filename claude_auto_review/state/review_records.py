@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from dataclasses import dataclass
 from typing import Any, Literal, Optional
 
@@ -7,10 +9,12 @@ from claude_auto_review.state.file_record import (
     _parse_review_file_entries,
     serialize_review_file_entries,
 )
+from claude_auto_review.state.record_utils import dict_with_optional
 
 
 @dataclass(frozen=True)
 class ReviewMetadata:
+    """Tracks a review prompt creation and its lifecycle state."""
     timestamp: str
     reviewId: str
     reviewPath: str
@@ -47,6 +51,7 @@ class ReviewMetadata:
 
 @dataclass(frozen=True)
 class ReviewCompletedRecord:
+    """Recorded when a review run finishes with covered file entries."""
     timestamp: str
     reviewId: str
     files: list[ReviewFileRecord]
@@ -59,18 +64,17 @@ class ReviewCompletedRecord:
         object.__setattr__(self, "files", _coerce_review_file_entries(self.files))
 
     def to_dict(self) -> dict[str, Any]:
-        d: dict[str, Any] = {
-            "timestamp": self.timestamp,
-            "type": self.type,
-            "reviewId": self.reviewId,
-            "files": serialize_review_file_entries(self.files),
-            "clientId": self.clientId,
-        }
-        if self.duration is not None:
-            d["duration"] = self.duration
-        if self.durationSeconds is not None:
-            d["durationSeconds"] = self.durationSeconds
-        return d
+        return dict_with_optional(
+            {
+                "timestamp": self.timestamp,
+                "type": self.type,
+                "reviewId": self.reviewId,
+                "files": serialize_review_file_entries(self.files),
+                "clientId": self.clientId,
+            },
+            duration=self.duration,
+            durationSeconds=self.durationSeconds,
+        )
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "ReviewCompletedRecord":
@@ -86,6 +90,7 @@ class ReviewCompletedRecord:
 
 @dataclass(frozen=True)
 class ReviewAutocompleteRecord:
+    """Recorded when an auto-complete review backend finishes."""
     timestamp: str
     reviewId: str
     status: str
@@ -94,16 +99,16 @@ class ReviewAutocompleteRecord:
     type: Literal["review_autocomplete"] = "review_autocomplete"
 
     def to_dict(self) -> dict[str, Any]:
-        d: dict[str, Any] = {
-            "timestamp": self.timestamp,
-            "type": self.type,
-            "reviewId": self.reviewId,
-            "status": self.status,
-            "stdout_len": self.stdout_len,
-        }
-        if self.returncode is not None:
-            d["returncode"] = self.returncode
-        return d
+        return dict_with_optional(
+            {
+                "timestamp": self.timestamp,
+                "type": self.type,
+                "reviewId": self.reviewId,
+                "status": self.status,
+                "stdout_len": self.stdout_len,
+            },
+            returncode=self.returncode,
+        )
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "ReviewAutocompleteRecord":

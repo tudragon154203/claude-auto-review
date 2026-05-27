@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from claude_auto_review.stop.classifier.models import CLASSIFIER_MAX_TOKENS, _SYSTEM_PROMPT
 
 

@@ -1,9 +1,14 @@
+from __future__ import annotations
+
 from dataclasses import dataclass
 from typing import Any, Literal, Optional
+
+from claude_auto_review.state.record_utils import dict_with_optional
 
 
 @dataclass(frozen=True)
 class EditRecord:
+    """Tracks a single file edit event with its content hash."""
     timestamp: str
     file: str
     hash: str
@@ -13,18 +18,17 @@ class EditRecord:
     type: Literal["edit"] = "edit"
 
     def to_dict(self) -> dict[str, Any]:
-        d = {
-            "timestamp": self.timestamp,
-            "type": self.type,
-            "file": self.file,
-            "hash": self.hash,
-            "reviewed": self.reviewed,
-        }
-        if self.reviewId is not None:
-            d["reviewId"] = self.reviewId
-        if self.deleted:
-            d["deleted"] = self.deleted
-        return d
+        return dict_with_optional(
+            {
+                "timestamp": self.timestamp,
+                "type": self.type,
+                "file": self.file,
+                "hash": self.hash,
+                "reviewed": self.reviewed,
+            },
+            reviewId=self.reviewId,
+            deleted=self.deleted if self.deleted else None,
+        )
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "EditRecord":
@@ -40,6 +44,7 @@ class EditRecord:
 
 @dataclass(frozen=True)
 class StopBlockedRecord:
+    """Recorded when a stop attempt is blocked due to unreviewed files."""
     timestamp: str
     reason: Optional[str] = None
     reviewId: Optional[str] = None
@@ -47,17 +52,12 @@ class StopBlockedRecord:
     type: Literal["stop_blocked"] = "stop_blocked"
 
     def to_dict(self) -> dict[str, Any]:
-        d = {
-            "timestamp": self.timestamp,
-            "type": self.type,
-        }
-        if self.reason is not None:
-            d["reason"] = self.reason
-        if self.reviewId is not None:
-            d["reviewId"] = self.reviewId
-        if self.files is not None:
-            d["files"] = self.files
-        return d
+        return dict_with_optional(
+            {"timestamp": self.timestamp, "type": self.type},
+            reason=self.reason,
+            reviewId=self.reviewId,
+            files=self.files,
+        )
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "StopBlockedRecord":

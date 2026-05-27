@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+from __future__ import annotations
+
 import sys
 
 from claude_auto_review.hooks.common import run_hook

@@ -5,6 +5,8 @@ All public names are imported from their canonical locations so that
 to work unchanged.
 """
 
+from __future__ import annotations
+
 from claude_auto_review.state.reviews.blocking import (
     _severity_rank as _severity_rank,
     has_blocking_review_findings as has_blocking_review_findings,

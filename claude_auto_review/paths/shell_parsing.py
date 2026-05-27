@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 SHELL_CONTROL_TOKENS = {";", "&&", "||", "|"}
 SHELL_REDIRECT_TOKENS = {">", ">>"}
 SHELL_WRAPPER_COMMANDS = {"bash", "sh", "zsh", "fish", "cmd", "cmd.exe", "powershell", "pwsh"}

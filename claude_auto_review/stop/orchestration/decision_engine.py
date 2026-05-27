@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from claude_auto_review.config.io import load_settings
 from claude_auto_review.paths.path_utils import get_reviewer_prompt_script
 from claude_auto_review.runtime.client_dirs import get_client_id

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from claude_auto_review.stop.orchestration.context import ResponsePayload, StopDecision
 from claude_auto_review.stop.orchestration.decision_engine import StopDecisionEngine
 from claude_auto_review.stop.orchestration.resolution import StopDecisionKind

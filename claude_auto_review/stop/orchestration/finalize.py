@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from pathlib import Path
 
 from claude_auto_review.review.completion import apply_completed_review, record_completed_review
@@ -47,7 +49,7 @@ def _invalid_backend_payload(error: Exception) -> ResponsePayload:
     )
 
 
-def _apply_completed_clean_review_result(ctx, review_id, covered_entries):
+def _apply_completed_clean_review_result(ctx: RuntimeContext, review_id: str, covered_entries: list[Any]) -> tuple[FinalizeResult, ResponsePayload]:
     remaining = apply_completed_review(ctx.project_root, ctx.client_id, review_id, covered_entries)
     if not remaining:
         log_event(
@@ -61,7 +63,7 @@ def _apply_completed_clean_review_result(ctx, review_id, covered_entries):
     return plan_for_partial_review().result, _partial_review_payload(review_id, len(remaining))
 
 
-def _apply_finalize_plan_result(ctx, plan, review_id, review_path, covered_entries, unreviewed):
+def _apply_finalize_plan_result(ctx: RuntimeContext, plan: Any, review_id: str, review_path: Path, covered_entries: list[Any], unreviewed: list[Any]) -> tuple[FinalizeResult, ResponsePayload | None]:
     if plan.effect == "apply_completed_clean_review":
         return _apply_completed_clean_review_result(ctx, review_id, covered_entries)
     if plan.effect == "record_findings_block":
@@ -71,7 +73,7 @@ def _apply_finalize_plan_result(ctx, plan, review_id, review_path, covered_entri
     raise ValueError(f"Unsupported finalize plan effect: {plan.effect}")
 
 
-def _attempt_review_autocomplete(ctx: RuntimeContext, review_id, review_path, prompt_file):
+def _attempt_review_autocomplete(ctx: RuntimeContext, review_id: str, review_path: Path, prompt_file: Path) -> Any:
     lifecycle = ReviewLifecycleService(ctx)
     user_prompt = build_review_completion_prompt(review_path)
     result = None
@@ -139,7 +141,7 @@ def finalize_review_stop_result(ctx: RuntimeContext, resolution: StopFlowResolut
     return plan_for_pending_review().result, None
 
 
-def finalize_review_stop(ctx: RuntimeContext, resolution: StopFlowResolution):
+def finalize_review_stop(ctx: RuntimeContext, resolution: StopFlowResolution) -> int:
     result, payload = finalize_review_stop_result(ctx, resolution)
     if payload is not None:
         if payload.feedback is None:

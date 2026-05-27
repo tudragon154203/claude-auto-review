@@ -1,6 +1,9 @@
+from __future__ import annotations
+
 import sys
 from importlib import import_module
 from pathlib import Path
+from types import ModuleType
 
 
 def repo_root_from_file(file_path: str) -> Path:
@@ -16,5 +19,5 @@ def ensure_repo_root_on_path(file_path: str) -> Path:
 
 
 def run_module_main(module_name: str) -> int:
-    module = import_module(module_name)
+    module: ModuleType = import_module(module_name)
     return module.main()

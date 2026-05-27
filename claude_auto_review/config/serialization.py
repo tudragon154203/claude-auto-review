@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Any, Mapping
 
+from claude_auto_review.config.constants import DEFAULT_CLASSIFIER_TIMEOUT_SECONDS
 from claude_auto_review.config.reviewer import DEFAULT_REVIEWER_BACKEND, resolve_reviewer_backend, resolve_reviewer_model
 from claude_auto_review.config.severity import DEFAULT_MINIMUM_BLOCKING_SEVERITY, coerce_minimum_blocking_severity
 from claude_auto_review.config.utils.coercion import coerce_bool, coerce_extensions, coerce_float, coerce_int
@@ -27,7 +28,7 @@ from claude_auto_review.config.utils.schema import (
 )
 
 DEFAULT_CLASSIFIER_MODEL = "claude-haiku-4-5"
-DEFAULT_TIMEOUT_SECONDS = 20
+DEFAULT_TIMEOUT_SECONDS = DEFAULT_CLASSIFIER_TIMEOUT_SECONDS
 
 
 def plugin_settings_kwargs(mapping: Mapping[str, Any] | None) -> dict[str, Any]:

@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 import subprocess
 from pathlib import Path
+from typing import Any
 
 from claude_auto_review.config.constants import EXIT_REVIEW_FAILED
 from claude_auto_review.review.completion import apply_completed_review, record_completed_review
@@ -25,7 +26,7 @@ from claude_auto_review.stop.reviews.selection import find_pending_review_for_fi
 _AUTOCOMPLETE_RETRY_ATTEMPTS = 2
 
 
-def build_review_prompt_env(payload):
+def build_review_prompt_env(payload: dict[str, Any]) -> dict[str, str]:
     env = os.environ.copy()
     session_id = payload.get("session_id")
     if session_id:
@@ -37,13 +38,13 @@ class ReviewLifecycleService:
     def __init__(self, ctx: RuntimeContext):
         self.ctx = ctx
 
-    def find_pending_review(self, state, unreviewed, timeout_hours):
+    def find_pending_review(self, state: list[Any], unreviewed: list[Any], timeout_hours: float) -> Any:
         return find_pending_review_for_files(state, unreviewed, self.ctx.project_root, timeout_hours)
 
-    def create_review_prompt(self, unreviewed, settings=None):
+    def create_review_prompt(self, unreviewed: list[Any], settings: Any = None) -> Any:
         return create_review_prompt_files(self.ctx, unreviewed, settings=settings)
 
-    def execute_review_prompt(self, unreviewed, timeout_hours, review_prompt_script, files_str=None):
+    def execute_review_prompt(self, unreviewed: list[Any], timeout_hours: float, review_prompt_script: str, files_str: str | None = None) -> StopFlowResolution:
         files_str = files_str or build_unreviewed_files_string(unreviewed)
         env = build_review_prompt_env(self.ctx.payload)
         try:
@@ -54,7 +55,7 @@ class ReviewLifecycleService:
             return self.fail_review(files_str, EXIT_REVIEW_FAILED, "stop_hook_review_error", error=error)
         return self.resolve_prompted_review(timeout_hours, files_str, result)
 
-    def fail_review(self, files_str, exit_code, event_type, script=None, error=None):
+    def fail_review(self, files_str: str, exit_code: int, event_type: str, script: str | None = None, error: Exception | None = None) -> StopFlowResolution:
         log_event(
             self.ctx.project_root,
             event_type,
@@ -64,7 +65,7 @@ class ReviewLifecycleService:
         )
         return StopFlowResolution(state=[], unreviewed=[], exit_code=exit_code)
 
-    def resolve_prompted_review(self, timeout_hours, files_str, result):
+    def resolve_prompted_review(self, timeout_hours: float, files_str: str, result: Any) -> StopFlowResolution:
         state, unreviewed = _reload_client_state(self.ctx)
         if not unreviewed:
             log_event(
@@ -89,7 +90,7 @@ class ReviewLifecycleService:
             client_id=self.ctx.client_id,
         )
 
-    def attempt_autocomplete(self, review_id, review_path, prompt_file, *, user_prompt=None):
+    def attempt_autocomplete(self, review_id: str, review_path: Path, prompt_file: Path, *, user_prompt: str | None = None) -> AutocompleteResult | None:
         user_prompt = user_prompt or build_review_completion_prompt(review_path)
         reviewer_timeout_seconds = self.ctx.settings.reviewer_timeout_seconds
         reviewer_backend = self.ctx.settings.resolved_reviewer_backend()
@@ -113,11 +114,11 @@ class ReviewLifecycleService:
                 log_event(self.ctx.project_root, "stop_hook_reviewer_retry", client_id=self.ctx.client_id, reviewId=review_id)
         return result
 
-    def review_prompt_path(self, review_id):
+    def review_prompt_path(self, review_id: str) -> Path:
         return _review_prompt_path(self.ctx, review_id)
 
-    def apply_completed_review(self, review_id, covered_entries):
+    def apply_completed_review(self, review_id: str, covered_entries: list[Any]) -> list[Any]:
         return apply_completed_review(self.ctx.project_root, self.ctx.client_id, review_id, covered_entries)
 
-    def record_completed_review(self, review_id, covered_entries):
+    def record_completed_review(self, review_id: str, covered_entries: list[Any]) -> None:
         return record_completed_review(self.ctx.project_root, self.ctx.client_id, review_id, covered_entries)

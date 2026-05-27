@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import json
 import socket
 from urllib import error, parse, request

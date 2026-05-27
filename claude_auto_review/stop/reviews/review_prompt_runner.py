@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import sys
 
 from claude_auto_review.runtime.client_dirs import client_run_dir

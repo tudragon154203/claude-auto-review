@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import shutil
 
 from claude_auto_review.runtime.events import log_failure
