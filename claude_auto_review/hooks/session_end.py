@@ -1,16 +1,14 @@
 #!/usr/bin/env python3
 import sys
 
+from claude_auto_review.hooks.common import run_hook
 from claude_auto_review.runtime.cleanup.session import cancel_session
 from claude_auto_review.runtime.cleanup.stale import cleanup_stale_clients
 from claude_auto_review.runtime.events import log_event
-from claude_auto_review.runtime.hook_context import build_hook_runtime_context
 from claude_auto_review.runtime.pending_cleanup import cleanup_expired_pending_reviews
-from claude_auto_review.runtime.process import run_fail_open
 
 
-def _run_session_end():
-    ctx = build_hook_runtime_context(sys.stdin.read(), ensure_client=False)
+def _run_session_end(ctx):
     project_root = ctx.project_root
     client_id = ctx.client_id
     expired_removed = cleanup_expired_pending_reviews(project_root, client_id=client_id)
@@ -29,7 +27,7 @@ def _run_session_end():
 
 
 def main():
-    return run_fail_open(_run_session_end, event_type="session_end_error")
+    return run_hook(_run_session_end, raw_input=sys.stdin.read(), event_type="session_end_error", ensure_client=False)
 
 
 if __name__ == "__main__":

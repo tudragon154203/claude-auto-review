@@ -6,7 +6,7 @@ from claude_auto_review.runtime.hook_context import build_hook_runtime_context
 from tests.unit.state.support import StateTestCase
 
 
-class TestHookRuntimeContext(StateTestCase, unittest.TestCase):
+class TestBuildHookRuntimeContext(StateTestCase, unittest.TestCase):
     def test_build_hook_runtime_context_resolves_payload_client_and_settings(self):
         project_root = self.temp_project()
         (project_root / ".claude").mkdir()

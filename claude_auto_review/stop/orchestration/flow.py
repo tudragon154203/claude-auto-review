@@ -1,12 +1,21 @@
-from claude_auto_review.stop.orchestration.context import StopDecision
+from claude_auto_review.stop.orchestration.context import ResponsePayload, StopDecision
 from claude_auto_review.stop.orchestration.decision_engine import StopDecisionEngine
 from claude_auto_review.stop.orchestration.resolution import StopDecisionKind
-from claude_auto_review.stop.response import approve_response
+from claude_auto_review.stop.response import approve_response, block_response
+
+
+def _emit_response(payload: ResponsePayload):
+    if payload.feedback is None:
+        approve_response(payload.system_message)
+        return 0
+    block_response(payload.system_message, payload.feedback)
+    return 2
 
 
 def _handle_allow(decision: StopDecision):
-    approve_response(f"Claude Auto Review: stop approved ({decision.reason})")
-    return 0
+    return _emit_response(
+        ResponsePayload(system_message=f"Claude Auto Review: stop approved ({decision.reason})")
+    )
 
 
 def _handle_terminal(decision: StopDecision):

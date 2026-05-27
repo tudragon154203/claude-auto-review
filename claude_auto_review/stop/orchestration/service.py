@@ -24,12 +24,12 @@ class StopFlowDependencies:
     log_event: Callable
 
 
-class StopFlowPipeline:
+class StopFlowService:
     def __init__(self, ctx: RuntimeContext, deps: StopFlowDependencies):
         self.ctx = ctx
         self.deps = deps
 
-    def run(self) -> StopDecision:
+    def evaluate(self) -> StopDecision:
         stage_result = run_enabled_stage(self.ctx, log_event_fn=self.deps.log_event)
         if stage_result is not None:
             return StopDecision(kind=stage_result.kind, reason=stage_result.reason)
@@ -56,15 +56,15 @@ class StopFlowPipeline:
                 details=stage_result.details,
             )
 
-        classifier_outcome = run_classifier_stage(
+        stage_result = run_classifier_stage(
             self.ctx,
             classify_last_assistant_message_fn=self.deps.classify_last_assistant_message,
         )
-        if classifier_outcome is not None:
+        if stage_result is not None:
             return StopDecision(
-                kind=classifier_outcome.kind,
-                reason=classifier_outcome.reason,
-                details=classifier_outcome.details,
+                kind=stage_result.kind,
+                reason=stage_result.reason,
+                details=stage_result.details,
             )
 
         stage_result = run_pending_stage(
@@ -75,5 +75,16 @@ class StopFlowPipeline:
             get_reviewer_prompt_script_fn=self.deps.get_reviewer_prompt_script,
         )
         if stage_result.kind is StopDecisionKind.TERMINAL:
-            return StopDecision(kind=StopDecisionKind.TERMINAL, details={"exit_code": stage_result.exit_code})
-        return StopDecision(kind=StopDecisionKind.FINALIZE, details={"resolution": stage_result.resolution})
+            return StopDecision(
+                kind=StopDecisionKind.TERMINAL,
+                details={"exit_code": stage_result.exit_code},
+            )
+
+        return StopDecision(
+            kind=StopDecisionKind.FINALIZE,
+            details={"resolution": stage_result.resolution},
+        )
+
+    def run(self) -> StopDecision:
+        return self.evaluate()
+

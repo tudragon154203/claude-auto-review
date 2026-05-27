@@ -29,11 +29,27 @@ class ReviewArtifactState:
         return self.status is ReviewArtifactStatus.COMPLETE_FINDINGS
 
 
-def load_and_ensure_normalized_review(review_path, client_id=None, minimum_blocking_severity=DEFAULT_MINIMUM_BLOCKING_SEVERITY):
+def _project_root_from_review_path(review_path: Path) -> Path | None:
+    parents = review_path.resolve().parents
+    if len(parents) < 4:
+        return None
+    return parents[3]
+
+
+def load_and_ensure_normalized_review(
+    review_path,
+    client_id=None,
+    minimum_blocking_severity=DEFAULT_MINIMUM_BLOCKING_SEVERITY,
+):
     if not review_path.is_file():
         return None
     content = review_path.read_text(encoding="utf-8", errors="replace")
-    normalized = normalize_review_verdict_content(content, client_id=client_id, minimum_blocking_severity=minimum_blocking_severity)
+    normalized = normalize_review_verdict_content(
+        content,
+        client_id=client_id,
+        minimum_blocking_severity=minimum_blocking_severity,
+        project_root=_project_root_from_review_path(review_path),
+    )
     if normalized != content:
         review_path.write_text(normalized, encoding="utf-8", newline="\n")
         return normalized

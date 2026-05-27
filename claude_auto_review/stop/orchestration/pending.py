@@ -1,3 +1,4 @@
+from claude_auto_review.review.lifecycle import ReviewLifecycleService
 from claude_auto_review.stop.feedback import build_unreviewed_files_string
 from claude_auto_review.stop.orchestration.context import RuntimeContext
 from claude_auto_review.stop.orchestration.resolution import StopFlowResolution
@@ -12,4 +13,3 @@ def resolve_pending_review(ctx: RuntimeContext, state, unreviewed, timeout_hours
 
     files_str = build_unreviewed_files_string(unreviewed)
     return execute_review_prompt(ctx, unreviewed, timeout_hours, review_prompt_script, files_str)
-

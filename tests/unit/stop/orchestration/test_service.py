@@ -6,7 +6,7 @@ from claude_auto_review.config.models import PluginSettings
 from claude_auto_review.state.models import EditRecord
 from claude_auto_review.state.snapshot import StateSnapshot
 from claude_auto_review.stop.orchestration.context import RuntimeContext
-from claude_auto_review.stop.orchestration.pipeline import StopFlowDependencies, StopFlowPipeline
+from claude_auto_review.stop.orchestration.service import StopFlowDependencies, StopFlowService
 from claude_auto_review.stop.orchestration.resolution import StopDecisionKind
 
 
@@ -38,26 +38,27 @@ def _deps(**overrides):
     return StopFlowDependencies(**values)
 
 
-class TestStopFlowPipeline(unittest.TestCase):
-    def test_pipeline_allows_when_disabled(self):
-        pipeline = StopFlowPipeline(_ctx(settings=PluginSettings(enabled=False)), _deps())
-        decision = pipeline.run()
+class TestStopFlowService(unittest.TestCase):
+    def test_service_allows_when_disabled(self):
+        service = StopFlowService(_ctx(settings=PluginSettings(enabled=False)), _deps())
+        decision = service.run()
         self.assertEqual(decision.kind, StopDecisionKind.ALLOW)
         self.assertEqual(decision.reason, "disabled")
 
-    def test_pipeline_returns_terminal_pending_resolution(self):
-        pipeline = StopFlowPipeline(_ctx(), _deps())
-        decision = pipeline.run()
+    def test_service_returns_terminal_pending_resolution(self):
+        service = StopFlowService(_ctx(), _deps())
+        decision = service.run()
         self.assertEqual(decision.kind, StopDecisionKind.TERMINAL)
         self.assertEqual(decision.details, {"exit_code": 2})
 
-    def test_pipeline_returns_finalize_resolution(self):
+    def test_service_returns_finalize_resolution(self):
         resolution = SimpleNamespace(is_terminal=False, exit_code=None)
-        pipeline = StopFlowPipeline(_ctx(), _deps(resolve_pending_review=lambda *_args, **_kwargs: resolution))
-        decision = pipeline.run()
+        service = StopFlowService(_ctx(), _deps(resolve_pending_review=lambda *_args, **_kwargs: resolution))
+        decision = service.run()
         self.assertEqual(decision.kind, StopDecisionKind.FINALIZE)
         self.assertIs(decision.details["resolution"], resolution)
 
 
 if __name__ == "__main__":
     unittest.main()
+

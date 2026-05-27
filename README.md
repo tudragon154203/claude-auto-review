@@ -107,7 +107,7 @@ flowchart TD
 
 ### 3. Stop Flow — Decision Engine
 
-When Claude attempts to stop, the Stop hook runs a pipeline of stages. Each stage decides whether to allow the stop, continue without review, or block for review:
+When Claude attempts to stop, the Stop hook runs the stop-flow service through staged checks. Each stage decides whether to allow the stop, continue without review, or block for review:
 
 ```mermaid
 flowchart TD
@@ -251,4 +251,6 @@ This plugin was inspired by:
 - [NTCoding/claude-skillz/automatic-code-review](https://github.com/NTCoding/claude-skillz/tree/main/automatic-code-review) — an automatic code review workflow built around session hooks, review rules, and tracked file changes.
 
 Thanks to both projects for the ideas and patterns that influenced this plugin.
+
+
 

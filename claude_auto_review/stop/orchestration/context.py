@@ -19,3 +19,9 @@ class StopDecision:
     kind: StopDecisionKind
     reason: str | None = None
     details: dict[str, Any] | None = None
+
+
+@dataclass(frozen=True)
+class ResponsePayload:
+    system_message: str
+    feedback: str | None = None

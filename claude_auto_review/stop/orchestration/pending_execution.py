@@ -1,6 +1,6 @@
-import os
 import subprocess
 
+from claude_auto_review.review.lifecycle import build_review_prompt_env
 from claude_auto_review.config.constants import EXIT_REVIEW_FAILED
 from claude_auto_review.runtime.events import log_event
 from claude_auto_review.stop.feedback import block_response
@@ -12,14 +12,6 @@ from claude_auto_review.stop.reviews.review_prompt_runner import (
 )
 from claude_auto_review.stop.reviews.selection import find_pending_review_for_files
 from claude_auto_review.stop.response import approve_response
-
-
-def build_review_prompt_env(payload):
-    env = os.environ.copy()
-    session_id = payload.get("session_id")
-    if session_id:
-        env["CLAUDE_SESSION_ID"] = session_id
-    return env
 
 
 def fail_review(ctx, files_str, exit_code, event_type, script=None, error=None):
@@ -62,4 +54,3 @@ def execute_review_prompt(ctx, unreviewed, timeout_hours, review_prompt_script, 
     except (OSError, ValueError, subprocess.SubprocessError) as error:
         return fail_review(ctx, files_str, EXIT_REVIEW_FAILED, "stop_hook_review_error", error=error)
     return resolve_prompted_review(ctx, timeout_hours, files_str, result)
-
