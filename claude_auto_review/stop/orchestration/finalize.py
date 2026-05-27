@@ -5,6 +5,13 @@ from claude_auto_review.runtime.events import log_event
 from claude_auto_review.state.snapshot import StateSnapshot
 from claude_auto_review.stop.feedback import block_completed_review_findings, build_review_completion_prompt
 from claude_auto_review.stop.orchestration.context import RuntimeContext
+from claude_auto_review.stop.orchestration.finalize_outcomes import (
+    approved_result,
+    plan_for_artifact_state,
+    plan_for_invalid_settings,
+    plan_for_partial_review,
+    plan_for_pending_review,
+)
 from claude_auto_review.stop.orchestration.resolution import FinalizeAction, FinalizeResult, StopFlowResolution
 from claude_auto_review.stop.orchestration.review_artifact_evaluator import classify_review_artifact_state
 from claude_auto_review.stop.orchestration.response_actions import block_pending_review
@@ -15,19 +22,6 @@ from claude_auto_review.stop.reviews.selection import get_entries_covered_by_rev
 
 
 _AUTOCOMPLETE_RETRY_ATTEMPTS = 2
-
-
-def _approved_result() -> FinalizeResult:
-    return FinalizeResult(action=FinalizeAction.APPROVED, exit_code=0)
-
-
-def _blocked_result(action: FinalizeAction) -> FinalizeResult:
-    return FinalizeResult(action=action, exit_code=2)
-
-
-def _artifact_status_name(artifact_state) -> str | None:
-    status = getattr(artifact_state, "status", None)
-    return status.value if hasattr(status, "value") else status
 
 
 def _apply_completed_clean_review(ctx, review_id, covered_entries):
@@ -46,23 +40,22 @@ def _apply_completed_clean_review(ctx, review_id, covered_entries):
             reviewId=review_id,
         )
         approve_response(f"Claude Auto Review: review {review_id} clean, all files covered")
-        return _approved_result()
+        return approved_result()
     block_response(
         f"Claude Auto Review: Review {review_id} completed, but {len(remaining)} file(s) still need review.",
         "New edits were made after the review was created. Another review will be generated on the next stop attempt.",
     )
-    return _blocked_result(FinalizeAction.BLOCKED_PARTIAL_REVIEW)
+    return plan_for_partial_review().result
 
 
-def _apply_artifact_state(ctx, artifact_state, review_id, review_path, covered_entries, unreviewed):
-    status_name = _artifact_status_name(artifact_state)
-    if status_name == "complete_clean":
+def _apply_finalize_plan(ctx, plan, review_id, review_path, covered_entries, unreviewed):
+    if plan.effect == "apply_completed_clean_review":
         return _apply_completed_clean_review(ctx, review_id, covered_entries)
-    if status_name == "complete_findings":
+    if plan.effect == "record_findings_block":
         record_completed_review(ctx.project_root, ctx.client_id, review_id, covered_entries)
         block_completed_review_findings(ctx, review_id, review_path, unreviewed)
-        return _blocked_result(FinalizeAction.BLOCKED_FINDINGS)
-    return None
+        return plan.result
+    raise ValueError(f"Unsupported finalize plan effect: {plan.effect}")
 
 
 def finalize_review_stop_result(ctx: RuntimeContext, resolution: StopFlowResolution) -> FinalizeResult:
@@ -88,7 +81,7 @@ def finalize_review_stop_result(ctx: RuntimeContext, resolution: StopFlowResolut
             "Claude Auto Review: invalid reviewerBackend setting",
             str(error),
         )
-        return _blocked_result(FinalizeAction.BLOCKED_INVALID_SETTINGS)
+        return plan_for_invalid_settings().result
     reviewer_model = ctx.settings.resolved_reviewer_model(backend=reviewer_backend)
 
     artifact_state = classify_review_artifact_state(
@@ -96,9 +89,9 @@ def finalize_review_stop_result(ctx: RuntimeContext, resolution: StopFlowResolut
         minimum_blocking_severity=ctx.settings.minimum_blocking_severity,
         client_id=ctx.client_id,
     )
-    action_result = _apply_artifact_state(ctx, artifact_state, review_id, review_path, covered_entries, unreviewed)
-    if action_result is not None:
-        return action_result
+    plan = plan_for_artifact_state(artifact_state)
+    if plan is not None:
+        return _apply_finalize_plan(ctx, plan, review_id, review_path, covered_entries, unreviewed)
 
     user_prompt = build_review_completion_prompt(review_path)
     result: AutocompleteResult | None = None
@@ -123,15 +116,15 @@ def finalize_review_stop_result(ctx: RuntimeContext, resolution: StopFlowResolut
         minimum_blocking_severity=ctx.settings.minimum_blocking_severity,
         client_id=ctx.client_id,
     )
-    action_result = _apply_artifact_state(ctx, artifact_state, review_id, review_path, covered_entries, unreviewed)
-    if action_result is not None:
-        return action_result
+    plan = plan_for_artifact_state(artifact_state)
+    if plan is not None:
+        return _apply_finalize_plan(ctx, plan, review_id, review_path, covered_entries, unreviewed)
 
     if result is not None and result.status == "empty_stdout":
         log_event(ctx.project_root, "stop_hook_reviewer_empty_blocked", client_id=ctx.client_id, reviewId=review_id)
 
     block_pending_review(ctx, review_id, review_path, prompt_file, unreviewed)
-    return _blocked_result(FinalizeAction.BLOCKED_PENDING)
+    return plan_for_pending_review().result
 
 
 def finalize_review_stop(ctx: RuntimeContext, resolution: StopFlowResolution):

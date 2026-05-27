@@ -4,7 +4,7 @@ from typing import TypedDict
 from claude_auto_review.runtime.events import log_event
 from claude_auto_review.state.models import EditRecord, ReviewFileRecord, ReviewMetadata, StateEvent
 from claude_auto_review.state.reviews.expiry import is_review_expired
-from claude_auto_review.state.snapshot import StateSnapshot
+from claude_auto_review.state.store.read import ensure_state_snapshot
 
 
 class PendingReviewCandidate(TypedDict):
@@ -42,10 +42,6 @@ def review_file_hash_pairs(review_entry: ReviewMetadata) -> set[tuple[str, str]]
     return entry_file_hash_pairs(review_entry.files)
 
 
-def _latest_review_entries_by_id(state: list[StateEvent]) -> dict[str, StateEvent]:
-    return StateSnapshot.from_events(state).latest_review_entries_by_id
-
-
 def _pending_review_match_info(
     state: list[StateEvent],
     entries: Sequence[EditRecord | ReviewFileRecord],
@@ -56,7 +52,8 @@ def _pending_review_match_info(
     if not needed:
         return
 
-    for entry in _latest_review_entries_by_id(state).values():
+    snapshot = ensure_state_snapshot(state)
+    for entry in snapshot.latest_review_entries_by_id.values():
         if not _is_pending_review_entry(entry):
             continue
         if timeout_hours > 0 and is_review_expired(entry, timeout_hours):

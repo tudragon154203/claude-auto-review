@@ -7,16 +7,9 @@ from claude_auto_review.state.store.read import consecutive_stop_blocks, get_unr
 from claude_auto_review.stop.classifier.last_assistant_message import classify_last_assistant_message
 from claude_auto_review.stop.orchestration.context import RuntimeContext, StopDecision
 from claude_auto_review.stop.orchestration.finalize import finalize_review_stop
+from claude_auto_review.stop.orchestration.pipeline import StopFlowDependencies, StopFlowPipeline
 from claude_auto_review.stop.orchestration.pending import resolve_pending_review
 from claude_auto_review.stop.orchestration.resolution import StopDecisionKind
-from claude_auto_review.stop.orchestration.stages import (
-    run_allow_no_unreviewed_stage,
-    run_classifier_stage,
-    run_circuit_breaker_stage,
-    run_enabled_stage,
-    run_pending_stage,
-    run_state_stage,
-)
 
 
 class StopDecisionEngine:
@@ -70,55 +63,21 @@ class StopDecisionEngine:
             settings=resolved_settings,
             payload=payload,
         )
+        self.pipeline = StopFlowPipeline(self.ctx, self._build_pipeline_dependencies())
+
+    def _build_pipeline_dependencies(self) -> StopFlowDependencies:
+        return StopFlowDependencies(
+            load_state_snapshot=self._load_state_snapshot,
+            get_unreviewed_files=self._get_unreviewed_files,
+            consecutive_stop_blocks=self._consecutive_stop_blocks,
+            classify_last_assistant_message=self._classify_last_assistant_message,
+            resolve_pending_review=self._resolve_pending_review,
+            get_reviewer_prompt_script=self._get_reviewer_prompt_script,
+            log_event=self._log_event,
+        )
 
     def evaluate(self):
-        stage_result = run_enabled_stage(self.ctx, log_event_fn=self._log_event)
-        if stage_result is not None:
-            return StopDecision(kind=stage_result.kind, reason=stage_result.reason)
-
-        state_snapshot, state, unreviewed = run_state_stage(
-            self.ctx,
-            load_state_snapshot_fn=self._load_state_snapshot,
-            get_unreviewed_files_fn=self._get_unreviewed_files,
-        )
-
-        stage_result = run_allow_no_unreviewed_stage(unreviewed)
-        if stage_result is not None:
-            return StopDecision(kind=stage_result.kind, reason=stage_result.reason)
-
-        stage_result = run_circuit_breaker_stage(
-            self.ctx,
-            state_snapshot,
-            consecutive_stop_blocks_fn=self._consecutive_stop_blocks,
-        )
-        if stage_result is not None:
-            return StopDecision(
-                kind=stage_result.kind,
-                reason=stage_result.reason,
-                details=stage_result.details,
-            )
-
-        classifier_outcome = run_classifier_stage(
-            self.ctx,
-            classify_last_assistant_message_fn=self._classify_last_assistant_message,
-        )
-        if classifier_outcome is not None:
-            return StopDecision(
-                kind=classifier_outcome.kind,
-                reason=classifier_outcome.reason,
-                details=classifier_outcome.details,
-            )
-
-        stage_result = run_pending_stage(
-            self.ctx,
-            state,
-            unreviewed,
-            resolve_pending_review_fn=self._resolve_pending_review,
-            get_reviewer_prompt_script_fn=self._get_reviewer_prompt_script,
-        )
-        if stage_result.kind is StopDecisionKind.TERMINAL:
-            return StopDecision(kind=StopDecisionKind.TERMINAL, details={"exit_code": stage_result.exit_code})
-        return StopDecision(kind=StopDecisionKind.FINALIZE, details={"resolution": stage_result.resolution})
+        return self.pipeline.run()
 
     def finalize(self, resolution):
         return self._finalize_review_stop(self.ctx, resolution)

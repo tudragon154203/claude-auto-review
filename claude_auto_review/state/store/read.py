@@ -78,25 +78,25 @@ def load_state(project_root=None, client_id=None):
     return list(load_state_snapshot(project_root, client_id).events)
 
 
-def latest_entries_by_file(state: list[StateEvent]) -> dict[str, StateEvent]:
-    return _state_snapshot(state).latest_entries_by_file
+def latest_entries_by_file(state_or_snapshot: list[StateEvent] | StateSnapshot) -> dict[str, StateEvent]:
+    return ensure_state_snapshot(state_or_snapshot).latest_entries_by_file
 
 
-def latest_review_entries_by_id(state: list[StateEvent]) -> dict[str, StateEvent]:
-    return _state_snapshot(state).latest_review_entries_by_id
+def latest_review_entries_by_id(state_or_snapshot: list[StateEvent] | StateSnapshot) -> dict[str, StateEvent]:
+    return ensure_state_snapshot(state_or_snapshot).latest_review_entries_by_id
 
 
-def reviewed_hashes_by_file(state: list[StateEvent]) -> dict[str, set[str]]:
-    return _state_snapshot(state).reviewed_hashes_by_file
+def reviewed_hashes_by_file(state_or_snapshot: list[StateEvent] | StateSnapshot) -> dict[str, set[str]]:
+    return ensure_state_snapshot(state_or_snapshot).reviewed_hashes_by_file
 
 
-def was_hash_reviewed(state: list[StateEvent], file_path: str, file_hash: str) -> bool:
-    return _state_snapshot(state).was_hash_reviewed(file_path, file_hash)
+def was_hash_reviewed(state_or_snapshot: list[StateEvent] | StateSnapshot, file_path: str, file_hash: str) -> bool:
+    return ensure_state_snapshot(state_or_snapshot).was_hash_reviewed(file_path, file_hash)
 
 
-def get_unreviewed_files(state: list[StateEvent]):
-    return ensure_state_snapshot(state).unreviewed_files
+def get_unreviewed_files(state_or_snapshot: list[StateEvent] | StateSnapshot):
+    return ensure_state_snapshot(state_or_snapshot).unreviewed_files
 
 
-def consecutive_stop_blocks(state: list[StateEvent]) -> int:
-    return ensure_state_snapshot(state).consecutive_stop_blocks
+def consecutive_stop_blocks(state_or_snapshot: list[StateEvent] | StateSnapshot) -> int:
+    return ensure_state_snapshot(state_or_snapshot).consecutive_stop_blocks

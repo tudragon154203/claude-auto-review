@@ -1,12 +1,7 @@
 #!/usr/bin/env python3
-import sys
-from pathlib import Path
+from claude_auto_review.hooks.entrypoint import ensure_repo_root_on_path, run_module_main
 
-_repo_root = Path(__file__).resolve().parent.parent
-if str(_repo_root) not in sys.path:
-    sys.path.insert(0, str(_repo_root))
-
-from claude_auto_review.hooks.post_tool_use import main
+ensure_repo_root_on_path(__file__)
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    raise SystemExit(run_module_main("claude_auto_review.hooks.post_tool_use"))

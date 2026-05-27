@@ -9,7 +9,7 @@ from claude_auto_review.runtime.hook_context import build_hook_runtime_context
 from claude_auto_review.runtime.process import run_fail_open
 from claude_auto_review.state.hook_input import extract_file_paths_from_hook_input
 from claude_auto_review.state.models import EditRecord
-from claude_auto_review.state.store.read import get_file_hash, load_state, was_hash_reviewed
+from claude_auto_review.state.store.read import get_file_hash, load_state_snapshot, was_hash_reviewed
 from claude_auto_review.state.store.write import append_state_event
 
 
@@ -23,7 +23,7 @@ def _run_post_tool_use():
         log_event(project_root, "post_tool_use_disabled", client_id=client_id)
         return 0
 
-    state = load_state(project_root, client_id)
+    state_snapshot = load_state_snapshot(project_root, client_id)
     timestamp = local_now_iso()
 
     for candidate in extract_file_paths_from_hook_input(payload, project_root=project_root):
@@ -50,7 +50,7 @@ def _run_post_tool_use():
             )
             log_event(project_root, "file_deletion_tracked", client_id=client_id, file=file_path, hash=DELETED_FILE_HASH, reviewed=False)
             continue
-        reviewed = was_hash_reviewed(state, file_path, file_hash)
+        reviewed = was_hash_reviewed(state_snapshot, file_path, file_hash)
         append_state_event(
             EditRecord(
                 timestamp=timestamp,
