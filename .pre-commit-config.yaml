@@ -11,3 +11,11 @@ repos:
       - id: mypy
         files: ^claude_auto_review/
         additional_dependencies: []
+  - repo: local
+    hooks:
+      - id: unit-tests
+        name: unit tests
+        entry: python -m unittest discover -s tests
+        language: system
+        pass_filenames: false
+        files: ^(claude_auto_review/|hooks/|tests/).*\.py$
