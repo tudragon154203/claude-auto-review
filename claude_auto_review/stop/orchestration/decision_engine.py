@@ -1,5 +1,3 @@
-from dataclasses import dataclass
-
 from claude_auto_review.config.io import load_settings
 from claude_auto_review.paths.path_utils import get_reviewer_prompt_script
 from claude_auto_review.runtime.client_dirs import get_client_id
@@ -7,9 +5,10 @@ from claude_auto_review.runtime.events import log_event
 from claude_auto_review.runtime.setup import ensure_client_runtime
 from claude_auto_review.state.store.read import consecutive_stop_blocks, get_unreviewed_files, load_state_snapshot
 from claude_auto_review.stop.classifier.last_assistant_message import classify_last_assistant_message
-from claude_auto_review.stop.orchestration.context import RuntimeContext
+from claude_auto_review.stop.orchestration.context import RuntimeContext, StopDecision
 from claude_auto_review.stop.orchestration.finalize import finalize_review_stop
 from claude_auto_review.stop.orchestration.pending import resolve_pending_review
+from claude_auto_review.stop.orchestration.resolution import StopDecisionKind
 from claude_auto_review.stop.orchestration.stages import (
     run_allow_no_unreviewed_stage,
     run_classifier_stage,
@@ -18,13 +17,6 @@ from claude_auto_review.stop.orchestration.stages import (
     run_pending_stage,
     run_state_stage,
 )
-
-
-@dataclass(frozen=True)
-class StopDecision:
-    kind: str
-    reason: str | None = None
-    details: dict | None = None
 
 
 class StopDecisionEngine:
@@ -124,9 +116,9 @@ class StopDecisionEngine:
             resolve_pending_review_fn=self._resolve_pending_review,
             get_reviewer_prompt_script_fn=self._get_reviewer_prompt_script,
         )
-        if stage_result.kind == "terminal":
-            return StopDecision(kind="terminal", details={"exit_code": stage_result.exit_code})
-        return StopDecision(kind="finalize", details={"resolution": stage_result.resolution})
+        if stage_result.kind is StopDecisionKind.TERMINAL:
+            return StopDecision(kind=StopDecisionKind.TERMINAL, details={"exit_code": stage_result.exit_code})
+        return StopDecision(kind=StopDecisionKind.FINALIZE, details={"resolution": stage_result.resolution})
 
     def finalize(self, resolution):
         return self._finalize_review_stop(self.ctx, resolution)

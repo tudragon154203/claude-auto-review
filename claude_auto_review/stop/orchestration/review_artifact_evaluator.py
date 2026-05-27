@@ -1,6 +1,6 @@
 from dataclasses import dataclass
+from enum import Enum
 from pathlib import Path
-from typing import Literal
 
 from claude_auto_review.config.models import DEFAULT_MINIMUM_BLOCKING_SEVERITY
 from claude_auto_review.state.reviews.completion import is_completed_review_content, is_review_complete_verdict
@@ -9,10 +9,24 @@ from claude_auto_review.state.reviews.normalization import normalize_review_verd
 from claude_auto_review.state.reviews.review_text import extract_review_verdict_text
 
 
+class ReviewArtifactStatus(str, Enum):
+    COMPLETE_CLEAN = "complete_clean"
+    COMPLETE_FINDINGS = "complete_findings"
+    PENDING = "pending"
+
+
 @dataclass(frozen=True)
 class ReviewArtifactState:
-    status: Literal["complete_clean", "complete_findings", "pending"]
+    status: ReviewArtifactStatus
     verdict: str | None = None
+
+    @property
+    def is_complete(self) -> bool:
+        return self.status is not ReviewArtifactStatus.PENDING
+
+    @property
+    def has_blocking_findings(self) -> bool:
+        return self.status is ReviewArtifactStatus.COMPLETE_FINDINGS
 
 
 def load_and_ensure_normalized_review(review_path, client_id=None, minimum_blocking_severity=DEFAULT_MINIMUM_BLOCKING_SEVERITY):
@@ -39,11 +53,11 @@ def classify_review_artifact_state(
     )
     verdict = extract_review_verdict_text(content) if content is not None else None
     if content is None:
-        return ReviewArtifactState(status="pending", verdict=verdict)
+        return ReviewArtifactState(status=ReviewArtifactStatus.PENDING, verdict=verdict)
     if is_review_complete_verdict(verdict):
         if has_blocking_review_findings(content, minimum_blocking_severity):
-            return ReviewArtifactState(status="complete_findings", verdict=verdict)
-        return ReviewArtifactState(status="complete_clean", verdict=verdict)
+            return ReviewArtifactState(status=ReviewArtifactStatus.COMPLETE_FINDINGS, verdict=verdict)
+        return ReviewArtifactState(status=ReviewArtifactStatus.COMPLETE_CLEAN, verdict=verdict)
     if is_completed_review_content(content):
-        return ReviewArtifactState(status="complete_findings", verdict=verdict)
-    return ReviewArtifactState(status="pending", verdict=verdict)
+        return ReviewArtifactState(status=ReviewArtifactStatus.COMPLETE_FINDINGS, verdict=verdict)
+    return ReviewArtifactState(status=ReviewArtifactStatus.PENDING, verdict=verdict)

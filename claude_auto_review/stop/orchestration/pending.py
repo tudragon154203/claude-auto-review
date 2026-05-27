@@ -12,3 +12,4 @@ def resolve_pending_review(ctx: RuntimeContext, state, unreviewed, timeout_hours
 
     files_str = build_unreviewed_files_string(unreviewed)
     return execute_review_prompt(ctx, unreviewed, timeout_hours, review_prompt_script, files_str)
+

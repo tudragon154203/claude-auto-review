@@ -4,7 +4,7 @@ from typing import TypedDict
 from claude_auto_review.runtime.events import log_event
 from claude_auto_review.state.models import EditRecord, ReviewFileRecord, ReviewMetadata, StateEvent
 from claude_auto_review.state.reviews.expiry import is_review_expired
-from claude_auto_review.state.store.read import latest_review_entries_by_id
+from claude_auto_review.state.snapshot import StateSnapshot
 
 
 class PendingReviewCandidate(TypedDict):
@@ -42,6 +42,10 @@ def review_file_hash_pairs(review_entry: ReviewMetadata) -> set[tuple[str, str]]
     return entry_file_hash_pairs(review_entry.files)
 
 
+def _latest_review_entries_by_id(state: list[StateEvent]) -> dict[str, StateEvent]:
+    return StateSnapshot.from_events(state).latest_review_entries_by_id
+
+
 def _pending_review_match_info(
     state: list[StateEvent],
     entries: Sequence[EditRecord | ReviewFileRecord],
@@ -52,14 +56,15 @@ def _pending_review_match_info(
     if not needed:
         return
 
-    for entry in latest_review_entries_by_id(state).values():
+    for entry in _latest_review_entries_by_id(state).values():
         if not _is_pending_review_entry(entry):
             continue
         if timeout_hours > 0 and is_review_expired(entry, timeout_hours):
             _log_expired_review(project_root, entry)
             continue
         covered = review_file_hash_pairs(entry)
-        yield entry, covered, needed & covered
+        overlap = needed & covered
+        yield entry, covered, overlap
 
 
 def _pending_reviews_matching_entries(
@@ -80,6 +85,26 @@ def _pending_reviews_matching_entries(
         project_root=project_root,
         timeout_hours=timeout_hours,
     )
+
+
+def pending_review_candidates_for_entries(
+    state: list[StateEvent],
+    entries: Sequence[EditRecord | ReviewFileRecord],
+    project_root=None,
+    timeout_hours=0,
+) -> list[PendingReviewCandidate]:
+    _, pending_reviews = _pending_reviews_matching_entries(
+        state,
+        entries,
+        project_root=project_root,
+        timeout_hours=timeout_hours,
+    )
+    candidates = [
+        PendingReviewCandidate(review=entry, overlap_count=len(overlap))
+        for entry, _, overlap in pending_reviews
+        if overlap
+    ]
+    return sorted(candidates, key=lambda candidate: (candidate["overlap_count"], candidate["review"].timestamp), reverse=True)
 
 
 def pending_reviews_for_entries(
@@ -128,60 +153,6 @@ def best_pending_review_covering_entries(
     project_root=None,
     timeout_hours=0,
 ) -> ReviewMetadata | None:
-    needed, pending_reviews = _pending_reviews_matching_entries(
-        state,
-        entries,
-        project_root=project_root,
-        timeout_hours=timeout_hours,
-    )
-    if not needed:
-        return None
-
-    matches: list[PendingReviewCandidate] = [
-        {"review": entry, "overlap_count": len(overlap)}
-        for entry, covered, overlap in pending_reviews
-        if needed.issubset(covered)
-    ]
-    if not matches:
-        return None
-    return sorted(matches, key=lambda item: (item["overlap_count"], item["review"].timestamp), reverse=True)[0][
-        "review"
-    ]
-
-
-def pending_review_candidates_for_entries(
-    state: list[StateEvent],
-    entries: Sequence[EditRecord | ReviewFileRecord],
-    project_root=None,
-    timeout_hours=0,
-) -> list[PendingReviewCandidate]:
-    """Return pending reviews that overlap the requested file/hash pairs.
-
-    Matching semantics:
-    - a review is eligible if it covers at least one requested file/hash pair
-    - expired reviews are skipped
-    - higher overlap wins, then newer timestamp wins
-    """
-    _, pending_reviews = _pending_reviews_matching_entries(
-        state,
-        entries,
-        project_root=project_root,
-        timeout_hours=timeout_hours,
-    )
-    candidates: list[PendingReviewCandidate] = [
-        {"review": entry, "overlap_count": len(overlap)}
-        for entry, _, overlap in pending_reviews
-        if overlap
-    ]
-    return sorted(candidates, key=lambda item: (item["overlap_count"], item["review"].timestamp), reverse=True)
-
-
-def best_pending_review_for_entries(
-    state: list[StateEvent],
-    entries: Sequence[EditRecord | ReviewFileRecord],
-    project_root=None,
-    timeout_hours=0,
-) -> ReviewMetadata | None:
     candidates = pending_review_candidates_for_entries(
         state,
         entries,
@@ -191,3 +162,25 @@ def best_pending_review_for_entries(
     if not candidates:
         return None
     return candidates[0]["review"]
+
+
+def best_pending_review_for_entries(
+    state: list[StateEvent],
+    entries: Sequence[EditRecord | ReviewFileRecord],
+    project_root=None,
+    timeout_hours=0,
+) -> ReviewMetadata | None:
+    exact = best_pending_review_exactly_matching_entries(
+        state,
+        entries,
+        project_root=project_root,
+        timeout_hours=timeout_hours,
+    )
+    if exact is not None:
+        return exact
+    return best_pending_review_covering_entries(
+        state,
+        entries,
+        project_root=project_root,
+        timeout_hours=timeout_hours,
+    )

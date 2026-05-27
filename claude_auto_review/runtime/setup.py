@@ -3,12 +3,9 @@ import shutil
 from importlib import resources
 from pathlib import Path
 
-from claude_auto_review.config.io import _load_settings_document, _settings_path
+from claude_auto_review.config.io import PLUGIN_SETTINGS_KEY, _settings_path, load_settings_document
 from claude_auto_review.config.models import PluginSettings
-from claude_auto_review.paths.path_utils import (
-    RUNTIME_DIR,
-    STATE_RELATIVE_PATH,
-)
+from claude_auto_review.paths.path_utils import RUNTIME_DIR, STATE_RELATIVE_PATH
 from claude_auto_review.runtime.client_dirs import get_client_runtime_dir
 from claude_auto_review.runtime.context import resolve_project_root
 from claude_auto_review.runtime.hook_identity import (
@@ -19,6 +16,7 @@ from claude_auto_review.runtime.hook_identity import (
 
 def _package_resource_path(*parts):
     return resources.files("claude_auto_review").joinpath(*parts)
+
 
 def _load_hooks_document(plugin_root=None):
     hooks_path = _package_resource_path("hooks", "hooks.json") if plugin_root is None else Path(plugin_root) / "hooks" / "hooks.json"
@@ -32,7 +30,6 @@ def _load_hooks_document(plugin_root=None):
 def _merge_unique_list(existing_items, desired_items):
     existing = list(existing_items) if isinstance(existing_items, list) else []
     desired = list(desired_items) if isinstance(desired_items, list) else []
-
     seen = set()
 
     def _seen_key(item):
@@ -40,7 +37,6 @@ def _merge_unique_list(existing_items, desired_items):
             return ("__plugin__", _get_plugin_script_name(item))
         return ("__plain__", json.dumps(item, sort_keys=True, ensure_ascii=False))
 
-    # Build merged list preserving order: existing items first, then new desired items
     merged = []
     for item in existing:
         key = _seen_key(item)
@@ -54,9 +50,8 @@ def _merge_unique_list(existing_items, desired_items):
             merged.append(item)
             seen.add(key)
         elif key[0] == "__plugin__":
-            # Replace existing plugin hook with desired version
-            for i, m in enumerate(merged):
-                if _seen_key(m) == key:
+            for i, merged_item in enumerate(merged):
+                if _seen_key(merged_item) == key:
                     merged[i] = item
                     break
 
@@ -71,8 +66,8 @@ def _merge_hooks(existing_hooks, desired_hooks):
 
 
 def _ensure_plugin_settings(settings):
-    plugin_settings = settings.get("claude-auto-review", {})
-    settings["claude-auto-review"] = PluginSettings.from_mapping(plugin_settings).to_mapping()
+    plugin_settings = settings.get(PLUGIN_SETTINGS_KEY, {})
+    settings[PLUGIN_SETTINGS_KEY] = PluginSettings.from_mapping(plugin_settings).to_mapping()
 
 
 def _merge_project_hooks(settings, hooks_document):
@@ -133,7 +128,7 @@ def ensure_project_settings(project_root=None):
     project_root = resolve_project_root(project_root)
     settings_path = _settings_path(project_root)
     settings_path.parent.mkdir(parents=True, exist_ok=True)
-    settings = _load_settings_document(settings_path)
+    settings = load_settings_document(project_root)
     hooks_document = _load_hooks_document()
 
     _ensure_plugin_settings(settings)

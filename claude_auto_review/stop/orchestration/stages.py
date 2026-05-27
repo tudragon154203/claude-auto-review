@@ -1,12 +1,12 @@
 from dataclasses import dataclass
 
 from claude_auto_review.stop.orchestration.context import RuntimeContext
-from claude_auto_review.stop.orchestration.resolution import StopFlowResolution
+from claude_auto_review.stop.orchestration.resolution import StopDecisionKind, StopFlowResolution
 
 
 @dataclass(frozen=True)
 class StopFlowStageResult:
-    kind: str
+    kind: StopDecisionKind
     reason: str | None = None
     exit_code: int | None = None
     resolution: StopFlowResolution | None = None
@@ -17,7 +17,7 @@ def run_enabled_stage(ctx: RuntimeContext, *, log_event_fn) -> StopFlowStageResu
     if ctx.settings.enabled:
         return None
     log_event_fn(ctx.project_root, "stop_disabled", client_id=ctx.client_id)
-    return StopFlowStageResult(kind="allow", reason="disabled")
+    return StopFlowStageResult(kind=StopDecisionKind.ALLOW, reason="disabled")
 
 
 def run_state_stage(ctx: RuntimeContext, *, load_state_snapshot_fn, get_unreviewed_files_fn):
@@ -30,7 +30,7 @@ def run_state_stage(ctx: RuntimeContext, *, load_state_snapshot_fn, get_unreview
 def run_allow_no_unreviewed_stage(unreviewed) -> StopFlowStageResult | None:
     if unreviewed:
         return None
-    return StopFlowStageResult(kind="allow", reason="no_unreviewed_files")
+    return StopFlowStageResult(kind=StopDecisionKind.ALLOW, reason="no_unreviewed_files")
 
 
 def run_circuit_breaker_stage(ctx: RuntimeContext, state_snapshot, *, consecutive_stop_blocks_fn) -> StopFlowStageResult | None:
@@ -38,7 +38,7 @@ def run_circuit_breaker_stage(ctx: RuntimeContext, state_snapshot, *, consecutiv
     if block_count < ctx.settings.max_stop_passes:
         return None
     return StopFlowStageResult(
-        kind="allow",
+        kind=StopDecisionKind.ALLOW,
         reason="circuit_breaker",
         details={"block_count": block_count, "max_passes": ctx.settings.max_stop_passes},
     )
@@ -51,7 +51,7 @@ def run_classifier_stage(ctx: RuntimeContext, *, classify_last_assistant_message
     if result is None or result.status != "incomplete":
         return None
     return StopFlowStageResult(
-        kind="allow",
+        kind=StopDecisionKind.ALLOW,
         reason="classifier_incomplete",
         details={"classifier_status": result.status, "classifier_reason": result.reason},
     )
@@ -73,5 +73,5 @@ def run_pending_stage(
         get_reviewer_prompt_script_fn(),
     )
     if resolution.is_terminal:
-        return StopFlowStageResult(kind="terminal", exit_code=resolution.exit_code)
-    return StopFlowStageResult(kind="finalize", resolution=resolution)
+        return StopFlowStageResult(kind=StopDecisionKind.TERMINAL, exit_code=resolution.exit_code)
+    return StopFlowStageResult(kind=StopDecisionKind.FINALIZE, resolution=resolution)

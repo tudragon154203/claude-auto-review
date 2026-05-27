@@ -4,8 +4,12 @@ from claude_auto_review.config.models import PluginSettings
 from claude_auto_review.runtime.context import resolve_project_root
 
 
+SETTINGS_FILENAME = "settings.json"
+PLUGIN_SETTINGS_KEY = "claude-auto-review"
+
+
 def _settings_path(project_root):
-    return resolve_project_root(project_root) / ".claude" / "settings.json"
+    return resolve_project_root(project_root) / ".claude" / SETTINGS_FILENAME
 
 
 def _load_settings_document(settings_path):
@@ -16,8 +20,11 @@ def _load_settings_document(settings_path):
     return data if isinstance(data, dict) else {}
 
 
+def load_settings_document(project_root=None) -> dict:
+    return _load_settings_document(_settings_path(project_root))
+
+
 def load_settings(project_root=None) -> PluginSettings:
-    settings_path = _settings_path(project_root)
-    data = _load_settings_document(settings_path)
-    plugin_settings = data.get("claude-auto-review", {})
+    data = load_settings_document(project_root)
+    plugin_settings = data.get(PLUGIN_SETTINGS_KEY, {})
     return PluginSettings.from_mapping(plugin_settings if isinstance(plugin_settings, dict) else {})
