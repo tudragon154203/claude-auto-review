@@ -49,11 +49,7 @@ class TestExtractReviewVerdictText(unittest.TestCase):
         self.assertEqual(extract_review_verdict_text(content), "Clean - no issues found.")
 
     def test_falls_back_to_findings_clean_line(self):
-        content = (
-            "## Findings\n"
-            "Confirmed (clean)\n\n"
-            "Extra notes that should be ignored.\n"
-        )
+        content = "## Findings\n" "Confirmed (clean)\n\n" "Extra notes that should be ignored.\n"
         self.assertEqual(extract_review_verdict_text(content), "Confirmed (clean)")
 
 

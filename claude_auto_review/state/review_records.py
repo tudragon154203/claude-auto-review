@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Literal, Optional
+from typing import Any, Literal, cast
 
 from claude_auto_review.state.file_record import (
     ReviewFileRecord,
@@ -15,6 +15,7 @@ from claude_auto_review.state.record_utils import dict_with_optional
 @dataclass(frozen=True)
 class ReviewMetadata:
     """Tracks a review prompt creation and its lifecycle state."""
+
     timestamp: str
     reviewId: str
     reviewPath: str
@@ -32,13 +33,13 @@ class ReviewMetadata:
             "type": self.type,
             "reviewId": self.reviewId,
             "reviewPath": self.reviewPath,
-            "files": serialize_review_file_entries(self.files),
+            "files": serialize_review_file_entries(cast(list, self.files)),
             "clientId": self.clientId,
             "status": self.status,
         }
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "ReviewMetadata":
+    def from_dict(cls, data: dict[str, Any]) -> ReviewMetadata:
         return cls(
             timestamp=data.get("timestamp", ""),
             reviewId=data.get("reviewId", ""),
@@ -52,12 +53,13 @@ class ReviewMetadata:
 @dataclass(frozen=True)
 class ReviewCompletedRecord:
     """Recorded when a review run finishes with covered file entries."""
+
     timestamp: str
     reviewId: str
     files: list[ReviewFileRecord]
     clientId: str = ""
-    duration: Optional[str] = None
-    durationSeconds: Optional[float] = None
+    duration: str | None = None
+    durationSeconds: float | None = None
     type: Literal["review_completed"] = "review_completed"
 
     def __post_init__(self):
@@ -69,7 +71,7 @@ class ReviewCompletedRecord:
                 "timestamp": self.timestamp,
                 "type": self.type,
                 "reviewId": self.reviewId,
-                "files": serialize_review_file_entries(self.files),
+                "files": serialize_review_file_entries(cast(list, self.files)),
                 "clientId": self.clientId,
             },
             duration=self.duration,
@@ -77,7 +79,7 @@ class ReviewCompletedRecord:
         )
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "ReviewCompletedRecord":
+    def from_dict(cls, data: dict[str, Any]) -> ReviewCompletedRecord:
         return cls(
             timestamp=data.get("timestamp", ""),
             reviewId=data.get("reviewId", ""),
@@ -91,6 +93,7 @@ class ReviewCompletedRecord:
 @dataclass(frozen=True)
 class ReviewAutocompleteRecord:
     """Recorded when an auto-complete review backend finishes."""
+
     timestamp: str
     reviewId: str
     status: str
@@ -111,17 +114,17 @@ class ReviewAutocompleteRecord:
         )
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "ReviewAutocompleteRecord":
+    def from_dict(cls, data: dict[str, Any]) -> ReviewAutocompleteRecord:
         # Required fields (fail fast if missing)
         timestamp = data["timestamp"]
-        reviewId = data["reviewId"]
+        review_id = data["reviewId"]
         status = data["status"]
         # Optional
         returncode = data.get("returncode")
         stdout_len = data.get("stdout_len", 0)
         return cls(
             timestamp=timestamp,
-            reviewId=reviewId,
+            reviewId=review_id,
             status=status,
             returncode=returncode,
             stdout_len=stdout_len,

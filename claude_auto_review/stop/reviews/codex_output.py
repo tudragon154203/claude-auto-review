@@ -1,10 +1,9 @@
 from __future__ import annotations
 
 import json
-from typing import Optional
 
 
-def _extract_codex_final_message(stdout: Optional[str]) -> str:
+def _extract_codex_final_message(stdout: str | None) -> str:
     messages = []
     for line in (stdout or "").splitlines():
         try:

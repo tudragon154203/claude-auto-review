@@ -1,14 +1,13 @@
 import unittest
 
 from claude_auto_review.state.file_record import (
+    ReviewFileRecord,
     _coerce_review_file_entries,
     _parse_review_file_entries,
-    ReviewFileRecord
 )
 
 
 class TestFileRecordEdgeCases(unittest.TestCase):
-
     def test_coerce_review_file_entries_raises_on_invalid_entry(self):
         entries = [
             ReviewFileRecord(file="a.ts", hash="aaa"),

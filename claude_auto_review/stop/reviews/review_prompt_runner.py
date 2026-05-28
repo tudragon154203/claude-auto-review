@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 import sys
+from pathlib import Path
 
 from claude_auto_review.runtime.client_dirs import client_run_dir
 from claude_auto_review.runtime.events import log_event
 from claude_auto_review.runtime.process import run_captured
-from claude_auto_review.state.store.read import get_unreviewed_files, load_state, load_state_snapshot
+from claude_auto_review.state.store.read import get_unreviewed_files, load_state
 from claude_auto_review.stop.feedback import block_response
 from claude_auto_review.stop.orchestration.context import RuntimeContext
 
@@ -28,7 +29,7 @@ def run_review_prompt(ctx: RuntimeContext, review_prompt_script, env):
     return result
 
 
-def _review_prompt_path(ctx: RuntimeContext, review_id):
+def _review_prompt_path(ctx: RuntimeContext, review_id: str) -> Path:
     return client_run_dir(ctx.project_root, ctx.client_id) / f"review-{review_id}-prompt.md"
 
 

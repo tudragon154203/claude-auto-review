@@ -33,11 +33,7 @@ def _log_expired_review(project_root, review_entry: ReviewMetadata, client_id=No
 
 
 def entry_file_hash_pairs(entries: Sequence[EditRecord | ReviewFileRecord]) -> set[tuple[str, str]]:
-    return {
-        (entry.file, entry.hash)
-        for entry in entries
-        if entry.file and entry.hash
-    }
+    return {(entry.file, entry.hash) for entry in entries if entry.file and entry.hash}
 
 
 def review_file_hash_pairs(review_entry: ReviewMetadata) -> set[tuple[str, str]]:
@@ -58,7 +54,9 @@ def _pending_review_match_info(
     for entry in snapshot.latest_review_entries_by_id.values():
         if not _is_pending_review_entry(entry):
             continue
-        if timeout_hours > 0 and is_review_expired(entry, timeout_hours):
+        if not isinstance(entry, ReviewMetadata):
+            continue
+        if timeout_hours and is_review_expired(entry, timeout_hours):
             _log_expired_review(project_root, entry)
             continue
         covered = review_file_hash_pairs(entry)
@@ -103,7 +101,9 @@ def pending_review_candidates_for_entries(
         for entry, _, overlap in pending_reviews
         if overlap
     ]
-    return sorted(candidates, key=lambda candidate: (candidate["overlap_count"], candidate["review"].timestamp), reverse=True)
+    return sorted(
+        candidates, key=lambda candidate: (candidate["overlap_count"], candidate["review"].timestamp), reverse=True
+    )
 
 
 def pending_reviews_for_entries(

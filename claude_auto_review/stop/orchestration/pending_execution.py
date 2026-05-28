@@ -3,22 +3,37 @@ from __future__ import annotations
 import subprocess
 from typing import Any
 
-from claude_auto_review.review.lifecycle import build_review_prompt_env
 from claude_auto_review.config.constants import EXIT_REVIEW_FAILED
+from claude_auto_review.review.lifecycle import build_review_prompt_env
+from claude_auto_review.stop.orchestration.context import RuntimeContext
 from claude_auto_review.runtime.events import log_event
 from claude_auto_review.stop.feedback import block_response
 from claude_auto_review.stop.orchestration.resolution import StopFlowResolution
+from claude_auto_review.stop.response import approve_response
+from claude_auto_review.stop.reviews.enums import StopAllowReason
 from claude_auto_review.stop.reviews.review_prompt_runner import (
     _block_review_prompt_failure,
     _reload_client_state,
     run_review_prompt,
 )
 from claude_auto_review.stop.reviews.selection import find_pending_review_for_files
-from claude_auto_review.stop.response import approve_response
 
 
-def fail_review(ctx: RuntimeContext, files_str: str, exit_code: int, event_type: str, script: str | None = None, error: Exception | None = None) -> StopFlowResolution:
-    log_event(ctx.project_root, event_type, client_id=ctx.client_id, script=str(script) if script else None, error=str(error) if error else None)
+def fail_review(
+    ctx: RuntimeContext,
+    files_str: str,
+    exit_code: int,
+    event_type: str,
+    script: str | None = None,
+    error: Exception | None = None,
+) -> StopFlowResolution:
+    log_event(
+        ctx.project_root,
+        event_type,
+        client_id=ctx.client_id,
+        script=str(script) if script else None,
+        error=str(error) if error else None,
+    )
     if exit_code == EXIT_REVIEW_FAILED:
         if error:
             block_response(
@@ -33,10 +48,17 @@ def fail_review(ctx: RuntimeContext, files_str: str, exit_code: int, event_type:
     return StopFlowResolution(state=[], unreviewed=[], exit_code=exit_code)
 
 
-def resolve_prompted_review(ctx: RuntimeContext, timeout_hours: float, files_str: str, result: Any) -> StopFlowResolution:
+def resolve_prompted_review(
+    ctx: RuntimeContext, timeout_hours: float, files_str: str, result: Any
+) -> StopFlowResolution:
     state, unreviewed = _reload_client_state(ctx)
     if not unreviewed:
-        log_event(ctx.project_root, "stop_approved", client_id=ctx.client_id, reason="no_unreviewed_files_after_review")
+        log_event(
+            ctx.project_root,
+            "stop_approved",
+            client_id=ctx.client_id,
+            reason=StopAllowReason.NO_UNREVIEWED_AFTER_REVIEW,
+        )
         approve_response("Claude Auto Review: stop approved (no_unreviewed_files_after_review)")
         return StopFlowResolution(state=state, unreviewed=unreviewed, exit_code=0)
 
@@ -48,7 +70,9 @@ def resolve_prompted_review(ctx: RuntimeContext, timeout_hours: float, files_str
     return StopFlowResolution(state=state, unreviewed=unreviewed, review=review)
 
 
-def execute_review_prompt(ctx: RuntimeContext, unreviewed: list[Any], timeout_hours: float, review_prompt_script: str, files_str: str) -> StopFlowResolution:
+def execute_review_prompt(
+    ctx: RuntimeContext, unreviewed: list[Any], timeout_hours: float, review_prompt_script: str, files_str: str
+) -> StopFlowResolution:
     env = build_review_prompt_env(ctx.payload)
     try:
         result = run_review_prompt(ctx, review_prompt_script, env)

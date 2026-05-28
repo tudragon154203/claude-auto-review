@@ -1,19 +1,18 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
-
-from pathlib import Path
 import json
+from dataclasses import dataclass
+from pathlib import Path
 
-from claude_auto_review.paths.path_utils import local_now_iso
 from claude_auto_review.runtime.client_dirs import client_state_path
 from claude_auto_review.runtime.setup import ensure_client_runtime
 from claude_auto_review.state.models import EditRecord, ReviewMetadata, StateEvent
+from claude_auto_review.timestamps import local_now_iso
 
 
 @dataclass(frozen=True)
 class StateEventWriter:
-    project_root: object
+    project_root: Path
     client_id: str
 
     def append(self, event: StateEvent):

@@ -1,6 +1,6 @@
 import unittest
-from unittest.mock import patch
 from pathlib import Path
+from unittest.mock import patch
 
 from claude_auto_review.install.setup_cli import main
 
@@ -11,9 +11,14 @@ class TestSetupCli(unittest.TestCase):
     @patch("claude_auto_review.install.setup_cli.copy_if_changed")
     @patch("claude_auto_review.install.setup_cli.write_runtime_shims")
     @patch("claude_auto_review.install.setup_cli.ensure_project_settings")
-    @patch("claude_auto_review.install.setup_cli.ensure_runtime", return_value={"base_dir": Path("/fake/project/.claude/claude-auto-review")})
+    @patch(
+        "claude_auto_review.install.setup_cli.ensure_runtime",
+        return_value={"base_dir": Path("/fake/project/.claude/claude-auto-review")},
+    )
     @patch("claude_auto_review.install.setup_cli.get_project_root", return_value=Path("/fake/project"))
-    def test_main_creates_runtime(self, mock_root, mock_runtime, mock_settings, mock_shims, mock_copy, mock_gitignore, mock_log):
+    def test_main_creates_runtime(
+        self, mock_root, mock_runtime, mock_settings, mock_shims, mock_copy, mock_gitignore, mock_log
+    ):
         with patch("builtins.print") as mock_print:
             result = main()
         self.assertEqual(result, 0)

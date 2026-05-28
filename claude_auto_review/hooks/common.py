@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Callable
+from collections.abc import Callable
 
 from claude_auto_review.runtime.hook_context import build_hook_runtime_context
 from claude_auto_review.runtime.process import run_fail_open

@@ -6,7 +6,6 @@ from claude_auto_review.stop.orchestration.review_artifact_evaluator import clas
 
 
 class TestReviewArtifactState(unittest.TestCase):
-
     def test_review_artifact_state_detects_clean_complete_review(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             review_path = Path(tmpdir) / "review.md"

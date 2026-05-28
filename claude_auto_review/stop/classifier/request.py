@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from claude_auto_review.stop.classifier.models import CLASSIFIER_MAX_TOKENS, _SYSTEM_PROMPT
+from claude_auto_review.stop.classifier.models import _SYSTEM_PROMPT, CLASSIFIER_MAX_TOKENS
 
 
 def build_classifier_request_body(message_text, model):

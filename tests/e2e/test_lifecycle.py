@@ -113,7 +113,9 @@ class EndToEndLifecycleTests(EndToEndTestCase):
         self.complete_review(project_root)
 
         stop_result = self.stop(project_root)
-        self.assertEqual(stop_result.returncode, 0, f"Stop should be allowed after completed review, got: {stop_result.stdout}")
+        self.assertEqual(
+            stop_result.returncode, 0, f"Stop should be allowed after completed review, got: {stop_result.stdout}"
+        )
 
     def test_clean_project_stop_allowed_immediately(self):
         project_root = self.temp_project()

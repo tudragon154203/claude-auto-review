@@ -3,8 +3,8 @@ import unittest
 from claude_auto_review.review.prompting.templates import (
     build_prompt,
     format_review_file,
-    format_review_prompt,
     format_review_files,
+    format_review_prompt,
 )
 
 
@@ -32,9 +32,14 @@ class TestPromptTemplates(unittest.TestCase):
         self.assertIn("```diff\n-old\n+new\n```", result)
         self.assertIn("## Current File Snapshots", result)
         self.assertIn("Output only the final review markdown to stdout.", result)
-        self.assertIn("Do not emit progress updates, planning notes, or any text before or after the final markdown review.", result)
+        self.assertIn(
+            "Do not emit progress updates, planning notes, or any text before or after the final markdown review.",
+            result,
+        )
         self.assertIn("Complete the review in a single response.", result)
-        self.assertIn('If you record one or more findings under "## Findings", you MUST NOT use a clean verdict.', result)
+        self.assertIn(
+            'If you record one or more findings under "## Findings", you MUST NOT use a clean verdict.', result
+        )
         self.assertNotIn("/tmp/review-123.md", result)
 
     def test_format_review_file_includes_prompt_path_placeholder(self):

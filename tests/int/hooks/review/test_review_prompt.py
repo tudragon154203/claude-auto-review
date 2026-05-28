@@ -30,14 +30,20 @@ class TestReviewPrompt(HookTestCase, unittest.TestCase):
             1,
         )
         pending_stop = self.run_python(
-            "hooks/stop_hook.py", project_root,
+            "hooks/stop_hook.py",
+            project_root,
             env_overrides={"PATH": ""},
             use_fake_claude=False,
         )
         self.assertEqual(pending_stop.returncode, 2)
         self.assertIn("Review", json.loads(pending_stop.stdout)["systemMessage"])
         self.complete_latest_review(project_root)
-        self.assertEqual(self.run_python("hooks/stop_hook.py", project_root, env_overrides={"PATH": ""}, use_fake_claude=False).returncode, 0)
+        self.assertEqual(
+            self.run_python(
+                "hooks/stop_hook.py", project_root, env_overrides={"PATH": ""}, use_fake_claude=False
+            ).returncode,
+            0,
+        )
 
     def test_includes_real_git_diff_content_in_generated_review_prompt(self):
         project_root = self.temp_project()
@@ -103,5 +109,3 @@ class TestReviewPrompt(HookTestCase, unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-
-

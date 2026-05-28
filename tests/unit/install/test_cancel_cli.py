@@ -1,6 +1,6 @@
 import unittest
-from unittest.mock import patch
 from pathlib import Path
+from unittest.mock import patch
 
 from claude_auto_review.install.cancel_cli import main
 

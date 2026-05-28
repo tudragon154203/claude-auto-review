@@ -1,11 +1,12 @@
 import json
+import shutil
+import tempfile
 import unittest
 from pathlib import Path
-import tempfile
-import shutil
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 from claude_auto_review.install.uninstall_cli import _remove_plugin_hooks, main
+
 
 class TestUninstall(unittest.TestCase):
     def setUp(self):
@@ -20,20 +21,10 @@ class TestUninstall(unittest.TestCase):
             "hooks": {
                 "PostToolUse": [
                     {"command": "other-hook"},
-                    {
-                        "hooks": [
-                            {"command": "python -m claude_auto_review.hooks.post_tool_use"}
-                        ]
-                    }
+                    {"hooks": [{"command": "python -m claude_auto_review.hooks.post_tool_use"}]},
                 ],
-                "Stop": [
-                    {
-                        "hooks": [
-                            {"command": "python -m claude_auto_review.hooks.stop_hook"}
-                        ]
-                    }
-                ],
-                "Other": [{"command": "something"}]
+                "Stop": [{"hooks": [{"command": "python -m claude_auto_review.hooks.stop_hook"}]}],
+                "Other": [{"command": "something"}],
             }
         }
 
@@ -50,22 +41,13 @@ class TestUninstall(unittest.TestCase):
         self.assertEqual(hooks["Other"][0]["command"], "something")
 
     def test_remove_plugin_hooks_nested(self):
-       settings = {
-           "hooks": {
-               "PostToolUse": [
-                   {
-                       "hooks": [
-                           {"command": "python -m claude_auto_review.hooks.post_tool_use"}
-                       ]
-                   }
-               ]
-           }
-       }
-       modified = _remove_plugin_hooks(settings)
-       self.assertTrue(modified)
-       # Everything removed -> "hooks" itself should be removed from settings if empty
-       self.assertNotIn("hooks", settings)
-
+        settings = {
+            "hooks": {"PostToolUse": [{"hooks": [{"command": "python -m claude_auto_review.hooks.post_tool_use"}]}]}
+        }
+        modified = _remove_plugin_hooks(settings)
+        self.assertTrue(modified)
+        # Everything removed -> "hooks" itself should be removed from settings if empty
+        self.assertNotIn("hooks", settings)
 
     @patch("claude_auto_review.install.uninstall_cli.get_project_root")
     @patch("claude_auto_review.install.uninstall_cli.log_event")
@@ -77,11 +59,10 @@ class TestUninstall(unittest.TestCase):
         claude_dir = self.project_root / ".claude"
         claude_dir.mkdir()
         settings_path = claude_dir / "settings.json"
-        settings_path.write_text(json.dumps({
-            "hooks": {
-                "Stop": [{"command": "python -m claude_auto_review.hooks.stop_hook"}]
-            }
-        }), encoding="utf-8")
+        settings_path.write_text(
+            json.dumps({"hooks": {"Stop": [{"command": "python -m claude_auto_review.hooks.stop_hook"}]}}),
+            encoding="utf-8",
+        )
 
         # Setup runtime dir
         runtime_dir = claude_dir / "claude-auto-review"
@@ -105,6 +86,7 @@ class TestUninstall(unittest.TestCase):
 
         # Verify gitignore called
         mock_gitignore.assert_called()
+
 
 if __name__ == "__main__":
     unittest.main()

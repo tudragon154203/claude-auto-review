@@ -50,7 +50,7 @@ class TestReviewPrompt(unittest.TestCase):
     @patch("claude_auto_review.review.prompt.ensure_client_runtime")
     @patch("claude_auto_review.review.prompt.load_settings", return_value=PluginSettings(enabled=True))
     @patch("claude_auto_review.review.prompt.get_unreviewed_files", return_value=[])
-    @patch("claude_auto_review.review.prompt.load_state", return_value=[])
+    @patch("claude_auto_review.review.prompt.load_state_snapshot", return_value=MagicMock(latest_entries_by_file={}))
     def test_run_review_prompt_no_unreviewed(self, mock_state, mock_unrev, mock_settings, mock_ensure, mock_shim, mock_log):
         with patch("builtins.print"):
             result = _run_review_prompt(Path("/fake/project"), "c1")
@@ -61,7 +61,7 @@ class TestReviewPrompt(unittest.TestCase):
     @patch("claude_auto_review.review.prompt.ensure_client_runtime")
     @patch("claude_auto_review.review.prompt.load_settings", return_value=PluginSettings(enabled=True))
     @patch("claude_auto_review.review.prompt.get_unreviewed_files", return_value=[{"file": "a.ts", "hash": "1"}])
-    @patch("claude_auto_review.review.prompt.load_state", return_value=[])
+    @patch("claude_auto_review.review.prompt.load_state_snapshot", return_value=MagicMock(latest_entries_by_file={}))
     @patch("claude_auto_review.review.prompt.create_review_prompt_files")
     @patch("claude_auto_review.review.prompt.append_review_started")
     def test_run_review_prompt_normal_flow(self, mock_append, mock_create, mock_state, mock_unrev, mock_settings, mock_ensure, mock_shim, mock_log):

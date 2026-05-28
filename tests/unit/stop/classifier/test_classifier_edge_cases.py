@@ -1,12 +1,11 @@
 import unittest
 
-from claude_auto_review.stop.classifier.extraction import extract_last_assistant_message_text
 from claude_auto_review.stop.classifier.client import sanitize_base_url
+from claude_auto_review.stop.classifier.extraction import extract_last_assistant_message_text
 from claude_auto_review.stop.classifier.response import parse_classifier_label
 
 
 class TestClassifierEdgeCases(unittest.TestCase):
-
     def test_extract_last_assistant_message_text_non_dict_payload(self):
         self.assertEqual(extract_last_assistant_message_text("not-a-dict"), "")
         self.assertEqual(extract_last_assistant_message_text(None), "")

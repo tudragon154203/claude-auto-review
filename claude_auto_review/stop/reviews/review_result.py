@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from claude_auto_review.runtime.events import log_event
 from claude_auto_review.state.reviews.normalization import normalize_review_verdict_content
 from claude_auto_review.stop.orchestration.context import RuntimeContext
+from claude_auto_review.stop.reviews.enums import AutocompleteStatus
 
 
 @dataclass(frozen=True)
@@ -16,7 +17,7 @@ class AutocompleteResult:
 
     @property
     def output_written(self):
-        return self.status == "output_written"
+        return self.status == AutocompleteStatus.OUTPUT_WRITTEN
 
     def __bool__(self):
         return self.output_written
@@ -46,7 +47,7 @@ def _process_review_result(ctx: RuntimeContext, result, review_path, review_id, 
             stderr=result.stderr[:500] if result.stderr else "",
         )
         return AutocompleteResult(
-            status="nonzero",
+            status=AutocompleteStatus.NONZERO,
             stdout=result.stdout or "",
             stderr=result.stderr or "",
             returncode=result.returncode,
@@ -63,7 +64,7 @@ def _process_review_result(ctx: RuntimeContext, result, review_path, review_id, 
             stderr=result.stderr[:500] if result.stderr else "",
         )
         return AutocompleteResult(
-            status="empty_stdout",
+            status=AutocompleteStatus.EMPTY_STDOUT,
             stdout=result.stdout or "",
             stderr=result.stderr or "",
             returncode=result.returncode,
@@ -84,8 +85,8 @@ def _process_review_result(ctx: RuntimeContext, result, review_path, review_id, 
         stdout_len=stdout_len,
     )
     return AutocompleteResult(
-        status="output_written",
-        stdout=normalized_output,
+        status=AutocompleteStatus.OUTPUT_WRITTEN,
+        stdout=normalized_output or "",
         stderr=result.stderr or "",
         returncode=result.returncode,
     )

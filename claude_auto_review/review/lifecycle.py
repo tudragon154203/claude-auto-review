@@ -13,6 +13,7 @@ from claude_auto_review.stop.feedback import build_review_completion_prompt, bui
 from claude_auto_review.stop.orchestration.context import RuntimeContext
 from claude_auto_review.stop.orchestration.resolution import StopFlowResolution
 from claude_auto_review.stop.orchestration.review_artifact_evaluator import classify_review_artifact_state
+from claude_auto_review.stop.reviews.enums import StopAllowReason
 from claude_auto_review.stop.reviews.prompt_runner import AutocompleteResult, attempt_stop_autocomplete
 from claude_auto_review.stop.reviews.review_prompt_runner import (
     _block_review_prompt_failure,
@@ -21,7 +22,6 @@ from claude_auto_review.stop.reviews.review_prompt_runner import (
     run_review_prompt,
 )
 from claude_auto_review.stop.reviews.selection import find_pending_review_for_files
-
 
 _AUTOCOMPLETE_RETRY_ATTEMPTS = 2
 
@@ -44,18 +44,29 @@ class ReviewLifecycleService:
     def create_review_prompt(self, unreviewed: list[Any], settings: Any = None) -> Any:
         return create_review_prompt_files(self.ctx, unreviewed, settings=settings)
 
-    def execute_review_prompt(self, unreviewed: list[Any], timeout_hours: float, review_prompt_script: str, files_str: str | None = None) -> StopFlowResolution:
+    def execute_review_prompt(
+        self, unreviewed: list[Any], timeout_hours: float, review_prompt_script: str, files_str: str | None = None
+    ) -> StopFlowResolution:
         files_str = files_str or build_unreviewed_files_string(unreviewed)
         env = build_review_prompt_env(self.ctx.payload)
         try:
             result = run_review_prompt(self.ctx, review_prompt_script, env)
         except subprocess.TimeoutExpired:
-            return self.fail_review(files_str, EXIT_REVIEW_FAILED, "stop_hook_review_timeout", script=review_prompt_script)
+            return self.fail_review(
+                files_str, EXIT_REVIEW_FAILED, "stop_hook_review_timeout", script=review_prompt_script
+            )
         except (OSError, ValueError, subprocess.SubprocessError) as error:
             return self.fail_review(files_str, EXIT_REVIEW_FAILED, "stop_hook_review_error", error=error)
         return self.resolve_prompted_review(timeout_hours, files_str, result)
 
-    def fail_review(self, files_str: str, exit_code: int, event_type: str, script: str | None = None, error: Exception | None = None) -> StopFlowResolution:
+    def fail_review(
+        self,
+        files_str: str,
+        exit_code: int,
+        event_type: str,
+        script: str | None = None,
+        error: Exception | None = None,
+    ) -> StopFlowResolution:
         log_event(
             self.ctx.project_root,
             event_type,
@@ -72,7 +83,7 @@ class ReviewLifecycleService:
                 self.ctx.project_root,
                 "stop_approved",
                 client_id=self.ctx.client_id,
-                reason="no_unreviewed_files_after_review",
+                reason=StopAllowReason.NO_UNREVIEWED_AFTER_REVIEW,
             )
             return StopFlowResolution(state=state, unreviewed=unreviewed, exit_code=0)
 
@@ -90,7 +101,9 @@ class ReviewLifecycleService:
             client_id=self.ctx.client_id,
         )
 
-    def attempt_autocomplete(self, review_id: str, review_path: Path, prompt_file: Path, *, user_prompt: str | None = None) -> AutocompleteResult | None:
+    def attempt_autocomplete(
+        self, review_id: str, review_path: Path, prompt_file: Path, *, user_prompt: str | None = None
+    ) -> AutocompleteResult | None:
         user_prompt = user_prompt or build_review_completion_prompt(review_path)
         reviewer_timeout_seconds = self.ctx.settings.reviewer_timeout_seconds
         reviewer_backend = self.ctx.settings.resolved_reviewer_backend()
@@ -108,10 +121,12 @@ class ReviewLifecycleService:
                 model=reviewer_model,
                 backend=reviewer_backend,
             )
-            if result.status != "empty_stdout":
+            if result is None or result.status != "empty_stdout":
                 break
             if attempt == 0:
-                log_event(self.ctx.project_root, "stop_hook_reviewer_retry", client_id=self.ctx.client_id, reviewId=review_id)
+                log_event(
+                    self.ctx.project_root, "stop_hook_reviewer_retry", client_id=self.ctx.client_id, reviewId=review_id
+                )
         return result
 
     def review_prompt_path(self, review_id: str) -> Path:

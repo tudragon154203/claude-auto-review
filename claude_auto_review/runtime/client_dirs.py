@@ -9,7 +9,7 @@ from pathlib import Path
 from claude_auto_review.paths.path_utils import CLIENTS_DIR, _project_root_path
 
 _CLIENT_RUNTIME_DIR_PATTERN = re.compile(r"^client-(\d{8}-\d{6})_(.+)$")
-_CLIENT_RUNTIME_DIR_CACHE = {}
+_CLIENT_RUNTIME_DIR_CACHE: dict[tuple[str, str], Path] = {}
 
 
 def get_client_id(stdin_session_id=None) -> str:
@@ -34,7 +34,7 @@ def _client_runtime_dir_cache_key(project_root: Path, client_id: str):
     return str(project_root), client_id
 
 
-def _cached_client_runtime_dir(cache_key):
+def _cached_client_runtime_dir(cache_key) -> Path | None:
     cached = _CLIENT_RUNTIME_DIR_CACHE.get(cache_key)
     if cached is None:
         return None
@@ -59,7 +59,7 @@ def _timestamped_client_runtime_dir(project_root: Path, client_id: str) -> Path:
     return project_root / CLIENTS_DIR / f"client-{ts}_{client_id}"
 
 
-def _find_existing_client_runtime_dir(project_root: Path, client_id: str):
+def _find_existing_client_runtime_dir(project_root: Path, client_id: str) -> Path | None:
     clients_dir = project_root / CLIENTS_DIR
     if not clients_dir.exists():
         return None
@@ -67,9 +67,7 @@ def _find_existing_client_runtime_dir(project_root: Path, client_id: str):
     timestamped = [
         child
         for child in clients_dir.iterdir()
-        if child.is_dir()
-        and (match := _CLIENT_RUNTIME_DIR_PATTERN.match(child.name))
-        and match.group(2) == client_id
+        if child.is_dir() and (match := _CLIENT_RUNTIME_DIR_PATTERN.match(child.name)) and match.group(2) == client_id
     ]
     if timestamped:
         return sorted(timestamped)[-1]
@@ -93,6 +91,7 @@ def get_client_runtime_dir(project_root: Path, client_id: str) -> Path:
     if cached is not None:
         return cached
 
+    client_dir: Path | None = None
     if _CLIENT_RUNTIME_DIR_PATTERN.match(client_id):
         client_dir = project_root / CLIENTS_DIR / client_id
     else:
@@ -100,6 +99,7 @@ def get_client_runtime_dir(project_root: Path, client_id: str) -> Path:
         if client_dir is None:
             client_dir = _timestamped_client_runtime_dir(project_root, client_id)
 
+    assert client_dir is not None
     _CLIENT_RUNTIME_DIR_CACHE[cache_key] = client_dir
     return client_dir
 

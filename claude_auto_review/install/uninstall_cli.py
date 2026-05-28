@@ -3,11 +3,12 @@
 
 Removes runtime data, cleans up .claude/settings.json and .gitignore.
 """
+
 from __future__ import annotations
 
 import json
-import sys
 import shutil
+import sys
 from pathlib import Path
 
 if __name__ == "__main__":
@@ -15,9 +16,9 @@ if __name__ == "__main__":
     if str(_plugin_root) not in sys.path:
         sys.path.insert(0, str(_plugin_root))
 
+from claude_auto_review.install.installer import ensure_gitignore_entries
 from claude_auto_review.paths.path_utils import get_project_root
 from claude_auto_review.runtime.events import log_event
-from claude_auto_review.install.installer import ensure_gitignore_entries
 from claude_auto_review.runtime.hook_identity import command_targets_plugin
 
 GITIGNORE_ENTRY = ".claude/claude-auto-review/"
@@ -134,4 +135,5 @@ def main():
 
 if __name__ == "__main__":
     import sys
+
     sys.exit(main())

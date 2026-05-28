@@ -1,11 +1,10 @@
 import unittest
 
+from claude_auto_review.state.models import EditRecord, ReviewMetadata
 from claude_auto_review.state.store.parsing import parse_event
-from claude_auto_review.state.models import EditRecord, ReviewMetadata, ReviewFileRecord
 
 
 class TestParseEvent(unittest.TestCase):
-
     def test_parses_edit_event(self):
         raw = {"type": "edit", "timestamp": "2026-05-05T08:00:00+07:00", "file": "a.ts", "hash": "aaa"}
         result = parse_event(raw)

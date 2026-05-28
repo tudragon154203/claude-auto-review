@@ -2,8 +2,8 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from claude_auto_review.state.models import EditRecord, ReviewCompletedRecord, ReviewMetadata, StopBlockedRecord
 from claude_auto_review.review.completion import _format_duration, apply_completed_review
+from claude_auto_review.state.models import EditRecord, ReviewCompletedRecord, ReviewMetadata, StopBlockedRecord
 
 
 class TestFormatDuration(unittest.TestCase):
@@ -105,4 +105,3 @@ class TestCompletion(unittest.TestCase):
     def test_apply_completed_review_raises_on_missing_file(self):
         with self.assertRaises(ValueError):
             apply_completed_review(Path("/fake"), "cid", "rid", [{"hash": "123"}])
-

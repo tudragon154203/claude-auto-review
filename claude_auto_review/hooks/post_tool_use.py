@@ -47,7 +47,14 @@ def _run_post_tool_use(ctx):
                     deleted=True,
                 )
             )
-            log_event(project_root, "file_deletion_tracked", client_id=client_id, file=file_path, hash=DELETED_FILE_HASH, reviewed=False)
+            log_event(
+                project_root,
+                "file_deletion_tracked",
+                client_id=client_id,
+                file=file_path,
+                hash=DELETED_FILE_HASH,
+                reviewed=False,
+            )
             continue
         reviewed = was_hash_reviewed(state_snapshot, file_path, file_hash)
         repository.append_event(

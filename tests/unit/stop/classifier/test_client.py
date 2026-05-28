@@ -1,10 +1,9 @@
 import io
 import json
-import socket
 import unittest
 from urllib import error
 
-from claude_auto_review.stop.classifier.client import parse_classifier_label, call_classifier_api, sanitize_base_url
+from claude_auto_review.stop.classifier.client import call_classifier_api, parse_classifier_label, sanitize_base_url
 
 
 class _FakeResponse:
@@ -27,7 +26,9 @@ class TestClassifierClient(unittest.TestCase):
     def test_sanitize_base_url_rejects_non_strings_and_invalid_urls(self):
         self.assertEqual(sanitize_base_url(None), "")
         self.assertEqual(sanitize_base_url(""), "")
-        self.assertEqual(sanitize_base_url("http://token@example.test:13456/proxy/?secret=1#frag"), "http://example.test:13456/proxy")
+        self.assertEqual(
+            sanitize_base_url("http://token@example.test:13456/proxy/?secret=1#frag"), "http://example.test:13456/proxy"
+        )
         self.assertEqual(sanitize_base_url("http://["), "")
 
     def testparse_classifier_label_ignores_non_text_blocks(self):
@@ -53,15 +54,19 @@ class TestClassifierClient(unittest.TestCase):
         def http_error(_req, timeout):
             raise error.HTTPError("https://example.test", 503, "down", hdrs=None, fp=io.BytesIO(b""))
 
-        result = call_classifier_api("message", "http://example.test", "key", started_at, 5, "claude-3-5-haiku-20241022", urlopen=http_error)
+        result = call_classifier_api(
+            "message", "http://example.test", "key", started_at, 5, "claude-3-5-haiku-20241022", urlopen=http_error
+        )
         self.assertEqual(result.status, "error")
         self.assertEqual(result.reason, "http_error")
         self.assertEqual(result.http_status, 503)
 
         def timeout_error(_req, timeout):
-            raise error.URLError(socket.timeout())
+            raise error.URLError(TimeoutError())
 
-        result = call_classifier_api("message", "http://example.test", "key", started_at, 5, "claude-3-5-haiku-20241022", urlopen=timeout_error)
+        result = call_classifier_api(
+            "message", "http://example.test", "key", started_at, 5, "claude-3-5-haiku-20241022", urlopen=timeout_error
+        )
         self.assertEqual(result.status, "error")
         self.assertEqual(result.reason, "http_timeout")
 
@@ -71,21 +76,27 @@ class TestClassifierClient(unittest.TestCase):
         def bad_json(_req, timeout):
             return _FakeResponse(b"{not-json")
 
-        result = call_classifier_api("message", "http://example.test", "key", started_at, 5, "claude-3-5-haiku-20241022", urlopen=bad_json)
+        result = call_classifier_api(
+            "message", "http://example.test", "key", started_at, 5, "claude-3-5-haiku-20241022", urlopen=bad_json
+        )
         self.assertEqual(result.status, "error")
         self.assertEqual(result.reason, "bad_response")
 
         def malformed_shape(_req, timeout):
             return _FakeResponse(["not", "an", "object"])
 
-        result = call_classifier_api("message", "http://example.test", "key", started_at, 5, "claude-3-5-haiku-20241022", urlopen=malformed_shape)
+        result = call_classifier_api(
+            "message", "http://example.test", "key", started_at, 5, "claude-3-5-haiku-20241022", urlopen=malformed_shape
+        )
         self.assertEqual(result.status, "unknown")
         self.assertEqual(result.reason, "bad_response")
 
         def boom(_req, timeout):
             raise RuntimeError("boom")
 
-        result = call_classifier_api("message", "http://example.test", "key", started_at, 5, "claude-3-5-haiku-20241022", urlopen=boom)
+        result = call_classifier_api(
+            "message", "http://example.test", "key", started_at, 5, "claude-3-5-haiku-20241022", urlopen=boom
+        )
         self.assertEqual(result.status, "error")
         self.assertEqual(result.reason, "http_error")
 

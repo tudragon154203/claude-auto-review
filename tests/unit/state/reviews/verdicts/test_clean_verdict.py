@@ -1,12 +1,10 @@
 import unittest
-from pathlib import Path
 
 from claude_auto_review.state.reviews.completion import (
     is_review_clean,
     is_review_clean_content,
 )
 from claude_auto_review.state.reviews.normalization import normalize_review_verdict_content
-
 from tests.unit.state.support import StateTestCase
 
 

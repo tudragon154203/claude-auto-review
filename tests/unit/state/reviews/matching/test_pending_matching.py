@@ -13,7 +13,6 @@ from claude_auto_review.state.reviews.matching import (
 
 
 class TestPendingMatching(unittest.TestCase):
-
     def test_entry_and_review_hash_pair_helpers_ignore_invalid_items(self):
         entries = [
             ReviewFileRecord(file="a.ts", hash="111"),
@@ -38,6 +37,7 @@ class TestPendingMatching(unittest.TestCase):
     def test_pending_reviews_for_entries_requires_full_coverage_and_sorts_newest_first(self):
         import datetime
         from datetime import timedelta, timezone
+
         now = datetime.datetime.now(timezone.utc)
         state = [
             ReviewMetadata(
@@ -94,6 +94,7 @@ class TestPendingMatching(unittest.TestCase):
     def test_pending_reviews_exactly_matching_entries_requires_exact_file_hash_set(self):
         import datetime
         from datetime import timedelta, timezone
+
         now = datetime.datetime.now(timezone.utc)
         state = [
             ReviewMetadata(
@@ -146,6 +147,7 @@ class TestPendingMatching(unittest.TestCase):
     def test_best_pending_review_covering_entries_prefers_more_overlap_then_newer(self):
         import datetime
         from datetime import timedelta, timezone
+
         now = datetime.datetime.now(timezone.utc)
         state = [
             ReviewMetadata(
@@ -192,6 +194,7 @@ class TestPendingMatching(unittest.TestCase):
     def test_best_pending_review_for_entries_returns_none_for_no_overlap(self):
         import datetime
         from datetime import timezone as tz
+
         now = datetime.datetime.now(tz.utc)
         state = [
             ReviewMetadata(

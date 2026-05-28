@@ -72,27 +72,15 @@ class TestHasReviewFindings(unittest.TestCase):
         self.assertTrue(has_blocking_review_findings(content, "low"))
 
     def test_has_blocking_review_findings_skipped_findings_never_block(self):
-        content = (
-            "## Findings\n"
-            "### 1. [Critical] Safety issue\n"
-            "**Verdict:** Skipped\n"
-        )
+        content = "## Findings\n" "### 1. [Critical] Safety issue\n" "**Verdict:** Skipped\n"
         self.assertFalse(has_blocking_review_findings(content, "info"))
 
     def test_has_blocking_review_findings_missing_severity_blocks(self):
-        content = (
-            "## Findings\n"
-            "### 1. Missing severity heading\n"
-            "**Verdict:** Confirmed\n"
-        )
+        content = "## Findings\n" "### 1. Missing severity heading\n" "**Verdict:** Confirmed\n"
         self.assertTrue(has_blocking_review_findings(content, "critical"))
 
     def test_has_blocking_review_findings_unparseable_confirmed_severity_blocks(self):
-        content = (
-            "## Findings\n"
-            "### 1. [Mystery] Unexpected label\n"
-            "**Verdict:** Confirmed\n"
-        )
+        content = "## Findings\n" "### 1. [Mystery] Unexpected label\n" "**Verdict:** Confirmed\n"
         self.assertTrue(has_blocking_review_findings(content, "medium"))
 
     def test_has_blocking_review_findings_mixed_severities_block_only_at_threshold(self):
@@ -141,12 +129,7 @@ class TestHasReviewFindings(unittest.TestCase):
         self.assertTrue(has_review_findings(content))
 
     def test_has_review_findings_detects_no_bugs_line(self):
-        content = (
-            "## Findings\n"
-            "No bugs found.\n\n"
-            "## Verdict\n"
-            "Clean - no issues found.\n"
-        )
+        content = "## Findings\n" "No bugs found.\n\n" "## Verdict\n" "Clean - no issues found.\n"
         self.assertFalse(has_review_findings(content))
 
     def test_has_review_findings_detects_clean_negations(self):
@@ -157,21 +140,11 @@ class TestHasReviewFindings(unittest.TestCase):
         ]
         for finding_line in cases:
             with self.subTest(finding_line=finding_line):
-                content = (
-                    "## Findings\n"
-                    f"{finding_line}\n\n"
-                    "## Verdict\n"
-                    "Clean - no issues found.\n"
-                )
+                content = "## Findings\n" f"{finding_line}\n\n" "## Verdict\n" "Clean - no issues found.\n"
                 self.assertFalse(has_review_findings(content))
 
     def test_has_review_findings_detects_no_issues_found_in_test_file(self):
-        content = (
-            "## Findings\n"
-            "No issues found in the test file.\n\n"
-            "## Verdict\n"
-            "Clean - no issues found.\n"
-        )
+        content = "## Findings\n" "No issues found in the test file.\n\n" "## Verdict\n" "Clean - no issues found.\n"
         self.assertFalse(has_review_findings(content))
 
     def test_has_review_findings_rejects_explicit_contradiction_after_no_issues_line(self):
@@ -212,12 +185,7 @@ class TestHasReviewFindings(unittest.TestCase):
         self.assertFalse(has_review_findings(content))
 
     def test_has_review_findings_generic_note_not_no_findings(self):
-        content = (
-            "## Findings\n"
-            "**Note:** some minor observation.\n\n"
-            "## Verdict\n"
-            "Clean - no issues found.\n"
-        )
+        content = "## Findings\n" "**Note:** some minor observation.\n\n" "## Verdict\n" "Clean - no issues found.\n"
         self.assertTrue(has_review_findings(content))
 
     def test_has_review_findings_note_with_contradiction(self):
@@ -232,38 +200,20 @@ class TestHasReviewFindings(unittest.TestCase):
 
     def test_has_review_findings_with_prose_contradiction(self):
         content = (
-            "## Findings\n"
-            "No issues found, but an edge case remains.\n\n"
-            "## Verdict\n"
-            "Clean - no issues found.\n"
+            "## Findings\n" "No issues found, but an edge case remains.\n\n" "## Verdict\n" "Clean - no issues found.\n"
         )
         self.assertTrue(has_review_findings(content))
 
     def test_has_review_findings_no_findings_prefix_with_verb(self):
-        content = (
-            "## Findings\n"
-            "No issues found were identified.\n\n"
-            "## Verdict\n"
-            "Clean - no issues found.\n"
-        )
+        content = "## Findings\n" "No issues found were identified.\n\n" "## Verdict\n" "Clean - no issues found.\n"
         self.assertFalse(has_review_findings(content))
 
     def test_has_review_findings_strict_prefix_no_punct(self):
-        content = (
-            "## Findings\n"
-            "clean\n\n"
-            "## Verdict\n"
-            "Clean - no issues found.\n"
-        )
+        content = "## Findings\n" "clean\n\n" "## Verdict\n" "Clean - no issues found.\n"
         self.assertFalse(has_review_findings(content))
 
     def test_has_review_findings_unqualified_prefix_no_remainder(self):
-        content = (
-            "## Findings\n"
-            "Completed review from /tmp/prompt.md\n\n"
-            "## Verdict\n"
-            "Clean - no issues found.\n"
-        )
+        content = "## Findings\n" "Completed review from /tmp/prompt.md\n\n" "## Verdict\n" "Clean - no issues found.\n"
         self.assertFalse(has_review_findings(content))
 
     def test_has_review_findings_unqualified_prefix_with_contradiction(self):

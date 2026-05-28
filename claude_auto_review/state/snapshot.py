@@ -1,9 +1,10 @@
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime
 from functools import cached_property
-from typing import Any, Callable
+from typing import Any, cast
 
 from claude_auto_review.paths.path_utils import is_runtime_relative_path
 from claude_auto_review.state.models import EditRecord, ReviewMetadata, StateEvent, StopBlockedRecord
@@ -26,10 +27,14 @@ def _is_edit_entry(entry: StateEvent) -> bool:
 def _edit_entry_key(entry: StateEvent) -> tuple[str, str] | None:
     if not _is_edit_entry(entry):
         return None
-    return entry.file, entry.hash
+    return cast(EditRecord, entry).file, cast(EditRecord, entry).hash
 
 
-def _latest_by_key(entries: list[StateEvent], key_fn: Callable[[StateEvent], Any], timestamp_fn: Callable[[StateEvent], datetime | None] | None = None) -> dict[Any, StateEvent]:
+def _latest_by_key(
+    entries: list[StateEvent],
+    key_fn: Callable[[StateEvent], Any],
+    timestamp_fn: Callable[[StateEvent], datetime | None] | None = None,
+) -> dict[Any, StateEvent]:
     latest: dict[Any, StateEvent] = {}
     latest_timestamps: dict[Any, datetime | None] = {}
     for entry in entries:
@@ -52,6 +57,7 @@ def _latest_by_key(entries: list[StateEvent], key_fn: Callable[[StateEvent], Any
 @dataclass(frozen=True)
 class StateSnapshot:
     """Immutable view over the append-only event log, with cached property accessors."""
+
     events: list[StateEvent]
 
     @classmethod
@@ -60,7 +66,7 @@ class StateSnapshot:
 
     @cached_property
     def latest_entries_by_file(self) -> dict[str, StateEvent]:
-        return {entry.file: entry for entry in self.events if _is_edit_entry(entry)}
+        return {cast(EditRecord, entry).file: entry for entry in self.events if _is_edit_entry(entry)}
 
     @cached_property
     def latest_review_entries_by_id(self) -> dict[str, StateEvent]:
@@ -75,7 +81,7 @@ class StateSnapshot:
         reviewed: dict[str, set[str]] = {}
         for entry in self.events:
             key = _edit_entry_key(entry)
-            if key is None or not entry.reviewed:
+            if key is None or not cast(EditRecord, entry).reviewed:
                 continue
             file_path, file_hash = key
             reviewed.setdefault(file_path, set()).add(file_hash)

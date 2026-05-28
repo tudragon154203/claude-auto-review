@@ -1,17 +1,14 @@
 import unittest
-from pathlib import Path
 
 from claude_auto_review.state.reviews.completion import (
     is_completed_review_content,
     is_placeholder_review_content,
     is_review_complete,
 )
-
 from tests.unit.state.support import StateTestCase
 
 
 class TestReviewCompleteness(StateTestCase, unittest.TestCase):
-
     def test_returns_false_when_review_file_missing(self):
         project_root = self.temp_project()
         missing = project_root / "no-such-review.md"
@@ -45,7 +42,9 @@ class TestReviewCompleteness(StateTestCase, unittest.TestCase):
         project_root = self.temp_project()
         path = project_root / "review.md"
         path.write_text("## Verdict\nAll issues addressed. No pending items.", encoding="utf-8")
-        self.assertTrue(is_review_complete(path), "Should pass when 'pending' is just a word, not the literal placeholder")
+        self.assertTrue(
+            is_review_complete(path), "Should pass when 'pending' is just a word, not the literal placeholder"
+        )
 
     def test_returns_true_when_verdict_is_clean_message(self):
         project_root = self.temp_project()

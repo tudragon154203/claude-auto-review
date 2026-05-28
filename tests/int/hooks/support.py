@@ -20,9 +20,7 @@ class HookTestCase(TempProjectMixin, SubprocessMixin):
         verdict="Clean - no issues found. Claude may stop.",
         client_id="test-session",
     ):
-        review_path = sorted(
-            (client_dir(project_root, client_id) / "reviews").glob("review-*.md")
-        )[-1]
+        review_path = sorted((client_dir(project_root, client_id) / "reviews").glob("review-*.md"))[-1]
         content = review_path.read_text(encoding="utf-8")
         content = content.replace("Pending. Claude must complete this review from", "Completed review from")
         content = content.replace("Pending.", verdict)

@@ -1,14 +1,14 @@
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Callable
 
 from claude_auto_review.stop.orchestration.context import RuntimeContext, StopDecision
 from claude_auto_review.stop.orchestration.resolution import StopDecisionKind
 from claude_auto_review.stop.orchestration.stages import (
     run_allow_no_unreviewed_stage,
-    run_classifier_stage,
     run_circuit_breaker_stage,
+    run_classifier_stage,
     run_enabled_stage,
     run_pending_stage,
     run_state_stage,
@@ -17,6 +17,8 @@ from claude_auto_review.stop.orchestration.stages import (
 
 @dataclass(frozen=True)
 class StopFlowDependencies:
+    """Injectable callables for each stage of the stop-flow pipeline."""
+
     load_state_snapshot: Callable
     get_unreviewed_files: Callable
     consecutive_stop_blocks: Callable
@@ -27,6 +29,8 @@ class StopFlowDependencies:
 
 
 class StopFlowService:
+    """Orchestrates the multi-stage stop decision pipeline."""
+
     def __init__(self, ctx: RuntimeContext, deps: StopFlowDependencies):
         self.ctx = ctx
         self.deps = deps
@@ -89,4 +93,3 @@ class StopFlowService:
 
     def run(self) -> StopDecision:
         return self.evaluate()
-

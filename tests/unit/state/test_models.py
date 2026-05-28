@@ -1,10 +1,17 @@
 import unittest
 
-from claude_auto_review.state.models import ClassificationRecord, EditRecord, ReviewAutocompleteRecord, ReviewCompletedRecord, ReviewFileRecord, ReviewMetadata, StopBlockedRecord
+from claude_auto_review.state.models import (
+    ClassificationRecord,
+    EditRecord,
+    ReviewAutocompleteRecord,
+    ReviewCompletedRecord,
+    ReviewFileRecord,
+    ReviewMetadata,
+    StopBlockedRecord,
+)
 
 
 class TestStateModels(unittest.TestCase):
-
     def test_review_metadata_round_trips_nested_files(self):
         data = {
             "timestamp": "2026-05-05T08:00:00+07:00",
@@ -61,7 +68,15 @@ class TestStateModels(unittest.TestCase):
         self.assertEqual(entry.to_dict(), data)
 
     def test_from_dict_helpers_preserve_scalar_event_shapes(self):
-        edit_data = {"timestamp": "t", "type": "edit", "file": "a.ts", "hash": "1", "reviewed": True, "deleted": True, "reviewId": "r"}
+        edit_data = {
+            "timestamp": "t",
+            "type": "edit",
+            "file": "a.ts",
+            "hash": "1",
+            "reviewed": True,
+            "deleted": True,
+            "reviewId": "r",
+        }
         blocked_data = {"timestamp": "t", "type": "stop_blocked", "reason": "x", "reviewId": "r", "files": ["a.ts"]}
         classified_data = {
             "timestamp": "t",

@@ -5,8 +5,8 @@ from pathlib import Path
 from claude_auto_review.config.models import PluginSettings
 from claude_auto_review.paths.path_utils import local_now_iso
 from claude_auto_review.state.models import StopBlockedRecord
-
 from claude_auto_review.state.store.writer import StateEventWriter
+from claude_auto_review.stop.orchestration.resolution import FinalizeAction
 from claude_auto_review.stop.response import block_response
 
 
@@ -56,8 +56,7 @@ def read_review_feedback(review_path, max_chars=None, project_root=None):
     if len(content) <= max_chars:
         return content
     return (
-        f"{content[:max_chars]}\n\n"
-        f"[Review truncated at {max_chars} characters. Read the full review at {display}.]"
+        f"{content[:max_chars]}\n\n" f"[Review truncated at {max_chars} characters. Read the full review at {display}.]"
     )
 
 
@@ -95,7 +94,7 @@ def block_completed_review_findings(ctx, review_id, review_path, unreviewed):
     StateEventWriter(ctx.project_root, ctx.client_id).append(
         StopBlockedRecord(
             timestamp=local_now_iso(),
-            reason="review_findings",
+            reason=FinalizeAction.BLOCKED_FINDINGS,
             reviewId=review_id,
             files=[_file_of(entry) for entry in unreviewed],
         )

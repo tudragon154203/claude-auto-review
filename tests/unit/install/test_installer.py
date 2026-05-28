@@ -1,10 +1,9 @@
 import tempfile
 import unittest
 from pathlib import Path
-
 from unittest.mock import patch
 
-from claude_auto_review.install.installer import copy_if_changed, ensure_gitignore_entries, _write_text_if_changed
+from claude_auto_review.install.installer import _write_text_if_changed, copy_if_changed, ensure_gitignore_entries
 
 
 class TestInstaller(unittest.TestCase):

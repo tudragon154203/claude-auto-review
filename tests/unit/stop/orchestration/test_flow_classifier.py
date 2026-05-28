@@ -1,4 +1,3 @@
-﻿import json
 import unittest
 from pathlib import Path
 from types import SimpleNamespace
@@ -7,7 +6,6 @@ from unittest.mock import patch
 from claude_auto_review.config.models import PluginSettings
 from claude_auto_review.state.models import EditRecord, StopBlockedRecord
 from claude_auto_review.state.snapshot import StateSnapshot
-from claude_auto_review.stop.orchestration.context import RuntimeContext
 from claude_auto_review.stop.orchestration.flow import run_stop_flow
 
 _UNREVIEWED = [EditRecord(timestamp="2026-05-11T10:00:00+07:00", file="a.ts", hash="1")]
@@ -19,9 +17,10 @@ def _snapshot(*, events=_STATE):
 
 
 class TestFlowClassifier(unittest.TestCase):
-
     @patch("claude_auto_review.stop.orchestration.decision_engine.classify_last_assistant_message")
-    @patch("claude_auto_review.stop.orchestration.decision_engine.load_state_snapshot", return_value=_snapshot(events=[]))
+    @patch(
+        "claude_auto_review.stop.orchestration.decision_engine.load_state_snapshot", return_value=_snapshot(events=[])
+    )
     @patch("claude_auto_review.stop.orchestration.decision_engine.ensure_client_runtime")
     @patch("claude_auto_review.stop.orchestration.decision_engine.load_settings")
     def test_classifier_skipped_when_no_unreviewed_files(
@@ -44,15 +43,20 @@ class TestFlowClassifier(unittest.TestCase):
         mock_classify.assert_not_called()
 
     @patch("claude_auto_review.stop.orchestration.decision_engine.classify_last_assistant_message")
-    @patch("claude_auto_review.stop.orchestration.decision_engine.load_state_snapshot", return_value=_snapshot(events=[
-        EditRecord(timestamp="2026-05-11T09:00:00+07:00", file="a.ts", hash="1", reviewed=True),
-        StopBlockedRecord(timestamp="2026-05-11T10:00:00+07:00"),
-        StopBlockedRecord(timestamp="2026-05-11T10:01:00+07:00"),
-        StopBlockedRecord(timestamp="2026-05-11T10:02:00+07:00"),
-        StopBlockedRecord(timestamp="2026-05-11T10:03:00+07:00"),
-        StopBlockedRecord(timestamp="2026-05-11T10:04:00+07:00"),
-        EditRecord(timestamp="2026-05-11T10:05:00+07:00", file="a.ts", hash="2", reviewed=False),
-    ]))
+    @patch(
+        "claude_auto_review.stop.orchestration.decision_engine.load_state_snapshot",
+        return_value=_snapshot(
+            events=[
+                EditRecord(timestamp="2026-05-11T09:00:00+07:00", file="a.ts", hash="1", reviewed=True),
+                StopBlockedRecord(timestamp="2026-05-11T10:00:00+07:00"),
+                StopBlockedRecord(timestamp="2026-05-11T10:01:00+07:00"),
+                StopBlockedRecord(timestamp="2026-05-11T10:02:00+07:00"),
+                StopBlockedRecord(timestamp="2026-05-11T10:03:00+07:00"),
+                StopBlockedRecord(timestamp="2026-05-11T10:04:00+07:00"),
+                EditRecord(timestamp="2026-05-11T10:05:00+07:00", file="a.ts", hash="2", reviewed=False),
+            ]
+        ),
+    )
     @patch("claude_auto_review.stop.orchestration.decision_engine.ensure_client_runtime")
     @patch("claude_auto_review.stop.orchestration.decision_engine.load_settings")
     def test_classifier_skipped_when_circuit_breaker_allows_stop(
@@ -158,4 +162,3 @@ class TestFlowClassifier(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-

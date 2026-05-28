@@ -17,7 +17,7 @@ def _json_safe(value: Any) -> Any:
         return str(value)
     if isinstance(value, dict):
         return {str(key): _json_safe(item) for key, item in value.items()}
-    if isinstance(value, (list, tuple)):
+    if isinstance(value, list | tuple):
         return [_json_safe(item) for item in value]
     if isinstance(value, set):
         return sorted((_json_safe(item) for item in value), key=repr)
@@ -59,5 +59,7 @@ def log_event(project_root: str | Path, event_type: str, client_id: str | None =
     return EventSink.for_project(project_root).log(event_type, client_id=client_id, **kwargs)
 
 
-def log_failure(project_root: str | Path, event_type: str, error: Exception | str, client_id: str | None = None, **kwargs: Any) -> bool:
+def log_failure(
+    project_root: str | Path, event_type: str, error: Exception | str, client_id: str | None = None, **kwargs: Any
+) -> bool:
     return log_event(project_root, event_type, client_id=client_id, error=str(error), **kwargs)

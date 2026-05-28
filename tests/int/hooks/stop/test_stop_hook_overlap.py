@@ -137,7 +137,10 @@ class TestStopHookOverlap(HookTestCase, unittest.TestCase):
                 reviewId="stale",
                 reviewPath=stale_path.relative_to(project_root).as_posix(),
                 status="pending",
-                files=[ReviewFileRecord(file="src/a.ts", hash=old_hash_a), ReviewFileRecord(file="src/b.ts", hash=hash_b)],
+                files=[
+                    ReviewFileRecord(file="src/a.ts", hash=old_hash_a),
+                    ReviewFileRecord(file="src/b.ts", hash=hash_b),
+                ],
                 clientId="test-session",
             ),
             project_root,
@@ -168,7 +171,9 @@ class TestStopHookOverlap(HookTestCase, unittest.TestCase):
         self.run_python("hooks/post_tool_use.py", project_root, json.dumps({"file_path": "src/a.ts"}))
         self.run_python("hooks/post_tool_use.py", project_root, json.dumps({"file_path": "src/b.ts"}))
 
-        first_stop = self.run_python("hooks/stop_hook.py", project_root, env_overrides={"PATH": ""}, use_fake_claude=False)
+        first_stop = self.run_python(
+            "hooks/stop_hook.py", project_root, env_overrides={"PATH": ""}, use_fake_claude=False
+        )
         self.assertEqual(first_stop.returncode, 2)
 
         state = load_state(project_root, "test-session")
@@ -185,12 +190,15 @@ class TestStopHookOverlap(HookTestCase, unittest.TestCase):
             client_id="test-session",
         )
 
-        second_stop = self.run_python("hooks/stop_hook.py", project_root, env_overrides={"PATH": ""}, use_fake_claude=False)
+        second_stop = self.run_python(
+            "hooks/stop_hook.py", project_root, env_overrides={"PATH": ""}, use_fake_claude=False
+        )
 
         self.assertEqual(second_stop.returncode, 2)
         reviews = [e for e in load_state(project_root, "test-session") if e.type == "review"]
         self.assertEqual(len(reviews), 2)
         latest_review = reviews[-1]
-        self.assertEqual(latest_review.files, [ReviewFileRecord(file="src/a.ts", hash=current_entries["src/a.ts"].hash)])
+        self.assertEqual(
+            latest_review.files, [ReviewFileRecord(file="src/a.ts", hash=current_entries["src/a.ts"].hash)]
+        )
         self.assertIn("Review " + latest_review.reviewId, json.loads(second_stop.stdout)["systemMessage"])
-

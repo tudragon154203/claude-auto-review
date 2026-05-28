@@ -3,8 +3,7 @@ import unittest
 
 from claude_auto_review.state.store.read import load_state, was_hash_reviewed
 from tests.int.hooks.support import HookTestCase
-from tests.support import client_dir
-from tests.support import start_classifier_server
+from tests.support import client_dir, start_classifier_server
 
 
 class TestStopHookFinalization(HookTestCase, unittest.TestCase):
@@ -55,9 +54,7 @@ class TestStopHookFinalization(HookTestCase, unittest.TestCase):
         self.assertEqual(stop1.returncode, 2)
 
         # 3. Overwrite review so it looks completed but carries no verdict
-        review_path = sorted(
-            (client_dir(project_root) / "reviews").glob("review-*.md")
-        )[-1]
+        review_path = sorted((client_dir(project_root) / "reviews").glob("review-*.md"))[-1]
         content = review_path.read_text(encoding="utf-8")
         # Replace the placeholder "no findings" text with a finding so the
         # review looks like a completed-but-not-clean artifact.
@@ -82,11 +79,7 @@ class TestStopHookFinalization(HookTestCase, unittest.TestCase):
         stop1 = self.run_python("hooks/stop_hook.py", project_root, env_overrides={"PATH": ""}, use_fake_claude=False)
         self.assertEqual(stop1.returncode, 2)
 
-        findings = (
-            "### 1. Mutable shared state in helper\n"
-            "**Severity:** Medium\n"
-            "**Verdict:** Confirmed\n"
-        )
+        findings = "### 1. Mutable shared state in helper\n" "**Severity:** Medium\n" "**Verdict:** Confirmed\n"
         review_path = self.complete_latest_review(
             project_root,
             verdict="Clean - no issues found. Claude may stop.",

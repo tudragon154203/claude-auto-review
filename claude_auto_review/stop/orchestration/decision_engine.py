@@ -20,6 +20,8 @@ from claude_auto_review.stop.orchestration.service import StopFlowDependencies, 
 
 
 class StopDecisionEngine:
+    """Top-level orchestrator that wires up context, dependencies, and the stop-flow service."""
+
     def __init__(
         self,
         project_root,
@@ -41,25 +43,13 @@ class StopDecisionEngine:
     ):
         load_settings_fn = load_settings if load_settings_fn is None else load_settings_fn
         ensure_client_runtime_fn = (
-            ensure_client_runtime
-            if ensure_client_runtime_fn is None
-            else ensure_client_runtime_fn
+            ensure_client_runtime if ensure_client_runtime_fn is None else ensure_client_runtime_fn
         )
         get_client_id_fn = get_client_id if get_client_id_fn is None else get_client_id_fn
-        load_state_snapshot_fn = (
-            load_state_snapshot
-            if load_state_snapshot_fn is None
-            else load_state_snapshot_fn
-        )
-        get_unreviewed_files_fn = (
-            get_unreviewed_files
-            if get_unreviewed_files_fn is None
-            else get_unreviewed_files_fn
-        )
+        load_state_snapshot_fn = load_state_snapshot if load_state_snapshot_fn is None else load_state_snapshot_fn
+        get_unreviewed_files_fn = get_unreviewed_files if get_unreviewed_files_fn is None else get_unreviewed_files_fn
         consecutive_stop_blocks_fn = (
-            consecutive_stop_blocks
-            if consecutive_stop_blocks_fn is None
-            else consecutive_stop_blocks_fn
+            consecutive_stop_blocks if consecutive_stop_blocks_fn is None else consecutive_stop_blocks_fn
         )
         classify_last_assistant_message_fn = (
             classify_last_assistant_message
@@ -67,19 +57,11 @@ class StopDecisionEngine:
             else classify_last_assistant_message_fn
         )
         resolve_pending_review_fn = (
-            resolve_pending_review
-            if resolve_pending_review_fn is None
-            else resolve_pending_review_fn
+            resolve_pending_review if resolve_pending_review_fn is None else resolve_pending_review_fn
         )
-        finalize_review_stop_fn = (
-            finalize_review_stop
-            if finalize_review_stop_fn is None
-            else finalize_review_stop_fn
-        )
+        finalize_review_stop_fn = finalize_review_stop if finalize_review_stop_fn is None else finalize_review_stop_fn
         get_reviewer_prompt_script_fn = (
-            get_reviewer_prompt_script
-            if get_reviewer_prompt_script_fn is None
-            else get_reviewer_prompt_script_fn
+            get_reviewer_prompt_script if get_reviewer_prompt_script_fn is None else get_reviewer_prompt_script_fn
         )
         log_event_fn = log_event if log_event_fn is None else log_event_fn
 
@@ -93,15 +75,18 @@ class StopDecisionEngine:
             settings=resolved_settings,
             payload=payload,
         )
-        self._service = StopFlowService(self.ctx, self._build_dependencies(
-            load_state_snapshot_fn=load_state_snapshot_fn,
-            get_unreviewed_files_fn=get_unreviewed_files_fn,
-            consecutive_stop_blocks_fn=consecutive_stop_blocks_fn,
-            classify_last_assistant_message_fn=classify_last_assistant_message_fn,
-            resolve_pending_review_fn=resolve_pending_review_fn,
-            get_reviewer_prompt_script_fn=get_reviewer_prompt_script_fn,
-            log_event_fn=log_event_fn,
-        ))
+        self._service = StopFlowService(
+            self.ctx,
+            self._build_dependencies(
+                load_state_snapshot_fn=load_state_snapshot_fn,
+                get_unreviewed_files_fn=get_unreviewed_files_fn,
+                consecutive_stop_blocks_fn=consecutive_stop_blocks_fn,
+                classify_last_assistant_message_fn=classify_last_assistant_message_fn,
+                resolve_pending_review_fn=resolve_pending_review_fn,
+                get_reviewer_prompt_script_fn=get_reviewer_prompt_script_fn,
+                log_event_fn=log_event_fn,
+            ),
+        )
         self._finalize_review_stop = finalize_review_stop_fn
 
     def _build_dependencies(
@@ -134,4 +119,3 @@ class StopDecisionEngine:
 
     def finalize(self, resolution):
         return self._finalize_review_stop(self.ctx, resolution)
-

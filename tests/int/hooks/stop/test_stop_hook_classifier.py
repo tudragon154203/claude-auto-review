@@ -12,11 +12,7 @@ from tests.support import client_dir  # noqa: E402
 class TestStopHookClassifier(HookTestCase, unittest.TestCase):
     def _read_log_entries(self, project_root):
         log_path = client_dir(project_root) / "state.jsonl"
-        return [
-            json.loads(line)
-            for line in log_path.read_text(encoding="utf-8").splitlines()
-            if line.strip()
-        ]
+        return [json.loads(line) for line in log_path.read_text(encoding="utf-8").splitlines() if line.strip()]
 
     def test_stop_hook_skips_classifier_when_disabled(self):
         project_root = self.temp_project()
@@ -31,7 +27,9 @@ class TestStopHookClassifier(HookTestCase, unittest.TestCase):
         self.assertEqual(stop.returncode, 0)
         log_path = client_dir(project_root) / "state.jsonl"
         if log_path.exists():
-            events = [e for e in self._read_log_entries(project_root) if e.get("type") == "last_assistant_message_classified"]
+            events = [
+                e for e in self._read_log_entries(project_root) if e.get("type") == "last_assistant_message_classified"
+            ]
             self.assertEqual(events, [])
         else:
             self.assertFalse(log_path.exists())
@@ -48,7 +46,9 @@ class TestStopHookClassifier(HookTestCase, unittest.TestCase):
             use_fake_claude=False,
         )
         self.assertEqual(stop.returncode, 2)
-        events = [e for e in self._read_log_entries(project_root) if e.get("type") == "last_assistant_message_classified"]
+        events = [
+            e for e in self._read_log_entries(project_root) if e.get("type") == "last_assistant_message_classified"
+        ]
         self.assertEqual(events[-1]["status"], "skipped")
         self.assertEqual(events[-1]["reason"], "missing_message")
 
@@ -65,7 +65,9 @@ class TestStopHookClassifier(HookTestCase, unittest.TestCase):
             use_fake_claude=False,
         )
         self.assertEqual(stop.returncode, 2)
-        events = [e for e in self._read_log_entries(project_root) if e.get("type") == "last_assistant_message_classified"]
+        events = [
+            e for e in self._read_log_entries(project_root) if e.get("type") == "last_assistant_message_classified"
+        ]
         self.assertEqual(events[-1]["status"], "error")
         self.assertEqual(events[-1]["reason"], "missing_api_key")
         self.assertNotIn("x-api-key", json.dumps(events[-1]).lower())

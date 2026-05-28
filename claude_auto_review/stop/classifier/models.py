@@ -5,8 +5,8 @@ from dataclasses import dataclass
 
 from claude_auto_review.config.constants import DEFAULT_CLASSIFIER_TIMEOUT_SECONDS, MS_PER_SECOND
 from claude_auto_review.config.models import DEFAULT_CLASSIFIER_MODEL
-from claude_auto_review.paths.path_utils import local_now_iso
 from claude_auto_review.state.models import ClassificationRecord
+from claude_auto_review.timestamps import local_now_iso
 
 CLASSIFIER_MAX_TOKENS = 8
 DEFAULT_TIMEOUT_SECONDS = DEFAULT_CLASSIFIER_TIMEOUT_SECONDS
@@ -45,8 +45,16 @@ class AssistantMessageClassificationResult:
         )
 
 
-
-def result_factory(status, reason, started_at, message_chars, model=DEFAULT_CLASSIFIER_MODEL, base_url="", http_status=None, debug_response=None):
+def result_factory(
+    status,
+    reason,
+    started_at,
+    message_chars,
+    model=DEFAULT_CLASSIFIER_MODEL,
+    base_url="",
+    http_status=None,
+    debug_response=None,
+):
     return AssistantMessageClassificationResult(
         status=status,
         reason=reason,

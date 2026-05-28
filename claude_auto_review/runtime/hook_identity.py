@@ -3,7 +3,6 @@ from __future__ import annotations
 import shlex
 from pathlib import Path
 
-
 PLUGIN_SCRIPTS = frozenset(["post_tool_use.py", "stop_hook.py", "session_end.py"])
 PLUGIN_MODULES = {
     "claude_auto_review.hooks.post_tool_use": "post_tool_use.py",

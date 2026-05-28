@@ -3,21 +3,20 @@ import tempfile
 from datetime import datetime
 from pathlib import Path
 
-from tests.int.support import IntegrationTestCase, REPO_ROOT, _FakeResponse
-from tests.support import client_dir
-
-from claude_auto_review.paths.path_utils import get_state_path
-from claude_auto_review.runtime.client_dirs import client_state_path
-from claude_auto_review.runtime.events import log_event
-from claude_auto_review.runtime.cleanup.session import cancel_runtime
-from claude_auto_review.runtime.setup import ensure_client_runtime, ensure_project_settings, ensure_runtime
 from claude_auto_review.config.io import load_settings
 from claude_auto_review.config.models import DEFAULT_TIMEOUT_SECONDS, PluginSettings
-from claude_auto_review.state.store.read import consecutive_stop_blocks, load_state
+from claude_auto_review.paths.path_utils import get_state_path
+from claude_auto_review.runtime.cleanup.session import cancel_runtime
+from claude_auto_review.runtime.client_dirs import client_state_path
+from claude_auto_review.runtime.events import log_event
+from claude_auto_review.runtime.setup import ensure_client_runtime, ensure_project_settings, ensure_runtime
 from claude_auto_review.state.models import EditRecord
+from claude_auto_review.state.store.read import consecutive_stop_blocks, load_state
 from claude_auto_review.state.store.write import append_state_event
 from claude_auto_review.stop.classifier.last_assistant_message import classify_last_assistant_message
 from claude_auto_review.stop.orchestration.context import RuntimeContext
+from tests.int.support import REPO_ROOT, IntegrationTestCase, _FakeResponse
+from tests.support import client_dir
 
 
 class IntegrationRuntimeTests(IntegrationTestCase):
@@ -120,7 +119,9 @@ class IntegrationRuntimeTests(IntegrationTestCase):
         self.assertEqual(state[-1].type, "last_assistant_message_classified")
         self.assertEqual(state[-1].status, "complete")
         self.assertEqual(consecutive_stop_blocks(state), 0)
-        log_entry = json.loads((client_state_path(project_root, client_id)).read_text(encoding="utf-8").splitlines()[-1])
+        log_entry = json.loads(
+            (client_state_path(project_root, client_id)).read_text(encoding="utf-8").splitlines()[-1]
+        )
         self.assertEqual(log_entry["type"], "last_assistant_message_classified")
         self.assertNotIn("secret-key", json.dumps(log_entry))
 
@@ -150,11 +151,12 @@ class IntegrationRuntimeTests(IntegrationTestCase):
         project_root = self.temp_project()
         result1 = ensure_runtime(project_root, REPO_ROOT)
         result2 = ensure_runtime(project_root, REPO_ROOT)
-        self.assertEqual(result1["rules_path"].read_text(encoding="utf-8"), result2["rules_path"].read_text(encoding="utf-8"))
+        self.assertEqual(
+            result1["rules_path"].read_text(encoding="utf-8"), result2["rules_path"].read_text(encoding="utf-8")
+        )
 
     def test_log_event_error_silent(self):
         project_root = Path(tempfile.mkdtemp(prefix="claude-auto-review-log-"))
         nonexistent = project_root / "nope" / "deep"
         log_event(nonexistent, "should_not_crash")
         self.assertTrue(True)
-

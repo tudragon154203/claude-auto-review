@@ -165,7 +165,7 @@ class TestConfigCli(unittest.TestCase):
             with patch("claude_auto_review.install.config_cli.get_project_root", return_value=project_root), patch(
                 "claude_auto_review.install.config_cli.ensure_runtime", side_effect=fake_runtime
             ), patch(
-                "claude_auto_review.install.config_cli.ensure_project_settings", side_effect=fake_project_settings
+                "claude_auto_review.install.config_cli._settings_path", side_effect=fake_project_settings
             ), patch(
                 "claude_auto_review.install.config_cli.log_event"
             ) as mock_log, patch("sys.stdout", stdout):

@@ -12,6 +12,7 @@ class _HasToDict(Protocol):
 @dataclass(frozen=True)
 class ReviewFileRecord:
     """A file and its content hash tracked by a review run."""
+
     file: str
     hash: str
 
@@ -22,7 +23,7 @@ class ReviewFileRecord:
         }
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "ReviewFileRecord":
+    def from_dict(cls, data: dict[str, Any]) -> ReviewFileRecord:
         return cls(file=data["file"], hash=data["hash"])
 
 

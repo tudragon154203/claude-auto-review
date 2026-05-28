@@ -7,12 +7,10 @@ from claude_auto_review.runtime.client_dirs import client_state_path
 from claude_auto_review.runtime.pending_cleanup import cleanup_expired_pending_reviews
 from claude_auto_review.runtime.setup import ensure_client_runtime
 from claude_auto_review.state.store.read import load_state
-
 from tests.unit.state.support import StateTestCase
 
 
 class TestCleanupExpiredPendingReviews(StateTestCase, unittest.TestCase):
-
     def test_cleanup_expired_pending_reviews_preserves_invalid_lines(self):
         project_root = self.temp_project()
         client_id = "cleanup-invalid"
@@ -27,9 +25,7 @@ class TestCleanupExpiredPendingReviews(StateTestCase, unittest.TestCase):
                     + expired_time
                     + '","status":"pending","files":[{"file":"a.ts","hash":"1"}]}',
                     "not-json",
-                    '{"type":"edit","file":"a.ts","hash":"1","timestamp":"'
-                    + current_time
-                    + '","reviewed":false}',
+                    '{"type":"edit","file":"a.ts","hash":"1","timestamp":"' + current_time + '","reviewed":false}',
                 ]
             )
             + "\n",

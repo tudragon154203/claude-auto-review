@@ -8,7 +8,6 @@ from claude_auto_review.runtime.setup import ensure_client_runtime
 from claude_auto_review.stop.orchestration.context import RuntimeContext
 
 
-
 def build_hook_runtime_context(raw="", *, payload=None, ensure_client=True):
     project_root = get_project_root()
     payload = read_json_payload(raw) if payload is None else payload

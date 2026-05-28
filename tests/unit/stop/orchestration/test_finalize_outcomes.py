@@ -1,5 +1,4 @@
 import unittest
-
 from types import SimpleNamespace
 
 from claude_auto_review.stop.orchestration.finalize_outcomes import (

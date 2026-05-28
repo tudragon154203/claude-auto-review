@@ -123,4 +123,3 @@ class TestStopHookExpiration(HookTestCase, unittest.TestCase):
         state_after = load_state(project_root, client_id="test-session")
         expired_ids = [e.reviewId for e in state_after if e.type == "review" and e.status == "pending"]
         self.assertIn("rev-custom-timeout", expired_ids, "Stop hook should not remove expired reviews")
-

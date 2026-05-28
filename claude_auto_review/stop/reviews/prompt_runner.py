@@ -5,13 +5,14 @@ import subprocess
 import tempfile
 from pathlib import Path
 
+from claude_auto_review.config.models import DEFAULT_REVIEWER_MODEL
 from claude_auto_review.runtime.events import log_event
 from claude_auto_review.runtime.process import run_captured
-from claude_auto_review.config.models import DEFAULT_REVIEWER_MODEL
 from claude_auto_review.stop.orchestration.context import RuntimeContext
 from claude_auto_review.stop.reviews.codex_output import (
     _extract_codex_final_message,
 )
+from claude_auto_review.stop.reviews.enums import AutocompleteStatus
 from claude_auto_review.stop.reviews.review_args import (
     _build_claude_review_args,
     _build_codex_review_args,
@@ -53,28 +54,43 @@ def attempt_stop_autocomplete(
 ):
     if backend == "codex":
         return _attempt_codex_autocomplete(
-            ctx, review_id, review_path, prompt_file, user_prompt,
-            reviewer_timeout_seconds, model,
+            ctx,
+            review_id,
+            review_path,
+            prompt_file,
+            user_prompt,
+            reviewer_timeout_seconds,
+            model,
         )
     if backend == "claude":
         return _attempt_claude_autocomplete(
-            ctx, review_id, review_path, prompt_file, user_prompt,
-            reviewer_timeout_seconds, model,
+            ctx,
+            review_id,
+            review_path,
+            prompt_file,
+            user_prompt,
+            reviewer_timeout_seconds,
+            model,
         )
     raise ValueError(f"Unsupported reviewer backend: {backend}")
 
 
 def _attempt_claude_autocomplete(
-    ctx, review_id, review_path, prompt_file, user_prompt,
-    reviewer_timeout_seconds, model,
+    ctx,
+    review_id,
+    review_path,
+    prompt_file,
+    user_prompt,
+    reviewer_timeout_seconds,
+    model,
 ):
     claude_cli = shutil.which("claude")
     if not claude_cli:
         log_event(ctx.project_root, "stop_hook_reviewer_not_found", client_id=ctx.client_id, backend="claude")
-        return AutocompleteResult(status="cli_not_found")
+        return AutocompleteResult(status=AutocompleteStatus.CLI_NOT_FOUND)
     if not prompt_file.is_file():
         log_event(ctx.project_root, "stop_hook_prompt_not_found", client_id=ctx.client_id, path=str(prompt_file))
-        return AutocompleteResult(status="prompt_not_found")
+        return AutocompleteResult(status=AutocompleteStatus.PROMPT_NOT_FOUND)
 
     args = [
         *_build_claude_review_args(model),
@@ -84,29 +100,50 @@ def _attempt_claude_autocomplete(
     ]
     try:
         cli_result = _run_review_cli(
-            claude_cli, args, cwd=ctx.project_root, timeout=reviewer_timeout_seconds,
+            claude_cli,
+            args,
+            cwd=ctx.project_root,
+            timeout=reviewer_timeout_seconds,
         )
     except subprocess.TimeoutExpired:
-        log_event(ctx.project_root, "stop_hook_reviewer_timeout", client_id=ctx.client_id, reviewId=review_id, backend="claude")
-        return AutocompleteResult(status="timeout")
+        log_event(
+            ctx.project_root,
+            "stop_hook_reviewer_timeout",
+            client_id=ctx.client_id,
+            reviewId=review_id,
+            backend="claude",
+        )
+        return AutocompleteResult(status=AutocompleteStatus.TIMEOUT)
     except (OSError, ValueError, subprocess.SubprocessError) as e:
-        log_event(ctx.project_root, "stop_hook_reviewer_error", client_id=ctx.client_id, reviewId=review_id, backend="claude", error=str(e))
-        return AutocompleteResult(status="error", stderr=str(e))
+        log_event(
+            ctx.project_root,
+            "stop_hook_reviewer_error",
+            client_id=ctx.client_id,
+            reviewId=review_id,
+            backend="claude",
+            error=str(e),
+        )
+        return AutocompleteResult(status=AutocompleteStatus.ERROR, stderr=str(e))
 
     return _process_review_result(ctx, cli_result, review_path, review_id, "claude")
 
 
 def _attempt_codex_autocomplete(
-    ctx, review_id, review_path, prompt_file, user_prompt,
-    reviewer_timeout_seconds, model,
+    ctx,
+    review_id,
+    review_path,
+    prompt_file,
+    user_prompt,
+    reviewer_timeout_seconds,
+    model,
 ):
     codex_cli = shutil.which("codex")
     if not codex_cli:
         log_event(ctx.project_root, "stop_hook_reviewer_not_found", client_id=ctx.client_id, backend="codex")
-        return AutocompleteResult(status="cli_not_found")
+        return AutocompleteResult(status=AutocompleteStatus.CLI_NOT_FOUND)
     if not prompt_file.is_file():
         log_event(ctx.project_root, "stop_hook_prompt_not_found", client_id=ctx.client_id, path=str(prompt_file))
-        return AutocompleteResult(status="prompt_not_found")
+        return AutocompleteResult(status=AutocompleteStatus.PROMPT_NOT_FOUND)
 
     output_file = None
     args = _build_codex_review_args(model)
@@ -122,15 +159,27 @@ def _attempt_codex_autocomplete(
             output_file = Path(temp_output.name)
         args = [*args[:-1], "--output-last-message", str(output_file), args[-1]]
         cli_result = _run_review_cli(
-            codex_cli, args, cwd=ctx.project_root, timeout=reviewer_timeout_seconds,
+            codex_cli,
+            args,
+            cwd=ctx.project_root,
+            timeout=reviewer_timeout_seconds,
             input_text=full_input,
         )
     except subprocess.TimeoutExpired:
-        log_event(ctx.project_root, "stop_hook_reviewer_timeout", client_id=ctx.client_id, reviewId=review_id, backend="codex")
-        return AutocompleteResult(status="timeout")
+        log_event(
+            ctx.project_root, "stop_hook_reviewer_timeout", client_id=ctx.client_id, reviewId=review_id, backend="codex"
+        )
+        return AutocompleteResult(status=AutocompleteStatus.TIMEOUT)
     except (OSError, ValueError, subprocess.SubprocessError) as e:
-        log_event(ctx.project_root, "stop_hook_reviewer_error", client_id=ctx.client_id, reviewId=review_id, backend="codex", error=str(e))
-        return AutocompleteResult(status="error", stderr=str(e))
+        log_event(
+            ctx.project_root,
+            "stop_hook_reviewer_error",
+            client_id=ctx.client_id,
+            reviewId=review_id,
+            backend="codex",
+            error=str(e),
+        )
+        return AutocompleteResult(status=AutocompleteStatus.ERROR, stderr=str(e))
 
     file_output = ""
     if output_file is not None and output_file.is_file():
@@ -141,8 +190,10 @@ def _attempt_codex_autocomplete(
     extracted = file_output if file_output and not file_output.startswith("</") else stdout_extracted
     if extracted and extracted != raw_stdout.strip():
         cli_result = subprocess.CompletedProcess(
-            cli_result.args, cli_result.returncode,
-            stdout=extracted, stderr=cli_result.stderr,
+            cli_result.args,
+            cli_result.returncode,
+            stdout=extracted,
+            stderr=cli_result.stderr,
         )
     try:
         return _process_review_result(ctx, cli_result, review_path, review_id, "codex")

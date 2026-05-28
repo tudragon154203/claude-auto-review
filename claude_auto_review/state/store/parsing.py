@@ -28,7 +28,8 @@ _PARSERS: dict[str, _ParserFn] = {
 def parse_event(raw: dict[str, Any]) -> StateEvent | None:
     if not isinstance(raw, dict):
         return None
-    parser = _PARSERS.get(raw.get("type"))
+    event_type: str | None = raw.get("type")
+    parser = _PARSERS.get(event_type) if event_type is not None else None
     if parser is None:
         return None
     try:

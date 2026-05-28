@@ -1,20 +1,14 @@
 import json
-import tempfile
 import unittest
-from datetime import datetime, timedelta, timezone
-from pathlib import Path
-from unittest.mock import patch
 
 from claude_auto_review.config.file_filters import should_skip_file
 from claude_auto_review.config.io import load_settings
 from claude_auto_review.config.models import DEFAULT_TIMEOUT_SECONDS, PluginSettings
 from claude_auto_review.config.rules import resolve_rules_file_path
-
 from tests.unit.state.support import StateTestCase
 
 
 class TestSettingsLoader(StateTestCase, unittest.TestCase):
-
     def test_load_settings_defaults_when_file_missing(self):
         project_root = self.temp_project()
         result = load_settings(project_root)

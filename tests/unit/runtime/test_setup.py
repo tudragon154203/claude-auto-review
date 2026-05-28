@@ -1,12 +1,10 @@
 import unittest
 
 from claude_auto_review.runtime.setup import ensure_client_runtime, ensure_runtime
-
 from tests.unit.state.support import StateTestCase
 
 
 class TestRuntimeSetup(StateTestCase, unittest.TestCase):
-
     def test_ensure_runtime_creates_directories(self):
         project_root = self.temp_project()
         result = ensure_runtime(project_root)

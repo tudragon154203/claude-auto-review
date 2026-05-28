@@ -1,10 +1,10 @@
-﻿import unittest
+import unittest
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
 
 from claude_auto_review.config.models import PluginSettings
-from claude_auto_review.state.models import EditRecord, StopBlockedRecord
+from claude_auto_review.state.models import EditRecord
 from claude_auto_review.state.snapshot import StateSnapshot
 from claude_auto_review.stop.orchestration.flow import run_stop_flow
 
@@ -16,7 +16,6 @@ def _snapshot(*, events=_STATE):
 
 
 class TestFlowFinalize(unittest.TestCase):
-
     @patch("claude_auto_review.stop.orchestration.decision_engine.log_event")
     @patch("claude_auto_review.stop.orchestration.decision_engine.load_state_snapshot", return_value=_snapshot())
     @patch("claude_auto_review.stop.orchestration.decision_engine.ensure_client_runtime")
@@ -101,4 +100,3 @@ class TestFlowFinalize(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-

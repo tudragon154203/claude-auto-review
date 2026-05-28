@@ -3,8 +3,8 @@ from __future__ import annotations
 from claude_auto_review.paths.path_utils import local_now_iso
 from claude_auto_review.state.models import StopBlockedRecord
 from claude_auto_review.state.store.writer import StateEventWriter
-from claude_auto_review.stop.orchestration.context import RuntimeContext
 from claude_auto_review.stop.feedback import block_response, build_unreviewed_files_string
+from claude_auto_review.stop.orchestration.context import RuntimeContext
 
 
 def _display_path(path, project_root):

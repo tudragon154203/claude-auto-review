@@ -18,8 +18,9 @@ def _severity_rank(value: str) -> int | None:
     }.get(normalized)
 
 
-
-def has_blocking_review_findings(content: str | None, minimum_blocking_severity: str = DEFAULT_MINIMUM_BLOCKING_SEVERITY) -> bool:
+def has_blocking_review_findings(
+    content: str | None, minimum_blocking_severity: str = DEFAULT_MINIMUM_BLOCKING_SEVERITY
+) -> bool:
     threshold = _severity_rank(minimum_blocking_severity) if minimum_blocking_severity else None
     if threshold is None:
         threshold = _severity_rank(DEFAULT_MINIMUM_BLOCKING_SEVERITY)
@@ -37,6 +38,6 @@ def has_blocking_review_findings(content: str | None, minimum_blocking_severity:
         if finding.severity is None:
             return True
         severity_rank = _severity_rank(finding.severity)
-        if severity_rank is None or severity_rank >= threshold:
+        if threshold is None or severity_rank is None or severity_rank >= threshold:
             return True
     return False

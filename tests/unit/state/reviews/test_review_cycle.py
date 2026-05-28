@@ -5,12 +5,10 @@ from claude_auto_review.state.models import EditRecord, ReviewFileRecord, Review
 from claude_auto_review.state.reviews.matching import pending_reviews_for_entries
 from claude_auto_review.state.store.read import latest_review_entries_by_id, load_state, was_hash_reviewed
 from claude_auto_review.state.store.write import append_review_started, mark_files_reviewed
-
 from tests.unit.state.support import StateTestCase
 
 
 class TestReviewCycle(StateTestCase, unittest.TestCase):
-
     def test_recognizes_hashes_reviewed_in_earlier_entries(self):
         project_root = self.temp_project()
         ensure_runtime(project_root)
@@ -29,21 +27,53 @@ class TestReviewCycle(StateTestCase, unittest.TestCase):
         self.assertEqual(review_entry.clientId, "test-client")
 
     def test_pending_reviews_for_entries_no_matching_review(self):
-        state = [ReviewMetadata(timestamp="2026-05-05T08:00:00+07:00", reviewId="x", reviewPath="reviews/x.md", clientId="c", status="pending", files=[ReviewFileRecord(file="a.ts", hash="1")])]
+        state = [
+            ReviewMetadata(
+                timestamp="2026-05-05T08:00:00+07:00",
+                reviewId="x",
+                reviewPath="reviews/x.md",
+                clientId="c",
+                status="pending",
+                files=[ReviewFileRecord(file="a.ts", hash="1")],
+            )
+        ]
         entries = [EditRecord(timestamp="2026-05-05T08:00:00+07:00", file="a.ts", hash="2")]
         result = pending_reviews_for_entries(state, entries)
         self.assertEqual(result, [])
 
     def test_pending_reviews_for_entries_excludes_non_pending_reviews(self):
-        state = [ReviewMetadata(timestamp="2026-05-05T08:00:00+07:00", reviewId="x", reviewPath="reviews/x.md", clientId="c", status="completed", files=[ReviewFileRecord(file="a.ts", hash="1")])]
+        state = [
+            ReviewMetadata(
+                timestamp="2026-05-05T08:00:00+07:00",
+                reviewId="x",
+                reviewPath="reviews/x.md",
+                clientId="c",
+                status="completed",
+                files=[ReviewFileRecord(file="a.ts", hash="1")],
+            )
+        ]
         entries = [EditRecord(timestamp="2026-05-05T08:00:00+07:00", file="a.ts", hash="1")]
         result = pending_reviews_for_entries(state, entries)
         self.assertEqual(result, [])
 
     def test_pending_reviews_for_entries_uses_latest_review_status(self):
         state = [
-            ReviewMetadata(timestamp="2026-05-05T08:00:00+07:00", reviewId="x", reviewPath="reviews/x.md", clientId="c", status="pending", files=[ReviewFileRecord(file="a.ts", hash="1")]),
-            ReviewMetadata(timestamp="2026-05-05T08:01:00+07:00", reviewId="x", reviewPath="reviews/x.md", clientId="c", status="completed", files=[ReviewFileRecord(file="a.ts", hash="1")]),
+            ReviewMetadata(
+                timestamp="2026-05-05T08:00:00+07:00",
+                reviewId="x",
+                reviewPath="reviews/x.md",
+                clientId="c",
+                status="pending",
+                files=[ReviewFileRecord(file="a.ts", hash="1")],
+            ),
+            ReviewMetadata(
+                timestamp="2026-05-05T08:01:00+07:00",
+                reviewId="x",
+                reviewPath="reviews/x.md",
+                clientId="c",
+                status="completed",
+                files=[ReviewFileRecord(file="a.ts", hash="1")],
+            ),
         ]
         entries = [EditRecord(timestamp="2026-05-05T08:00:00+07:00", file="a.ts", hash="1")]
         result = pending_reviews_for_entries(state, entries)
@@ -51,32 +81,88 @@ class TestReviewCycle(StateTestCase, unittest.TestCase):
 
     def test_latest_review_entries_by_id_prefers_chronological_timestamp(self):
         state = [
-            ReviewMetadata(timestamp="2026-05-05T08:00:00+07:00", reviewId="x", reviewPath="reviews/x.md", clientId="c", status="pending", files=[]),
-            ReviewMetadata(timestamp="2026-05-05T02:30:00+00:00", reviewId="x", reviewPath="reviews/x.md", clientId="c", status="completed", files=[]),
+            ReviewMetadata(
+                timestamp="2026-05-05T08:00:00+07:00",
+                reviewId="x",
+                reviewPath="reviews/x.md",
+                clientId="c",
+                status="pending",
+                files=[],
+            ),
+            ReviewMetadata(
+                timestamp="2026-05-05T02:30:00+00:00",
+                reviewId="x",
+                reviewPath="reviews/x.md",
+                clientId="c",
+                status="completed",
+                files=[],
+            ),
         ]
         latest = latest_review_entries_by_id(state)
         self.assertEqual(latest["x"].status, "completed")
 
     def test_latest_review_entries_by_id_keeps_valid_timestamp_over_later_invalid_timestamp(self):
         state = [
-            ReviewMetadata(timestamp="2026-05-05T08:00:00+07:00", reviewId="x", reviewPath="reviews/x.md", clientId="c", status="pending", files=[]),
-            ReviewMetadata(timestamp="not-a-timestamp", reviewId="x", reviewPath="reviews/x.md", clientId="c", status="completed", files=[]),
+            ReviewMetadata(
+                timestamp="2026-05-05T08:00:00+07:00",
+                reviewId="x",
+                reviewPath="reviews/x.md",
+                clientId="c",
+                status="pending",
+                files=[],
+            ),
+            ReviewMetadata(
+                timestamp="not-a-timestamp",
+                reviewId="x",
+                reviewPath="reviews/x.md",
+                clientId="c",
+                status="completed",
+                files=[],
+            ),
         ]
         latest = latest_review_entries_by_id(state)
         self.assertEqual(latest["x"].status, "pending")
 
     def test_latest_review_entries_by_id_prefers_valid_timestamp_over_earlier_invalid_timestamp(self):
         state = [
-            ReviewMetadata(timestamp="not-a-timestamp", reviewId="x", reviewPath="reviews/x.md", clientId="c", status="pending", files=[]),
-            ReviewMetadata(timestamp="2026-05-05T08:00:00+07:00", reviewId="x", reviewPath="reviews/x.md", clientId="c", status="completed", files=[]),
+            ReviewMetadata(
+                timestamp="not-a-timestamp",
+                reviewId="x",
+                reviewPath="reviews/x.md",
+                clientId="c",
+                status="pending",
+                files=[],
+            ),
+            ReviewMetadata(
+                timestamp="2026-05-05T08:00:00+07:00",
+                reviewId="x",
+                reviewPath="reviews/x.md",
+                clientId="c",
+                status="completed",
+                files=[],
+            ),
         ]
         latest = latest_review_entries_by_id(state)
         self.assertEqual(latest["x"].status, "completed")
 
     def test_latest_review_entries_by_id_prefers_later_invalid_timestamp_over_earlier_invalid_timestamp(self):
         state = [
-            ReviewMetadata(timestamp="zzz-not-iso", reviewId="x", reviewPath="reviews/x.md", clientId="c", status="pending", files=[]),
-            ReviewMetadata(timestamp="aaa-not-iso", reviewId="x", reviewPath="reviews/x.md", clientId="c", status="completed", files=[]),
+            ReviewMetadata(
+                timestamp="zzz-not-iso",
+                reviewId="x",
+                reviewPath="reviews/x.md",
+                clientId="c",
+                status="pending",
+                files=[],
+            ),
+            ReviewMetadata(
+                timestamp="aaa-not-iso",
+                reviewId="x",
+                reviewPath="reviews/x.md",
+                clientId="c",
+                status="completed",
+                files=[],
+            ),
         ]
         latest = latest_review_entries_by_id(state)
         self.assertEqual(latest["x"].status, "completed")

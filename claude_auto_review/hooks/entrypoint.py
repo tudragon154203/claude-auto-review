@@ -20,4 +20,4 @@ def ensure_repo_root_on_path(file_path: str) -> Path:
 
 def run_module_main(module_name: str) -> int:
     module: ModuleType = import_module(module_name)
-    return module.main()
+    return int(module.main())

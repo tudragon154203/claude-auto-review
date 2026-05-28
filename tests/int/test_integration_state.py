@@ -1,12 +1,16 @@
-from tests.int.support import IntegrationTestCase
-
-from claude_auto_review.review.completion import apply_completed_review
-from claude_auto_review.state.models import EditRecord, ReviewCompletedRecord, ReviewMetadata, StopBlockedRecord
 from claude_auto_review.paths.path_utils import local_now_iso
+from claude_auto_review.review.completion import apply_completed_review
 from claude_auto_review.runtime.setup import ensure_client_runtime
+from claude_auto_review.state.models import EditRecord, ReviewCompletedRecord, ReviewMetadata, StopBlockedRecord
 from claude_auto_review.state.reviews.matching import pending_reviews_for_entries
-from claude_auto_review.state.store.read import consecutive_stop_blocks, get_unreviewed_files, load_state, was_hash_reviewed
+from claude_auto_review.state.store.read import (
+    consecutive_stop_blocks,
+    get_unreviewed_files,
+    load_state,
+    was_hash_reviewed,
+)
 from claude_auto_review.state.store.write import append_review_started, append_state_event, mark_files_reviewed
+from tests.int.support import IntegrationTestCase
 
 
 class IntegrationStateTests(IntegrationTestCase):
@@ -104,20 +108,21 @@ class IntegrationStateTests(IntegrationTestCase):
 
         append_state_event(
             EditRecord(timestamp=local_now_iso(), file="a.ts", hash="h1", reviewed=False),
-            project_root, client_id=client_id
+            project_root,
+            client_id=client_id,
         )
         for _ in range(3):
             append_state_event(
-            StopBlockedRecord(timestamp=local_now_iso(), reason="x"),
-            project_root, client_id=client_id
-        )
+                StopBlockedRecord(timestamp=local_now_iso(), reason="x"), project_root, client_id=client_id
+            )
 
         state = load_state(project_root, client_id)
         self.assertEqual(consecutive_stop_blocks(state), 3)
 
         append_state_event(
             EditRecord(timestamp=local_now_iso(), file="a.ts", hash="h1", reviewed=True, reviewId="r1"),
-            project_root, client_id=client_id
+            project_root,
+            client_id=client_id,
         )
         state = load_state(project_root, client_id)
         self.assertEqual(consecutive_stop_blocks(state), 0)
@@ -185,4 +190,3 @@ class IntegrationStateTests(IntegrationTestCase):
         self.assertEqual(blocked_entries[-1].files, ["src/b.ts"])
         self.assertTrue(was_hash_reviewed(state, "src/a.ts", "aaaa1111"))
         self.assertFalse(was_hash_reviewed(state, "src/b.ts", "bbbb2222"))
-

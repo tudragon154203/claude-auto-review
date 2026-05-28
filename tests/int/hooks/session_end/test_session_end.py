@@ -7,8 +7,8 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[4]
 sys.path.insert(0, str(REPO_ROOT))
 
-from claude_auto_review.runtime.setup import ensure_client_runtime  # noqa: E402
 from claude_auto_review.paths.path_utils import get_state_path  # noqa: E402
+from claude_auto_review.runtime.setup import ensure_client_runtime  # noqa: E402
 from claude_auto_review.state.models import ReviewFileRecord, ReviewMetadata  # noqa: E402
 from claude_auto_review.state.store.read import load_state  # noqa: E402
 from claude_auto_review.state.store.write import append_state_event  # noqa: E402
@@ -37,8 +37,7 @@ class TestSessionEndHook(HookTestCase, unittest.TestCase):
         project_root = self.temp_project()
         (project_root / "src").mkdir(parents=True, exist_ok=True)
         (project_root / "src" / "app.ts").write_text("export const value = 1;\n", encoding="utf-8")
-        self.run_python("hooks/post_tool_use.py", project_root,
-                        json.dumps({"tool_input": {"file_path": "src/app.ts"}}))
+        self.run_python("hooks/post_tool_use.py", project_root, json.dumps({"tool_input": {"file_path": "src/app.ts"}}))
         client_dir = find_client_dir(project_root, "test-session")
         self.assertIsNotNone(client_dir)
         self.assertTrue(client_dir.exists())
@@ -52,12 +51,18 @@ class TestSessionEndHook(HookTestCase, unittest.TestCase):
         (project_root / "src").mkdir(parents=True, exist_ok=True)
         (project_root / "src" / "a.ts").write_text("export const a = 1;\n", encoding="utf-8")
         (project_root / "src" / "b.ts").write_text("export const b = 2;\n", encoding="utf-8")
-        self.run_python("hooks/post_tool_use.py", project_root,
-                        json.dumps({"tool_input": {"file_path": "src/a.ts"}}),
-                        client_id="session-a")
-        self.run_python("hooks/post_tool_use.py", project_root,
-                        json.dumps({"tool_input": {"file_path": "src/b.ts"}}),
-                        client_id="session-b")
+        self.run_python(
+            "hooks/post_tool_use.py",
+            project_root,
+            json.dumps({"tool_input": {"file_path": "src/a.ts"}}),
+            client_id="session-a",
+        )
+        self.run_python(
+            "hooks/post_tool_use.py",
+            project_root,
+            json.dumps({"tool_input": {"file_path": "src/b.ts"}}),
+            client_id="session-b",
+        )
         dir_a = find_client_dir(project_root, "session-a")
         dir_b = find_client_dir(project_root, "session-b")
         self.assertIsNotNone(dir_a)
@@ -93,8 +98,7 @@ class TestSessionEndHook(HookTestCase, unittest.TestCase):
         project_root = self.temp_project()
         (project_root / "src").mkdir(parents=True, exist_ok=True)
         (project_root / "src" / "app.ts").write_text("export const value = 1;\n", encoding="utf-8")
-        self.run_python("hooks/post_tool_use.py", project_root,
-                        json.dumps({"tool_input": {"file_path": "src/app.ts"}}))
+        self.run_python("hooks/post_tool_use.py", project_root, json.dumps({"tool_input": {"file_path": "src/app.ts"}}))
         result = self.run_python("hooks/session_end.py", project_root)
         self.assertEqual(result.returncode, 0)
         log_path = get_state_path(project_root)
@@ -107,8 +111,7 @@ class TestSessionEndHook(HookTestCase, unittest.TestCase):
         project_root = self.temp_project()
         (project_root / "src").mkdir(parents=True, exist_ok=True)
         (project_root / "src" / "app.ts").write_text("export const value = 1;\n", encoding="utf-8")
-        self.run_python("hooks/post_tool_use.py", project_root,
-                        json.dumps({"tool_input": {"file_path": "src/app.ts"}}))
+        self.run_python("hooks/post_tool_use.py", project_root, json.dumps({"tool_input": {"file_path": "src/app.ts"}}))
         result1 = self.run_python("hooks/session_end.py", project_root)
         self.assertEqual(result1.returncode, 0)
         result2 = self.run_python("hooks/session_end.py", project_root)
@@ -119,8 +122,7 @@ class TestSessionEndHook(HookTestCase, unittest.TestCase):
         project_root = self.temp_project()
         (project_root / "src").mkdir(parents=True, exist_ok=True)
         (project_root / "src" / "app.ts").write_text("export const value = 1;\n", encoding="utf-8")
-        self.run_python("hooks/post_tool_use.py", project_root,
-                        json.dumps({"tool_input": {"file_path": "src/app.ts"}}))
+        self.run_python("hooks/post_tool_use.py", project_root, json.dumps({"tool_input": {"file_path": "src/app.ts"}}))
         client_dir = find_client_dir(project_root, "test-session")
         self.assertIsNotNone(client_dir)
         reviews_dir = client_dir / "reviews"
@@ -147,13 +149,15 @@ class TestSessionEndHook(HookTestCase, unittest.TestCase):
             project_root,
             client_id="test-session",
         )
-        self.assertIn("rev-expired", [e.reviewId for e in load_state(project_root, "test-session") if e.type == "review"])
+        self.assertIn(
+            "rev-expired", [e.reviewId for e in load_state(project_root, "test-session") if e.type == "review"]
+        )
         result = self.run_python("hooks/session_end.py", project_root, client_id="test-session")
         self.assertEqual(result.returncode, 0)
         log_path = get_state_path(project_root)
         log_content = log_path.read_text(encoding="utf-8")
         self.assertIn("session_end_cleanup", log_content)
-        self.assertIn("\"expired_removed\":1", log_content)
+        self.assertIn('"expired_removed":1', log_content)
 
     def test_session_end_cleanup_uses_payload_session_id(self):
         project_root = self.temp_project()
@@ -190,4 +194,3 @@ class TestSessionEndHook(HookTestCase, unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-

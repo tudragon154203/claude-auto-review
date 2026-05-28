@@ -1,11 +1,11 @@
 import unittest
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta, timezone
 
 from claude_auto_review.timestamps import (
-    parse_iso_timestamp,
-    make_timezone_aware,
     hours_since,
     is_older_than_hours,
+    make_timezone_aware,
+    parse_iso_timestamp,
 )
 
 
@@ -51,7 +51,6 @@ class TestMakeTimezoneAware(unittest.TestCase):
         result = make_timezone_aware(dt)
         self.assertIs(result, dt)
         self.assertEqual(result.tzinfo, timezone.utc)
-
 
 
 class TestHoursSince(unittest.TestCase):

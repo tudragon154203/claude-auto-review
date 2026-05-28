@@ -29,7 +29,9 @@ class TestStopHookAutocomplete(HookTestCase, unittest.TestCase):
             timeout=660,
         )
 
-        self.assertEqual(stop.returncode, 0, f"stop should succeed; stdout={stop.stdout[:200]}; stderr={stop.stderr[:200]}")
+        self.assertEqual(
+            stop.returncode, 0, f"stop should succeed; stdout={stop.stdout[:200]}; stderr={stop.stderr[:200]}"
+        )
         approve = json.loads(stop.stdout.strip())
         self.assertNotIn("decision", approve)
         self.assertIn("Claude Auto Review", approve["systemMessage"])
@@ -69,7 +71,9 @@ class TestStopHookAutocomplete(HookTestCase, unittest.TestCase):
             timeout=660,
         )
 
-        self.assertEqual(stop.returncode, 0, f"stop should succeed; stdout={stop.stdout[:200]}; stderr={stop.stderr[:200]}")
+        self.assertEqual(
+            stop.returncode, 0, f"stop should succeed; stdout={stop.stdout[:200]}; stderr={stop.stderr[:200]}"
+        )
         approve = json.loads(stop.stdout.strip())
         self.assertNotIn("decision", approve)
         self.assertIn("Claude Auto Review", approve["systemMessage"])
@@ -124,7 +128,9 @@ class TestStopHookAutocomplete(HookTestCase, unittest.TestCase):
             timeout=660,
         )
 
-        self.assertEqual(stop.returncode, 2, f"stop should block; stdout={stop.stdout[:200]}; stderr={stop.stderr[:200]}")
+        self.assertEqual(
+            stop.returncode, 2, f"stop should block; stdout={stop.stdout[:200]}; stderr={stop.stderr[:200]}"
+        )
         response = json.loads(stop.stdout.strip())
         self.assertEqual(response["decision"], "block")
         self.assertIn("Claude Auto Review: Review", response["systemMessage"])

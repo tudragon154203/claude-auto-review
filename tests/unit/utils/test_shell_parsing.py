@@ -1,4 +1,5 @@
 import unittest
+
 from claude_auto_review.paths.shell_parsing import (
     GIT_MOVE_SUBCOMMANDS,
     SHELL_CONTROL_TOKENS,
@@ -8,13 +9,13 @@ from claude_auto_review.paths.shell_parsing import (
     SHELL_MULTI_ARG_COMMANDS,
     SHELL_PATH_COMMANDS,
     SHELL_REDIRECT_TOKENS,
-    SHELL_WRITE_COMMANDS,
-    SHELL_WRAPPER_COMMANDS,
     SHELL_WRAPPER_COMMAND_FLAGS,
+    SHELL_WRAPPER_COMMANDS,
+    SHELL_WRITE_COMMANDS,
     first_path_token,
     is_flag_token,
-    normalize_command_token,
     non_flag_args,
+    normalize_command_token,
     option_value,
     redirection_target,
     split_shell_segments,

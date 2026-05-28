@@ -13,6 +13,7 @@ from claude_auto_review.state.store.jsonl import parse_jsonl_state_records
 
 
 def read_jsonl_records(path: str | Path) -> list[tuple[str, dict[str, Any] | None]]:
+    """Parse a JSONL file into (raw_line, parsed_dict | None) tuples."""
     path = Path(path)
     if not path.exists():
         return []
@@ -58,11 +59,12 @@ def ensure_state_snapshot(state_or_snapshot: list[StateEvent] | StateSnapshot) -
 
 
 def load_state_snapshot(project_root: str | Path | None = None, client_id: str | None = None) -> StateSnapshot:
+    """Load and rebuild the current state snapshot for a client session."""
     from claude_auto_review.runtime.client_dirs import client_state_path
 
-    project_root = resolve_project_root(project_root)
-    client_id = resolve_client_id(client_id)
-    state_file = client_state_path(project_root, client_id)
+    resolved_root: Path = resolve_project_root(project_root)
+    resolved_client: str = resolve_client_id(client_id)
+    state_file = client_state_path(resolved_root, resolved_client)
     return StateSnapshot.from_events(_load_state_events(state_file))
 
 
@@ -98,8 +100,10 @@ def was_hash_reviewed(state_or_snapshot: list[StateEvent] | StateSnapshot, file_
 
 
 def get_unreviewed_files(state_or_snapshot: list[StateEvent] | StateSnapshot) -> list[Any]:
+    """Return file paths whose latest content hash has not been covered by a review."""
     return ensure_state_snapshot(state_or_snapshot).unreviewed_files
 
 
 def consecutive_stop_blocks(state_or_snapshot: list[StateEvent] | StateSnapshot) -> int:
+    """Count how many stop_blocked events appear at the tail of the event log."""
     return ensure_state_snapshot(state_or_snapshot).consecutive_stop_blocks

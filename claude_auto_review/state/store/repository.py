@@ -6,17 +6,24 @@ from pathlib import Path
 from claude_auto_review.runtime.context import resolve_client_id, resolve_project_root
 from claude_auto_review.state.models import EditRecord, StateEvent
 from claude_auto_review.state.snapshot import StateSnapshot
-from claude_auto_review.state.store.read import get_file_hash, read_jsonl_records, read_last_jsonl_record, read_jsonl_state_records
+from claude_auto_review.state.store.read import (
+    get_file_hash,
+    read_jsonl_records,
+    read_jsonl_state_records,
+    read_last_jsonl_record,
+)
 from claude_auto_review.state.store.write import append_review_started, append_state_event, mark_files_reviewed
 
 
 @dataclass(frozen=True)
 class StateRepository:
+    """Read/write facade for a single client's JSONL state file."""
+
     project_root: Path
     client_id: str
 
     @classmethod
-    def for_client(cls, project_root=None, client_id=None) -> "StateRepository":
+    def for_client(cls, project_root=None, client_id=None) -> StateRepository:
         return cls(
             project_root=resolve_project_root(project_root),
             client_id=resolve_client_id(client_id),
@@ -46,8 +53,8 @@ class StateRepository:
 
 
 __all__ = [
-    'StateRepository',
-    'read_jsonl_records',
-    'read_last_jsonl_record',
-    'read_jsonl_state_records',
+    "StateRepository",
+    "read_jsonl_records",
+    "read_last_jsonl_record",
+    "read_jsonl_state_records",
 ]

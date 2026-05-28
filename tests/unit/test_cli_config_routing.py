@@ -9,8 +9,9 @@ class TestCliConfigRouting(unittest.TestCase):
         module = MagicMock()
         module.main.return_value = 123
 
-        with patch("importlib.import_module", return_value=module) as mock_import, patch(
-            "sys.argv", ["claude-auto-review", "config", "--backend", "codex"]
+        with (
+            patch("importlib.import_module", return_value=module) as mock_import,
+            patch("sys.argv", ["claude-auto-review", "config", "--backend", "codex"]),
         ):
             result = cli.main()
 

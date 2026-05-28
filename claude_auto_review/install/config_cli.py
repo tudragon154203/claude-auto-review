@@ -14,7 +14,6 @@ if __name__ == "__main__":
 from claude_auto_review.config.io import _load_settings_document, _settings_path, load_settings
 from claude_auto_review.config.models import (
     DEFAULT_REVIEWER_MODELS,
-    MINIMUM_BLOCKING_SEVERITIES,
     PluginSettings,
 )
 from claude_auto_review.config.utils.schema import (
@@ -24,18 +23,22 @@ from claude_auto_review.config.utils.schema import (
     SETTING_REVIEWER_BACKEND,
     SETTING_REVIEWER_MODEL,
 )
+from claude_auto_review.install.setup_cli import main as setup_main
 from claude_auto_review.paths.path_utils import get_project_root
 from claude_auto_review.runtime.events import log_event
-from claude_auto_review.runtime.setup import ensure_project_settings, ensure_runtime
-from claude_auto_review.install.setup_cli import main as setup_main
+from claude_auto_review.runtime.setup import ensure_runtime
 
-
-ADVANCED_SETTING_KEYS = tuple(sorted(KNOWN_SETTING_KEYS - {
-    SETTING_REVIEWER_BACKEND,
-    SETTING_REVIEWER_MODEL,
-    SETTING_MINIMUM_BLOCKING_SEVERITY,
-    SETTING_MAX_STOP_PASSES,
-}))
+ADVANCED_SETTING_KEYS = tuple(
+    sorted(
+        KNOWN_SETTING_KEYS
+        - {
+            SETTING_REVIEWER_BACKEND,
+            SETTING_REVIEWER_MODEL,
+            SETTING_MINIMUM_BLOCKING_SEVERITY,
+            SETTING_MAX_STOP_PASSES,
+        }
+    )
+)
 
 SEVERITY_CHOICES = ["info", "low", "medium", "high", "critical"]
 
@@ -88,10 +91,7 @@ def _is_initialized(project_root: Path) -> bool:
     hooks = data.get("hooks")
     rules_path = runtime_dir / "review-rules.md"
     return (
-        isinstance(plugin_settings, dict)
-        and isinstance(hooks, dict)
-        and runtime_dir.exists()
-        and rules_path.exists()
+        isinstance(plugin_settings, dict) and isinstance(hooks, dict) and runtime_dir.exists() and rules_path.exists()
     )
 
 
@@ -233,7 +233,9 @@ def _print_summary(project_root: Path, initialized_before: bool, settings_path: 
     print(f"- Setup: {'already initialized' if initialized_before else 'initialized now'}")
     print(f"- Settings file: {settings_path}")
     print(f"- Runtime directory: {runtime_dir}")
-    print(f"- Important settings updated: reviewerBackend={settings.reviewer_backend}, reviewerModel={settings.resolved_reviewer_model()}, minimumBlockingSeverity={settings.minimum_blocking_severity}, maxStopPasses={settings.max_stop_passes}")
+    print(
+        f"- Important settings updated: reviewerBackend={settings.reviewer_backend}, reviewerModel={settings.resolved_reviewer_model()}, minimumBlockingSeverity={settings.minimum_blocking_severity}, maxStopPasses={settings.max_stop_passes}"
+    )
     _print_advanced_settings(settings_path)
 
 

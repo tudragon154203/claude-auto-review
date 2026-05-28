@@ -9,8 +9,8 @@ from claude_auto_review.paths.shell_parsing import (
     SHELL_MOVE_COMMANDS,
     SHELL_MULTI_ARG_COMMANDS,
     SHELL_PATH_COMMANDS,
-    SHELL_WRITE_COMMANDS,
     SHELL_WRAPPER_COMMANDS,
+    SHELL_WRITE_COMMANDS,
     first_path_token,
     is_flag_token,
     non_flag_args,
@@ -100,7 +100,7 @@ def _git_move_targets(tokens, project_root=None):
         i += 1
     if first_non_flag not in GIT_MOVE_SUBCOMMANDS:
         return []
-    rest = tokens[subcommand_idx + 1:]
+    rest = tokens[subcommand_idx + 1 :]
     args = non_flag_args(rest)
     return _move_args_to_tracked_paths(args, project_root=project_root)
 

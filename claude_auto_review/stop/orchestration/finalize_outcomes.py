@@ -21,7 +21,9 @@ def blocked_result(action: FinalizeAction) -> FinalizeResult:
 
 def artifact_status_name(artifact_state) -> str | None:
     status = getattr(artifact_state, "status", None)
-    return status.value if hasattr(status, "value") else status
+    if status is None:
+        return None
+    return str(status.value) if hasattr(status, "value") else str(status)
 
 
 def plan_for_artifact_state(artifact_state):

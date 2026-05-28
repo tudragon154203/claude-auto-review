@@ -4,7 +4,6 @@ from pathlib import Path
 
 from claude_auto_review.timestamps import parse_iso_timestamp
 
-
 _TEXT_READ_CHUNK_SIZE = 8192
 _SNAPSHOT_READ_LIMIT_CHARS = 10000
 _SNAPSHOT_RENDER_LIMIT_CHARS = 40000

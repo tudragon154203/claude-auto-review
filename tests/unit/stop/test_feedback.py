@@ -1,7 +1,8 @@
 import json
 import unittest
-from unittest.mock import patch
 from pathlib import Path
+from unittest.mock import patch
+
 from claude_auto_review.config.models import PluginSettings
 from claude_auto_review.state.models import EditRecord
 from claude_auto_review.stop.feedback import (
@@ -11,6 +12,7 @@ from claude_auto_review.stop.feedback import (
     build_unreviewed_files_string,
     review_feedback_max_chars,
 )
+
 
 class TestFeedback(unittest.TestCase):
     def test_build_unreviewed_files_string(self):
@@ -40,6 +42,7 @@ class TestFeedback(unittest.TestCase):
 
     def test_build_review_findings_feedback_includes_review_content(self):
         import tempfile
+
         with tempfile.TemporaryDirectory() as temp_dir:
             review_path = Path(temp_dir) / "review.md"
             review_path.write_text("## Findings\nBug here\n\n## Verdict\n1 issue found.", encoding="utf-8")
@@ -53,6 +56,7 @@ class TestFeedback(unittest.TestCase):
 
     def test_build_review_findings_feedback_describes_threshold(self):
         import tempfile
+
         with tempfile.TemporaryDirectory() as temp_dir:
             review_path = Path(temp_dir) / "review.md"
             review_path.write_text("## Findings\nBug here\n\n## Verdict\n1 issue found.", encoding="utf-8")
@@ -80,6 +84,7 @@ class TestFeedback(unittest.TestCase):
 
     def test_build_review_findings_feedback_truncates_to_configured_limit(self):
         import tempfile
+
         with tempfile.TemporaryDirectory() as temp_dir:
             review_path = Path(temp_dir) / "review.md"
             review_path.write_text("abcdef", encoding="utf-8")

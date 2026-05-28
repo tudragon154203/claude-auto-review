@@ -13,10 +13,14 @@ class TestSetupFlow(HookTestCase, unittest.TestCase):
         setup = self.run_python("claude_auto_review/install/setup_cli.py", project_root)
         self.assertEqual(setup.returncode, 0)
         self.assertTrue((project_root / ".claude" / "claude-auto-review" / "scripts" / "review_prompt.py").exists())
-        self.assertTrue((project_root / ".claude" / "claude-auto-review" / "scripts" / "cancel_claude_auto_review.py").exists())
+        self.assertTrue(
+            (project_root / ".claude" / "claude-auto-review" / "scripts" / "cancel_claude_auto_review.py").exists()
+        )
         self.assertTrue((project_root / ".claude" / "claude-auto-review" / "agents" / "reviewer.md").exists())
         self.assertTrue((project_root / ".claude" / "claude-auto-review" / "review-rules.md").exists())
-        self.assertNotIn(".claude/claude-auto-review/state.jsonl", (project_root / ".gitignore").read_text(encoding="utf-8"))
+        self.assertNotIn(
+            ".claude/claude-auto-review/state.jsonl", (project_root / ".gitignore").read_text(encoding="utf-8")
+        )
         self.assertIn(".claude/claude-auto-review/", (project_root / ".gitignore").read_text(encoding="utf-8"))
         settings = json.loads((project_root / ".claude" / "settings.json").read_text(encoding="utf-8"))
         self.assertIn("claude-auto-review", settings)
@@ -52,11 +56,7 @@ class TestSetupFlow(HookTestCase, unittest.TestCase):
         setup = self.run_python("claude_auto_review/install/setup_cli.py", project_root)
         self.assertEqual(setup.returncode, 0)
         settings = json.loads(settings_path.read_text(encoding="utf-8"))
-        stop_commands = [
-            hook["command"]
-            for entry in settings["hooks"]["Stop"]
-            for hook in entry["hooks"]
-        ]
+        stop_commands = [hook["command"] for entry in settings["hooks"]["Stop"] for hook in entry["hooks"]]
         self.assertIn("python custom-stop.py", stop_commands)
         self.assertIn("python -m claude_auto_review.hooks.stop_hook", stop_commands)
 

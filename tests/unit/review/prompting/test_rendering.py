@@ -2,8 +2,6 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from claude_auto_review.state.models import ReviewFileRecord
-from claude_auto_review.timestamps import parse_iso_timestamp
 from claude_auto_review.review.prompting.rendering import (
     _format_file_snapshot,
     _format_missing_file_snapshot,
@@ -14,6 +12,8 @@ from claude_auto_review.review.prompting.rendering import (
     format_file_list,
     format_review_timestamp,
 )
+from claude_auto_review.state.models import ReviewFileRecord
+from claude_auto_review.timestamps import parse_iso_timestamp
 
 
 class TestReadTextWithLimit(unittest.TestCase):

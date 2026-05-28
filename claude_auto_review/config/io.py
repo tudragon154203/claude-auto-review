@@ -5,7 +5,6 @@ import json
 from claude_auto_review.config.models import PluginSettings
 from claude_auto_review.runtime.context import resolve_project_root
 
-
 SETTINGS_FILENAME = "settings.json"
 PLUGIN_SETTINGS_KEY = "claude-auto-review"
 
@@ -14,7 +13,7 @@ def _settings_path(project_root):
     return resolve_project_root(project_root) / ".claude" / SETTINGS_FILENAME
 
 
-def _load_settings_document(settings_path):
+def _load_settings_document(settings_path) -> dict:
     try:
         data = json.loads(settings_path.read_text(encoding="utf-8")) if settings_path.exists() else {}
     except (OSError, json.JSONDecodeError):

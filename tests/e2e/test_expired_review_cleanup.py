@@ -5,10 +5,9 @@ import sys
 from datetime import datetime, timedelta
 from pathlib import Path
 
-from tests.e2e.support import EndToEndTestCase
-from claude_auto_review.runtime.client_dirs import client_state_path
 from claude_auto_review.paths.path_utils import get_state_path, local_now_iso
-
+from claude_auto_review.runtime.client_dirs import client_state_path
+from tests.e2e.support import EndToEndTestCase
 
 _CLEANUP_SCRIPT = (
     "import json, sys; "
@@ -69,14 +68,22 @@ class ExpiredReviewCleanupE2ETests(EndToEndTestCase):
         expired_ts = (datetime.now().astimezone() - timedelta(hours=2)).isoformat()
 
         expired_review = {
-            "type": "review", "reviewId": "expired-rev", "reviewPath": "p1",
-            "timestamp": expired_ts, "status": "pending",
-            "files": [{"file": "src/test.ts", "hash": "fake"}], "clientId": client_id,
+            "type": "review",
+            "reviewId": "expired-rev",
+            "reviewPath": "p1",
+            "timestamp": expired_ts,
+            "status": "pending",
+            "files": [{"file": "src/test.ts", "hash": "fake"}],
+            "clientId": client_id,
         }
         fresh_review = {
-            "type": "review", "reviewId": "fresh-rev", "reviewPath": "p2",
-            "timestamp": local_now_iso(), "status": "pending",
-            "files": [{"file": "src/test.ts", "hash": "fake"}], "clientId": client_id,
+            "type": "review",
+            "reviewId": "fresh-rev",
+            "reviewPath": "p2",
+            "timestamp": local_now_iso(),
+            "status": "pending",
+            "files": [{"file": "src/test.ts", "hash": "fake"}],
+            "clientId": client_id,
         }
 
         state_path.write_text(
@@ -89,8 +96,7 @@ class ExpiredReviewCleanupE2ETests(EndToEndTestCase):
         self.assertIn("1", result.stdout.strip())
 
         state_lines = [
-            json.loads(line) for line in state_path.read_text(encoding="utf-8").strip().splitlines()
-            if line.strip()
+            json.loads(line) for line in state_path.read_text(encoding="utf-8").strip().splitlines() if line.strip()
         ]
         review_ids = [r.get("reviewId") for r in state_lines if r.get("type") == "review"]
         self.assertNotIn("expired-rev", review_ids)
@@ -110,9 +116,13 @@ class ExpiredReviewCleanupE2ETests(EndToEndTestCase):
         state_path = client_state_path(project_root, client_id)
         recent_ts = (datetime.now().astimezone() - timedelta(minutes=1)).isoformat()
         recent_review = {
-            "type": "review", "reviewId": "recent-rev", "reviewPath": "p",
-            "timestamp": recent_ts, "status": "pending",
-            "files": [{"file": "src/app.ts", "hash": "fake"}], "clientId": client_id,
+            "type": "review",
+            "reviewId": "recent-rev",
+            "reviewPath": "p",
+            "timestamp": recent_ts,
+            "status": "pending",
+            "files": [{"file": "src/app.ts", "hash": "fake"}],
+            "clientId": client_id,
         }
         state_path.write_text(json.dumps(recent_review) + "\n", encoding="utf-8")
 
@@ -121,8 +131,7 @@ class ExpiredReviewCleanupE2ETests(EndToEndTestCase):
         self.assertIn("0", result.stdout.strip())
 
         state_lines = [
-            json.loads(line) for line in state_path.read_text(encoding="utf-8").strip().splitlines()
-            if line.strip()
+            json.loads(line) for line in state_path.read_text(encoding="utf-8").strip().splitlines() if line.strip()
         ]
         review_ids = [r.get("reviewId") for r in state_lines if r.get("type") == "review"]
         self.assertIn("recent-rev", review_ids)
@@ -141,16 +150,20 @@ class ExpiredReviewCleanupE2ETests(EndToEndTestCase):
 
         expired_ts = (datetime.now().astimezone() - timedelta(hours=2)).isoformat()
         entries = [
-            {"type": "review", "reviewId": "exp", "reviewPath": "p",
-             "timestamp": expired_ts, "status": "pending", "files": [], "clientId": client_id},
-            {"type": "edit", "file": "src/lib.ts", "hash": "h",
-             "timestamp": local_now_iso(), "reviewed": False},
+            {
+                "type": "review",
+                "reviewId": "exp",
+                "reviewPath": "p",
+                "timestamp": expired_ts,
+                "status": "pending",
+                "files": [],
+                "clientId": client_id,
+            },
+            {"type": "edit", "file": "src/lib.ts", "hash": "h", "timestamp": local_now_iso(), "reviewed": False},
             "invalid json line",
         ]
         state_path.write_text(
-            "\n".join(
-                e if isinstance(e, str) else json.dumps(e) for e in entries
-            ) + "\n",
+            "\n".join(e if isinstance(e, str) else json.dumps(e) for e in entries) + "\n",
             encoding="utf-8",
         )
 
@@ -176,8 +189,13 @@ class ExpiredReviewCleanupE2ETests(EndToEndTestCase):
 
         expired_ts = (datetime.now().astimezone() - timedelta(hours=2)).isoformat()
         expired_review = {
-            "type": "review", "reviewId": "log-exp", "reviewPath": "p",
-            "timestamp": expired_ts, "status": "pending", "files": [], "clientId": client_id,
+            "type": "review",
+            "reviewId": "log-exp",
+            "reviewPath": "p",
+            "timestamp": expired_ts,
+            "status": "pending",
+            "files": [],
+            "clientId": client_id,
         }
         state_path.write_text(json.dumps(expired_review) + "\n", encoding="utf-8")
 

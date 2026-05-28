@@ -3,18 +3,13 @@ import unittest
 
 from claude_auto_review.config.models import DEFAULT_CLASSIFIER_MODEL
 from tests.int.hooks.support import HookTestCase
-from tests.support import client_dir
-from tests.support import start_classifier_server
+from tests.support import client_dir, start_classifier_server
 
 
 class TestLastAssistantMessageClassifierHook(HookTestCase, unittest.TestCase):
     def _read_log_entries(self, project_root):
         log_path = client_dir(project_root) / "state.jsonl"
-        return [
-            json.loads(line)
-            for line in log_path.read_text(encoding="utf-8").splitlines()
-            if line.strip()
-        ]
+        return [json.loads(line) for line in log_path.read_text(encoding="utf-8").splitlines() if line.strip()]
 
     def test_stop_hook_logs_complete_classification_without_changing_clean_stop(self):
         project_root = self.temp_project()
@@ -41,7 +36,9 @@ class TestLastAssistantMessageClassifierHook(HookTestCase, unittest.TestCase):
         self.assertEqual(result.returncode, 2)
         self.assertEqual(len(server.requests), 1)
         self.assertEqual(server.requests[0]["body"]["model"], DEFAULT_CLASSIFIER_MODEL)
-        entries = [e for e in self._read_log_entries(project_root) if e.get("type") == "last_assistant_message_classified"]
+        entries = [
+            e for e in self._read_log_entries(project_root) if e.get("type") == "last_assistant_message_classified"
+        ]
         self.assertEqual(entries[-1]["status"], "complete")
         self.assertEqual(entries[-1]["reason"], "parsed_label")
         self.assertEqual(entries[-1]["baseUrl"], base_url)
@@ -72,7 +69,9 @@ class TestLastAssistantMessageClassifierHook(HookTestCase, unittest.TestCase):
             server.server_close()
 
         self.assertEqual(result.returncode, 0)
-        entries = [e for e in self._read_log_entries(project_root) if e.get("type") == "last_assistant_message_classified"]
+        entries = [
+            e for e in self._read_log_entries(project_root) if e.get("type") == "last_assistant_message_classified"
+        ]
         self.assertEqual(entries[-1]["status"], "incomplete")
         review_events = [e for e in self._read_log_entries(project_root) if e.get("type") == "review_prompt_created"]
         self.assertEqual(review_events, [])
@@ -107,6 +106,8 @@ class TestLastAssistantMessageClassifierHook(HookTestCase, unittest.TestCase):
             server.server_close()
 
         self.assertEqual(result.returncode, 2)
-        entries = [e for e in self._read_log_entries(project_root) if e.get("type") == "last_assistant_message_classified"]
+        entries = [
+            e for e in self._read_log_entries(project_root) if e.get("type") == "last_assistant_message_classified"
+        ]
         self.assertEqual(entries[-1]["status"], "error")
         self.assertEqual(entries[-1]["reason"], "http_timeout")

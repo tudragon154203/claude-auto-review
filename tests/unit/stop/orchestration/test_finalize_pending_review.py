@@ -7,7 +7,7 @@ from claude_auto_review.config.models import PluginSettings
 from claude_auto_review.state.models import ReviewMetadata
 from claude_auto_review.stop.orchestration.context import RuntimeContext
 from claude_auto_review.stop.orchestration.finalize import finalize_review_stop
-from claude_auto_review.stop.orchestration.resolution import StopFlowResolution
+from claude_auto_review.stop.orchestration.resolution import FinalizeAction, StopFlowResolution
 
 
 def _mk_review(reviewId: str = "r1", reviewPath: str = "/fake/r.md") -> ReviewMetadata:
@@ -60,7 +60,7 @@ class TestFinalizePendingReview(unittest.TestCase):
             Path("/fake"),
             "stop_approved",
             client_id="c",
-            reason="review_clean",
+            reason=FinalizeAction.APPROVED,
             reviewId="r1",
         )
 

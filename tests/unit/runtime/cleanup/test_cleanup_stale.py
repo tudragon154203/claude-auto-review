@@ -5,12 +5,10 @@ from unittest.mock import patch
 from claude_auto_review.runtime.cleanup.stale import _is_client_state_stale, cleanup_stale_clients
 from claude_auto_review.runtime.client_dirs import client_state_path
 from claude_auto_review.runtime.setup import ensure_client_runtime
-
 from tests.unit.state.support import StateTestCase
 
 
 class TestCleanupStaleClients(StateTestCase, unittest.TestCase):
-
     def test_is_client_state_stale_uses_parent_mtime_when_state_missing(self):
         project_root = self.temp_project()
         client_id = "stale-by-dir"
@@ -19,7 +17,7 @@ class TestCleanupStaleClients(StateTestCase, unittest.TestCase):
         if state_path.exists():
             state_path.unlink()
 
-        stale_ts = (project_root.stat().st_mtime - 3 * 24 * 60 * 60)
+        stale_ts = project_root.stat().st_mtime - 3 * 24 * 60 * 60
         os.utime(state_path.parent, (stale_ts, stale_ts))
 
         self.assertTrue(_is_client_state_stale(state_path, timeout_hours=48))

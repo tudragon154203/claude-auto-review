@@ -6,7 +6,6 @@ from unittest.mock import MagicMock, patch
 from claude_auto_review.stop.orchestration.context import RuntimeContext
 from claude_auto_review.stop.reviews.codex_output import _extract_codex_final_message
 from claude_auto_review.stop.reviews.prompt_runner import (
-    _run_claude_cli,
     attempt_stop_autocomplete,
 )
 from claude_auto_review.stop.reviews.review_args import (
@@ -17,29 +16,32 @@ from claude_auto_review.stop.reviews.review_args import (
 
 class TestPromptRunnerCodex(unittest.TestCase):
     def _ctx(self):
-        return RuntimeContext(project_root=Path('/fake'), client_id='client-1')
+        return RuntimeContext(project_root=Path("/fake"), client_id="client-1")
 
     def test_build_codex_review_args(self):
         self.assertEqual(
-            _build_codex_review_args('gpt-5'),
-            ['exec', '--skip-git-repo-check', '--sandbox', 'read-only', '--model', 'gpt-5', '-'],
+            _build_codex_review_args("gpt-5"),
+            ["exec", "--skip-git-repo-check", "--sandbox", "read-only", "--model", "gpt-5", "-"],
         )
 
-    @patch('claude_auto_review.stop.reviews.review_result.normalize_review_verdict_content', side_effect=lambda s, client_id=None, minimum_blocking_severity="medium": s)
-    @patch('claude_auto_review.stop.reviews.prompt_runner.run_captured')
-    @patch('claude_auto_review.stop.reviews.prompt_runner.shutil.which', return_value='/usr/bin/codex')
+    @patch(
+        "claude_auto_review.stop.reviews.review_result.normalize_review_verdict_content",
+        side_effect=lambda s, client_id=None, minimum_blocking_severity="medium": s,
+    )
+    @patch("claude_auto_review.stop.reviews.prompt_runner.run_captured")
+    @patch("claude_auto_review.stop.reviews.prompt_runner.shutil.which", return_value="/usr/bin/codex")
     def test_attempt_stop_autocomplete_prefers_codex_last_message_file(self, mock_which, mock_run, _mock_norm):
-        review_path = Path(tempfile.gettempdir()) / 'review-last-message.md'
-        prompt_file = Path(tempfile.gettempdir()) / 'prompt-last-message.md'
-        prompt_file.write_text('system prompt', encoding='utf-8')
+        review_path = Path(tempfile.gettempdir()) / "review-last-message.md"
+        prompt_file = Path(tempfile.gettempdir()) / "prompt-last-message.md"
+        prompt_file.write_text("system prompt", encoding="utf-8")
 
         def _fake_run(*args, **kwargs):
             command = args[0]
-            output_idx = command.index('--output-last-message')
-            Path(command[output_idx + 1]).write_text('Clean - no issues found.', encoding='utf-8')
+            output_idx = command.index("--output-last-message")
+            Path(command[output_idx + 1]).write_text("Clean - no issues found.", encoding="utf-8")
             return MagicMock(
                 stdout='{"type":"turn.completed","message":{"text":"planning only"}}\n',
-                stderr='',
+                stderr="",
                 returncode=0,
                 args=command,
             )
@@ -48,36 +50,36 @@ class TestPromptRunnerCodex(unittest.TestCase):
 
         result = attempt_stop_autocomplete(
             self._ctx(),
-            'rev-file',
+            "rev-file",
             review_path,
             prompt_file,
-            'user prompt',
+            "user prompt",
             reviewer_timeout_seconds=5,
-            model='gpt-5',
-            backend='codex',
+            model="gpt-5",
+            backend="codex",
         )
 
-        self.assertEqual(result.status, 'output_written')
-        self.assertEqual(review_path.read_text(encoding='utf-8'), 'Clean - no issues found.')
-        self.assertIn('--output-last-message', mock_run.call_args.args[0])
-        mock_which.assert_called_once_with('codex')
+        self.assertEqual(result.status, "output_written")
+        self.assertEqual(review_path.read_text(encoding="utf-8"), "Clean - no issues found.")
+        self.assertIn("--output-last-message", mock_run.call_args.args[0])
+        mock_which.assert_called_once_with("codex")
 
     def test_build_claude_review_args(self):
         self.assertEqual(
-            _build_claude_review_args('claude-sonnet-4-6')[:4],
-            ['--print', '--bare', '--allowedTools', 'Read'],
+            _build_claude_review_args("claude-sonnet-4-6")[:4],
+            ["--print", "--bare", "--allowedTools", "Read"],
         )
 
     def test_extract_codex_final_message_uses_turn_completed_message(self):
         stdout = '{"type":"turn.completed","message":"Clean - no issues found."}\n'
-        self.assertEqual(_extract_codex_final_message(stdout), 'Clean - no issues found.')
+        self.assertEqual(_extract_codex_final_message(stdout), "Clean - no issues found.")
 
     def test_extract_codex_final_message_handles_structured_msg(self):
         stdout = '{"type":"turn.completed","message":{"text":"Clean from dict."}}\n'
-        self.assertEqual(_extract_codex_final_message(stdout), 'Clean from dict.')
+        self.assertEqual(_extract_codex_final_message(stdout), "Clean from dict.")
 
         stdout_list = '{"type":"turn.completed","message":[{"text":"Clean from list dict."}]}\n'
-        self.assertEqual(_extract_codex_final_message(stdout_list), 'Clean from list dict.')
+        self.assertEqual(_extract_codex_final_message(stdout_list), "Clean from list dict.")
 
     def test_extract_codex_final_message_handles_interleaved_raw_text(self):
         # Case from gpt-5.4-mini where it starts with raw text then emits JSON events
@@ -94,36 +96,19 @@ class TestPromptRunnerCodex(unittest.TestCase):
 
     def test_extract_codex_final_message_keeps_brace_prefixed_lines(self):
         # Lines starting with { but not valid JSON should be kept as raw text
-        stdout = (
-            "First line of output\n"
-            "{not valid json but should be kept}\n"
-            "Second line of output\n"
-        )
+        stdout = "First line of output\n" "{not valid json but should be kept}\n" "Second line of output\n"
         self.assertEqual(
             _extract_codex_final_message(stdout),
-            "First line of output\n{not valid json but should be kept}\nSecond line of output"
+            "First line of output\n{not valid json but should be kept}\nSecond line of output",
         )
 
     def test_extract_codex_final_message_preserves_non_dict_json_as_raw(self):
         # Lines that parse as JSON but aren't dicts may contain user content - preserve them
-        stdout = (
-            "First line\n"
-            '["a", "b"]\n'
-            '"just a string"\n'
-            "Second line\n"
-        )
-        self.assertEqual(
-            _extract_codex_final_message(stdout),
-            "First line\n[\"a\", \"b\"]\n\"just a string\"\nSecond line"
-        )
+        stdout = "First line\n" '["a", "b"]\n' '"just a string"\n' "Second line\n"
+        self.assertEqual(_extract_codex_final_message(stdout), 'First line\n["a", "b"]\n"just a string"\nSecond line')
 
     def test_extract_codex_final_message_strips_preamble_if_header_found(self):
-        stdout = (
-            "Certainly! I will review the changes now.\n"
-            "# Review rev-123 - 2026-05-25\n"
-            "## Findings\n"
-            "None."
-        )
+        stdout = "Certainly! I will review the changes now.\n" "# Review rev-123 - 2026-05-25\n" "## Findings\n" "None."
         result = _extract_codex_final_message(stdout)
         self.assertTrue(result.startswith("# Review rev-123 - 2026-05-25"))
 
@@ -135,10 +120,7 @@ class TestPromptRunnerCodex(unittest.TestCase):
             "## Findings\n"
             "None."
         )
-        self.assertEqual(
-            _extract_codex_final_message(stdout),
-            "# Review rev-123 - 2026-05-25\n## Findings\nNone."
-        )
+        self.assertEqual(_extract_codex_final_message(stdout), "# Review rev-123 - 2026-05-25\n## Findings\nNone.")
 
     def test_extract_codex_final_message_accumulates_all_parts(self):
         stdout = (
@@ -162,78 +144,84 @@ class TestPromptRunnerCodex(unittest.TestCase):
         self.assertEqual(_extract_codex_final_message(stdout), stdout)
 
     def test_attempt_stop_autocomplete_rejects_unknown_backend(self):
-        review_path = Path(tempfile.gettempdir()) / 'review-unknown.md'
-        prompt_file = Path(tempfile.gettempdir()) / 'prompt-unknown.md'
-        prompt_file.write_text('system prompt', encoding='utf-8')
+        review_path = Path(tempfile.gettempdir()) / "review-unknown.md"
+        prompt_file = Path(tempfile.gettempdir()) / "prompt-unknown.md"
+        prompt_file.write_text("system prompt", encoding="utf-8")
 
         with self.assertRaises(ValueError):
             attempt_stop_autocomplete(
                 self._ctx(),
-                'rev-3',
+                "rev-3",
                 review_path,
                 prompt_file,
-                'user prompt',
+                "user prompt",
                 reviewer_timeout_seconds=5,
-                model='claude-sonnet-4-6',
-                backend='codexx',
+                model="claude-sonnet-4-6",
+                backend="codexx",
             )
 
-    @patch('claude_auto_review.stop.reviews.review_result.normalize_review_verdict_content', side_effect=lambda s, client_id=None, minimum_blocking_severity="medium": s)
-    @patch('claude_auto_review.stop.reviews.prompt_runner.run_captured')
-    @patch('claude_auto_review.stop.reviews.prompt_runner.shutil.which', return_value='/usr/bin/codex')
+    @patch(
+        "claude_auto_review.stop.reviews.review_result.normalize_review_verdict_content",
+        side_effect=lambda s, client_id=None, minimum_blocking_severity="medium": s,
+    )
+    @patch("claude_auto_review.stop.reviews.prompt_runner.run_captured")
+    @patch("claude_auto_review.stop.reviews.prompt_runner.shutil.which", return_value="/usr/bin/codex")
     def test_attempt_stop_autocomplete_uses_codex_backend(self, mock_which, mock_run, _mock_norm):
-        review_path = Path(tempfile.gettempdir()) / 'review.md'
-        prompt_file = Path(tempfile.gettempdir()) / 'prompt.md'
-        prompt_file.write_text('system prompt', encoding='utf-8')
+        review_path = Path(tempfile.gettempdir()) / "review.md"
+        prompt_file = Path(tempfile.gettempdir()) / "prompt.md"
+        prompt_file.write_text("system prompt", encoding="utf-8")
         mock_run.return_value = MagicMock(
             stdout='{"type":"turn.completed","message":{"text":"Clean - no issues found."}}\n',
-            stderr='',
+            stderr="",
             returncode=0,
-            args=['/usr/bin/codex'],
+            args=["/usr/bin/codex"],
         )
 
         result = attempt_stop_autocomplete(
             self._ctx(),
-            'rev-1',
+            "rev-1",
             review_path,
             prompt_file,
-            'user prompt',
+            "user prompt",
             reviewer_timeout_seconds=5,
-            model='gpt-5',
-            backend='codex',
+            model="gpt-5",
+            backend="codex",
         )
 
-        self.assertEqual(result.status, 'output_written')
-        mock_which.assert_called_once_with('codex')
-        self.assertNotIn('--json', mock_run.call_args.args[0])
-        self.assertIn('--skip-git-repo-check', mock_run.call_args.args[0])
-        self.assertEqual(mock_run.call_args.kwargs['input'], 'system prompt\n\nuser prompt')
+        self.assertEqual(result.status, "output_written")
+        mock_which.assert_called_once_with("codex")
+        self.assertNotIn("--json", mock_run.call_args.args[0])
+        self.assertIn("--skip-git-repo-check", mock_run.call_args.args[0])
+        self.assertEqual(mock_run.call_args.kwargs["input"], "system prompt\n\nuser prompt")
 
-    @patch('claude_auto_review.stop.reviews.review_result.normalize_review_verdict_content', side_effect=lambda s, client_id=None, minimum_blocking_severity="medium": s)
-    @patch('claude_auto_review.stop.reviews.prompt_runner.run_captured')
-    @patch('claude_auto_review.stop.reviews.prompt_runner.shutil.which', return_value='/usr/bin/claude')
+    @patch(
+        "claude_auto_review.stop.reviews.review_result.normalize_review_verdict_content",
+        side_effect=lambda s, client_id=None, minimum_blocking_severity="medium": s,
+    )
+    @patch("claude_auto_review.stop.reviews.prompt_runner.run_captured")
+    @patch("claude_auto_review.stop.reviews.prompt_runner.shutil.which", return_value="/usr/bin/claude")
     def test_attempt_stop_autocomplete_uses_claude_backend(self, mock_which, mock_run, _mock_norm):
-        review_path = Path(tempfile.gettempdir()) / 'review-claude.md'
-        prompt_file = Path(tempfile.gettempdir()) / 'prompt-claude.md'
-        prompt_file.write_text('system prompt', encoding='utf-8')
-        mock_run.return_value = MagicMock(stdout='Clean - no issues found.', stderr='', returncode=0)
+        review_path = Path(tempfile.gettempdir()) / "review-claude.md"
+        prompt_file = Path(tempfile.gettempdir()) / "prompt-claude.md"
+        prompt_file.write_text("system prompt", encoding="utf-8")
+        mock_run.return_value = MagicMock(stdout="Clean - no issues found.", stderr="", returncode=0)
 
         result = attempt_stop_autocomplete(
             self._ctx(),
-            'rev-2',
+            "rev-2",
             review_path,
             prompt_file,
-            'user prompt',
+            "user prompt",
             reviewer_timeout_seconds=5,
-            model='claude-sonnet-4-6',
-            backend='claude',
+            model="claude-sonnet-4-6",
+            backend="claude",
         )
 
-        self.assertEqual(result.status, 'output_written')
-        mock_which.assert_called_once_with('claude')
-        self.assertEqual(mock_run.call_args.kwargs.get('input'), None)
-        self.assertIn('user prompt', mock_run.call_args.args[0])
+        self.assertEqual(result.status, "output_written")
+        mock_which.assert_called_once_with("claude")
+        self.assertEqual(mock_run.call_args.kwargs.get("input"), None)
+        self.assertIn("user prompt", mock_run.call_args.args[0])
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

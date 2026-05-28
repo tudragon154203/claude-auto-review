@@ -19,7 +19,9 @@ def _ctx(project_root=Path("/fake"), client_id="client-1"):
 
 class TestPromptRunner(unittest.TestCase):
     def test_review_prompt_command_uses_current_python(self):
-        self.assertEqual(_review_prompt_command(Path("/fake/script.py")), [sys.executable, str(Path("/fake/script.py"))])
+        self.assertEqual(
+            _review_prompt_command(Path("/fake/script.py")), [sys.executable, str(Path("/fake/script.py"))]
+        )
 
     @patch("claude_auto_review.stop.reviews.review_prompt_runner.client_run_dir", return_value=Path("/fake/run"))
     def test_review_prompt_path_uses_client_run_dir(self, mock_client_run_dir):

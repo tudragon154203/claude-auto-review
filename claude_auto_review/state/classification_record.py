@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Literal, Optional
+from typing import Any, Literal
 
 from claude_auto_review.state.record_utils import dict_with_optional
 
@@ -9,6 +9,7 @@ from claude_auto_review.state.record_utils import dict_with_optional
 @dataclass(frozen=True)
 class ClassificationRecord:
     """Outcome of classifying the last assistant message before a stop."""
+
     timestamp: str
     status: str
     reason: str
@@ -16,8 +17,8 @@ class ClassificationRecord:
     messageChars: int
     model: str
     baseUrl: str
-    httpStatus: Optional[int] = None
-    debugResponse: Optional[str] = None
+    httpStatus: int | None = None
+    debugResponse: str | None = None
     type: Literal["last_assistant_message_classified"] = "last_assistant_message_classified"
 
     def to_dict(self) -> dict[str, Any]:
@@ -37,7 +38,7 @@ class ClassificationRecord:
         )
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "ClassificationRecord":
+    def from_dict(cls, data: dict[str, Any]) -> ClassificationRecord:
         return cls(
             timestamp=data["timestamp"],
             status=data["status"],

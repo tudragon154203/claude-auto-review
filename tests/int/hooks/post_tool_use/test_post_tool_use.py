@@ -17,7 +17,9 @@ class TestPostToolUseHook(HookTestCase, unittest.TestCase):
         project_root = self.temp_project()
         (project_root / "src" / "app.ts").write_text("export const value = 1;\n", encoding="utf-8")
 
-        post = self.run_python("hooks/post_tool_use.py", project_root, json.dumps({"tool_input": {"file_path": "src/app.ts"}}))
+        post = self.run_python(
+            "hooks/post_tool_use.py", project_root, json.dumps({"tool_input": {"file_path": "src/app.ts"}})
+        )
         self.assertEqual(post.returncode, 0)
         self.assertEqual(load_state(project_root, "test-session")[0].file, "src/app.ts")
 
@@ -39,7 +41,9 @@ class TestPostToolUseHook(HookTestCase, unittest.TestCase):
         target = (project_root / "src" / "app.ts").resolve()
         target.write_text("export const value = 1;\n", encoding="utf-8")
 
-        post = self.run_python("hooks/post_tool_use.py", project_root, json.dumps({"file_path": f"file:///{target.as_posix()}"}))
+        post = self.run_python(
+            "hooks/post_tool_use.py", project_root, json.dumps({"file_path": f"file:///{target.as_posix()}"})
+        )
         self.assertEqual(post.returncode, 0)
         state = load_state(project_root, "test-session")
         self.assertEqual(state[0].file, "src/app.ts")
@@ -57,7 +61,12 @@ class TestPostToolUseHook(HookTestCase, unittest.TestCase):
         self.assertFalse(state[0].reviewed)
         self.assertTrue(state[0].deleted)
         # Deleted files should allow stop since they no longer exist
-        self.assertEqual(self.run_python("hooks/stop_hook.py", project_root, env_overrides={"PATH": ""}, use_fake_claude=False).returncode, 0)
+        self.assertEqual(
+            self.run_python(
+                "hooks/stop_hook.py", project_root, env_overrides={"PATH": ""}, use_fake_claude=False
+            ).returncode,
+            0,
+        )
 
     def test_post_tool_use_ignores_paths_outside_project(self):
         project_root = self.temp_project()
@@ -71,14 +80,10 @@ class TestPostToolUseHook(HookTestCase, unittest.TestCase):
 
     def test_post_tool_use_ignores_runtime_review_files(self):
         project_root = self.temp_project()
-        from claude_auto_review.runtime.client_dirs import get_client_runtime_dir, get_client_id
+        from claude_auto_review.runtime.client_dirs import get_client_id, get_client_runtime_dir
 
         cid = get_client_id(stdin_session_id="test-session")
-        runtime_review = (
-            get_client_runtime_dir(project_root, cid)
-            / "reviews"
-            / "review-r1.md"
-        )
+        runtime_review = get_client_runtime_dir(project_root, cid) / "reviews" / "review-r1.md"
         runtime_review.parent.mkdir(parents=True, exist_ok=True)
         runtime_review.write_text("## Verdict\nPending.\n", encoding="utf-8")
 
@@ -157,7 +162,12 @@ class TestPostToolUseHook(HookTestCase, unittest.TestCase):
             sorted(entry.file for entry in load_state(project_root, "test-session")),
             ["src/a.ts", "src/b.ts"],
         )
-        self.assertEqual(self.run_python("hooks/stop_hook.py", project_root, env_overrides={"PATH": ""}, use_fake_claude=False).returncode, 2)
+        self.assertEqual(
+            self.run_python(
+                "hooks/stop_hook.py", project_root, env_overrides={"PATH": ""}, use_fake_claude=False
+            ).returncode,
+            2,
+        )
 
     def test_tracks_shell_move_source_deletion_and_destination_edit(self):
         project_root = self.temp_project()
@@ -175,7 +185,9 @@ class TestPostToolUseHook(HookTestCase, unittest.TestCase):
         self.assertNotEqual(state[1].hash, "__deleted__")
         self.assertFalse(state[1].deleted)
         self.assertEqual(
-            self.run_python("hooks/stop_hook.py", project_root, env_overrides={"PATH": ""}, use_fake_claude=False).returncode,
+            self.run_python(
+                "hooks/stop_hook.py", project_root, env_overrides={"PATH": ""}, use_fake_claude=False
+            ).returncode,
             2,
         )
 

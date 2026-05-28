@@ -1,18 +1,31 @@
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass, field
-from typing import Any, Mapping
+from typing import Any
 
 from claude_auto_review.config.reviewer import (
-    DEFAULT_CLAUDE_REVIEWER_MODEL,
-    DEFAULT_CODEX_REVIEWER_MODEL,
-    DEFAULT_REVIEWER_BACKEND,
-    DEFAULT_REVIEWER_MODEL,
-    DEFAULT_REVIEWER_MODELS,
-    REVIEWER_BACKENDS,
+    DEFAULT_CLAUDE_REVIEWER_MODEL as DEFAULT_CLAUDE_REVIEWER_MODEL,
+    DEFAULT_CODEX_REVIEWER_MODEL as DEFAULT_CODEX_REVIEWER_MODEL,
+    DEFAULT_REVIEWER_BACKEND as DEFAULT_REVIEWER_BACKEND,
+    DEFAULT_REVIEWER_MODEL as DEFAULT_REVIEWER_MODEL,
+    DEFAULT_REVIEWER_MODELS as DEFAULT_REVIEWER_MODELS,
+    REVIEWER_BACKENDS as REVIEWER_BACKENDS,
     resolve_reviewer_backend,
     resolve_reviewer_model,
 )
+
+__all__ = [
+    "PluginSettings",
+    "DEFAULT_CLAUDE_REVIEWER_MODEL",
+    "DEFAULT_CODEX_REVIEWER_MODEL",
+    "DEFAULT_REVIEWER_BACKEND",
+    "DEFAULT_REVIEWER_MODEL",
+    "DEFAULT_REVIEWER_MODELS",
+    "REVIEWER_BACKENDS",
+    "resolve_reviewer_backend",
+    "resolve_reviewer_model",
+]
 from claude_auto_review.config.serialization import (
     DEFAULT_CLASSIFIER_MODEL,
     DEFAULT_TIMEOUT_SECONDS,
@@ -21,8 +34,6 @@ from claude_auto_review.config.serialization import (
 )
 from claude_auto_review.config.severity import (
     DEFAULT_MINIMUM_BLOCKING_SEVERITY,
-    MINIMUM_BLOCKING_SEVERITIES,
-    coerce_minimum_blocking_severity,
 )
 from claude_auto_review.config.utils.schema import DEFAULT_RULES_FILE
 
@@ -48,7 +59,7 @@ class PluginSettings:
     extras: dict[str, Any] = field(default_factory=dict)
 
     @classmethod
-    def from_mapping(cls, mapping: Mapping[str, Any] | None) -> "PluginSettings":
+    def from_mapping(cls, mapping: Mapping[str, Any] | None) -> PluginSettings:
         return cls(**plugin_settings_kwargs(mapping))
 
     def to_mapping(self) -> dict[str, Any]:

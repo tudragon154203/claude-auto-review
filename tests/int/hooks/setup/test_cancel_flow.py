@@ -7,7 +7,6 @@ import unittest
 from claude_auto_review.paths.path_utils import get_state_path
 from claude_auto_review.state.models import EditRecord
 from claude_auto_review.state.store.write import append_state_event
-
 from tests.int.hooks.support import HookTestCase
 
 
@@ -20,9 +19,17 @@ class TestCancelFlow(HookTestCase, unittest.TestCase):
 
         cancel = self.run_python("claude_auto_review/install/cancel_cli.py", project_root)
         self.assertEqual(cancel.returncode, 0)
-        self.assertFalse((project_root / ".claude" / "claude-auto-review" / "clients" / "client-test-session" / "state.jsonl").exists())
-        self.assertFalse((project_root / ".claude" / "claude-auto-review" / "clients" / "client-test-session" / "run").exists())
-        self.assertFalse((project_root / ".claude" / "claude-auto-review" / "clients" / "client-test-session" / "reviews").exists())
+        self.assertFalse(
+            (
+                project_root / ".claude" / "claude-auto-review" / "clients" / "client-test-session" / "state.jsonl"
+            ).exists()
+        )
+        self.assertFalse(
+            (project_root / ".claude" / "claude-auto-review" / "clients" / "client-test-session" / "run").exists()
+        )
+        self.assertFalse(
+            (project_root / ".claude" / "claude-auto-review" / "clients" / "client-test-session" / "reviews").exists()
+        )
         log_content = get_state_path(project_root).read_text(encoding="utf-8")
         self.assertIn('"type":"cancel_completed"', log_content)
 
@@ -49,7 +56,11 @@ class TestCancelFlow(HookTestCase, unittest.TestCase):
             env={**os.environ, "CLAUDE_PROJECT_DIR": str(project_root), "CLAUDE_SESSION_ID": "test-session"},
         )
         self.assertEqual(result.returncode, 0)
-        self.assertFalse((project_root / ".claude" / "claude-auto-review" / "clients" / "client-test-session" / "state.jsonl").exists())
+        self.assertFalse(
+            (
+                project_root / ".claude" / "claude-auto-review" / "clients" / "client-test-session" / "state.jsonl"
+            ).exists()
+        )
 
 
 if __name__ == "__main__":

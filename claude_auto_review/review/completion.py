@@ -4,11 +4,17 @@ from pathlib import Path
 
 from claude_auto_review.config.constants import DURATION_ROUND_PRECISION, SECONDS_PER_HOUR, SECONDS_PER_MINUTE
 from claude_auto_review.paths.path_utils import local_now_iso
-from claude_auto_review.state.models import EditRecord, ReviewCompletedRecord, ReviewFileRecord, ReviewMetadata, StopBlockedRecord, StateEvent
+from claude_auto_review.state.models import (
+    EditRecord,
+    ReviewCompletedRecord,
+    ReviewFileRecord,
+    ReviewMetadata,
+    StateEvent,
+    StopBlockedRecord,
+)
 from claude_auto_review.state.store.read import get_unreviewed_files, load_state, load_state_snapshot
 from claude_auto_review.state.store.write import append_state_event, mark_files_reviewed
 from claude_auto_review.timestamps import parse_iso_timestamp
-
 
 REASON_PARTIAL_REVIEW = "partial_review"
 
@@ -91,6 +97,7 @@ def record_completed_review(
     review_id: str,
     covered_entries: list[EditRecord],
 ) -> None:
+    """Append a ReviewCompletedRecord and mark covered file hashes as reviewed."""
     validated_entries = _validate_covered_entries(covered_entries)
     state_before = load_state(project_root, client_id)
     timestamp = local_now_iso()
@@ -110,6 +117,7 @@ def apply_completed_review(
     review_id: str,
     covered_entries: list[EditRecord],
 ) -> list[EditRecord]:
+    """Record the completed review and return remaining unreviewed file entries."""
     record_completed_review(project_root, client_id, review_id, covered_entries)
     remaining = get_unreviewed_files(load_state_snapshot(project_root, client_id))
     if remaining:

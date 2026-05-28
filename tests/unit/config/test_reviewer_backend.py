@@ -4,8 +4,8 @@ from claude_auto_review.config.models import (
     DEFAULT_CLAUDE_REVIEWER_MODEL,
     DEFAULT_CODEX_REVIEWER_MODEL,
     DEFAULT_REVIEWER_BACKEND,
-    PluginSettings,
     REVIEWER_BACKENDS,
+    PluginSettings,
 )
 
 

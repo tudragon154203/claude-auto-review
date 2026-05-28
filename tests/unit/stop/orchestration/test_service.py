@@ -6,15 +6,17 @@ from claude_auto_review.config.models import PluginSettings
 from claude_auto_review.state.models import EditRecord
 from claude_auto_review.state.snapshot import StateSnapshot
 from claude_auto_review.stop.orchestration.context import RuntimeContext
-from claude_auto_review.stop.orchestration.service import StopFlowDependencies, StopFlowService
 from claude_auto_review.stop.orchestration.resolution import StopDecisionKind
+from claude_auto_review.stop.orchestration.service import StopFlowDependencies, StopFlowService
 
 
 def _ctx(**kwargs):
     return RuntimeContext(
         project_root=kwargs.get("project_root", Path("/fake")),
         client_id=kwargs.get("client_id", "sid"),
-        settings=kwargs.get("settings", PluginSettings(enabled=True, pending_review_timeout_hours=1, max_stop_passes=5)),
+        settings=kwargs.get(
+            "settings", PluginSettings(enabled=True, pending_review_timeout_hours=1, max_stop_passes=5)
+        ),
         payload=kwargs.get("payload", {}),
     )
 
@@ -61,4 +63,3 @@ class TestStopFlowService(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-

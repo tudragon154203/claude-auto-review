@@ -1,10 +1,9 @@
 from __future__ import annotations
 
-from claude_auto_review.review.lifecycle import ReviewLifecycleService
 from claude_auto_review.stop.feedback import build_unreviewed_files_string
 from claude_auto_review.stop.orchestration.context import RuntimeContext
-from claude_auto_review.stop.orchestration.resolution import StopFlowResolution
 from claude_auto_review.stop.orchestration.pending_execution import execute_review_prompt
+from claude_auto_review.stop.orchestration.resolution import StopFlowResolution
 from claude_auto_review.stop.reviews.selection import find_pending_review_for_files
 
 

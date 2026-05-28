@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Literal, Optional
+from typing import Any, Literal
 
 from claude_auto_review.state.record_utils import dict_with_optional
 
@@ -9,12 +9,13 @@ from claude_auto_review.state.record_utils import dict_with_optional
 @dataclass(frozen=True)
 class EditRecord:
     """Tracks a single file edit event with its content hash."""
+
     timestamp: str
     file: str
     hash: str
     reviewed: bool = False
     deleted: bool = False
-    reviewId: Optional[str] = None
+    reviewId: str | None = None
     type: Literal["edit"] = "edit"
 
     def to_dict(self) -> dict[str, Any]:
@@ -31,7 +32,7 @@ class EditRecord:
         )
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "EditRecord":
+    def from_dict(cls, data: dict[str, Any]) -> EditRecord:
         return cls(
             timestamp=data["timestamp"],
             file=data["file"],
@@ -45,10 +46,11 @@ class EditRecord:
 @dataclass(frozen=True)
 class StopBlockedRecord:
     """Recorded when a stop attempt is blocked due to unreviewed files."""
+
     timestamp: str
-    reason: Optional[str] = None
-    reviewId: Optional[str] = None
-    files: Optional[list[str]] = None
+    reason: str | None = None
+    reviewId: str | None = None
+    files: list[str] | None = None
     type: Literal["stop_blocked"] = "stop_blocked"
 
     def to_dict(self) -> dict[str, Any]:
@@ -60,7 +62,7 @@ class StopBlockedRecord:
         )
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "StopBlockedRecord":
+    def from_dict(cls, data: dict[str, Any]) -> StopBlockedRecord:
         return cls(
             timestamp=data["timestamp"],
             reason=data.get("reason"),

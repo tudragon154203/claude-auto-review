@@ -15,8 +15,13 @@ def _is_contained(target, parent):
 
 def _remove_path(target, project_root=None):
     if project_root is not None and not _is_contained(target, project_root):
-        log_failure(project_root, "runtime_cleanup_failed", RuntimeError("path escapes project root"),
-                    operation="remove_tree", target=str(target))
+        log_failure(
+            project_root,
+            "runtime_cleanup_failed",
+            RuntimeError("path escapes project root"),
+            operation="remove_tree",
+            target=str(target),
+        )
         return False
     try:
         if target.is_dir():

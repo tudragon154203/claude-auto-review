@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any
 
 from claude_auto_review.review.completion import apply_completed_review, record_completed_review
-from claude_auto_review.review.lifecycle import ReviewLifecycleService
 from claude_auto_review.runtime.events import log_event
 from claude_auto_review.state.snapshot import StateSnapshot
 from claude_auto_review.stop.feedback import block_completed_review_findings, build_review_completion_prompt
@@ -15,19 +15,18 @@ from claude_auto_review.stop.orchestration.finalize_outcomes import (
     plan_for_partial_review,
     plan_for_pending_review,
 )
-from claude_auto_review.stop.orchestration.resolution import FinalizeResult, StopFlowResolution
-from claude_auto_review.stop.orchestration.review_artifact_evaluator import classify_review_artifact_state
+from claude_auto_review.stop.orchestration.resolution import FinalizeAction, FinalizeResult, StopFlowResolution
 from claude_auto_review.stop.orchestration.response_actions import block_pending_review
+from claude_auto_review.stop.orchestration.review_artifact_evaluator import classify_review_artifact_state
 from claude_auto_review.stop.response import approve_response, block_response
+from claude_auto_review.stop.reviews.enums import AutocompleteStatus
 from claude_auto_review.stop.reviews.prompt_runner import attempt_stop_autocomplete
 from claude_auto_review.stop.reviews.review_prompt_runner import _review_prompt_path
 from claude_auto_review.stop.reviews.selection import get_entries_covered_by_review
 
 
 def _approve_payload(review_id: str) -> ResponsePayload:
-    return ResponsePayload(
-        system_message=f"Claude Auto Review: review {review_id} clean, all files covered"
-    )
+    return ResponsePayload(system_message=f"Claude Auto Review: review {review_id} clean, all files covered")
 
 
 def _partial_review_payload(review_id: str, remaining_count: int) -> ResponsePayload:
@@ -49,21 +48,25 @@ def _invalid_backend_payload(error: Exception) -> ResponsePayload:
     )
 
 
-def _apply_completed_clean_review_result(ctx: RuntimeContext, review_id: str, covered_entries: list[Any]) -> tuple[FinalizeResult, ResponsePayload]:
+def _apply_completed_clean_review_result(
+    ctx: RuntimeContext, review_id: str, covered_entries: list[Any]
+) -> tuple[FinalizeResult, ResponsePayload]:
     remaining = apply_completed_review(ctx.project_root, ctx.client_id, review_id, covered_entries)
     if not remaining:
         log_event(
             ctx.project_root,
             "stop_approved",
             client_id=ctx.client_id,
-            reason="review_clean",
+            reason=FinalizeAction.APPROVED,
             reviewId=review_id,
         )
         return approved_result(), _approve_payload(review_id)
     return plan_for_partial_review().result, _partial_review_payload(review_id, len(remaining))
 
 
-def _apply_finalize_plan_result(ctx: RuntimeContext, plan: Any, review_id: str, review_path: Path, covered_entries: list[Any], unreviewed: list[Any]) -> tuple[FinalizeResult, ResponsePayload | None]:
+def _apply_finalize_plan_result(
+    ctx: RuntimeContext, plan: Any, review_id: str, review_path: Path, covered_entries: list[Any], unreviewed: list[Any]
+) -> tuple[FinalizeResult, ResponsePayload | None]:
     if plan.effect == "apply_completed_clean_review":
         return _apply_completed_clean_review_result(ctx, review_id, covered_entries)
     if plan.effect == "record_findings_block":
@@ -74,7 +77,6 @@ def _apply_finalize_plan_result(ctx: RuntimeContext, plan: Any, review_id: str, 
 
 
 def _attempt_review_autocomplete(ctx: RuntimeContext, review_id: str, review_path: Path, prompt_file: Path) -> Any:
-    lifecycle = ReviewLifecycleService(ctx)
     user_prompt = build_review_completion_prompt(review_path)
     result = None
     for attempt in range(2):
@@ -88,17 +90,21 @@ def _attempt_review_autocomplete(ctx: RuntimeContext, review_id: str, review_pat
             model=ctx.settings.resolved_reviewer_model(backend=ctx.settings.resolved_reviewer_backend()),
             backend=ctx.settings.resolved_reviewer_backend(),
         )
-        if result.status != "empty_stdout":
+        if result.status != AutocompleteStatus.EMPTY_STDOUT:
             break
         if attempt == 0:
             log_event(ctx.project_root, "stop_hook_reviewer_retry", client_id=ctx.client_id, reviewId=review_id)
     return result
 
 
-def finalize_review_stop_result(ctx: RuntimeContext, resolution: StopFlowResolution) -> tuple[FinalizeResult, ResponsePayload | None]:
+def finalize_review_stop_result(
+    ctx: RuntimeContext, resolution: StopFlowResolution
+) -> tuple[FinalizeResult, ResponsePayload | None]:
     state = resolution.state
     unreviewed = resolution.unreviewed
     review = resolution.review
+    if review is None:
+        raise ValueError("finalize_review_stop_result called with no review in resolution")
     state_snapshot = StateSnapshot.from_events(state)
     covered_entries = get_entries_covered_by_review(review, state, latest_by_file=state_snapshot.latest_entries_by_file)
     review_id = review.reviewId
@@ -134,7 +140,7 @@ def finalize_review_stop_result(ctx: RuntimeContext, resolution: StopFlowResolut
     if plan is not None:
         return _apply_finalize_plan_result(ctx, plan, review_id, review_path, covered_entries, unreviewed)
 
-    if result is not None and result.status == "empty_stdout":
+    if result is not None and result.status == AutocompleteStatus.EMPTY_STDOUT:
         log_event(ctx.project_root, "stop_hook_reviewer_empty_blocked", client_id=ctx.client_id, reviewId=review_id)
 
     block_pending_review(ctx, review_id, review_path, prompt_file, unreviewed)

@@ -23,11 +23,7 @@ def strip_quotes(s):
 
 
 def is_flag_token(token):
-    if token.startswith('-'):
-        return True
-    if token.startswith('/') and len(token) == 2 and token[1].isalpha():
-        return True
-    return False
+    return token.startswith("-") or (token.startswith("/") and len(token) == 2 and token[1].isalpha())
 
 
 def tokenize_shell_command(command):
@@ -64,7 +60,9 @@ def non_flag_args(tokens):
     return [
         strip_quotes(token)
         for token in tokens
-        if token not in SHELL_CONTROL_TOKENS and token not in SHELL_REDIRECT_TOKENS and not is_flag_token(strip_quotes(token))
+        if token not in SHELL_CONTROL_TOKENS
+        and token not in SHELL_REDIRECT_TOKENS
+        and not is_flag_token(strip_quotes(token))
     ]
 
 
@@ -101,6 +99,11 @@ def option_value(tokens, option_names):
 def first_path_token(tokens):
     for token in tokens:
         cleaned = strip_quotes(token)
-        if cleaned and not is_flag_token(cleaned) and cleaned not in SHELL_CONTROL_TOKENS and cleaned not in SHELL_REDIRECT_TOKENS:
+        if (
+            cleaned
+            and not is_flag_token(cleaned)
+            and cleaned not in SHELL_CONTROL_TOKENS
+            and cleaned not in SHELL_REDIRECT_TOKENS
+        ):
             return cleaned
     return None

@@ -11,7 +11,6 @@ def _ctx(project_root=Path("/fake"), client_id="c"):
 
 
 class TestAutoCompleteOutput(unittest.TestCase):
-
     @patch("claude_auto_review.stop.reviews.prompt_runner.log_event")
     @patch("claude_auto_review.stop.reviews.prompt_runner.run_captured")
     @patch("claude_auto_review.stop.reviews.prompt_runner.shutil.which", return_value="/usr/bin/claude")
@@ -20,8 +19,10 @@ class TestAutoCompleteOutput(unittest.TestCase):
     def test_successful_completion_writes_output(self, mock_is_file, mock_write_text, mock_which, mock_run, mock_log):
         mock_run.return_value = MagicMock(returncode=0, stdout="## Verdict\nClean", stderr="")
         result = attempt_stop_autocomplete(
-            _ctx(), review_id="r",
-            review_path=Path("/fake/review.md"), prompt_file=Path("/fake/prompt.md"),
+            _ctx(),
+            review_id="r",
+            review_path=Path("/fake/review.md"),
+            prompt_file=Path("/fake/prompt.md"),
             user_prompt="finish",
         )
         self.assertTrue(result)
@@ -47,8 +48,10 @@ class TestAutoCompleteOutput(unittest.TestCase):
             stderr="",
         )
         result = attempt_stop_autocomplete(
-            _ctx(), review_id="r",
-            review_path=Path("/fake/review.md"), prompt_file=Path("/fake/prompt.md"),
+            _ctx(),
+            review_id="r",
+            review_path=Path("/fake/review.md"),
+            prompt_file=Path("/fake/prompt.md"),
             user_prompt="finish",
         )
         self.assertTrue(result.output_written)
@@ -77,8 +80,10 @@ class TestAutoCompleteOutput(unittest.TestCase):
             stderr="",
         )
         result = attempt_stop_autocomplete(
-            _ctx(), review_id="r",
-            review_path=Path("/fake/review.md"), prompt_file=Path("/fake/prompt.md"),
+            _ctx(),
+            review_id="r",
+            review_path=Path("/fake/review.md"),
+            prompt_file=Path("/fake/prompt.md"),
             user_prompt="finish",
         )
         self.assertTrue(result.output_written)
@@ -96,11 +101,15 @@ class TestAutoCompleteOutput(unittest.TestCase):
     @patch("claude_auto_review.stop.reviews.prompt_runner.shutil.which", return_value="/usr/bin/claude")
     @patch("pathlib.Path.write_text")
     @patch("pathlib.Path.is_file", return_value=True)
-    def test_completion_with_remaining_is_left_to_finalization(self, mock_is_file, mock_write_text, mock_which, mock_run, mock_log):
+    def test_completion_with_remaining_is_left_to_finalization(
+        self, mock_is_file, mock_write_text, mock_which, mock_run, mock_log
+    ):
         mock_run.return_value = MagicMock(returncode=0, stdout="## Verdict\nClean", stderr="")
         result = attempt_stop_autocomplete(
-            _ctx(), review_id="r",
-            review_path=Path("/fake/review.md"), prompt_file=Path("/fake/prompt.md"),
+            _ctx(),
+            review_id="r",
+            review_path=Path("/fake/review.md"),
+            prompt_file=Path("/fake/prompt.md"),
             user_prompt="finish",
         )
         self.assertTrue(result.output_written)

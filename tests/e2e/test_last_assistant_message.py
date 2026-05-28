@@ -54,7 +54,11 @@ class EndToEndLastAssistantMessageTests(EndToEndTestCase):
         self.assertEqual(classifier_entries[0].reason, "invalid_label")
         self.assertEqual(classifier_entries[0].baseUrl, base_url)
 
-        log_entries = [entry for entry in self.read_log_entries(project_root) if entry.get("type") == "last_assistant_message_classified"]
+        log_entries = [
+            entry
+            for entry in self.read_log_entries(project_root)
+            if entry.get("type") == "last_assistant_message_classified"
+        ]
         self.assertEqual(len(log_entries), 1)
         self.assertEqual(log_entries[0]["status"], "unknown")
         self.assertEqual(log_entries[0]["reason"], "invalid_label")

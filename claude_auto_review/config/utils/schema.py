@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from pathlib import Path
 
-
 SETTING_ENABLED = "enabled"
 SETTING_RULES_FILE = "rulesFile"
 SETTING_INCLUDE_EXTS = "includeExtensions"

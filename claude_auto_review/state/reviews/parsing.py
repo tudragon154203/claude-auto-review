@@ -3,7 +3,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 
-from claude_auto_review.config.models import MINIMUM_BLOCKING_SEVERITIES
+from claude_auto_review.config.severity import MINIMUM_BLOCKING_SEVERITIES
 from claude_auto_review.state.reviews.review_text import extract_review_findings_text
 
 _FINDING_HEADING = re.compile(r"^###\s+(\d+\.|\[)")
@@ -20,13 +20,11 @@ class ReviewFinding:
     raw_text: str
 
 
-
 def _normalize_severity(value: str | None) -> str | None:
     if value is None:
         return None
     severity = value.strip().lower()
     return severity if severity in MINIMUM_BLOCKING_SEVERITIES else None
-
 
 
 def _extract_heading_severity(line: str) -> str | None:
@@ -40,7 +38,6 @@ def _extract_heading_severity(line: str) -> str | None:
         return _normalize_severity(match.group("severity"))
     first_token = text.split(None, 1)[0] if text else ""
     return _normalize_severity(first_token.strip("[]:-")) if first_token else None
-
 
 
 def _parse_finding_block(block: str) -> ReviewFinding:
@@ -57,7 +54,6 @@ def _parse_finding_block(block: str) -> ReviewFinding:
         elif normalized_field == "verdict" and verdict is None:
             verdict = field_value.strip()
     return ReviewFinding(severity=severity, verdict=verdict, raw_text=block)
-
 
 
 def parse_review_findings(content: str | None) -> list[ReviewFinding]:

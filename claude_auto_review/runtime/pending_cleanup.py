@@ -1,9 +1,9 @@
 from __future__ import annotations
 
+from claude_auto_review.config.io import load_settings
 from claude_auto_review.runtime.client_dirs import client_state_path
 from claude_auto_review.runtime.context import resolve_client_id, resolve_project_root
 from claude_auto_review.runtime.events import log_event, log_failure
-from claude_auto_review.config.io import load_settings
 from claude_auto_review.state.models import ReviewMetadata
 from claude_auto_review.state.reviews.expiry import is_review_expired
 from claude_auto_review.state.store.read import read_jsonl_state_records

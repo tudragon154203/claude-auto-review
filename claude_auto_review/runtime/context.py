@@ -3,8 +3,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from claude_auto_review.runtime.client_dirs import get_client_id
 from claude_auto_review.paths.path_utils import get_project_root
+from claude_auto_review.runtime.client_dirs import get_client_id
 
 _DEFAULT_CLIENT_ID = None
 

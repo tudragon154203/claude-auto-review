@@ -1,18 +1,14 @@
 import unittest
 
 from claude_auto_review.state.hook_input import extract_file_paths_from_hook_input
-from claude_auto_review.state.serialization import serialize_review_file_entries
 from claude_auto_review.state.models import ReviewFileRecord
-
+from claude_auto_review.state.serialization import serialize_review_file_entries
 from tests.unit.state.support import StateTestCase
 
 
 class TestHookInputExtraction(StateTestCase, unittest.TestCase):
-
     def test_extracts_file_path_from_top_level(self):
-        self.assertEqual(
-            extract_file_paths_from_hook_input({"file_path": "a.ts"}), ["a.ts"]
-        )
+        self.assertEqual(extract_file_paths_from_hook_input({"file_path": "a.ts"}), ["a.ts"])
 
     def test_extracts_file_path_from_tool_input(self):
         self.assertEqual(
@@ -27,9 +23,7 @@ class TestHookInputExtraction(StateTestCase, unittest.TestCase):
                 "edits": [{"file_path": "a.ts"}, {"file_path": "b.ts"}],
             }
         }
-        self.assertEqual(
-            extract_file_paths_from_hook_input(payload), ["a.ts", "b.ts"]
-        )
+        self.assertEqual(extract_file_paths_from_hook_input(payload), ["a.ts", "b.ts"])
 
     def test_extracts_paths_from_payload_directly_if_no_tool_input(self):
         payload = {"file_path": "direct.ts"}
@@ -45,21 +39,15 @@ class TestHookInputExtraction(StateTestCase, unittest.TestCase):
         self.assertEqual(extract_file_paths_from_hook_input(payload), [])
 
     def test_handles_empty_tool_input(self):
-        self.assertEqual(
-            extract_file_paths_from_hook_input({"tool_input": {}}), []
-        )
+        self.assertEqual(extract_file_paths_from_hook_input({"tool_input": {}}), [])
 
     def test_extracts_path_from_rm_command(self):
         payload = {"tool_input": {"command": 'rm "RULES-GUIDE.md"'}}
-        self.assertEqual(
-            extract_file_paths_from_hook_input(payload), ["RULES-GUIDE.md"]
-        )
+        self.assertEqual(extract_file_paths_from_hook_input(payload), ["RULES-GUIDE.md"])
 
     def test_extracts_all_paths_from_multi_rm(self):
         payload = {"tool_input": {"command": "rm a.ts b.ts c.ts"}}
-        self.assertEqual(
-            extract_file_paths_from_hook_input(payload), ["a.ts", "b.ts", "c.ts"]
-        )
+        self.assertEqual(extract_file_paths_from_hook_input(payload), ["a.ts", "b.ts", "c.ts"])
 
     def test_extracts_path_from_rm_with_flags(self):
         payload = {"tool_input": {"command": "rm -rf /tmp/build"}}
@@ -75,21 +63,15 @@ class TestHookInputExtraction(StateTestCase, unittest.TestCase):
 
     def test_extracts_path_from_echo_redirect(self):
         payload = {"tool_input": {"command": 'echo "hello" > output.txt'}}
-        self.assertEqual(
-            extract_file_paths_from_hook_input(payload), ["output.txt"]
-        )
+        self.assertEqual(extract_file_paths_from_hook_input(payload), ["output.txt"])
 
     def test_extracts_destination_from_cp(self):
         payload = {"tool_input": {"command": "cp src.ts backup.ts"}}
-        self.assertEqual(
-            extract_file_paths_from_hook_input(payload), ["backup.ts"]
-        )
+        self.assertEqual(extract_file_paths_from_hook_input(payload), ["backup.ts"])
 
     def test_extracts_source_and_destination_from_mv(self):
         payload = {"tool_input": {"command": "mv old.ts new.ts"}}
-        self.assertEqual(
-            extract_file_paths_from_hook_input(payload), ["old.ts", "new.ts"]
-        )
+        self.assertEqual(extract_file_paths_from_hook_input(payload), ["old.ts", "new.ts"])
 
     def test_extracts_multi_source_mv_destination_files(self):
         payload = {"tool_input": {"command": "mv old.ts other.ts src/"}}
@@ -109,33 +91,23 @@ class TestHookInputExtraction(StateTestCase, unittest.TestCase):
 
     def test_extracts_source_and_destination_from_move(self):
         payload = {"tool_input": {"command": "move old.ts new.ts"}}
-        self.assertEqual(
-            extract_file_paths_from_hook_input(payload), ["old.ts", "new.ts"]
-        )
+        self.assertEqual(extract_file_paths_from_hook_input(payload), ["old.ts", "new.ts"])
 
     def test_extracts_source_and_destination_from_move_item(self):
         payload = {"tool_input": {"command": "Move-Item old.ts new.ts"}}
-        self.assertEqual(
-            extract_file_paths_from_hook_input(payload), ["old.ts", "new.ts"]
-        )
+        self.assertEqual(extract_file_paths_from_hook_input(payload), ["old.ts", "new.ts"])
 
     def test_extracts_source_and_destination_from_git_mv(self):
         payload = {"tool_input": {"command": "git mv old.ts new.ts"}}
-        self.assertEqual(
-            extract_file_paths_from_hook_input(payload), ["old.ts", "new.ts"]
-        )
+        self.assertEqual(extract_file_paths_from_hook_input(payload), ["old.ts", "new.ts"])
 
     def test_extracts_from_git_mv_with_global_flags(self):
         payload = {"tool_input": {"command": "git -C /some/dir mv old.ts new.ts"}}
-        self.assertEqual(
-            extract_file_paths_from_hook_input(payload), ["old.ts", "new.ts"]
-        )
+        self.assertEqual(extract_file_paths_from_hook_input(payload), ["old.ts", "new.ts"])
 
     def test_extracts_source_and_destination_from_git_mv_with_flags(self):
         payload = {"tool_input": {"command": "git mv --force old.ts new.ts"}}
-        self.assertEqual(
-            extract_file_paths_from_hook_input(payload), ["old.ts", "new.ts"]
-        )
+        self.assertEqual(extract_file_paths_from_hook_input(payload), ["old.ts", "new.ts"])
 
     def test_extracts_multi_source_git_mv_destination_files(self):
         payload = {"tool_input": {"command": "git mv a.ts b.ts src/"}}
@@ -146,27 +118,19 @@ class TestHookInputExtraction(StateTestCase, unittest.TestCase):
 
     def test_extracts_from_ren(self):
         payload = {"tool_input": {"command": "ren old.txt new.txt"}}
-        self.assertEqual(
-            extract_file_paths_from_hook_input(payload), ["old.txt", "new.txt"]
-        )
+        self.assertEqual(extract_file_paths_from_hook_input(payload), ["old.txt", "new.txt"])
 
     def test_extracts_from_rename_item(self):
         payload = {"tool_input": {"command": "Rename-Item -Path old.txt -NewName new.txt"}}
-        self.assertEqual(
-            extract_file_paths_from_hook_input(payload), ["old.txt", "new.txt"]
-        )
+        self.assertEqual(extract_file_paths_from_hook_input(payload), ["old.txt", "new.txt"])
 
     def test_extracts_path_from_touch(self):
         payload = {"tool_input": {"command": "touch deploy.lock"}}
-        self.assertEqual(
-            extract_file_paths_from_hook_input(payload), ["deploy.lock"]
-        )
+        self.assertEqual(extract_file_paths_from_hook_input(payload), ["deploy.lock"])
 
     def test_extracts_path_from_script_key(self):
         payload = {"tool_input": {"script": 'Remove-Item "stale.log"'}}
-        self.assertEqual(
-            extract_file_paths_from_hook_input(payload), ["stale.log"]
-        )
+        self.assertEqual(extract_file_paths_from_hook_input(payload), ["stale.log"])
 
     def test_extracts_from_both_command_and_script(self):
         payload = {
@@ -175,9 +139,7 @@ class TestHookInputExtraction(StateTestCase, unittest.TestCase):
                 "script": 'Remove-Item "b.ts"',
             }
         }
-        self.assertEqual(
-            extract_file_paths_from_hook_input(payload), ["a.ts", "b.ts"]
-        )
+        self.assertEqual(extract_file_paths_from_hook_input(payload), ["a.ts", "b.ts"])
 
     def test_skips_shell_flags_as_paths(self):
         payload = {"tool_input": {"command": "rm -rf -f"}}
@@ -188,16 +150,12 @@ class TestHookInputExtraction(StateTestCase, unittest.TestCase):
         self.assertEqual(extract_file_paths_from_hook_input(payload), [])
 
     def test_ignores_shell_words_inside_quoted_script_text(self):
-        payload = {"tool_input": {"command": 'python -c "print(\'rm fake.ts\')"'}}
+        payload = {"tool_input": {"command": "python -c \"print('rm fake.ts')\""}}
         self.assertEqual(extract_file_paths_from_hook_input(payload), [])
 
     def test_combined_file_path_and_command(self):
-        payload = {
-            "tool_input": {"file_path": "a.ts", "command": 'rm "b.ts"'}
-        }
-        self.assertEqual(
-            extract_file_paths_from_hook_input(payload), ["a.ts", "b.ts"]
-        )
+        payload = {"tool_input": {"file_path": "a.ts", "command": 'rm "b.ts"'}}
+        self.assertEqual(extract_file_paths_from_hook_input(payload), ["a.ts", "b.ts"])
 
     def test_copy_targets_with_exactly_two_args(self):
         payload = {"tool_input": {"command": "cp src.ts dest.ts"}}
@@ -209,10 +167,7 @@ class TestHookInputExtraction(StateTestCase, unittest.TestCase):
             ReviewFileRecord(file="b.ts", hash="bbb"),
         ]
         result = serialize_review_file_entries(entries)
-        self.assertEqual(
-            result,
-            [{"file": "a.ts", "hash": "aaa"}, {"file": "b.ts", "hash": "bbb"}]
-        )
+        self.assertEqual(result, [{"file": "a.ts", "hash": "aaa"}, {"file": "b.ts", "hash": "bbb"}])
 
 
 if __name__ == "__main__":

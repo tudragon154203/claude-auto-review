@@ -45,7 +45,6 @@ _CONTRADICTION_RE = re.compile(
 _PUNCTUATION_CHARS = ".,;:-—"
 
 
-
 def _is_no_findings_line(line: str) -> bool:
     text = line.strip()
     if not text:
@@ -53,21 +52,18 @@ def _is_no_findings_line(line: str) -> bool:
     lowered = text.casefold()
     # Only treat Notes as no-findings when it explicitly states no issues were found
     if lowered.startswith("**note:**") or lowered.startswith("note:"):
-        if "no project rules file found" in lowered or "basic semantic review only" in lowered:
-            return True
-        # Don't treat generic Notes sections as no-findings markers
-        return False
+        return "no project rules file found" in lowered or "basic semantic review only" in lowered
     for prefix in _NO_FINDINGS_PREFIXES:
         if not lowered.startswith(prefix):
             continue
 
         if prefix in _UNQUALIFIED_NO_FINDINGS_PREFIXES:
-            remainder = text[len(prefix):].lstrip()
+            remainder = text[len(prefix) :].lstrip()
             if not remainder:
                 return True
             return not _CONTRADICTION_RE.search(remainder)
 
-        remainder = text[len(prefix):].lstrip()
+        remainder = text[len(prefix) :].lstrip()
         if not remainder:
             return True
 
@@ -80,12 +76,8 @@ def _is_no_findings_line(line: str) -> bool:
         if remainder[0] in _PUNCTUATION_CHARS:
             return True
 
-        if _NO_FINDINGS_VERB_RE.search(remainder):
-            return True
-
-        return False
+        return bool(_NO_FINDINGS_VERB_RE.search(remainder))
     return False
-
 
 
 def has_review_findings(content: str | None) -> bool:
@@ -93,13 +85,13 @@ def has_review_findings(content: str | None) -> bool:
     if not findings:
         return False
     lines = findings.splitlines()
-    if any(_FINDING_HEADING.match(l.strip()) for l in lines if l.strip()):
+    if any(_FINDING_HEADING.match(line.strip()) for line in lines if line.strip()):
         return True
     meaningful_lines = []
     skipping_notes = False
     for line in lines:
         stripped = line.strip()
-        if not stripped or stripped == '```':
+        if not stripped or stripped == "```":
             continue
         if stripped.lower().startswith("**notes:**") or stripped.lower().startswith("notes:"):
             skipping_notes = True

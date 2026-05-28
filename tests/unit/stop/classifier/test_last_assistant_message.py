@@ -2,14 +2,13 @@ import json
 import unittest
 
 from claude_auto_review.config.models import DEFAULT_CLASSIFIER_MODEL, PluginSettings
-from claude_auto_review.stop.classifier.models import (
-    DEFAULT_TIMEOUT_SECONDS,
-)
 from claude_auto_review.stop.classifier.last_assistant_message import (
     classify_last_assistant_message,
 )
+from claude_auto_review.stop.classifier.models import (
+    DEFAULT_TIMEOUT_SECONDS,
+)
 from claude_auto_review.stop.orchestration.context import RuntimeContext
-
 from tests.unit.state.support import StateTestCase
 
 

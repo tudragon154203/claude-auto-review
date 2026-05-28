@@ -1,17 +1,15 @@
 import io
 import json
-import socket
 import unittest
 from urllib import error
 
 from claude_auto_review.config.models import PluginSettings
 from claude_auto_review.state.store.read import load_state
-from claude_auto_review.stop.classifier.models import CLASSIFICATION_EVENT
 from claude_auto_review.stop.classifier.last_assistant_message import (
     classify_last_assistant_message,
 )
+from claude_auto_review.stop.classifier.models import CLASSIFICATION_EVENT
 from claude_auto_review.stop.orchestration.context import RuntimeContext
-
 from tests.unit.state.support import StateTestCase
 
 
@@ -105,7 +103,7 @@ class TestLastAssistantMessageErrors(StateTestCase, unittest.TestCase):
         result = classify_last_assistant_message(
             _make_ctx(self.project_root, {"last_assistant_message": "Message"}, self.settings),
             env=self.env,
-            urlopen=lambda req, timeout: (_ for _ in ()).throw(socket.timeout()),
+            urlopen=lambda req, timeout: (_ for _ in ()).throw(TimeoutError()),
         )
         self.assertEqual(result.status, "error")
         self.assertEqual(result.reason, "http_timeout")

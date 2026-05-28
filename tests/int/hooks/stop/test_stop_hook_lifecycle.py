@@ -30,9 +30,7 @@ class TestStopHookLifecycle(HookTestCase, unittest.TestCase):
             1,
         )
 
-        review_path = sorted(
-            (_cd / "reviews").glob("review-*.md")
-        )[-1]
+        review_path = sorted((_cd / "reviews").glob("review-*.md"))[-1]
         content = review_path.read_text(encoding="utf-8")
         self.assertIn("Clean - no issues found. Claude may stop.", content)
 

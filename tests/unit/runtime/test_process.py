@@ -4,7 +4,6 @@ from unittest.mock import patch
 
 
 class TestProcess(unittest.TestCase):
-
     def test_run_fail_open_logs_handler_failure_before_fallback(self):
         from claude_auto_review.runtime.process import run_fail_open
 
@@ -51,11 +50,13 @@ class TestProcess(unittest.TestCase):
 
     def test_helpers_log_event_oserror_suppression(self):
         from claude_auto_review.runtime.events import log_event
+
         with patch("claude_auto_review.runtime.events.write_jsonl_line", side_effect=OSError("no write")):
             self.assertFalse(log_event(Path("/fake"), "test_event"))
 
     def test_helpers_log_failure_propagates_log_failure(self):
         from claude_auto_review.runtime.events import log_failure
+
         with patch("claude_auto_review.runtime.events.write_jsonl_line", side_effect=OSError("no write")):
             self.assertFalse(log_failure(Path("/fake"), "test_event", ValueError("boom")))
 
@@ -63,9 +64,10 @@ class TestProcess(unittest.TestCase):
         from claude_auto_review.state.models import EditRecord
         from claude_auto_review.state.store.write import append_state_event
 
-        with patch("claude_auto_review.state.store.write.ensure_client_runtime"), patch(
-            "claude_auto_review.state.store.write.write_jsonl_line"
-        ) as mock_append:
+        with (
+            patch("claude_auto_review.state.store.write.ensure_client_runtime"),
+            patch("claude_auto_review.state.store.write.write_jsonl_line") as mock_append,
+        ):
             append_state_event(
                 EditRecord(
                     timestamp="2026-05-05T08:00:00+07:00",
@@ -81,4 +83,3 @@ class TestProcess(unittest.TestCase):
         self.assertTrue(str(path_arg).endswith("state.jsonl"))
         self.assertEqual(entry_arg["type"], "edit")
         self.assertEqual(entry_arg["file"], "src/app.ts")
-

@@ -15,20 +15,21 @@ def _emit_response(payload: ResponsePayload):
 
 
 def _handle_allow(decision: StopDecision):
-    return _emit_response(
-        ResponsePayload(system_message=f"Claude Auto Review: stop approved ({decision.reason})")
-    )
+    return _emit_response(ResponsePayload(system_message=f"Claude Auto Review: stop approved ({decision.reason})"))
 
 
 def _handle_terminal(decision: StopDecision):
-    return decision.details["exit_code"]
+    details = decision.details or {}
+    return details["exit_code"]
 
 
 def _handle_finalize(engine: StopDecisionEngine, decision: StopDecision):
-    return engine.finalize(decision.details["resolution"])
+    details = decision.details or {}
+    return engine.finalize(details["resolution"])
 
 
 def run_stop_flow(project_root, payload, *, client_id=None, settings=None):
+    """Main entry point for the stop hook — evaluates, finalizes, and emits the response."""
     engine = StopDecisionEngine(project_root, payload, client_id=client_id, settings=settings)
     decision = engine.evaluate()
     handlers = {

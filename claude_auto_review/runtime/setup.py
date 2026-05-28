@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 import shutil
 from importlib import resources
 from pathlib import Path
@@ -21,7 +20,11 @@ def _package_resource_path(*parts):
 
 
 def _load_hooks_document(plugin_root=None):
-    hooks_path = _package_resource_path("hooks", "hooks.json") if plugin_root is None else Path(plugin_root) / "hooks" / "hooks.json"
+    hooks_path = (
+        _package_resource_path("hooks", "hooks.json")
+        if plugin_root is None
+        else Path(plugin_root) / "hooks" / "hooks.json"
+    )
     return load_hooks_document(Path(hooks_path))
 
 

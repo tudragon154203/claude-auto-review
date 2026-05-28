@@ -41,5 +41,7 @@ class EndToEndFileDeletionTests(EndToEndTestCase):
             client_id="delete-test",
         )
 
-        stop_result = self.stop(project_root, client_id="delete-test", use_fake_claude=False, env_overrides={"PATH": ""})
+        stop_result = self.stop(
+            project_root, client_id="delete-test", use_fake_claude=False, env_overrides={"PATH": ""}
+        )
         self.assertEqual(stop_result.returncode, 0, "Deleted files should allow stop")

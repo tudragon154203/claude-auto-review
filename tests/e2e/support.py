@@ -49,17 +49,14 @@ class EndToEndTestCase(TempProjectMixin, SubprocessMixin, unittest.TestCase):
         from claude_auto_review.runtime.client_dirs import client_state_path
 
         log_path = client_state_path(project_root, "test-session")
-        return [
-            json.loads(line)
-            for line in log_path.read_text(encoding="utf-8").splitlines()
-            if line.strip()
-        ]
+        return [json.loads(line) for line in log_path.read_text(encoding="utf-8").splitlines() if line.strip()]
 
     def start_classifier_server(self, label="complete", payload=None):
         return start_classifier_server(label, response_payload=payload)
 
     def complete_review(self, project_root, verdict="Clean - no issues found.", client_id="test-session"):
         from claude_auto_review.runtime.client_dirs import client_reviews_dir
+
         review_dir = client_reviews_dir(project_root, client_id)
         review_path = sorted(review_dir.glob("review-*.md"))[-1]
         content = review_path.read_text(encoding="utf-8")

@@ -1,4 +1,5 @@
 """Shared helpers for state record serialization."""
+
 from __future__ import annotations
 
 from typing import Any

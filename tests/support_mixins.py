@@ -6,7 +6,6 @@ import tempfile
 from pathlib import Path
 
 from claude_auto_review.runtime.client_dirs import client_run_dir
-
 from tests.support_paths import REPO_ROOT
 
 
@@ -25,9 +24,9 @@ class SubprocessMixin:
 
     @staticmethod
     def _write_fake_claude_cli(fake_dir, capture_file):
-        fake_script = fake_dir / "claude_fake.py"
-        fake_cmd = fake_dir / "claude.cmd"
+        fake_script = fake_dir / "claude"
         fake_script.write_text(
+            "#!/usr/bin/env python3\n"
             "import json\n"
             "import os\n"
             "from pathlib import Path\n"
@@ -52,17 +51,19 @@ class SubprocessMixin:
             encoding="utf-8",
             newline="\n",
         )
+        fake_cmd = fake_dir / "claude.cmd"
         fake_cmd.write_text(
-            f'@echo off\n"{sys.executable}" "%~dp0claude_fake.py" %*\n',
+            f'@echo off\n"{sys.executable}" "%~dp0claude" %*\n',
             encoding="utf-8",
             newline="\n",
         )
+        fake_script.chmod(0o755)
 
     @staticmethod
     def _write_fake_codex_cli(fake_dir, capture_file, stdin_file):
-        fake_script = fake_dir / "codex_fake.py"
-        fake_cmd = fake_dir / "codex.cmd"
+        fake_script = fake_dir / "codex"
         fake_script.write_text(
+            "#!/usr/bin/env python3\n"
             "import json\n"
             "import os\n"
             "from pathlib import Path\n"
@@ -90,11 +91,13 @@ class SubprocessMixin:
             encoding="utf-8",
             newline="\n",
         )
+        fake_cmd = fake_dir / "codex.cmd"
         fake_cmd.write_text(
-            f'@echo off\n"{sys.executable}" "%~dp0codex_fake.py" %*\n',
+            f'@echo off\n"{sys.executable}" "%~dp0codex" %*\n',
             encoding="utf-8",
             newline="\n",
         )
+        fake_script.chmod(0o755)
 
     def run_python(
         self,

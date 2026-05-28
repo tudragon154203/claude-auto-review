@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+
 def _extract_message_candidate(payload):
     if not isinstance(payload, dict):
         return None
