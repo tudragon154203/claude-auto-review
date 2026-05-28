@@ -1,6 +1,6 @@
 {
   "name": "claude-auto-review",
-  "version": "1.8.12",
+  "version": "1.8.14",
   "description": "Post-edit review loop for Claude Code: automatically reviews changed files before Claude stops.",
   "author": "tudragon154203",
   "license": "MIT",

@@ -18,7 +18,6 @@ repomix-*
 AGENTS.md
 CLAUDE.md
 bash.exe.stackdump
-.ruff_cache
 
 dist/
 .claude/claude-auto-review/
