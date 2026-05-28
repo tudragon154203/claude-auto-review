@@ -15,7 +15,8 @@ def _emit_response(payload: ResponsePayload):
 
 
 def _handle_allow(decision: StopDecision):
-    assert decision.reason is not None
+    if decision.reason is None:
+        raise ValueError("ALLOW decision missing reason")
     return _emit_response(ResponsePayload(system_message=f"Claude Auto Review: stop approved ({decision.reason.value})"))
 
 
