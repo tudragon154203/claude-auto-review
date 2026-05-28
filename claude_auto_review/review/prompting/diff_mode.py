@@ -8,7 +8,6 @@ from claude_auto_review.runtime.client_dirs import client_snapshots_dir
 from claude_auto_review.runtime.process import run_captured
 
 _SNAPSHOT_SUFFIX = ".snap"
-_NO_SNAPSHOT_MESSAGE = "Session snapshot unavailable; review the current file directly."
 
 
 def snapshot_path_for(file_path: str, snapshots_dir: Path) -> Path:

@@ -4,7 +4,7 @@ from collections.abc import Mapping
 from typing import Any
 
 from claude_auto_review.config.constants import DEFAULT_CLASSIFIER_TIMEOUT_SECONDS
-from claude_auto_review.config.reviewer import DEFAULT_REVIEWER_BACKEND
+from claude_auto_review.config.reviewer import DEFAULT_REVIEWER_BACKEND, resolve_reviewer_model
 from claude_auto_review.config.severity import coerce_minimum_blocking_severity
 from claude_auto_review.config.utils.coercion import coerce_bool, coerce_extensions, coerce_float, coerce_int
 from claude_auto_review.config.utils.schema import (
@@ -66,7 +66,7 @@ def plugin_settings_mapping(settings) -> dict[str, Any]:
         SETTING_INCLUDE_EXTS: list(settings.include_extensions),
         SETTING_SKIP_EXTS: list(settings.skip_extensions),
         SETTING_REVIEWER_BACKEND: settings.reviewer_backend,
-        SETTING_REVIEWER_MODEL: settings.reviewer_model,
+        SETTING_REVIEWER_MODEL: resolve_reviewer_model(settings.reviewer_model, backend=settings.reviewer_backend),
         SETTING_REVIEWER_TIMEOUT: settings.reviewer_timeout_seconds,
         SETTING_FEEDBACK_MAX_CHARS: settings.review_feedback_max_chars,
         SETTING_MAX_STOP_PASSES: settings.max_stop_passes,

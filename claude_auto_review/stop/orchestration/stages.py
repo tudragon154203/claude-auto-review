@@ -11,7 +11,7 @@ from claude_auto_review.stop.reviews.enums import StopAllowReason
 @dataclass(frozen=True)
 class StopFlowStageResult:
     kind: StopDecisionKind
-    reason: str | None = None
+    reason: StopAllowReason | None = None
     exit_code: int | None = None
     resolution: StopFlowResolution | None = None
     details: dict | None = None

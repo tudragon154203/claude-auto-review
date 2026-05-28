@@ -10,7 +10,7 @@ class TestCliConfigRouting(unittest.TestCase):
         module.main.return_value = 123
 
         with (
-            patch("importlib.import_module", return_value=module) as mock_import,
+            patch("claude_auto_review.cli.importlib.import_module", return_value=module) as mock_import,
             patch("sys.argv", ["claude-auto-review", "config", "--backend", "codex"]),
         ):
             result = cli.main()

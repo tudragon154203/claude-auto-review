@@ -6,6 +6,7 @@ from typing import Any
 
 from claude_auto_review.config.models import PluginSettings
 from claude_auto_review.stop.orchestration.resolution import StopDecisionKind
+from claude_auto_review.stop.reviews.enums import StopAllowReason
 
 
 @dataclass(frozen=True)
@@ -19,7 +20,7 @@ class RuntimeContext:
 @dataclass(frozen=True)
 class StopDecision:
     kind: StopDecisionKind
-    reason: str | None = None
+    reason: StopAllowReason | None = None
     details: dict[str, Any] | None = None
 
 

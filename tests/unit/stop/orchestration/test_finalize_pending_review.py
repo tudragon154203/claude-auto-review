@@ -101,10 +101,11 @@ class TestFinalizePendingReview(unittest.TestCase):
         mock_record.assert_called_once()
 
     @patch("claude_auto_review.stop.orchestration.finalize.get_entries_covered_by_review", return_value=[])
+    @patch("claude_auto_review.stop.orchestration.finalize.block_pending_review")
     @patch("claude_auto_review.stop.orchestration.finalize.build_review_completion_prompt")
     @patch("claude_auto_review.stop.orchestration.finalize.attempt_stop_autocomplete", return_value=MagicMock(status="cli_not_found"))
     @patch("claude_auto_review.stop.orchestration.finalize.classify_review_artifact_state")
-    def test_autocomplete_returns_2_on_pending(self, mock_classify, mock_auto, mock_prompt, mock_covered):
+    def test_autocomplete_returns_2_on_pending(self, mock_classify, mock_auto, mock_prompt, mock_block_pending, mock_covered):
         mock_classify.side_effect = [MagicMock(status="pending"), MagicMock(status="pending")]
         result = finalize_review_stop(_ctx(), self.resolution)
         self.assertEqual(result, EXIT_REVIEW_FAILED)

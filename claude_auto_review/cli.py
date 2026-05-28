@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import importlib
 import sys
 from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
@@ -64,8 +65,6 @@ def main():
 
     # Remove the subcommand arg so downstream sees clean argv
     sys.argv = [sys.argv[0]] + sys.argv[2:]
-
-    import importlib
 
     mod = importlib.import_module(module_path)
     return mod.main()

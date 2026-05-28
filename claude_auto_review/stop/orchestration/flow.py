@@ -15,7 +15,8 @@ def _emit_response(payload: ResponsePayload):
 
 
 def _handle_allow(decision: StopDecision):
-    return _emit_response(ResponsePayload(system_message=f"Claude Auto Review: stop approved ({decision.reason})"))
+    assert decision.reason is not None
+    return _emit_response(ResponsePayload(system_message=f"Claude Auto Review: stop approved ({decision.reason.value})"))
 
 
 def _handle_terminal(decision: StopDecision):

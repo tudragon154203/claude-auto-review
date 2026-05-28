@@ -40,8 +40,9 @@ class TestFinalizeEdgeCases(unittest.TestCase):
         )
 
     @patch("claude_auto_review.stop.orchestration.finalize.get_entries_covered_by_review", return_value=[])
+    @patch("claude_auto_review.stop.orchestration.finalize.block_pending_review")
     @patch("claude_auto_review.stop.orchestration.finalize.classify_review_artifact_state")
-    def test_missing_review_file_blocks(self, mock_classify, mock_covered):
+    def test_missing_review_file_blocks(self, mock_classify, mock_block_pending, mock_covered):
         mock_classify.side_effect = [MagicMock(status="pending"), MagicMock(status="pending")]
         result = finalize_review_stop(_ctx(), self.resolution)
         self.assertEqual(result, EXIT_REVIEW_FAILED)

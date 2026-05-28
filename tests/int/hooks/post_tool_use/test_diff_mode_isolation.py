@@ -19,6 +19,8 @@ from tests.int.hooks.support import HookTestCase  # noqa: E402
 
 def _git_init_and_commit(project_root, files):
     subprocess.run(["git", "init", "-b", "main"], cwd=project_root, capture_output=True, check=True)
+    subprocess.run(["git", "config", "user.email", "test@example.com"], cwd=project_root, capture_output=True, check=True)
+    subprocess.run(["git", "config", "user.name", "Tester"], cwd=project_root, capture_output=True, check=True)
     for file_path in files:
         subprocess.run(["git", "add", file_path], cwd=project_root, capture_output=True, check=True)
     subprocess.run(["git", "commit", "-m", "baseline", "--allow-empty"], cwd=project_root, capture_output=True, check=True)

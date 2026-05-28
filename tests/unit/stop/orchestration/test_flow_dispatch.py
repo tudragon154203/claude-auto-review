@@ -3,12 +3,13 @@ from types import SimpleNamespace
 from unittest.mock import patch
 
 from claude_auto_review.stop.orchestration.flow import _handle_allow, _handle_finalize, _handle_terminal
+from claude_auto_review.stop.reviews.enums import StopAllowReason
 
 
 class TestFlowDispatch(unittest.TestCase):
     @patch("claude_auto_review.stop.orchestration.flow.approve_response")
     def test_handle_allow_approves_and_returns_zero(self, mock_approve):
-        decision = SimpleNamespace(reason="disabled")
+        decision = SimpleNamespace(reason=StopAllowReason.DISABLED)
         result = _handle_allow(decision)
         self.assertEqual(result, 0)
         mock_approve.assert_called_once_with("Claude Auto Review: stop approved (disabled)")
