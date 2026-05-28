@@ -10,13 +10,12 @@ class TestCliConfigRouting(unittest.TestCase):
         module.main.return_value = 123
 
         with (
-            patch("claude_auto_review.cli.importlib.import_module", return_value=module) as mock_import,
+            patch.dict("sys.modules", {"claude_auto_review.install.config_cli": module}),
             patch("sys.argv", ["claude-auto-review", "config", "--backend", "codex"]),
         ):
             result = cli.main()
 
         self.assertEqual(result, 123)
-        mock_import.assert_called_once_with("claude_auto_review.install.config_cli")
         module.main.assert_called_once_with()
 
     def test_help_lists_config_subcommand(self):
