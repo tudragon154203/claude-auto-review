@@ -32,6 +32,16 @@ def _run_review_cli(cli_path, args, *, cwd, timeout, input_text=None):
     )
 
 
+def _read_text_with_bom_fallback(path: Path) -> str:
+    raw = path.read_bytes()
+    for encoding in ("utf-8-sig", "utf-16", "utf-16-le", "utf-16-be", "utf-8"):
+        try:
+            return raw.decode(encoding).strip()
+        except UnicodeDecodeError:
+            continue
+    return raw.decode("utf-8", errors="replace").strip()
+
+
 def _run_claude_cli(cli_path, prompt_file, user_prompt, cwd, timeout, model):
     args = [
         *_build_claude_review_args(model),
@@ -183,7 +193,7 @@ def _attempt_codex_autocomplete(
 
     file_output = ""
     if output_file is not None and output_file.is_file():
-        file_output = output_file.read_text(encoding="utf-8", errors="replace").strip()
+        file_output = _read_text_with_bom_fallback(output_file)
 
     raw_stdout = cli_result.stdout or ""
     stdout_extracted = _extract_codex_final_message(raw_stdout)
