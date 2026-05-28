@@ -5,9 +5,14 @@ from enum import Enum
 from pathlib import Path
 
 from claude_auto_review.config.models import DEFAULT_MINIMUM_BLOCKING_SEVERITY
-from claude_auto_review.state.reviews.completion import is_completed_review_content, is_review_complete_verdict
-from claude_auto_review.state.reviews.findings import has_blocking_review_findings
+from claude_auto_review.state.reviews.completion import (
+    is_completed_review_content,
+    is_review_clean_verdict,
+    is_review_complete_verdict,
+)
+from claude_auto_review.state.reviews.findings import has_blocking_review_findings, has_review_findings
 from claude_auto_review.state.reviews.normalization import normalize_review_verdict_content
+from claude_auto_review.state.reviews.parsing import parse_review_findings
 from claude_auto_review.state.reviews.review_text import extract_review_verdict_text
 
 
@@ -73,6 +78,14 @@ def classify_review_artifact_state(
     if content is None:
         return ReviewArtifactState(status=ReviewArtifactStatus.PENDING, verdict=verdict)
     if is_review_complete_verdict(verdict):
+        # When the verdict is explicitly clean and no structured findings (### blocks)
+        # were parsed, check has_review_findings as a prose-level safety guard.
+        # With _is_no_findings_line handling "- Confirmed: No X" and "- Skipped: ..."
+        # bullets, this guard returns False for clean summary bullets while still
+        # catching unstructured but real finding prose.
+        if is_review_clean_verdict(verdict) and not parse_review_findings(content):
+            if not has_review_findings(content):
+                return ReviewArtifactState(status=ReviewArtifactStatus.COMPLETE_CLEAN, verdict=verdict)
         if has_blocking_review_findings(content, minimum_blocking_severity):
             return ReviewArtifactState(status=ReviewArtifactStatus.COMPLETE_FINDINGS, verdict=verdict)
         return ReviewArtifactState(status=ReviewArtifactStatus.COMPLETE_CLEAN, verdict=verdict)

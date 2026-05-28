@@ -41,7 +41,7 @@ class StopHookAutocompleteTestCase(EndToEndTestCase):
     def assert_prompt_contains_review_sections(self, prompt_path):
         prompt_text = Path(prompt_path).read_text(encoding="utf-8")
         self.assertIn("# Claude Auto Review Request", prompt_text)
-        self.assertIn("## Current File Snapshots", prompt_text)
+        self.assertIn("## Session Diff", prompt_text)
 
     def assert_state_fully_reviewed(self, project_root):
         state = load_state(project_root, "test-session")
@@ -75,7 +75,7 @@ class StopHookAutocompleteTestCase(EndToEndTestCase):
 
         stdin_text = (run_dir / "codex-cli-stdin.txt").read_text(encoding="utf-8")
         self.assertIn("# Claude Auto Review Request", stdin_text)
-        self.assertIn("## Current File Snapshots", stdin_text)
+        self.assertIn("## Session Diff", stdin_text)
         self.assertIn("Complete the review", stdin_text)
 
         log_content = (client_dir(project_root) / "state.jsonl").read_text(encoding="utf-8")

@@ -246,6 +246,125 @@ class TestHasReviewFindings(unittest.TestCase):
         findings = parse_review_findings(content)
         self.assertIsNone(findings[0].severity)
 
+    def test_parse_review_findings_ignores_non_finding_numbered_bold_lines(self):
+        content = (
+            "## Findings\n"
+            "1. **Notes - not a finding**\n"
+            "- Just prose, no verdict/severity.\n"
+        )
+        findings = parse_review_findings(content)
+        self.assertEqual(findings, [])
+
+    def test_parse_review_findings_ignores_high_level_non_finding(self):
+        content = (
+            "## Findings\n"
+            "1. **High-level architecture overview**\n"
+            "- Just a description, not a finding.\n"
+        )
+        findings = parse_review_findings(content)
+        self.assertEqual(findings, [])
+
+    def test_parse_review_findings_ignores_hyphenated_non_badge_labels(self):
+        content = (
+            "## Findings\n"
+            "### [High-level] Architecture overview\n"
+            "**Verdict:** Confirmed\n"
+        )
+        findings = parse_review_findings(content)
+        self.assertEqual(len(findings), 1)
+        self.assertIsNone(findings[0].severity)
+        self.assertEqual(findings[0].verdict, "Confirmed")
+
+    def test_parse_review_findings_ignores_hyphenated_inline_badges(self):
+        content = (
+            "## Findings\n"
+            "1. **Confirmed - High-level architecture overview**\n"
+            "- Just prose, not a severity-tagged finding.\n"
+        )
+        findings = parse_review_findings(content)
+        self.assertEqual(findings, [])
+
+    def test_parse_review_findings_rejects_duplicate_confirmed_labels(self):
+        content = (
+            "## Findings\n"
+            "1. **Confirmed Confirmed - Medium**\n"
+            "- Duplicate verdict token should not be parsed as a finding.\n"
+        )
+        findings = parse_review_findings(content)
+        self.assertEqual(findings, [])
+
+
+    def test_has_review_findings_bullet_confirmed_no_defects_is_clean(self):
+        """'- Confirmed: No defects found' prose bullet must not trigger findings."""
+        content = (
+            "## Findings\n"
+            "- Confirmed: No semantic, security, or maintainability defects were found.\n\n"
+            "## Verdict\n"
+            "Clean - no issues found. Claude may stop.\n"
+        )
+        self.assertFalse(has_review_findings(content))
+
+    def test_has_review_findings_bullet_skipped_is_clean(self):
+        """'- Skipped: ...' prose bullet must not trigger findings."""
+        content = (
+            "## Findings\n"
+            "- Skipped: `_get_prompt.py` is not present in the snapshot.\n\n"
+            "## Verdict\n"
+            "Clean - no issues found. Claude may stop.\n"
+        )
+        self.assertFalse(has_review_findings(content))
+
+    def test_has_review_findings_mixed_skipped_and_confirmed_no_issues(self):
+        """Mixed skipped + confirmed-no-issues bullets must both be clean."""
+        content = (
+            "## Findings\n"
+            "- Skipped: `_get_prompt.py` is referenced but does not exist in the workspace.\n"
+            "- Confirmed: No semantic, security, or maintainability defects were found.\n\n"
+            "## Verdict\n"
+            "Clean - no issues found. Claude may stop.\n"
+        )
+        self.assertFalse(has_review_findings(content))
+
+    def test_has_review_findings_bullet_confirmed_real_issue_is_finding(self):
+        """'- Confirmed: SQL injection found' must still count as a finding."""
+        content = (
+            "## Findings\n"
+            "- Confirmed: SQL injection found in the auth module.\n\n"
+            "## Verdict\n"
+            "1 issue found.\n"
+        )
+        self.assertTrue(has_review_findings(content))
+
+    def test_has_review_findings_bullet_skipped_real_issue_is_finding(self):
+        """'- Skipped: SQL injection found' with no file-unavailability reason must count as a finding."""
+        content = (
+            "## Findings\n"
+            "- Skipped: SQL injection found in the auth module.\n\n"
+            "## Verdict\n"
+            "1 issue found.\n"
+        )
+        self.assertTrue(has_review_findings(content))
+
+    def test_has_review_findings_bullet_skipped_ambiguous_phrase_without_qualifier_is_finding(self):
+        """'not present' without 'in scope/snapshot/workspace' qualifier must not be treated as clean."""
+        content = (
+            "## Findings\n"
+            "- Skipped: auth check not present in module.\n\n"
+            "## Verdict\n"
+            "1 issue found.\n"
+        )
+        self.assertTrue(has_review_findings(content))
+
+    def test_has_review_findings_bullet_skipped_contradictory_prose_is_finding(self):
+        """'not present in workspace, but SQL injection ...' must count as a finding despite no-content phrase."""
+        content = (
+            "## Findings\n"
+            "- Skipped: file not present in workspace, but SQL injection found in auth.\n\n"
+            "## Verdict\n"
+            "1 issue found.\n"
+        )
+        self.assertTrue(has_review_findings(content))
+
 
 if __name__ == "__main__":
     unittest.main()

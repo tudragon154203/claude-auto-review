@@ -22,50 +22,60 @@ class ReviewGenerationTests(unittest.TestCase):
         entries = [EditRecord(timestamp="2026-05-05T08:00:00+07:00", file="src/app.ts", hash="abc123")]
         rules = "Rule one."
         diff = "-old\n+new"
-        snapshots = "## src/app.ts\n\n```ts\nconst value = 2;\n```"
         review_path = Path("/tmp/review-123.md")
 
-        expected = f"""# Claude Auto Review Request {review_id}
-
-You must review the changed files before stopping. Use the reviewer agent behavior from `agents/reviewer.md`: focus on semantic bugs, security, maintainability, and project rules. Do not nitpick formatting.
-
-## Review Output
-
-Output only the final review markdown to stdout. It will be captured and saved to the review file. Do not emit progress updates, planning notes, or any text before or after the final markdown review. You do not have Write or Edit tools.
-
-Use this exact top matter:
-
-```markdown
-# Review {review_id} - {readable_timestamp}
-
-## Files Reviewed
-- src/app.ts (hash: abc123)
-
-## Findings
-```
-
-If no findings exist, write "Clean - no issues found. Claude may stop." under "## Verdict".
-If you record one or more findings under "## Findings", you MUST NOT use a clean verdict. End with a blocking verdict such as "N issues found. Claude must address all findings before stopping."
-
-## Files To Review
-- src/app.ts (hash: abc123)
-
-## Rules
-Rule one.
-
-## Git Diff
-```diff
--old
-+new
-```
-
-## Current File Snapshots
-{snapshots}
-
-Complete the review in a single response."""
+        reviewer_line = "Backend: claude | Model: "
+        expected = (
+            f"# Claude Auto Review Request {review_id}\n"
+            "\n"
+            "You must review the changed files before stopping. Use the reviewer agent behavior from"
+            " `agents/reviewer.md`: focus on semantic bugs, security, maintainability, and project rules."
+            " Do not nitpick formatting.\n"
+            "\n"
+            "## Review Output\n"
+            "\n"
+            "Output only the final review markdown to stdout. It will be captured and saved to the review"
+            " file. Do not emit progress updates, planning notes, or any text before or after the final"
+            " markdown review. You do not have Write or Edit tools.\n"
+            "\n"
+            "Use this exact top matter:\n"
+            "\n"
+            "```markdown\n"
+            f"# Review {review_id} - {readable_timestamp}\n"
+            "\n"
+            "## Reviewer\n"
+            f"{reviewer_line}\n"
+            "\n"
+            "## Files Reviewed\n"
+            "- src/app.ts (hash: abc123)\n"
+            "\n"
+            "## Findings\n"
+            "```\n"
+            "\n"
+            'If no findings exist, write "Clean - no issues found. Claude may stop." under "## Verdict".\n'
+            'If you record one or more findings under "## Findings", you MUST NOT use a clean verdict.'
+            ' End with a blocking verdict such as "N issues found. Claude must address all findings before stopping."\n'
+            "\n"
+            "## Files To Review\n"
+            "- src/app.ts (hash: abc123)\n"
+            "\n"
+            "## Rules\n"
+            "Rule one.\n"
+            "\n"
+            "## Session Diff\n"
+            "The diff below contains only changes made during this Claude Code session,"
+            " compared against the file state before the first edit.\n"
+            "\n"
+            "```diff\n"
+            "-old\n"
+            "+new\n"
+            "```\n"
+            "\n"
+            "Complete the review in a single response."
+        )
 
         self.assertEqual(
-            build_prompt(review_id, timestamp, entries, rules, diff, snapshots, review_path),
+            build_prompt(review_id, timestamp, entries, rules, diff, review_path),
             expected,
         )
 
@@ -74,26 +84,17 @@ Complete the review in a single response."""
         file_list = "- src/app.ts (hash: abc123)"
         prompt_path = Path("/tmp/review-123-prompt.md")
 
-        expected = f"""# Review rev-123 - {readable_timestamp}
+        result = format_review_file("rev-123", readable_timestamp, file_list, prompt_path)
 
-## Files Reviewed
-{file_list}
-
-## Findings
-
-No findings yet. This file is a placeholder until Claude completes the review.
-
-Pending. Claude must complete this review from {prompt_path}.
-
-## Verdict
-
-Pending.
-"""
-
-        self.assertEqual(
-            format_review_file("rev-123", readable_timestamp, file_list, prompt_path),
-            expected,
-        )
+        # prompt_path str representation is platform-dependent; test key structural parts
+        self.assertIn("# Review rev-123 - 2026-05-05 | 08:00:00 +07:00", result)
+        self.assertIn("## Reviewer\nBackend: claude | Model: ", result)
+        self.assertIn("## Files Reviewed", result)
+        self.assertIn(file_list, result)
+        self.assertIn("No findings yet. This file is a placeholder until Claude completes the review.", result)
+        self.assertIn("Pending. Claude must complete this review from", result)
+        self.assertIn("## Verdict", result)
+        self.assertIn("Pending.", result)
 
     def test_format_review_files_builds_review_body_from_entries(self):
         timestamp = "2026-05-05T08:00:00+07:00"

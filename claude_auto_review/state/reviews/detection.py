@@ -5,6 +5,15 @@ import re
 from claude_auto_review.state.reviews.review_text import extract_review_findings_text
 
 _FINDING_HEADING = re.compile(r"^###\s+(\d+\.|\[)")
+_BULLET_VERDICT_RE = re.compile(r"^[-*]\s*(confirmed|skipped):\s*", re.IGNORECASE)
+_SKIP_NO_CONTENT_RE = re.compile(
+    r"\b(?:"
+    r"does\s+not\s+exist"
+    r"|not\s+(?:found|present|available)\s+in\s+(?:the\s+)?(?:scope|snapshot|workspace)"
+    r"|not\s+in\s+(?:scope|snapshot|workspace)"
+    r")\b",
+    re.IGNORECASE,
+)
 _NO_FINDINGS_PREFIXES = (
     "no semantic issues",
     "no semantic issue",
@@ -53,6 +62,19 @@ def _is_no_findings_line(line: str) -> bool:
     # Only treat Notes as no-findings when it explicitly states no issues were found
     if lowered.startswith("**note:**") or lowered.startswith("note:"):
         return "no project rules file found" in lowered or "basic semantic review only" in lowered
+    # Handle bullet-style "- Confirmed: ..." and "- Skipped: ..." formats.
+    # Skipped items never block; for Confirmed bullets, check the remainder.
+    m = _BULLET_VERDICT_RE.match(text)
+    if m:
+        remainder = text[m.end():].strip()
+        if m.group(1).lower() == "skipped":
+            if not remainder:
+                return True
+            no_content_match = _SKIP_NO_CONTENT_RE.search(remainder)
+            if not no_content_match:
+                return False
+            return not bool(_CONTRADICTION_RE.search(remainder, no_content_match.end()))
+        return bool(remainder) and _is_no_findings_line(remainder)
     for prefix in _NO_FINDINGS_PREFIXES:
         if not lowered.startswith(prefix):
             continue

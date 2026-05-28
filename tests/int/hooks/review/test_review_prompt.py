@@ -63,7 +63,7 @@ class TestReviewPrompt(HookTestCase, unittest.TestCase):
         self.assertIn("-export const value = 1;", prompt)
         self.assertIn("+export const value = 2;", prompt)
 
-    def test_includes_snapshots_for_untracked_files_when_git_diff_is_empty(self):
+    def test_includes_session_diff_for_untracked_files_when_git_diff_is_empty(self):
         project_root = self.temp_project()
         (project_root / "src" / "new.ts").write_text("export const created = true;\n", encoding="utf-8")
         subprocess.run(["git", "init"], cwd=project_root, check=True, capture_output=True, text=True)
@@ -71,7 +71,8 @@ class TestReviewPrompt(HookTestCase, unittest.TestCase):
         review = self.run_python("claude_auto_review/review/prompt.py", project_root)
         self.assertEqual(review.returncode, 0)
         prompt = next((client_dir(project_root) / "run").glob("*prompt.md")).read_text(encoding="utf-8")
-        self.assertIn("## Current File Snapshots", prompt)
+        self.assertIn("## Session Diff", prompt)
+        self.assertIn("## src/new.ts", prompt)
         self.assertIn("export const created = true;", prompt)
 
     def test_review_prompt_includes_custom_project_rules(self):

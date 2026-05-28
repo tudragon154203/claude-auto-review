@@ -28,9 +28,10 @@ class TestPromptTemplates(unittest.TestCase):
         self.assertIn("## Files To Review", result)
         self.assertIn("## Rules", result)
         self.assertIn("Rule one.\nRule two.", result)
-        self.assertIn("## Git Diff", result)
+        self.assertIn("## Session Diff", result)
+        self.assertIn("The diff below contains only changes made during this Claude Code session", result)
         self.assertIn("```diff\n-old\n+new\n```", result)
-        self.assertIn("## Current File Snapshots", result)
+        self.assertNotIn("## Current File Snapshots", result)
         self.assertIn("Output only the final review markdown to stdout.", result)
         self.assertIn(
             "Do not emit progress updates, planning notes, or any text before or after the final markdown review.",

@@ -43,7 +43,7 @@ def format_review_files(entries, prompt_path, review_id, timestamp, reviewer_bac
 
 
 def build_prompt(
-    review_id, timestamp, entries, rules, diff, snapshots, review_path, reviewer_backend="claude", reviewer_model=""
+    review_id, timestamp, entries, rules, diff, review_path, reviewer_backend="claude", reviewer_model="", snapshots=""
 ):
     return _build_prompt(
         review_id,

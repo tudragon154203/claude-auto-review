@@ -119,3 +119,9 @@ def client_reviews_dir(project_root: Path, client_id: str) -> Path:
 
 def client_run_dir(project_root: Path, client_id: str) -> Path:
     return get_client_runtime_dir(project_root, client_id) / "run"
+
+
+def client_snapshots_dir(project_root: Path, client_id: str) -> Path:
+    path = get_client_runtime_dir(project_root, client_id) / "snapshots"
+    path.mkdir(parents=True, exist_ok=True)
+    return path

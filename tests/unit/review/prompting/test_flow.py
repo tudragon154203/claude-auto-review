@@ -64,8 +64,8 @@ class TestReviewPromptFlow(unittest.TestCase):
         review_content = artifacts.review_path.read_text(encoding="utf-8")
 
         self.assertIn("Project rules.", prompt_content)
-        self.assertIn("Git diff unavailable. Review the current file contents directly.", prompt_content)
-        self.assertIn("## Current File Snapshots", prompt_content)
-        self.assertIn("const value = 1;", prompt_content)
+        self.assertIn("## Session Diff", prompt_content)
+        self.assertIn("Session snapshot unavailable; review the current file directly.", prompt_content)
+        self.assertNotIn("## Current File Snapshots", prompt_content)
         self.assertIn("No findings yet. This file is a placeholder until Claude completes the review.", review_content)
         self.assertIn("Pending. Claude must complete this review from", review_content)

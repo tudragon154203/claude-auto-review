@@ -66,8 +66,10 @@ What it does:
 1. Reads the hook payload and extracts file paths associated with the tool call.
 2. Normalizes each candidate path relative to the project root.
 3. Skips files excluded by plugin settings or files under the plugin's own runtime tree.
-4. Looks up the current file hash.
-5. Appends an edit event to the client's `state.jsonl`.
+4. Captures a one-time session snapshot via `git show :<file>` before the first edit (v1.9.0 session-scoped diff). If the snapshot already exists, it is never overwritten.
+5. The integration test `tests/int/hooks/post_tool_use/test_diff_mode_isolation.py` exercises this by creating separate clients that edit the same file and verifying each client gets its own baseline.
+6. Looks up the current file hash.
+7. Appends an edit event to the client's `state.jsonl`.
 
 Behavior details:
 

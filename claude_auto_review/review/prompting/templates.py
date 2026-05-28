@@ -31,13 +31,12 @@ If you record one or more findings under "## Findings", you MUST NOT use a clean
 ## Rules
 {rules}
 
-## Git Diff
+## Session Diff
+The diff below contains only changes made during this Claude Code session, compared against the file state before the first edit.
+
 ```diff
 {diff}
 ```
-
-## Current File Snapshots
-{snapshots}
 
 Complete the review in a single response."""
 

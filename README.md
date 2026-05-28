@@ -146,15 +146,14 @@ flowchart TD
 
 ### 4. Review Prompt Generation
 
-When a new review is needed, the plugin assembles context from rules, git diffs, and current file snapshots into a prompt for the reviewer backend:
+When a new review is needed, the plugin assembles context from rules and session-scoped diffs into a prompt for the reviewer backend:
 
 ```mermaid
 flowchart LR
     subgraph inputs["① Review Inputs"]
         direction TB
         RULES["Review rules"]
-        DIFF["Git diff"]
-        SNAPSHOTS["File snapshots"]
+        SNAPSHOTS["Session-scoped diff<br/>(captured before first edit)"]
         FILES["Unreviewed files"]
     end
 
@@ -174,7 +173,6 @@ flowchart LR
 
     FILES --> TIMESTAMP
     RULES --> BUILD
-    DIFF --> BUILD
     SNAPSHOTS --> BUILD
     TIMESTAMP --> BUILD
     BUILD --> WRITE_PROMPT
