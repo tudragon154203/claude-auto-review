@@ -1,8 +1,11 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+# ── stdlib ────────────────────────────────────────────────────────────────────
 import argparse
 import json
+import os
+import shutil
 import sys
 from pathlib import Path
 
@@ -11,11 +14,9 @@ if __name__ == "__main__":
     if str(_plugin_root) not in sys.path:
         sys.path.insert(0, str(_plugin_root))
 
+# ── project imports ───────────────────────────────────────────────────────────
 from claude_auto_review.config.io import _load_settings_document, _settings_path, load_settings
-from claude_auto_review.config.models import (
-    DEFAULT_REVIEWER_MODELS,
-    PluginSettings,
-)
+from claude_auto_review.config.models import DEFAULT_REVIEWER_MODELS, PluginSettings
 from claude_auto_review.config.utils.schema import (
     KNOWN_SETTING_KEYS,
     SETTING_MAX_STOP_PASSES,
@@ -28,6 +29,15 @@ from claude_auto_review.paths.path_utils import get_project_root
 from claude_auto_review.runtime.events import log_event
 from claude_auto_review.runtime.setup import ensure_runtime
 
+# ── constants ─────────────────────────────────────────────────────────────────
+
+SEVERITY_CHOICES = ["info", "low", "medium", "high", "critical"]
+
+_BACKEND_INSTALL_HINTS = {
+    "claude": "npm install -g @anthropic-ai/claude-code",
+    "codex": "npm install -g @openai/codex",
+}
+
 ADVANCED_SETTING_KEYS = tuple(
     sorted(
         KNOWN_SETTING_KEYS
@@ -39,8 +49,6 @@ ADVANCED_SETTING_KEYS = tuple(
         }
     )
 )
-
-SEVERITY_CHOICES = ["info", "low", "medium", "high", "critical"]
 
 SETTING_DESCRIPTIONS = {
     "enabled": "Enable or disable the plugin",
@@ -61,6 +69,8 @@ SETTING_DESCRIPTIONS = {
     "debug": "Include extra debug context in prompts and logs",
 }
 
+# ── argument parser ───────────────────────────────────────────────────────────
+
 
 def _build_parser():
     parser = argparse.ArgumentParser(
@@ -69,11 +79,7 @@ def _build_parser():
     )
     parser.add_argument("--backend", choices=sorted(DEFAULT_REVIEWER_MODELS), help="Set reviewer backend")
     parser.add_argument("--model", help="Set reviewer model")
-    parser.add_argument(
-        "--severity",
-        choices=SEVERITY_CHOICES,
-        help="Set minimum blocking severity",
-    )
+    parser.add_argument("--severity", choices=SEVERITY_CHOICES, help="Set minimum blocking severity")
     parser.add_argument("--max-stop-passes", type=int, help="Set maxStopPasses")
     parser.add_argument(
         "--non-interactive",
@@ -82,16 +88,20 @@ def _build_parser():
     )
     return parser
 
+# ── initialization checks ─────────────────────────────────────────────────────
+
 
 def _is_initialized(project_root: Path) -> bool:
     settings_path = _settings_path(project_root)
     data = _load_settings_document(settings_path)
     plugin_settings = data.get("claude-auto-review")
     runtime_dir = project_root / ".claude" / "claude-auto-review"
-    hooks = data.get("hooks")
     rules_path = runtime_dir / "review-rules.md"
     return (
-        isinstance(plugin_settings, dict) and isinstance(hooks, dict) and runtime_dir.exists() and rules_path.exists()
+        isinstance(plugin_settings, dict)
+        and isinstance(data.get("hooks"), dict)
+        and runtime_dir.exists()
+        and rules_path.exists()
     )
 
 
@@ -99,22 +109,14 @@ def _ensure_initialized(project_root: Path):
     previous_cwd = Path.cwd()
     try:
         if previous_cwd != project_root:
-            import os
-
             os.chdir(project_root)
         setup_main()
     finally:
         if Path.cwd() != previous_cwd:
-            import os
-
             os.chdir(previous_cwd)
     return ensure_runtime(project_root)
 
-
-def _normalize_max_stop_passes(value: int) -> int:
-    if value < 0:
-        raise ValueError("maxStopPasses must be 0 or greater")
-    return value
+# ── interactive prompts ───────────────────────────────────────────────────────
 
 
 def _prompt_choice(prompt: str, options: list[str], default: str) -> str:
@@ -148,6 +150,14 @@ def _prompt_int(prompt: str, default: int) -> int:
             continue
         return value
 
+# ── settings manipulation ─────────────────────────────────────────────────────
+
+
+def _normalize_max_stop_passes(value: int) -> int:
+    if value < 0:
+        raise ValueError("maxStopPasses must be 0 or greater")
+    return value
+
 
 def _apply_args(settings: PluginSettings, args) -> PluginSettings:
     updated = settings.to_mapping()
@@ -174,29 +184,15 @@ def _apply_args(settings: PluginSettings, args) -> PluginSettings:
 def _run_wizard(settings: PluginSettings) -> PluginSettings:
     print("Claude Auto Review setup wizard")
     backend_default = settings.resolved_reviewer_backend()
-    backend = _prompt_choice(
-        "Reviewer backend",
-        sorted(DEFAULT_REVIEWER_MODELS),
-        backend_default,
-    )
-    normalized_settings = PluginSettings.from_mapping(
-        {
-            **settings.to_mapping(),
-            SETTING_REVIEWER_BACKEND: backend,
-            SETTING_REVIEWER_MODEL: settings.reviewer_model,
-        }
-    )
-    normalized_settings = _apply_args(
-        normalized_settings,
+    backend = _prompt_choice("Reviewer backend", sorted(DEFAULT_REVIEWER_MODELS), backend_default)
+    _check_backend_cli(backend)
+    # Normalise model default for the chosen backend before prompting
+    normalized = _apply_args(
+        PluginSettings.from_mapping({**settings.to_mapping(), SETTING_REVIEWER_BACKEND: backend}),
         argparse.Namespace(backend=backend, model=None, severity=None, max_stop_passes=None, non_interactive=False),
     )
-    model_default = normalized_settings.resolved_reviewer_model(backend=backend)
-    model = _prompt_text("Reviewer model", model_default)
-    severity = _prompt_choice(
-        "Minimum blocking severity",
-        SEVERITY_CHOICES,
-        settings.minimum_blocking_severity,
-    )
+    model = _prompt_text("Reviewer model", normalized.resolved_reviewer_model(backend=backend))
+    severity = _prompt_choice("Minimum blocking severity", SEVERITY_CHOICES, settings.minimum_blocking_severity)
     max_stop_passes = _prompt_int("Max stop passes before circuit breaker", settings.max_stop_passes)
     return PluginSettings.from_mapping(
         {
@@ -208,16 +204,10 @@ def _run_wizard(settings: PluginSettings) -> PluginSettings:
         }
     )
 
-
-def _print_advanced_settings(settings_path: Path):
-    print("- Other available settings in `.claude/settings.json` under `claude-auto-review`:")
-    for key in ADVANCED_SETTING_KEYS:
-        description = SETTING_DESCRIPTIONS.get(key, "Advanced setting")
-        print(f"  - {key}: {description}")
-    print(f"- Full config location: {settings_path}")
+# ── settings file I/O ─────────────────────────────────────────────────────────
 
 
-def _write_plugin_settings(project_root: Path, settings: PluginSettings):
+def _write_plugin_settings(project_root: Path, settings: PluginSettings) -> Path:
     settings_path = _settings_path(project_root)
     document = _load_settings_document(settings_path)
     document["claude-auto-review"] = settings.to_mapping()
@@ -225,8 +215,27 @@ def _write_plugin_settings(project_root: Path, settings: PluginSettings):
     settings_path.write_text(json.dumps(document, indent=2) + "\n", encoding="utf-8", newline="\n")
     return settings_path
 
+# ── output / printing ─────────────────────────────────────────────────────────
 
-def _print_summary(project_root: Path, initialized_before: bool, settings_path: Path, settings: PluginSettings):
+
+def _check_backend_cli(backend: str) -> None:
+    found = shutil.which(backend)
+    if found:
+        print(f"  [OK] {backend} CLI found: {found}")
+        return
+    hint = _BACKEND_INSTALL_HINTS.get(backend, f"install the {backend} CLI")
+    print(f"  [WARN] {backend} CLI not found on PATH.")
+    print(f"    Install with: {hint}")
+
+
+def _print_advanced_settings(settings_path: Path) -> None:
+    print("- Other available settings in `.claude/settings.json` under `claude-auto-review`:")
+    for key in ADVANCED_SETTING_KEYS:
+        print(f"  - {key}: {SETTING_DESCRIPTIONS.get(key, 'Advanced setting')}")
+    print(f"- Full config location: {settings_path}")
+
+
+def _print_summary(project_root: Path, initialized_before: bool, settings_path: Path, settings: PluginSettings) -> None:
     runtime_dir = project_root / ".claude" / "claude-auto-review"
     print()
     print("Configuration saved.")
@@ -234,9 +243,14 @@ def _print_summary(project_root: Path, initialized_before: bool, settings_path: 
     print(f"- Settings file: {settings_path}")
     print(f"- Runtime directory: {runtime_dir}")
     print(
-        f"- Important settings updated: reviewerBackend={settings.reviewer_backend}, reviewerModel={settings.resolved_reviewer_model()}, minimumBlockingSeverity={settings.minimum_blocking_severity}, maxStopPasses={settings.max_stop_passes}"
+        f"- Important settings updated: reviewerBackend={settings.reviewer_backend}, "
+        f"reviewerModel={settings.resolved_reviewer_model()}, "
+        f"minimumBlockingSeverity={settings.minimum_blocking_severity}, "
+        f"maxStopPasses={settings.max_stop_passes}"
     )
     _print_advanced_settings(settings_path)
+
+# ── entry point ───────────────────────────────────────────────────────────────
 
 
 def main(argv=None):
@@ -255,6 +269,8 @@ def main(argv=None):
 
     current_settings = load_settings(project_root)
     updated_settings = _apply_args(current_settings, args)
+    if args.non_interactive and args.backend:
+        _check_backend_cli(args.backend)
     if not args.non_interactive:
         updated_settings = _run_wizard(updated_settings)
 
