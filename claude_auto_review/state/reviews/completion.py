@@ -13,6 +13,7 @@ _COMPLETE_VERDICT = re.compile(
     r"clean\b"
     r"|confirmed\s*(?:\(\s*clean\s*\))?"
     r"|not\s+clean\b"
+    r"|blocking\b"
     r"|\d+\s+issues?\b"
     r"|all\s+(?:(?:fixes|issues?)\s+)?(?:applied|addressed)\b"
     r"|findings?\s+present\b"
