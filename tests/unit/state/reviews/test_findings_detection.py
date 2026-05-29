@@ -231,15 +231,15 @@ class TestHasReviewFindings(unittest.TestCase):
         )
         self.assertTrue(has_review_findings(content))
 
-    def test_bullet_skipped_ambiguous_phrase_without_qualifier_is_finding(self):
-        """'not present' without 'in scope/snapshot/workspace' qualifier must not be treated as clean."""
+    def test_bullet_skipped_ambiguous_phrase_without_qualifier_is_clean(self):
+        """'- Skipped:' bullets are always clean — skipped findings never block."""
         content = (
             "## Findings\n"
             "- Skipped: auth check not present in module.\n\n"
             "## Verdict\n"
             "1 issue found.\n"
         )
-        self.assertTrue(has_review_findings(content))
+        self.assertFalse(has_review_findings(content))
 
     def test_bullet_skipped_contradictory_prose_is_finding(self):
         """'not present in workspace, but SQL injection ...' must count as a finding despite no-content phrase."""

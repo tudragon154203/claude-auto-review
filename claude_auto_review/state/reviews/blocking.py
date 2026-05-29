@@ -3,7 +3,7 @@ from __future__ import annotations
 from claude_auto_review.config.models import (
     DEFAULT_MINIMUM_BLOCKING_SEVERITY,
 )
-from claude_auto_review.state.reviews.detection import has_review_findings
+from claude_auto_review.state.reviews.detection import _is_no_findings_line, has_review_findings
 from claude_auto_review.state.reviews.parsing import _UNRECOGNIZED_SEVERITY, parse_review_findings
 
 _SEVERITY_RANKS = {
@@ -39,6 +39,8 @@ def has_blocking_review_findings(
         if not verdict.startswith("confirmed"):
             return True
         if finding.severity is None:
+            if _is_no_findings_line(finding.raw_text):
+                continue
             return True
         severity_rank = _severity_rank(finding.severity)
         if threshold is None or severity_rank is None or severity_rank >= threshold:

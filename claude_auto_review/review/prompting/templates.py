@@ -8,7 +8,7 @@ You must review the changed files before stopping. Use the reviewer agent behavi
 
 Output only the final review markdown to stdout. It will be captured and saved to the review file. Do not emit progress updates, planning notes, or any text before or after the final markdown review. You do not have Write or Edit tools.
 
-Use this exact top matter:
+Use this exact structure:
 
 ```markdown
 # Review {review_id} - {readable_timestamp}
@@ -20,12 +20,27 @@ Backend: {reviewer_backend} | Model: {reviewer_model}
 {file_list}
 
 ## Findings
+- Confirmed: <title>
+  Severity: info|low|medium|high|critical
+  Location: path:line
+  Rationale: <why this matters>
+  Suggestion: <concrete fix>
+- Skipped: <title>
+  Reason: <why this item cannot be reviewed>
+
+## Verdict
+Clean - no issues found. Claude may stop.
 ```
 
-Write each finding as a numbered bullet in this shape when possible: `1. **Confirmed - Medium** ...` or `1. **Skipped - Medium** ...`.
-If the issue has no clear severity, use `Confirmed - Info`.
-If no findings exist, write "Clean - no issues found. Claude may stop." under "## Verdict".
-If you record one or more findings under "## Findings", you MUST NOT use a clean verdict. End with a blocking verdict such as "N issues found. Claude must address all findings before stopping."
+Rules for `## Findings`:
+- Use only top-level `- Confirmed:` or `- Skipped:` entries for findings.
+- Put details on indented `Field: value` lines under that bullet.
+- If there are no findings, write exactly `None.` under `## Findings`.
+- Do not write notes, commentary, or summaries inside `## Findings`.
+
+Rules for `## Verdict`:
+- If `## Findings` is `None.`, write exactly `Clean - no issues found. Claude may stop.`
+- Otherwise write exactly `Findings present. Claude must address all findings before stopping.`
 
 ## Files To Review
 {file_list}

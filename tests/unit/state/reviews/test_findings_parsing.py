@@ -132,6 +132,7 @@ class TestParseReviewFindings(unittest.TestCase):
     def test_severity_field_with_valid_level_starts_block(self):
         content = (
             "## Findings\n"
+            "### 1. Issue\n"
             "**Severity:** High\n"
             "**Location:** core.py:10\n"
             "**Verdict:** Confirmed\n\n"

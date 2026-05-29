@@ -8,19 +8,18 @@ from claude_auto_review.state.reviews.review_text import extract_review_findings
 
 _UNRECOGNIZED_SEVERITY = "<unrecognized>"
 
-_FINDING_HEADING = re.compile(r"^###\s+(\d+\.|\[)")
-_FINDING_INLINE_SEVERITY_RE = re.compile(
+_FINDING_BULLET_RE = re.compile(r"^[-*]\s*(Confirmed|Skipped):\s*(.*)$", re.IGNORECASE)
+_LEGACY_FINDING_START_RE = re.compile(r"^###\s+|^\d+[.)]?\s*\*{1,2}\s*(?:Confirmed|Skipped)\s*-\s*", re.IGNORECASE)
+
+_LEGACY_INLINE_SEVERITY_RE = re.compile(
     r"^\d+[.)]?\s*\*{1,2}\s*(Confirmed|Skipped)\s*-\s*(Info|Low|Medium|High|Critical)(?:\*\*|[:\s]|$)",
-    re.IGNORECASE,
-)
-_FINDING_INLINE_NO_SEV_RE = re.compile(
-    r"^\d+[.)]?\s*\*{1,2}\s*(Confirmed|Skipped)\s*-\s+",
     re.IGNORECASE,
 )
 _FINDING_FIELD_RE = re.compile(
     r"^\s*(?:[-*]\s*)?\*{0,2}(Severity|Verdict):\*{0,2}\s*(.+?)\s*$",
     re.IGNORECASE | re.MULTILINE,
 )
+_CANONICAL_FIELD_RE = re.compile(r"^\s+(Severity|Verdict|Reason|Rule|Location|Rationale|Suggestion):\s*(.+?)\s*$", re.IGNORECASE)
 
 
 @dataclass(frozen=True)
@@ -37,51 +36,33 @@ def _normalize_severity(value: str | None) -> str | None:
     return severity if severity in MINIMUM_BLOCKING_SEVERITIES else None
 
 
-def _extract_heading_severity(line: str) -> tuple[str | None, str | None]:
-    """Extract (severity, verdict) from a finding heading line.
-
-    Handles three formats:
-      ### 1. [Confirmed - Critical] ...     # explicit field in brackets
-      ### 1. Critical - ...                # bare severity token
-      1. **Confirmed - Critical** ...      # inline badge (codex/reviewer format)
-    Returns (severity, verdict) so verdict can be inferred from the heading.
-    """
+def _legacy_heading_severity(line: str) -> tuple[str | None, str | None]:
     text = line.strip()
-    # Inline badge: "1. **Confirmed - Critical**" or "1. **Confirmed - Critical - description**"
-    inline_match = _FINDING_INLINE_SEVERITY_RE.match(text)
+    inline_match = _LEGACY_INLINE_SEVERITY_RE.match(text)
     if inline_match:
-        verdict_raw = inline_match.group(1).strip().lower()
-        severity_raw = inline_match.group(2).strip()
-        severity = _normalize_severity(severity_raw)
-        verdict = verdict_raw if verdict_raw in {"confirmed", "skipped"} else None
-        return severity, verdict
+        return _normalize_severity(inline_match.group(2)), inline_match.group(1).lower()
     if not text.startswith("###"):
         return None, None
-    text = text[3:].strip()
-    text = re.sub(r"^\d+[.)]?\s*", "", text)
-    match = re.match(r"^\[(?P<label>[^\]]+)\]", text)
-    if match:
-        label = match.group("label")
+    text = re.sub(r"^###\s+(?:\d+[.)]?\s*)?", "", text)
+    bracket_match = re.match(r"^\[(?P<label>[^\]]+)\]", text)
+    if bracket_match:
+        label = bracket_match.group("label")
         if "-" in label:
             verdict_raw, severity_raw = [part.strip() for part in label.split("-", 1)]
             severity = _normalize_severity(severity_raw)
             verdict = verdict_raw.lower()
             if severity is not None and verdict in {"confirmed", "skipped"}:
                 return severity, verdict
-        normalized = _normalize_severity(label.strip())
-        if normalized is not None:
-            return normalized, None
-        # Single-word bracket labels that aren't recognized severities
-        # were likely intended as severity → sentinel. Multi-word or
-        # hyphenated labels are prose headings, not severity attempts.
+        severity = _normalize_severity(label)
+        if severity is not None:
+            return severity, None
         if " " not in label.strip() and "-" not in label.strip():
             return _UNRECOGNIZED_SEVERITY, None
-        return None, None
-    first_token = text.split(None, 1)[0] if text else ""
-    first_sev = _normalize_severity(first_token.strip("[]:-")) if first_token else None
-    if first_sev is not None:
-        return first_sev, None
     return None, None
+
+
+def _extract_heading_severity(line: str) -> tuple[str | None, str | None]:
+    return _legacy_heading_severity(line)
 
 
 def _parse_finding_block(block: str) -> ReviewFinding:
@@ -89,20 +70,52 @@ def _parse_finding_block(block: str) -> ReviewFinding:
     verdict = None
     lines = [line.rstrip() for line in block.splitlines() if line.strip()]
     if lines:
-        heading_severity, heading_verdict = _extract_heading_severity(lines[0])
-        if heading_severity is not None:
-            severity = heading_severity
-        if heading_verdict is not None:
-            verdict = heading_verdict
-    field_matches = _FINDING_FIELD_RE.findall(block)
-    for field_name, field_value in field_matches:
+        bullet_match = _FINDING_BULLET_RE.match(lines[0].strip())
+        if bullet_match:
+            verdict = bullet_match.group(1).lower()
+        else:
+            severity, verdict = _legacy_heading_severity(lines[0])
+
+    for line in lines[1:] if verdict in {"confirmed", "skipped"} else lines:
+        canonical_match = _CANONICAL_FIELD_RE.match(line)
+        if not canonical_match:
+            continue
+        field_name = canonical_match.group(1).lower()
+        field_value = canonical_match.group(2)
+        if field_name == "severity" and severity in (None, _UNRECOGNIZED_SEVERITY):
+            normalized = _normalize_severity(field_value)
+            severity = normalized if normalized is not None else severity or _UNRECOGNIZED_SEVERITY
+        elif field_name == "verdict":
+            verdict = field_value.strip()
+
+    for field_name, field_value in _FINDING_FIELD_RE.findall(block):
         normalized_field = field_name.lower()
         if normalized_field == "severity" and severity in (None, _UNRECOGNIZED_SEVERITY):
-            normalized = _normalize_severity(field_value)
-            severity = normalized if normalized is not None else _UNRECOGNIZED_SEVERITY
-        elif normalized_field == "verdict":
+            severity = _normalize_severity(field_value) or _UNRECOGNIZED_SEVERITY
+        elif normalized_field == "verdict" and verdict is None:
             verdict = field_value.strip()
     return ReviewFinding(severity=severity, verdict=verdict, raw_text=block)
+
+
+def _split_finding_blocks(findings_text: str) -> list[str]:
+    blocks: list[str] = []
+    current: list[str] | None = None
+    for line in findings_text.splitlines():
+        stripped = line.strip()
+        is_start = bool(_FINDING_BULLET_RE.match(stripped) or _LEGACY_FINDING_START_RE.match(stripped))
+        if is_start:
+            if current is not None:
+                block = "\n".join(current).strip()
+                if block:
+                    blocks.append(block)
+            current = [line]
+        elif current is not None:
+            current.append(line)
+    if current is not None:
+        block = "\n".join(current).strip()
+        if block:
+            blocks.append(block)
+    return blocks
 
 
 def parse_review_findings(content: str | None) -> list[ReviewFinding]:
@@ -110,39 +123,14 @@ def parse_review_findings(content: str | None) -> list[ReviewFinding]:
     if not findings_text:
         return []
 
-    blocks: list[str] = []
-    current: list[str] | None = None
-    for line in findings_text.splitlines():
-        stripped = line.strip()
-        is_start = stripped.startswith("###") or _FINDING_INLINE_SEVERITY_RE.match(stripped) or _FINDING_INLINE_NO_SEV_RE.match(stripped)
-        if current is None and _FINDING_FIELD_RE.match(stripped):
-            lower = stripped.lower()
-            if lower.startswith(("severity:", "**severity:", "- severity:", "- **severity:")):
-                field_match = _FINDING_FIELD_RE.match(stripped)
-                if field_match and _normalize_severity(field_match.group(2)) is not None:
-                    is_start = True
-        if is_start:
-            if current is not None:
-                block = "\n".join(current).strip()
-                if block:
-                    blocks.append(block)
-            current = [line]
-            continue
-        if current is not None:
-            current.append(line)
-
-    if current is not None:
-        block = "\n".join(current).strip()
-        if block:
-            blocks.append(block)
-
     results = []
-    for block in blocks:
+    for block in _split_finding_blocks(findings_text):
         finding = _parse_finding_block(block)
         first_line = block.splitlines()[0].strip() if block else ""
-        no_sev_match = _FINDING_INLINE_NO_SEV_RE.match(first_line)
-        if no_sev_match and not _FINDING_INLINE_SEVERITY_RE.match(first_line):
-            if finding.verdict is None and not _FINDING_FIELD_RE.search(block):
-                continue
+        has_fields = bool(_FINDING_FIELD_RE.search(block) or _CANONICAL_FIELD_RE.search(block))
+        if first_line.startswith("###") and finding.severity is None and finding.verdict is None and not has_fields:
+            continue
+        if finding.verdict is None and finding.severity is None:
+            continue
         results.append(finding)
     return results

@@ -28,23 +28,39 @@ The review file at the `review_path` must follow this exact structure so the sto
 - path/to/file.py (hash: abc123)
 
 ## Findings
-
-### Finding 1: {brief title}
-- **Severity:** CRITICAL | HIGH | MEDIUM | LOW
-- **Rule:** Which rule from the rules file was violated
-- **Location:** file.py:42
-- **Rationale:** Why this matters — concrete impact
-- **Suggestion:** Specific fix in code
-- **Verdict:** Confirmed | Skipped
+- Confirmed: {brief title}
+  Severity: info | low | medium | high | critical
+  Rule: Which rule from the rules file was violated
+  Location: file.py:42
+  Rationale: Why this matters — concrete impact
+  Suggestion: Specific fix in code
+- Skipped: {brief title}
+  Reason: Why this item could not be reviewed
 
 ## Verdict
-
 Clean - no issues found. Claude may stop.
 ```
 
-Each finding MUST have a Verdict set to one of: `Confirmed` or `Skipped`. The stop hook treats a review as complete only when all findings have non-Pending verdicts and the Verdict section is not `Pending`.
+Rules:
+- Each finding MUST start with either `- Confirmed:` or `- Skipped:`.
+- Put finding details on indented `Field: value` lines under the bullet.
+- For `Confirmed` findings, always include `Severity`, `Rule`, `Location`, `Rationale`, and `Suggestion`.
+- For `Skipped` findings, include `Reason`.
+- If there are no findings, write exactly `None.` under `## Findings`.
+- Do not put notes, commentary, or summaries inside `## Findings`.
+- Use one of these exact severities: `info`, `low`, `medium`, `high`, `critical`.
 
-When you cannot apply a rule (one of the valid skip reasons from the prompt applies), set Verdict to `Skipped` with a brief note why. Otherwise set to `Confirmed` to acknowledge it to the user.
+## Verdict
+
+End with exactly one of:
+
+- `Clean - no issues found. Claude may stop.`
+- `Findings present. Claude must address all findings before stopping.`
+
+The Findings and Verdict sections must agree:
+- If Findings is `None.`, Verdict must be the clean verdict.
+- If Findings contains one or more `- Confirmed:` entries, Verdict must be the blocking verdict.
+- `- Skipped:` entries alone do not require a blocking verdict.
 
 You may NOT edit or fix code files. You only review and report findings.
 
@@ -53,37 +69,13 @@ You may NOT edit or fix code files. You only review and report findings.
 - Do not invent rules that are not in the project rules file.
 - Do not skip rules that are in the project rules file.
 - Do not apply broad "best practice" exceptions unless the rules explicitly allow them.
-- If the rules file is missing, warn in the review and perform only a basic semantic review.
+- If the rules file is missing, warn outside `## Findings` and perform only a basic semantic review.
 - Be strict. Missing a real project-rule violation is worse than reporting a finding Claude can evaluate and reject.
 
-## Output Format
-
-For each finding:
-
-- **Severity:** CRITICAL / HIGH / MEDIUM / LOW
-- **Rule:** Which rule was violated
-- **Location:** File and line number
-- **Rationale:** Why this matters
-- **Suggestion:** Concrete fix
-
-## Verdict
-
-End with one of:
-
-- `Clean - no issues found. Claude may stop.`
-- `N issues found. Claude must address all findings before stopping.`
-
-If `## Findings` says there were no issues, use the clean verdict. If `## Findings` contains one or more actual finding entries, use the blocking verdict.
-
-**Important:** The Findings section and Verdict section must agree.
-- If Findings says "No issues found" (or similar), Verdict MUST say `Clean - no issues found. Claude may stop.`
-- If Findings contains one or more finding entries, Verdict MUST say `N issues found. Claude must address all findings before stopping.`
-- Do not mix a no-issues summary in Findings with a blocking verdict in Verdict.
-- Do NOT put notes, commentary, or summaries inside the `## Findings` section. If you want to add context or notes, put them OUTSIDE `## Findings` (before it or between `## Files Reviewed` and `## Verdict`), so the stop hook parser does not mistake them for findings.
 ## Constraints
 
 - Do not review files outside the request.
 - Do not suggest formatting-only changes.
 - Do not nitpick names unless they violate rules.
 - Prefer actionable findings with clear user impact.
-- All findings, regardless of severity, must be addressed before stopping.
+- All confirmed findings, regardless of severity, must be addressed before stopping.
