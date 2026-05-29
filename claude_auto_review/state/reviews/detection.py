@@ -61,7 +61,9 @@ def _is_no_findings_line(line: str) -> bool:
     lowered = text.casefold()
     # Only treat Notes as no-findings when it explicitly states no issues were found
     if lowered.startswith("**note:**") or lowered.startswith("note:"):
-        return "no project rules file found" in lowered or "basic semantic review only" in lowered
+        if "no project rules file found" in lowered or "basic semantic review only" in lowered:
+            return not _CONTRADICTION_RE.search(lowered)
+        return False
     # Handle bullet-style "- Confirmed: ..." and "- Skipped: ..." formats.
     # Skipped items never block; for Confirmed bullets, check the remainder.
     m = _BULLET_VERDICT_RE.match(text)

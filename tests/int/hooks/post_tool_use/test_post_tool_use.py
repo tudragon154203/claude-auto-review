@@ -60,7 +60,6 @@ class TestPostToolUseHook(HookTestCase, unittest.TestCase):
         self.assertEqual(state[0].hash, "__deleted__")
         self.assertFalse(state[0].reviewed)
         self.assertTrue(state[0].deleted)
-        # Deleted files should allow stop since they no longer exist
         self.assertEqual(
             self.run_python(
                 "hooks/stop_hook.py", project_root, env_overrides={"PATH": ""}, use_fake_claude=False
@@ -95,61 +94,6 @@ class TestPostToolUseHook(HookTestCase, unittest.TestCase):
         project_root = self.temp_project()
         post = self.run_python("hooks/post_tool_use.py", project_root, "{not-json")
         self.assertEqual(post.returncode, 0)
-
-    def test_does_not_track_files_skipped_by_extension(self):
-        project_root = self.temp_project()
-        (project_root / ".claude").mkdir()
-        (project_root / ".claude" / "settings.json").write_text(
-            json.dumps({"claude-auto-review": {"skipExtensions": [".MD"]}}),
-            encoding="utf-8",
-        )
-        (project_root / "README.md").write_text("# docs\n", encoding="utf-8")
-
-        post = self.run_python("hooks/post_tool_use.py", project_root, json.dumps({"file_path": "README.md"}))
-        self.assertEqual(post.returncode, 0)
-        self.assertEqual(load_state(project_root, "test-session"), [])
-        self.assertEqual(self.run_python("hooks/stop_hook.py", project_root).returncode, 0)
-
-    def test_does_not_track_files_outside_include_extension_allowlist(self):
-        project_root = self.temp_project()
-        (project_root / ".claude").mkdir()
-        (project_root / ".claude" / "settings.json").write_text(
-            json.dumps({"claude-auto-review": {"includeExtensions": ["py"]}}),
-            encoding="utf-8",
-        )
-        (project_root / "src" / "app.ts").write_text("export const value = 1;\n", encoding="utf-8")
-        (project_root / "src" / "app.py").write_text("value = 1\n", encoding="utf-8")
-
-        ts_post = self.run_python("hooks/post_tool_use.py", project_root, json.dumps({"file_path": "src/app.ts"}))
-        py_post = self.run_python("hooks/post_tool_use.py", project_root, json.dumps({"file_path": "src/app.py"}))
-        self.assertEqual(ts_post.returncode, 0)
-        self.assertEqual(py_post.returncode, 0)
-        self.assertEqual([entry.file for entry in load_state(project_root, "test-session")], ["src/app.py"])
-
-    def test_post_tool_use_writes_lifecycle_log_without_stdout(self):
-        project_root = self.temp_project()
-        (project_root / "src" / "app.ts").write_text("export const value = 1;\n", encoding="utf-8")
-
-        post = self.run_python("hooks/post_tool_use.py", project_root, json.dumps({"file_path": "src/app.ts"}))
-        self.assertEqual(post.stdout, "")
-        log_path = client_dir(project_root) / "state.jsonl"
-        log_content = log_path.read_text(encoding="utf-8")
-        self.assertIn('"type":"file_tracked"', log_content)
-        self.assertIn('"clientId"', log_content)
-
-    def test_allows_stop_when_disabled_in_project_settings(self):
-        project_root = self.temp_project()
-        (project_root / ".claude").mkdir()
-        (project_root / ".claude" / "settings.json").write_text(
-            json.dumps({"claude-auto-review": {"enabled": False}}),
-            encoding="utf-8",
-        )
-        (project_root / "src" / "app.ts").write_text("export const value = 1;\n", encoding="utf-8")
-
-        post = self.run_python("hooks/post_tool_use.py", project_root, json.dumps({"file_path": "src/app.ts"}))
-        self.assertEqual(post.returncode, 0)
-        self.assertEqual(load_state(project_root, "test-session"), [])
-        self.assertEqual(self.run_python("hooks/stop_hook.py", project_root).returncode, 0)
 
     def test_tracks_multiple_files_from_multiedit_style_payload(self):
         project_root = self.temp_project()

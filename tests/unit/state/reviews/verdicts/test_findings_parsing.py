@@ -198,8 +198,8 @@ class TestHasReviewFindings(unittest.TestCase):
             "## Verdict\n"
             "Clean - no issues found.\n"
         )
-        # Note special bypass: "basic semantic review only" makes it a "no findings" line
-        self.assertFalse(has_review_findings(content))
+        # Note with contradiction marker must not be treated as no-findings
+        self.assertTrue(has_review_findings(content))
 
     def test_has_review_findings_with_prose_contradiction(self):
         content = (

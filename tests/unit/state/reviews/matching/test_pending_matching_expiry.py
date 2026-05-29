@@ -33,7 +33,7 @@ class TestPendingMatchingExpiry(unittest.TestCase):
         state = [expired, fresh]
 
         with patch(
-            "claude_auto_review.state.reviews.matching.is_review_expired",
+            "claude_auto_review.state.reviews.matching_engine.is_review_expired",
             side_effect=lambda entry, timeout_hours: entry.reviewId == "expired",
         ):
             candidates = pending_review_candidates_for_entries(
