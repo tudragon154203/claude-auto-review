@@ -75,11 +75,10 @@ class TestHasReviewFindings(unittest.TestCase):
         content = "## Findings\n" "### 1. [Critical] Safety issue\n" "**Verdict:** Skipped\n"
         self.assertFalse(has_blocking_review_findings(content, "info"))
 
-    def test_has_blocking_review_findings_missing_severity_treated_as_info(self):
-        """Missing severity (no field at all) is treated as info — should not block at medium+ threshold."""
+    def test_has_blocking_review_findings_missing_severity_blocks(self):
+        """Missing severity (no field at all) defaults to blocking threshold."""
         content = "## Findings\n" "### 1. Missing severity heading\n" "**Verdict:** Confirmed\n"
-        self.assertFalse(has_blocking_review_findings(content, "medium"))
-        self.assertTrue(has_blocking_review_findings(content, "info"))
+        self.assertTrue(has_blocking_review_findings(content, "medium"))
 
     def test_has_blocking_review_findings_unparseable_confirmed_severity_blocks(self):
         """Unrecognized severity in brackets is treated as the default blocking level (medium)."""
@@ -384,7 +383,7 @@ class TestHasReviewFindings(unittest.TestCase):
         self.assertIsNone(findings[0].severity)
         self.assertIn("Module import is invalid", findings[0].raw_text)
 
-    def test_has_blocking_review_findings_codex_inline_without_severity_uses_info_threshold(self):
+    def test_has_blocking_review_findings_codex_inline_without_severity_blocks(self):
         content = (
             "## Findings\n"
             "1. **Confirmed - Module import is invalid**\n"
@@ -394,7 +393,7 @@ class TestHasReviewFindings(unittest.TestCase):
             "## Verdict\n"
             "1 issue found. Claude must address all findings before stopping.\n"
         )
-        self.assertFalse(has_blocking_review_findings(content, "medium"))
+        self.assertTrue(has_blocking_review_findings(content, "medium"))
         self.assertTrue(has_blocking_review_findings(content, "info"))
 
     def test_parse_review_findings_ignores_severity_field_in_prose(self):

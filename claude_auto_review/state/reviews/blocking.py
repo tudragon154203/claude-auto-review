@@ -39,7 +39,7 @@ def has_blocking_review_findings(
         if not verdict.startswith("confirmed"):
             return True
         if finding.severity is None:
-            severity_rank = _severity_rank("info")
+            severity_rank = _SEVERITY_RANKS.get(DEFAULT_MINIMUM_BLOCKING_SEVERITY, 2)
         else:
             severity_rank = _severity_rank(finding.severity)
         if threshold is None or severity_rank is None or severity_rank >= threshold:

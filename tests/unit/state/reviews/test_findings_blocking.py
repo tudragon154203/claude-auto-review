@@ -22,11 +22,10 @@ class TestHasBlockingReviewFindings(unittest.TestCase):
         content = "## Findings\n### 1. [Critical] Safety issue\n**Verdict:** Skipped\n"
         self.assertFalse(has_blocking_review_findings(content, "info"))
 
-    def test_missing_severity_treated_as_info(self):
-        """Missing severity (no field at all) is treated as info — should not block at medium+ threshold."""
+    def test_missing_severity_blocks(self):
+        """Missing severity (no field at all) defaults to blocking threshold."""
         content = "## Findings\n### 1. Missing severity heading\n**Verdict:** Confirmed\n"
-        self.assertFalse(has_blocking_review_findings(content, "medium"))
-        self.assertTrue(has_blocking_review_findings(content, "info"))
+        self.assertTrue(has_blocking_review_findings(content, "medium"))
 
     def test_unparseable_confirmed_severity_blocks(self):
         """Unrecognized severity in brackets falls back to default blocking threshold."""
@@ -75,7 +74,7 @@ class TestHasBlockingReviewFindings(unittest.TestCase):
             "## Verdict\n"
             "1 issue found. Claude must address all findings before stopping.\n"
         )
-        self.assertFalse(has_blocking_review_findings(content, "medium"))
+        self.assertTrue(has_blocking_review_findings(content, "medium"))
         self.assertTrue(has_blocking_review_findings(content, "info"))
 
 
