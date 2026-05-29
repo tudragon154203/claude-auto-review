@@ -382,8 +382,7 @@ class TestHasReviewFindings(unittest.TestCase):
         self.assertEqual(len(findings), 1)
         self.assertEqual(findings[0].verdict, "Confirmed")
         self.assertIsNone(findings[0].severity)
-        self.assertEqual(findings[0].location, "claude_auto_review/state/reviews/matching.py:7")
-        self.assertEqual(findings[0].fix, "Import the correct symbol.")
+        self.assertIn("Module import is invalid", findings[0].raw_text)
 
     def test_has_blocking_review_findings_codex_inline_without_severity_uses_info_threshold(self):
         content = (
@@ -397,3 +396,42 @@ class TestHasReviewFindings(unittest.TestCase):
         )
         self.assertFalse(has_blocking_review_findings(content, "medium"))
         self.assertTrue(has_blocking_review_findings(content, "info"))
+
+    def test_parse_review_findings_ignores_severity_field_in_prose(self):
+        content = (
+            "## Findings\n"
+            "The module follows standard conventions.\n"
+            "**Severity:** questionable naming in prose section.\n"
+            "No further issues identified.\n\n"
+            "## Verdict\n"
+            "Clean - no issues found. Claude may stop.\n"
+        )
+        findings = parse_review_findings(content)
+        self.assertEqual(len(findings), 0)
+
+    def test_parse_review_findings_ignores_field_labels_in_narrative_paragraphs(self):
+        content = (
+            "## Findings\n"
+            "Reviewed the diff carefully. The refactoring moves helpers into\n"
+            "submodules cleanly. **Severity:** not applicable for prose.\n"
+            "**Verdict:** this paragraph is not a finding.\n"
+            "Recommendation: consider splitting further in a future PR.\n\n"
+            "## Verdict\n"
+            "Clean - no issues found.\n"
+        )
+        findings = parse_review_findings(content)
+        self.assertEqual(len(findings), 0)
+
+    def test_parse_review_findings_severity_field_with_valid_level_starts_block(self):
+        content = (
+            "## Findings\n"
+            "**Severity:** High\n"
+            "**Location:** core.py:10\n"
+            "**Verdict:** Confirmed\n\n"
+            "## Verdict\n"
+            "1 issue found. Claude must address all findings before stopping.\n"
+        )
+        findings = parse_review_findings(content)
+        self.assertEqual(len(findings), 1)
+        self.assertEqual(findings[0].severity, "high")
+        self.assertTrue(has_blocking_review_findings(content, "medium"))

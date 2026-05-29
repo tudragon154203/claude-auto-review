@@ -104,7 +104,9 @@ def parse_review_findings(content: str | None) -> list[ReviewFinding]:
         if current is None and _FINDING_FIELD_RE.match(stripped):
             lower = stripped.lower()
             if lower.startswith(("severity:", "**severity:", "- severity:", "- **severity:")):
-                is_start = True
+                field_match = _FINDING_FIELD_RE.match(stripped)
+                if field_match and _normalize_severity(field_match.group(2)) is not None:
+                    is_start = True
         if is_start:
             if current is not None:
                 block = "\n".join(current).strip()

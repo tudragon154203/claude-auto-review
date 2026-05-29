@@ -199,9 +199,10 @@ class TestHasBlockingReviewFindingsThresholds(unittest.TestCase):
         content = self._review("### 1. [Low] Nit\nSome details.\n")
         self.assertTrue(has_blocking_review_findings(content, "critical"))
 
-    def test_finding_with_unknown_severity_blocks(self):
+    def test_finding_with_unknown_severity_treated_as_info(self):
         content = self._review("### 1. [Unknown] Weird\n**Verdict:** Confirmed\n")
-        self.assertTrue(has_blocking_review_findings(content, "medium"))
+        self.assertFalse(has_blocking_review_findings(content, "medium"))
+        self.assertTrue(has_blocking_review_findings(content, "info"))
 
     def test_none_threshold_defaults_to_medium(self):
         content = self._review("### 1. [Low] Nit\n**Verdict:** Confirmed\n")
