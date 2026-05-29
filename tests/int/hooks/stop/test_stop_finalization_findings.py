@@ -1,7 +1,8 @@
 import json
 import unittest
 
-from claude_auto_review.state.store.read import load_state, was_hash_reviewed
+from claude_auto_review.state.store.queries import was_hash_reviewed
+from claude_auto_review.state.store.read import load_state
 from tests.int.hooks.support import HookTestCase
 from tests.support import client_dir
 

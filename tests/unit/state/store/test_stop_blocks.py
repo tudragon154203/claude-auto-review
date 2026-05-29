@@ -3,7 +3,8 @@ import unittest
 from claude_auto_review.runtime.client_dirs import client_state_path
 from claude_auto_review.runtime.setup import ensure_client_runtime
 from claude_auto_review.state.models import ClassificationRecord, EditRecord, StopBlockedRecord
-from claude_auto_review.state.store.read import consecutive_stop_blocks, load_state
+from claude_auto_review.state.store.read import load_state
+from claude_auto_review.state.store.queries import consecutive_stop_blocks
 from claude_auto_review.state.store.write import append_state_event
 from tests.unit.state.support import StateTestCase
 

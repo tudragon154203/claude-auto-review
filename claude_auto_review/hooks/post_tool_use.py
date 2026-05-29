@@ -11,8 +11,9 @@ from claude_auto_review.review.prompting.diff_mode import capture_session_snapsh
 from claude_auto_review.runtime.events import log_event
 from claude_auto_review.state.hook_input import extract_file_paths_from_hook_input
 from claude_auto_review.state.models import EditRecord
-from claude_auto_review.state.store.read import was_hash_reviewed
-from claude_auto_review.state.store.repository import StateRepository
+from claude_auto_review.state.store.queries import was_hash_reviewed
+from claude_auto_review.state.store.read import get_file_hash
+from claude_auto_review.state.tracker import StateTracker
 
 
 def _run_post_tool_use(ctx):
@@ -20,12 +21,12 @@ def _run_post_tool_use(ctx):
     client_id = ctx.client_id
     settings = ctx.settings
     payload = ctx.payload
-    repository = StateRepository.for_client(project_root, client_id)
+    tracker = StateTracker(project_root=project_root, client_id=client_id)
     if not settings.enabled:
         log_event(project_root, "post_tool_use_disabled", client_id=client_id)
         return 0
 
-    state_snapshot = repository.load_snapshot()
+    state_snapshot = tracker.load()
     timestamp = local_now_iso()
 
     for candidate in extract_file_paths_from_hook_input(payload, project_root=project_root):
@@ -37,9 +38,9 @@ def _run_post_tool_use(ctx):
             reason = "runtime" if file_path.startswith(".claude/claude-auto-review/") else "settings"
             log_event(project_root, "post_tool_use_skipped_file", client_id=client_id, file=file_path, reason=reason)
             continue
-        file_hash = repository.get_file_hash(file_path)
+        file_hash = get_file_hash(file_path, project_root)
         if not file_hash:
-            repository.append_event(
+            tracker.track_edit(
                 EditRecord(
                     timestamp=timestamp,
                     file=file_path,
@@ -59,7 +60,7 @@ def _run_post_tool_use(ctx):
             continue
         capture_session_snapshot(file_path, project_root, client_id)
         reviewed = was_hash_reviewed(state_snapshot, file_path, file_hash)
-        repository.append_event(
+        tracker.track_edit(
             EditRecord(
                 timestamp=timestamp,
                 file=file_path,

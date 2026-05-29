@@ -1,9 +1,9 @@
+"""Orchestrates the multi-stage stop decision pipeline."""
+
 from __future__ import annotations
 
-from collections.abc import Callable
-from dataclasses import dataclass
-
 from claude_auto_review.stop.orchestration.context import RuntimeContext, StopDecision
+from claude_auto_review.stop.orchestration.deps import StopFlowDependencies as StopFlowDependencies
 from claude_auto_review.stop.orchestration.resolution import StopDecisionKind
 from claude_auto_review.stop.orchestration.stages import (
     run_allow_no_unreviewed_stage,
@@ -15,19 +15,6 @@ from claude_auto_review.stop.orchestration.stages import (
 )
 
 
-@dataclass(frozen=True)
-class StopFlowDependencies:
-    """Injectable callables for each stage of the stop-flow pipeline."""
-
-    load_state_snapshot: Callable
-    get_unreviewed_files: Callable
-    consecutive_stop_blocks: Callable
-    classify_last_assistant_message: Callable
-    resolve_pending_review: Callable
-    get_reviewer_prompt_script: Callable
-    log_event: Callable
-
-
 class StopFlowService:
     """Orchestrates the multi-stage stop decision pipeline."""
 
@@ -36,9 +23,9 @@ class StopFlowService:
         self.deps = deps
 
     def evaluate(self) -> StopDecision:
-        stage_result = run_enabled_stage(self.ctx, log_event_fn=self.deps.log_event)
-        if stage_result is not None:
-            return StopDecision(kind=stage_result.kind, reason=stage_result.reason)
+        decision = run_enabled_stage(self.ctx, log_event_fn=self.deps.log_event)
+        if decision is not None:
+            return decision
 
         state_snapshot, state, unreviewed = run_state_stage(
             self.ctx,
@@ -46,49 +33,31 @@ class StopFlowService:
             get_unreviewed_files_fn=self.deps.get_unreviewed_files,
         )
 
-        stage_result = run_allow_no_unreviewed_stage(unreviewed)
-        if stage_result is not None:
-            return StopDecision(kind=stage_result.kind, reason=stage_result.reason)
+        decision = run_allow_no_unreviewed_stage(unreviewed)
+        if decision is not None:
+            return decision
 
-        stage_result = run_circuit_breaker_stage(
+        decision = run_circuit_breaker_stage(
             self.ctx,
             state_snapshot,
             consecutive_stop_blocks_fn=self.deps.consecutive_stop_blocks,
         )
-        if stage_result is not None:
-            return StopDecision(
-                kind=stage_result.kind,
-                reason=stage_result.reason,
-                details=stage_result.details,
-            )
+        if decision is not None:
+            return decision
 
-        stage_result = run_classifier_stage(
+        decision = run_classifier_stage(
             self.ctx,
             classify_last_assistant_message_fn=self.deps.classify_last_assistant_message,
         )
-        if stage_result is not None:
-            return StopDecision(
-                kind=stage_result.kind,
-                reason=stage_result.reason,
-                details=stage_result.details,
-            )
+        if decision is not None:
+            return decision
 
-        stage_result = run_pending_stage(
+        return run_pending_stage(
             self.ctx,
             state,
             unreviewed,
             resolve_pending_review_fn=self.deps.resolve_pending_review,
             get_reviewer_prompt_script_fn=self.deps.get_reviewer_prompt_script,
-        )
-        if stage_result.kind is StopDecisionKind.TERMINAL:
-            return StopDecision(
-                kind=StopDecisionKind.TERMINAL,
-                details={"exit_code": stage_result.exit_code},
-            )
-
-        return StopDecision(
-            kind=StopDecisionKind.FINALIZE,
-            details={"resolution": stage_result.resolution},
         )
 
     def run(self) -> StopDecision:

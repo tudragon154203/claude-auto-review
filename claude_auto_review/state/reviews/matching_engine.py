@@ -6,7 +6,7 @@ from claude_auto_review.runtime.events import log_event
 from claude_auto_review.state.models import EditRecord, ReviewFileRecord, ReviewMetadata, StateEvent
 from claude_auto_review.state.reviews.expiry import is_review_expired
 from claude_auto_review.state.reviews.matching_hash import entry_file_hash_pairs, review_file_hash_pairs
-from claude_auto_review.state.store.read import ensure_state_snapshot
+from claude_auto_review.state.store.queries import ensure_state_snapshot
 
 
 def _is_pending_review_entry(entry: StateEvent) -> bool:

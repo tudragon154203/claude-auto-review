@@ -18,7 +18,8 @@ from claude_auto_review.runtime.client_dirs import get_client_id
 from claude_auto_review.runtime.events import log_event, log_failure
 from claude_auto_review.runtime.process import run_fail_open
 from claude_auto_review.runtime.setup import ensure_client_runtime
-from claude_auto_review.state.store.read import get_unreviewed_files, load_state_snapshot
+from claude_auto_review.state.store.queries import get_unreviewed_files
+from claude_auto_review.state.store.read import load_state_snapshot
 from claude_auto_review.state.store.write import append_review_started
 from claude_auto_review.stop.orchestration.context import RuntimeContext
 

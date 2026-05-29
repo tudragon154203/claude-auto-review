@@ -1,6 +1,7 @@
 import json
 
-from claude_auto_review.state.store.read import get_unreviewed_files, load_state
+from claude_auto_review.state.store.queries import get_unreviewed_files
+from claude_auto_review.state.store.read import load_state
 from tests.e2e.support import EndToEndTestCase
 
 

@@ -7,8 +7,8 @@ from claude_auto_review.config.constants import DEFAULT_CLASSIFIER_TIMEOUT_SECON
 from claude_auto_review.config.reviewer import DEFAULT_REVIEWER_BACKEND, resolve_reviewer_model
 from claude_auto_review.config.severity import coerce_minimum_blocking_severity
 from claude_auto_review.config.utils.coercion import coerce_bool, coerce_extensions, coerce_float, coerce_int
+from claude_auto_review.config.constants import DEFAULT_RULES_FILE
 from claude_auto_review.config.utils.schema import (
-    DEFAULT_RULES_FILE,
     KNOWN_SETTING_KEYS,
     SETTING_CLASSIFIER_ENABLED,
     SETTING_CLASSIFIER_MODEL,

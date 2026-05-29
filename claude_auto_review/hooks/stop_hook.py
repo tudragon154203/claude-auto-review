@@ -8,7 +8,7 @@ from claude_auto_review.stop.orchestration.flow import run_stop_flow
 
 
 def _run_stop_hook(ctx):
-    return run_stop_flow(ctx.project_root, ctx.payload, client_id=ctx.client_id, settings=ctx.settings)
+    return run_stop_flow(ctx)
 
 
 def main():

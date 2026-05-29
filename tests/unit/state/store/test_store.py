@@ -12,10 +12,10 @@ from claude_auto_review.state.models import (
     ReviewMetadata,
     StopBlockedRecord,
 )
-from claude_auto_review.state.store.read import (
+from claude_auto_review.state.store.read import load_state
+from claude_auto_review.state.store.queries import (
     get_unreviewed_files,
     latest_entries_by_file,
-    load_state,
     reviewed_hashes_by_file,
     was_hash_reviewed,
 )

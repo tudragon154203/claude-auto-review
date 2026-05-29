@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from pathlib import Path
+from claude_auto_review.config.constants import DEFAULT_RULES_FILE as DEFAULT_RULES_FILE  # noqa: F401
 
 SETTING_ENABLED = "enabled"
 SETTING_RULES_FILE = "rulesFile"
@@ -18,8 +18,6 @@ SETTING_CLASSIFIER_TIMEOUT = "lastAssistantMessageClassifierTimeoutSeconds"
 SETTING_CLASSIFIER_MODEL = "classifierModel"
 SETTING_STALE_CLIENT_TIMEOUT = "staleClientTimeoutHours"
 SETTING_DEBUG = "debug"
-
-DEFAULT_RULES_FILE = str(Path(".claude") / "claude-auto-review" / "review-rules.md")
 
 KNOWN_SETTING_KEYS = frozenset(
     {

@@ -40,6 +40,5 @@ def _write_plugin_settings(project_root: Path, settings: PluginSettings) -> Path
     settings_path: Path = _settings_path(project_root)
     document = _load_settings_document(settings_path)
     document["claude-auto-review"] = settings.to_mapping()
-    settings_path.parent.mkdir(parents=True, exist_ok=True)
-    settings_path.write_text(json.dumps(document, indent=2) + "\n", encoding="utf-8", newline="\n")
+    settings_path.write_text(json.dumps(document, indent=2) + "\n", encoding="utf-8")
     return settings_path

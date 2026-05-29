@@ -3,6 +3,7 @@ import unittest
 from claude_auto_review.state.models import (
     ClassificationRecord,
     EditRecord,
+    FileHash,
     ReviewAutocompleteRecord,
     ReviewCompletedRecord,
     ReviewFileRecord,
@@ -136,3 +137,13 @@ class TestStateModels(unittest.TestCase):
         d = record.to_dict()
         self.assertEqual(d["returncode"], 1)
         self.assertEqual(d["stdout_len"], 500)
+
+    def test_file_hash_validates_eight_character_sha_prefix(self):
+        self.assertEqual(str(FileHash("ABCDEF12")), "abcdef12")
+        self.assertEqual(FileHash("abcdef12").value, "abcdef12")
+
+    def test_file_hash_rejects_invalid_values(self):
+        for value in ("", "abc", "abcdef123", "zzzzzzzz"):
+            with self.subTest(value=value):
+                with self.assertRaises(ValueError):
+                    FileHash(value)

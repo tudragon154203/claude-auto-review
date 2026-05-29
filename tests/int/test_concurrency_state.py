@@ -1,6 +1,7 @@
 from claude_auto_review.runtime.client_dirs import client_state_path
 from claude_auto_review.state.models import EditRecord
-from claude_auto_review.state.store.read import get_unreviewed_files, load_state, was_hash_reviewed
+from claude_auto_review.state.store.queries import get_unreviewed_files, was_hash_reviewed
+from claude_auto_review.state.store.read import load_state
 from claude_auto_review.state.store.write import append_state_event, mark_files_reviewed
 from tests.int.support import ClientIsolationTestCase
 

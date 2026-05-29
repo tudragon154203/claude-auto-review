@@ -1,10 +1,14 @@
 from __future__ import annotations
 
+from claude_auto_review.config.constants import EXIT_REVIEW_FAILED
+from claude_auto_review.runtime.events import log_event
 from claude_auto_review.paths.path_utils import local_now_iso
 from claude_auto_review.state.models import StopBlockedRecord
 from claude_auto_review.state.store.writer import StateEventWriter
 from claude_auto_review.stop.feedback import block_response, build_unreviewed_files_string
 from claude_auto_review.stop.orchestration.context import RuntimeContext
+from claude_auto_review.stop.orchestration.resolution import StopFlowResolution
+from claude_auto_review.stop.response import approve_response
 
 
 def _display_path(path, project_root):
@@ -12,6 +16,47 @@ def _display_path(path, project_root):
         return path.relative_to(project_root).as_posix()
     except ValueError:
         return str(path)
+
+
+def fail_review(
+    ctx: RuntimeContext,
+    files_str: str,
+    exit_code: int,
+    event_type: str,
+    script: str | None = None,
+    error: Exception | None = None,
+) -> StopFlowResolution:
+    """Emit failure response and return a terminal resolution."""
+    log_event(
+        ctx.project_root,
+        event_type,
+        client_id=ctx.client_id,
+        script=str(script) if script else None,
+        error=str(error) if error else None,
+    )
+    if exit_code == EXIT_REVIEW_FAILED:
+        if error:
+            block_response(
+                f"Claude Auto Review: Error generating review for {files_str}.",
+                f"Failed to run review_prompt.py: {error}",
+            )
+        else:
+            block_response(
+                f"Claude Auto Review: Timeout generating review for {files_str}.",
+                "The review generation timed out. Check the logs and try again.",
+            )
+    return StopFlowResolution(state=[], unreviewed=[], exit_code=exit_code)
+
+
+def approve_no_unreviewed_after_review(ctx: RuntimeContext) -> None:
+    """Emit approval when no unreviewed files remain after a review completes."""
+    log_event(
+        ctx.project_root,
+        "stop_approved",
+        client_id=ctx.client_id,
+        reason="no_unreviewed_files_after_review",
+    )
+    approve_response("Claude Auto Review: stop approved (no_unreviewed_files_after_review)")
 
 
 def block_pending_review(ctx: RuntimeContext, review_id, review_path, prompt_path, unreviewed):

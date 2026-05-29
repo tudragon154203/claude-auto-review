@@ -1,7 +1,8 @@
 from claude_auto_review.runtime.client_dirs import client_reviews_dir
 from claude_auto_review.state.models import EditRecord
 from claude_auto_review.state.reviews.matching import pending_reviews_for_entries
-from claude_auto_review.state.store.read import get_unreviewed_files, load_state
+from claude_auto_review.state.store.queries import get_unreviewed_files
+from claude_auto_review.state.store.read import load_state
 from claude_auto_review.state.store.write import append_review_started, append_state_event
 from tests.int.support import ClientIsolationTestCase
 

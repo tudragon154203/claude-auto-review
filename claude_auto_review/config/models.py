@@ -35,7 +35,7 @@ from claude_auto_review.config.serialization import (
 from claude_auto_review.config.severity import (
     DEFAULT_MINIMUM_BLOCKING_SEVERITY,
 )
-from claude_auto_review.config.utils.schema import DEFAULT_RULES_FILE
+from claude_auto_review.config.constants import DEFAULT_RULES_FILE
 
 
 @dataclass(frozen=True)

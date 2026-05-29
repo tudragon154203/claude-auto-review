@@ -1,3 +1,9 @@
+"""State store read operations — raw I/O reads and snapshot loading.
+
+Query functions (get_unreviewed_files, consecutive_stop_blocks, etc.)
+live in claude_auto_review/state/store/queries.py.
+"""
+
 from __future__ import annotations
 
 import hashlib
@@ -48,16 +54,6 @@ def _load_state_events(state_file: str | Path) -> list[StateEvent]:
     return [record.event for record in read_jsonl_state_records(state_file) if record.event is not None]
 
 
-def _state_snapshot(state: list[StateEvent] | StateSnapshot) -> StateSnapshot:
-    if isinstance(state, StateSnapshot):
-        return state
-    return StateSnapshot.from_events(state)
-
-
-def ensure_state_snapshot(state_or_snapshot: list[StateEvent] | StateSnapshot) -> StateSnapshot:
-    return _state_snapshot(state_or_snapshot)
-
-
 def load_state_snapshot(project_root: str | Path | None = None, client_id: str | None = None) -> StateSnapshot:
     """Load and rebuild the current state snapshot for a client session."""
     from claude_auto_review.runtime.client_dirs import client_state_path
@@ -81,29 +77,3 @@ def get_file_hash(file_path: str | Path, project_root: str | Path | None = None)
 
 def load_state(project_root: str | Path | None = None, client_id: str | None = None) -> list[StateEvent]:
     return list(load_state_snapshot(project_root, client_id).events)
-
-
-def latest_entries_by_file(state_or_snapshot: list[StateEvent] | StateSnapshot) -> dict[str, StateEvent]:
-    return ensure_state_snapshot(state_or_snapshot).latest_entries_by_file
-
-
-def latest_review_entries_by_id(state_or_snapshot: list[StateEvent] | StateSnapshot) -> dict[str, StateEvent]:
-    return ensure_state_snapshot(state_or_snapshot).latest_review_entries_by_id
-
-
-def reviewed_hashes_by_file(state_or_snapshot: list[StateEvent] | StateSnapshot) -> dict[str, set[str]]:
-    return ensure_state_snapshot(state_or_snapshot).reviewed_hashes_by_file
-
-
-def was_hash_reviewed(state_or_snapshot: list[StateEvent] | StateSnapshot, file_path: str, file_hash: str) -> bool:
-    return ensure_state_snapshot(state_or_snapshot).was_hash_reviewed(file_path, file_hash)
-
-
-def get_unreviewed_files(state_or_snapshot: list[StateEvent] | StateSnapshot) -> list[Any]:
-    """Return file paths whose latest content hash has not been covered by a review."""
-    return ensure_state_snapshot(state_or_snapshot).unreviewed_files
-
-
-def consecutive_stop_blocks(state_or_snapshot: list[StateEvent] | StateSnapshot) -> int:
-    """Count how many stop_blocked events appear at the tail of the event log."""
-    return ensure_state_snapshot(state_or_snapshot).consecutive_stop_blocks

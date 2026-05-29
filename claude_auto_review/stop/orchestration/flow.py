@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from claude_auto_review.stop.orchestration.context import ResponsePayload, StopDecision
+from claude_auto_review.stop.orchestration.context import ResponsePayload, RuntimeContext, StopDecision
 from claude_auto_review.stop.orchestration.decision_engine import StopDecisionEngine
 from claude_auto_review.stop.orchestration.resolution import StopDecisionKind
 from claude_auto_review.stop.response import approve_response, block_response
@@ -30,9 +30,9 @@ def _handle_finalize(engine: StopDecisionEngine, decision: StopDecision):
     return engine.finalize(details["resolution"])
 
 
-def run_stop_flow(project_root, payload, *, client_id=None, settings=None):
+def run_stop_flow(ctx: RuntimeContext):
     """Main entry point for the stop hook — evaluates, finalizes, and emits the response."""
-    engine = StopDecisionEngine(project_root, payload, client_id=client_id, settings=settings)
+    engine = StopDecisionEngine(ctx)
     decision = engine.evaluate()
     handlers = {
         StopDecisionKind.ALLOW: lambda: _handle_allow(decision),

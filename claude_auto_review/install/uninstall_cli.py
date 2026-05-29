@@ -16,87 +16,24 @@ if __name__ == "__main__":
     if str(_plugin_root) not in sys.path:
         sys.path.insert(0, str(_plugin_root))
 
+from claude_auto_review.config.cleanup import remove_plugin_hooks as _remove_plugin_hooks  # noqa: F811, E501
+from claude_auto_review.config.cleanup import remove_plugin_settings as _remove_plugin_settings  # noqa: F811, E501
+from claude_auto_review.config.io import _load_settings_document, _settings_path
 from claude_auto_review.install.installer import ensure_gitignore_entries
 from claude_auto_review.paths.path_utils import get_project_root
 from claude_auto_review.runtime.events import log_event
-from claude_auto_review.runtime.hook_identity import command_targets_plugin
 
 GITIGNORE_ENTRY = ".claude/claude-auto-review/"
 
 
-def _remove_plugin_hooks(settings):
-    """Remove plugin hooks from settings dict. Returns True if modified."""
-    hooks = settings.get("hooks", {})
-    if not isinstance(hooks, dict):
-        return False
-    modified = False
-
-    for hook_type in list(hooks.keys()):
-        entries = hooks[hook_type]
-        if not isinstance(entries, list):
-            continue
-
-        filtered = []
-        for entry in entries:
-            if not isinstance(entry, dict):
-                filtered.append(entry)
-                continue
-
-            nested_hooks = entry.get("hooks")
-            if not isinstance(nested_hooks, list):
-                # Check if the entry itself is a simple command hook
-                command = entry.get("command", "")
-                if command_targets_plugin(command):
-                    modified = True
-                    continue
-                filtered.append(entry)
-                continue
-
-            kept_hooks = []
-            entry_modified = False
-            for hook in nested_hooks:
-                command = hook.get("command", "") if isinstance(hook, dict) else ""
-                if command_targets_plugin(command):
-                    entry_modified = True
-                    continue
-                kept_hooks.append(hook)
-
-            if kept_hooks:
-                if entry_modified:
-                    updated_entry = dict(entry)
-                    updated_entry["hooks"] = kept_hooks
-                    filtered.append(updated_entry)
-                    modified = True
-                else:
-                    filtered.append(entry)
-            else:
-                modified = True
-
-        if not filtered:
-            del hooks[hook_type]
-        else:
-            hooks[hook_type] = filtered
-
-    if not hooks and "hooks" in settings:
-        del settings["hooks"]
-        modified = True
-
-    if "claude-auto-review" in settings:
-        del settings["claude-auto-review"]
-        modified = True
-
-    return modified
-
-
 def main():
-    project_root = Path(get_project_root())
+    project_root = get_project_root()
+    runtime_dir = project_root / ".claude" / "claude-auto-review"
     removed = []
 
-    runtime_dir = project_root / ".claude" / "claude-auto-review"
     if runtime_dir.exists():
         removed.append(str(runtime_dir.relative_to(project_root)))
 
-    # Clean up .gitignore
     gitignore_path = project_root / ".gitignore"
     if gitignore_path.exists():
         ensure_gitignore_entries(
@@ -112,14 +49,15 @@ def main():
             ],
         )
 
-    # Remove plugin hooks from settings.json
-    settings_path = project_root / ".claude" / "settings.json"
+    settings_path = _settings_path(project_root)
     if settings_path.exists():
         try:
-            settings = json.loads(settings_path.read_text(encoding="utf-8"))
+            settings = _load_settings_document(settings_path)
         except (OSError, json.JSONDecodeError):
             settings = {}
-        if _remove_plugin_hooks(settings):
+        hooks_modified = _remove_plugin_hooks(settings)
+        settings_modified = _remove_plugin_settings(settings)
+        if hooks_modified or settings_modified:
             settings_path.write_text(json.dumps(settings, indent=2) + "\n", encoding="utf-8")
 
     log_event(project_root, "uninstall_completed", removed=removed)
@@ -127,13 +65,11 @@ def main():
     if removed:
         print("Claude Auto Review uninstalled. Removed:")
         for path in removed:
-            print(f"- {path}")
+            print(f"  - {path}")
     else:
-        print("Claude Auto Review: nothing to uninstall (not configured).")
+        print("Claude Auto Review was not installed. Nothing to remove.")
     return 0
 
 
 if __name__ == "__main__":
-    import sys
-
     sys.exit(main())
