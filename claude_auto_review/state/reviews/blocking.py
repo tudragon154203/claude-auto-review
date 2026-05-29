@@ -6,16 +6,17 @@ from claude_auto_review.config.models import (
 from claude_auto_review.state.reviews.detection import has_review_findings
 from claude_auto_review.state.reviews.parsing import parse_review_findings
 
+_SEVERITY_RANKS = {
+    "info": 0,
+    "low": 1,
+    "medium": 2,
+    "high": 3,
+    "critical": 4,
+}
+
 
 def _severity_rank(value: str) -> int | None:
-    normalized = value.strip().lower()
-    return {
-        "info": 0,
-        "low": 1,
-        "medium": 2,
-        "high": 3,
-        "critical": 4,
-    }.get(normalized)
+    return _SEVERITY_RANKS.get(value.strip().lower())
 
 
 def has_blocking_review_findings(

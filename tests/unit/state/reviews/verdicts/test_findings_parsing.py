@@ -76,12 +76,13 @@ class TestHasReviewFindings(unittest.TestCase):
         self.assertFalse(has_blocking_review_findings(content, "info"))
 
     def test_has_blocking_review_findings_missing_severity_treated_as_info(self):
-        """Missing severity is treated as info — should not block at medium+ threshold."""
+        """Missing severity (no field at all) is treated as info — should not block at medium+ threshold."""
         content = "## Findings\n" "### 1. Missing severity heading\n" "**Verdict:** Confirmed\n"
         self.assertFalse(has_blocking_review_findings(content, "medium"))
         self.assertTrue(has_blocking_review_findings(content, "info"))
 
     def test_has_blocking_review_findings_unparseable_confirmed_severity_treated_as_info(self):
+        """Unrecognized severity labels currently normalize to missing severity and use info threshold."""
         content = "## Findings\n" "### 1. [Mystery] Unexpected label\n" "**Verdict:** Confirmed\n"
         self.assertFalse(has_blocking_review_findings(content, "medium"))
         self.assertTrue(has_blocking_review_findings(content, "info"))
