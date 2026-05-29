@@ -23,11 +23,11 @@ class TestHasBlockingReviewFindings(unittest.TestCase):
         self.assertFalse(has_blocking_review_findings(content, "info"))
 
     def test_missing_severity_blocks(self):
-        """Missing severity (no field at all) always blocks regardless of threshold."""
+        """Missing severity (no field at all) always blocks."""
         content = "## Findings\n### 1. Missing severity heading\n**Verdict:** Confirmed\n"
         self.assertTrue(has_blocking_review_findings(content, "medium"))
+        self.assertTrue(has_blocking_review_findings(content, "info"))
         self.assertTrue(has_blocking_review_findings(content, "high"))
-        self.assertTrue(has_blocking_review_findings(content, "critical"))
 
     def test_unparseable_confirmed_severity_blocks(self):
         """Unrecognized severity in brackets falls back to default blocking threshold."""
@@ -66,7 +66,7 @@ class TestHasBlockingReviewFindings(unittest.TestCase):
     def test_no_findings_section_content(self):
         self.assertFalse(has_blocking_review_findings(None, "low"))
 
-    def test_codex_inline_without_severity_uses_info_threshold(self):
+    def test_codex_inline_without_severity_blocks(self):
         content = (
             "## Findings\n"
             "1. **Confirmed - Module import is invalid**\n"
