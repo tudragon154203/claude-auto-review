@@ -23,9 +23,11 @@ class TestHasBlockingReviewFindings(unittest.TestCase):
         self.assertFalse(has_blocking_review_findings(content, "info"))
 
     def test_missing_severity_blocks(self):
-        """Missing severity (no field at all) defaults to blocking threshold."""
+        """Missing severity (no field at all) always blocks regardless of threshold."""
         content = "## Findings\n### 1. Missing severity heading\n**Verdict:** Confirmed\n"
         self.assertTrue(has_blocking_review_findings(content, "medium"))
+        self.assertTrue(has_blocking_review_findings(content, "high"))
+        self.assertTrue(has_blocking_review_findings(content, "critical"))
 
     def test_unparseable_confirmed_severity_blocks(self):
         """Unrecognized severity in brackets falls back to default blocking threshold."""
