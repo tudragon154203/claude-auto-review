@@ -81,11 +81,10 @@ class TestHasReviewFindings(unittest.TestCase):
         self.assertFalse(has_blocking_review_findings(content, "medium"))
         self.assertTrue(has_blocking_review_findings(content, "info"))
 
-    def test_has_blocking_review_findings_unparseable_confirmed_severity_treated_as_info(self):
-        """Unrecognized severity labels currently normalize to missing severity and use info threshold."""
+    def test_has_blocking_review_findings_unparseable_confirmed_severity_blocks(self):
+        """Unrecognized severity in brackets is treated as the default blocking level (medium)."""
         content = "## Findings\n" "### 1. [Mystery] Unexpected label\n" "**Verdict:** Confirmed\n"
-        self.assertFalse(has_blocking_review_findings(content, "medium"))
-        self.assertTrue(has_blocking_review_findings(content, "info"))
+        self.assertTrue(has_blocking_review_findings(content, "medium"))
 
     def test_has_blocking_review_findings_mixed_severities_block_only_at_threshold(self):
         content = (
@@ -245,10 +244,10 @@ class TestHasReviewFindings(unittest.TestCase):
         findings = parse_review_findings(content)
         self.assertEqual(findings[0].severity, "high")
 
-    def test_parse_review_findings_normalizes_unknown_severity_to_none(self):
+    def test_parse_review_findings_normalizes_unknown_severity_to_sentinel(self):
         content = "## Findings\n### [Mystery] Something\n**Verdict:** Confirmed\n"
         findings = parse_review_findings(content)
-        self.assertIsNone(findings[0].severity)
+        self.assertEqual(findings[0].severity, "<unrecognized>")
 
     def test_parse_review_findings_ignores_non_finding_numbered_bold_lines(self):
         content = (

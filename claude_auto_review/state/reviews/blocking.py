@@ -4,7 +4,7 @@ from claude_auto_review.config.models import (
     DEFAULT_MINIMUM_BLOCKING_SEVERITY,
 )
 from claude_auto_review.state.reviews.detection import has_review_findings
-from claude_auto_review.state.reviews.parsing import parse_review_findings
+from claude_auto_review.state.reviews.parsing import _UNRECOGNIZED_SEVERITY, parse_review_findings
 
 _SEVERITY_RANKS = {
     "info": 0,
@@ -16,6 +16,8 @@ _SEVERITY_RANKS = {
 
 
 def _severity_rank(value: str) -> int | None:
+    if value == _UNRECOGNIZED_SEVERITY:
+        return _SEVERITY_RANKS.get(DEFAULT_MINIMUM_BLOCKING_SEVERITY, 2)
     return _SEVERITY_RANKS.get(value.strip().lower())
 
 

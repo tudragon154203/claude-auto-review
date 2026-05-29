@@ -6,6 +6,8 @@ from dataclasses import dataclass
 from claude_auto_review.config.severity import MINIMUM_BLOCKING_SEVERITIES
 from claude_auto_review.state.reviews.review_text import extract_review_findings_text
 
+_UNRECOGNIZED_SEVERITY = "<unrecognized>"
+
 _FINDING_HEADING = re.compile(r"^###\s+(\d+\.|\[)")
 _FINDING_INLINE_SEVERITY_RE = re.compile(
     r"^\d+[.)]?\s*\*{1,2}\s*(Confirmed|Skipped)\s*-\s*(Info|Low|Medium|High|Critical)(?:\*\*|[:\s]|$)",
@@ -66,9 +68,20 @@ def _extract_heading_severity(line: str) -> tuple[str | None, str | None]:
             verdict = verdict_raw.lower()
             if severity is not None and verdict in {"confirmed", "skipped"}:
                 return severity, verdict
-        return _normalize_severity(label.strip()), None
+        normalized = _normalize_severity(label.strip())
+        if normalized is not None:
+            return normalized, None
+        # Single-word bracket labels that aren't recognized severities
+        # were likely intended as severity → sentinel. Multi-word or
+        # hyphenated labels are prose headings, not severity attempts.
+        if " " not in label.strip() and "-" not in label.strip():
+            return _UNRECOGNIZED_SEVERITY, None
+        return None, None
     first_token = text.split(None, 1)[0] if text else ""
-    return _normalize_severity(first_token.strip("[]:-")) if first_token else None, None
+    first_sev = _normalize_severity(first_token.strip("[]:-")) if first_token else None
+    if first_sev is not None:
+        return first_sev, None
+    return None, None
 
 
 def _parse_finding_block(block: str) -> ReviewFinding:
@@ -84,8 +97,9 @@ def _parse_finding_block(block: str) -> ReviewFinding:
     field_matches = _FINDING_FIELD_RE.findall(block)
     for field_name, field_value in field_matches:
         normalized_field = field_name.lower()
-        if normalized_field == "severity" and severity is None:
-            severity = _normalize_severity(field_value)
+        if normalized_field == "severity" and severity in (None, _UNRECOGNIZED_SEVERITY):
+            normalized = _normalize_severity(field_value)
+            severity = normalized if normalized is not None else _UNRECOGNIZED_SEVERITY
         elif normalized_field == "verdict":
             verdict = field_value.strip()
     return ReviewFinding(severity=severity, verdict=verdict, raw_text=block)
