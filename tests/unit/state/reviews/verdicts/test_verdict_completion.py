@@ -58,6 +58,12 @@ class TestIsReviewCompleteVerdict(unittest.TestCase):
     def test_blocking_lowercase_is_complete(self):
         self.assertTrue(is_review_complete_verdict("blocking"))
 
+    def test_non_blocking_is_not_complete(self):
+        self.assertFalse(is_review_complete_verdict("non-blocking"))
+
+    def test_not_blocking_is_not_complete(self):
+        self.assertFalse(is_review_complete_verdict("not blocking"))
+
 
 class TestIsReviewCleanVerdict(unittest.TestCase):
     def test_clean_prefix(self):
