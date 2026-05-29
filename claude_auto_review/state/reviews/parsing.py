@@ -11,6 +11,10 @@ _FINDING_INLINE_SEVERITY_RE = re.compile(
     r"^\d+[.)]?\s*\*{1,2}\s*(Confirmed|Skipped)\s*-\s*(Info|Low|Medium|High|Critical)(?:\*\*|[:\s]|$)",
     re.IGNORECASE,
 )
+_FINDING_INLINE_NO_SEV_RE = re.compile(
+    r"^\d+[.)]?\s*\*{1,2}\s*(Confirmed|Skipped)\s*-\s+",
+    re.IGNORECASE,
+)
 _FINDING_FIELD_RE = re.compile(
     r"^\s*(?:[-*]\s*)?\*{0,2}(Severity|Verdict):\*{0,2}\s*(.+?)\s*$",
     re.IGNORECASE | re.MULTILINE,
@@ -96,7 +100,7 @@ def parse_review_findings(content: str | None) -> list[ReviewFinding]:
     current: list[str] | None = None
     for line in findings_text.splitlines():
         stripped = line.strip()
-        is_start = stripped.startswith("###") or _FINDING_INLINE_SEVERITY_RE.match(stripped)
+        is_start = stripped.startswith("###") or _FINDING_INLINE_SEVERITY_RE.match(stripped) or _FINDING_INLINE_NO_SEV_RE.match(stripped)
         if current is None and _FINDING_FIELD_RE.match(stripped):
             lower = stripped.lower()
             if lower.startswith(("severity:", "**severity:", "- severity:", "- **severity:")):
@@ -116,4 +120,13 @@ def parse_review_findings(content: str | None) -> list[ReviewFinding]:
         if block:
             blocks.append(block)
 
-    return [_parse_finding_block(block) for block in blocks]
+    results = []
+    for block in blocks:
+        finding = _parse_finding_block(block)
+        first_line = block.splitlines()[0].strip() if block else ""
+        no_sev_match = _FINDING_INLINE_NO_SEV_RE.match(first_line)
+        if no_sev_match and not _FINDING_INLINE_SEVERITY_RE.match(first_line):
+            if finding.verdict is None and not _FINDING_FIELD_RE.search(block):
+                continue
+        results.append(finding)
+    return results

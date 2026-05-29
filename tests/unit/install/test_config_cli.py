@@ -186,9 +186,9 @@ class TestConfigCli(unittest.TestCase):
 
             stdout = io.StringIO()
             with patch("claude_auto_review.install.config_cli.get_project_root", return_value=project_root), patch(
-                "claude_auto_review.install.config_cli.ensure_runtime", side_effect=fake_runtime
+                "claude_auto_review.install.config_cli_io.ensure_runtime", side_effect=fake_runtime
             ), patch(
-                "claude_auto_review.install.config_cli._settings_path", side_effect=fake_project_settings
+                "claude_auto_review.install.config_cli_io._settings_path", side_effect=fake_project_settings
             ), patch(
                 "claude_auto_review.install.config_cli.log_event"
             ) as mock_log, patch("sys.stdout", stdout):
@@ -309,7 +309,7 @@ class TestConfigCli(unittest.TestCase):
 class TestCheckBackendCli(unittest.TestCase):
     """Tests for _check_backend_cli output."""
 
-    @patch("claude_auto_review.install.config_cli.shutil.which", return_value="/usr/local/bin/claude")
+    @patch("claude_auto_review.install.config_cli_display.shutil.which", return_value="/usr/local/bin/claude")
     def test_found_prints_checkmark(self, mock_which):
         buf = io.StringIO()
         with patch("sys.stdout", buf):
@@ -319,7 +319,7 @@ class TestCheckBackendCli(unittest.TestCase):
         self.assertIn("/usr/local/bin/claude", output)
         self.assertNotIn("not found", output)
 
-    @patch("claude_auto_review.install.config_cli.shutil.which", return_value=None)
+    @patch("claude_auto_review.install.config_cli_display.shutil.which", return_value=None)
     def test_not_found_prints_warning_with_hint(self, mock_which):
         buf = io.StringIO()
         with patch("sys.stdout", buf):
@@ -328,7 +328,7 @@ class TestCheckBackendCli(unittest.TestCase):
         self.assertIn("[WARN] codex CLI not found", output)
         self.assertIn("npm install -g @openai/codex", output)
 
-    @patch("claude_auto_review.install.config_cli.shutil.which", return_value=None)
+    @patch("claude_auto_review.install.config_cli_display.shutil.which", return_value=None)
     def test_not_found_claude_shows_claude_hint(self, mock_which):
         buf = io.StringIO()
         with patch("sys.stdout", buf):
@@ -336,7 +336,7 @@ class TestCheckBackendCli(unittest.TestCase):
         output = buf.getvalue()
         self.assertIn("npm install -g @anthropic-ai/claude-code", output)
 
-    @patch("claude_auto_review.install.config_cli.shutil.which", return_value="/usr/bin/codex")
+    @patch("claude_auto_review.install.config_cli_display.shutil.which", return_value="/usr/bin/codex")
     def test_non_interactive_backend_flag_checks_cli(self, mock_which):
         with tempfile.TemporaryDirectory() as tmp:
             settings_path = Path(tmp) / ".claude" / "settings.json"

@@ -22,6 +22,8 @@ Backend: {reviewer_backend} | Model: {reviewer_model}
 ## Findings
 ```
 
+Write each finding as a numbered bullet in this shape when possible: `1. **Confirmed - Medium** ...` or `1. **Skipped - Medium** ...`.
+If the issue has no clear severity, use `Confirmed - Info`.
 If no findings exist, write "Clean - no issues found. Claude may stop." under "## Verdict".
 If you record one or more findings under "## Findings", you MUST NOT use a clean verdict. End with a blocking verdict such as "N issues found. Claude must address all findings before stopping."
 

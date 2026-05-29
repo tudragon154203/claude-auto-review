@@ -72,9 +72,10 @@ class TestFinalizeEdgeCases(unittest.TestCase):
     @patch("claude_auto_review.stop.orchestration.finalize.get_entries_covered_by_review", return_value=[])
     @patch("claude_auto_review.stop.orchestration.finalize.block_pending_review")
     @patch("claude_auto_review.stop.orchestration.finalize.log_event")
-    @patch("claude_auto_review.stop.orchestration.finalize.build_review_completion_prompt")
+    @patch("claude_auto_review.stop.orchestration.finalize_autocomplete.log_event")
+    @patch("claude_auto_review.stop.orchestration.finalize_autocomplete.build_review_completion_prompt")
     @patch(
-        "claude_auto_review.stop.orchestration.finalize.attempt_stop_autocomplete",
+        "claude_auto_review.stop.orchestration.finalize_autocomplete.attempt_stop_autocomplete",
         side_effect=[
             MagicMock(status="empty_stdout"),
             MagicMock(status="empty_stdout"),
@@ -82,13 +83,13 @@ class TestFinalizeEdgeCases(unittest.TestCase):
     )
     @patch("claude_auto_review.stop.orchestration.finalize.classify_review_artifact_state")
     def test_empty_stdout_after_retry_blocks_pending_review(
-        self, mock_classify, mock_auto, mock_prompt, mock_log, mock_block_pending, mock_covered
+        self, mock_classify, mock_auto, mock_prompt, mock_autocomplete_log, mock_log, mock_block_pending, mock_covered
     ):
         mock_classify.side_effect = [MagicMock(status="pending"), MagicMock(status="pending")]
         mock_block_pending.return_value = EXIT_REVIEW_FAILED
         result = finalize_review_stop(_ctx(), self.resolution)
         self.assertEqual(result, EXIT_REVIEW_FAILED)
-        mock_log.assert_any_call(
+        mock_autocomplete_log.assert_any_call(
             Path("/fake"),
             "stop_hook_reviewer_retry",
             client_id="c",
@@ -103,7 +104,7 @@ class TestFinalizeEdgeCases(unittest.TestCase):
         mock_block_pending.assert_called_once()
 
     @patch("claude_auto_review.stop.orchestration.finalize.get_entries_covered_by_review", return_value=[])
-    @patch("claude_auto_review.stop.orchestration.finalize.apply_completed_review")
+    @patch("claude_auto_review.stop.orchestration.finalize_plan_executor.apply_completed_review")
     @patch("claude_auto_review.stop.orchestration.finalize.block_response")
     def test_completed_clean_with_remaining_files_blocks(
         self, mock_block_response, mock_apply, mock_covered

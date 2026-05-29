@@ -40,16 +40,17 @@ class TestFinalizeCompletedReview(unittest.TestCase):
         )
 
     @patch("claude_auto_review.stop.orchestration.finalize.get_entries_covered_by_review", return_value=[])
-    @patch("claude_auto_review.stop.orchestration.finalize.apply_completed_review", return_value=[])
+    @patch("claude_auto_review.stop.orchestration.finalize_plan_executor.apply_completed_review", return_value=[])
     @patch("claude_auto_review.stop.orchestration.finalize.classify_review_artifact_state")
     @patch("claude_auto_review.stop.orchestration.finalize.approve_response")
     @patch("claude_auto_review.stop.orchestration.finalize.log_event")
-    def test_completed_no_remaining_returns_0(self, mock_log, mock_approve, mock_classify, mock_apply, mock_covered):
+    @patch("claude_auto_review.stop.orchestration.finalize_plan_executor.log_event")
+    def test_completed_no_remaining_returns_0(self, mock_plan_log, mock_log, mock_approve, mock_classify, mock_apply, mock_covered):
         mock_classify.return_value.status = "complete_clean"
         result = finalize_review_stop(_ctx(), self.resolution)
         self.assertEqual(result, EXIT_STOP_APPROVED)
         mock_approve.assert_called_once_with("Claude Auto Review: review r1 clean, all files covered")
-        mock_log.assert_any_call(
+        mock_plan_log.assert_any_call(
             Path("/fake"),
             "stop_approved",
             client_id="c",
@@ -58,8 +59,8 @@ class TestFinalizeCompletedReview(unittest.TestCase):
         )
 
     @patch("claude_auto_review.stop.orchestration.finalize.get_entries_covered_by_review", return_value=[])
-    @patch("claude_auto_review.stop.orchestration.finalize.record_completed_review")
-    @patch("claude_auto_review.stop.orchestration.finalize.block_completed_review_findings")
+    @patch("claude_auto_review.stop.orchestration.finalize_plan_executor.record_completed_review")
+    @patch("claude_auto_review.stop.orchestration.finalize_plan_executor.block_completed_review_findings")
     @patch("claude_auto_review.stop.orchestration.finalize.classify_review_artifact_state")
     def test_completed_with_findings_returns_2(self, mock_classify, mock_block, mock_record, mock_covered):
         mock_classify.return_value.status = "complete_findings"
@@ -69,9 +70,9 @@ class TestFinalizeCompletedReview(unittest.TestCase):
         mock_record.assert_called_once()
 
     @patch("claude_auto_review.stop.orchestration.finalize.get_entries_covered_by_review", return_value=[])
-    @patch("claude_auto_review.stop.orchestration.finalize.apply_completed_review", return_value=[])
+    @patch("claude_auto_review.stop.orchestration.finalize_plan_executor.apply_completed_review", return_value=[])
     @patch("claude_auto_review.stop.orchestration.finalize.approve_response")
-    @patch("claude_auto_review.stop.orchestration.finalize.block_completed_review_findings")
+    @patch("claude_auto_review.stop.orchestration.finalize_plan_executor.block_completed_review_findings")
     def test_completed_clean_verdict_with_low_findings_approves_at_default_threshold(
         self, mock_block, mock_approve, mock_apply, mock_covered
     ):
@@ -103,8 +104,8 @@ class TestFinalizeCompletedReview(unittest.TestCase):
             )
 
     @patch("claude_auto_review.stop.orchestration.finalize.get_entries_covered_by_review", return_value=[])
-    @patch("claude_auto_review.stop.orchestration.finalize.record_completed_review")
-    @patch("claude_auto_review.stop.orchestration.finalize.block_completed_review_findings")
+    @patch("claude_auto_review.stop.orchestration.finalize_plan_executor.record_completed_review")
+    @patch("claude_auto_review.stop.orchestration.finalize_plan_executor.block_completed_review_findings")
     def test_completed_clean_verdict_with_medium_findings_blocks_at_default_threshold(
         self, mock_block, mock_record, mock_covered
     ):

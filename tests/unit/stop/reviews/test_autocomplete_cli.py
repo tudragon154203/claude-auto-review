@@ -12,8 +12,8 @@ def _ctx(project_root=Path("/fake"), client_id="c"):
 
 
 class TestAutoCompleteCLI(unittest.TestCase):
-    @patch("claude_auto_review.stop.reviews.prompt_runner.log_event")
-    @patch("claude_auto_review.stop.reviews.prompt_runner.shutil.which", return_value=None)
+    @patch("claude_auto_review.stop.reviews.prompt_runner_claude.log_event")
+    @patch("claude_auto_review.stop.reviews.prompt_runner_claude.shutil.which", return_value=None)
     def test_claude_cli_not_found(self, mock_which, mock_log):
         result = attempt_stop_autocomplete(
             _ctx(),
@@ -25,8 +25,8 @@ class TestAutoCompleteCLI(unittest.TestCase):
         self.assertFalse(result)
         mock_log.assert_called_with(Path("/fake"), "stop_hook_reviewer_not_found", client_id="c", backend="claude")
 
-    @patch("claude_auto_review.stop.reviews.prompt_runner.log_event")
-    @patch("claude_auto_review.stop.reviews.prompt_runner.shutil.which", return_value="/usr/bin/claude")
+    @patch("claude_auto_review.stop.reviews.prompt_runner_claude.log_event")
+    @patch("claude_auto_review.stop.reviews.prompt_runner_claude.shutil.which", return_value="/usr/bin/claude")
     def test_prompt_file_not_found(self, mock_which, mock_log):
         result = attempt_stop_autocomplete(
             _ctx(),
@@ -40,12 +40,12 @@ class TestAutoCompleteCLI(unittest.TestCase):
             Path("/fake"), "stop_hook_prompt_not_found", client_id="c", path=str(Path("/nonexistent.md"))
         )
 
-    @patch("claude_auto_review.stop.reviews.prompt_runner.log_event")
+    @patch("claude_auto_review.stop.reviews.prompt_runner_claude.log_event")
     @patch(
         "claude_auto_review.stop.reviews.prompt_runner.run_captured",
         side_effect=subprocess.TimeoutExpired(cmd="claude", timeout=600),
     )
-    @patch("claude_auto_review.stop.reviews.prompt_runner.shutil.which", return_value="/usr/bin/claude")
+    @patch("claude_auto_review.stop.reviews.prompt_runner_claude.shutil.which", return_value="/usr/bin/claude")
     @patch("pathlib.Path.is_file", return_value=True)
     def test_subprocess_timeout(self, mock_is_file, mock_which, mock_run, mock_log):
         result = attempt_stop_autocomplete(
@@ -60,9 +60,9 @@ class TestAutoCompleteCLI(unittest.TestCase):
             Path("/fake"), "stop_hook_reviewer_timeout", client_id="c", reviewId="r", backend="claude"
         )
 
-    @patch("claude_auto_review.stop.reviews.prompt_runner.log_event")
+    @patch("claude_auto_review.stop.reviews.prompt_runner_claude.log_event")
     @patch("claude_auto_review.stop.reviews.prompt_runner.run_captured")
-    @patch("claude_auto_review.stop.reviews.prompt_runner.shutil.which", return_value="/usr/bin/claude")
+    @patch("claude_auto_review.stop.reviews.prompt_runner_claude.shutil.which", return_value="/usr/bin/claude")
     @patch("pathlib.Path.is_file", return_value=True)
     def test_passes_configured_timeout_to_subprocess(self, mock_is_file, mock_which, mock_run, mock_log):
         mock_run.return_value = MagicMock(returncode=1, stdout="", stderr="")
@@ -76,9 +76,9 @@ class TestAutoCompleteCLI(unittest.TestCase):
         )
         self.assertEqual(mock_run.call_args.kwargs["timeout"], 42.0)
 
-    @patch("claude_auto_review.stop.reviews.prompt_runner.log_event")
+    @patch("claude_auto_review.stop.reviews.prompt_runner_claude.log_event")
     @patch("claude_auto_review.stop.reviews.prompt_runner.run_captured")
-    @patch("claude_auto_review.stop.reviews.prompt_runner.shutil.which", return_value="/usr/bin/claude")
+    @patch("claude_auto_review.stop.reviews.prompt_runner_claude.shutil.which", return_value="/usr/bin/claude")
     @patch("pathlib.Path.is_file", return_value=True)
     def test_general_exception(self, mock_is_file, mock_which, mock_run, mock_log):
         mock_run.side_effect = OSError("boom")
@@ -97,7 +97,7 @@ class TestAutoCompleteCLI(unittest.TestCase):
     @patch("claude_auto_review.stop.reviews.prompt_runner.run_captured")
     def test_run_claude_cli_uses_append_system_prompt_file(self, mock_run):
         prompt_file = Path("/fake/prompt.md")
-        from claude_auto_review.stop.reviews.prompt_runner import _run_claude_cli
+        from claude_auto_review.stop.reviews.prompt_runner_claude import _run_claude_cli
 
         _run_claude_cli("/usr/bin/claude", prompt_file, "finish review", Path("/cwd"), 42, "claude-sonnet-4-6")
 

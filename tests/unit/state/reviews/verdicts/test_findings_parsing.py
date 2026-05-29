@@ -75,13 +75,16 @@ class TestHasReviewFindings(unittest.TestCase):
         content = "## Findings\n" "### 1. [Critical] Safety issue\n" "**Verdict:** Skipped\n"
         self.assertFalse(has_blocking_review_findings(content, "info"))
 
-    def test_has_blocking_review_findings_missing_severity_blocks(self):
+    def test_has_blocking_review_findings_missing_severity_treated_as_info(self):
+        """Missing severity is treated as info — should not block at medium+ threshold."""
         content = "## Findings\n" "### 1. Missing severity heading\n" "**Verdict:** Confirmed\n"
-        self.assertTrue(has_blocking_review_findings(content, "critical"))
+        self.assertFalse(has_blocking_review_findings(content, "medium"))
+        self.assertTrue(has_blocking_review_findings(content, "info"))
 
-    def test_has_blocking_review_findings_unparseable_confirmed_severity_blocks(self):
+    def test_has_blocking_review_findings_unparseable_confirmed_severity_treated_as_info(self):
         content = "## Findings\n" "### 1. [Mystery] Unexpected label\n" "**Verdict:** Confirmed\n"
-        self.assertTrue(has_blocking_review_findings(content, "medium"))
+        self.assertFalse(has_blocking_review_findings(content, "medium"))
+        self.assertTrue(has_blocking_review_findings(content, "info"))
 
     def test_has_blocking_review_findings_mixed_severities_block_only_at_threshold(self):
         content = (
@@ -365,6 +368,32 @@ class TestHasReviewFindings(unittest.TestCase):
         )
         self.assertTrue(has_review_findings(content))
 
+    def test_parse_review_findings_accepts_codex_inline_confirmed_without_severity_when_fields_present(self):
+        content = (
+            "## Findings\n"
+            "1. **Confirmed - Module import is invalid**\n"
+            "**Location:** claude_auto_review/state/reviews/matching.py:7\n"
+            "**Fix:** Import the correct symbol.\n"
+            "**Verdict:** Confirmed\n\n"
+            "## Verdict\n"
+            "1 issue found. Claude must address all findings before stopping.\n"
+        )
+        findings = parse_review_findings(content)
+        self.assertEqual(len(findings), 1)
+        self.assertEqual(findings[0].verdict, "Confirmed")
+        self.assertIsNone(findings[0].severity)
+        self.assertEqual(findings[0].location, "claude_auto_review/state/reviews/matching.py:7")
+        self.assertEqual(findings[0].fix, "Import the correct symbol.")
 
-if __name__ == "__main__":
-    unittest.main()
+    def test_has_blocking_review_findings_codex_inline_without_severity_uses_info_threshold(self):
+        content = (
+            "## Findings\n"
+            "1. **Confirmed - Module import is invalid**\n"
+            "**Location:** claude_auto_review/state/reviews/matching.py:7\n"
+            "**Fix:** Import the correct symbol.\n"
+            "**Verdict:** Confirmed\n\n"
+            "## Verdict\n"
+            "1 issue found. Claude must address all findings before stopping.\n"
+        )
+        self.assertFalse(has_blocking_review_findings(content, "medium"))
+        self.assertTrue(has_blocking_review_findings(content, "info"))

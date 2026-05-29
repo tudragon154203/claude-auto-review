@@ -14,7 +14,8 @@ from claude_auto_review.stop.orchestration.context import RuntimeContext
 from claude_auto_review.stop.orchestration.resolution import StopFlowResolution
 from claude_auto_review.stop.orchestration.review_artifact_evaluator import classify_review_artifact_state
 from claude_auto_review.stop.reviews.enums import StopAllowReason
-from claude_auto_review.stop.reviews.prompt_runner import AutocompleteResult, attempt_stop_autocomplete
+from claude_auto_review.stop.reviews.prompt_runner import attempt_stop_autocomplete
+from claude_auto_review.stop.reviews.review_result import AutocompleteResult
 from claude_auto_review.stop.reviews.review_prompt_runner import (
     _block_review_prompt_failure,
     _reload_client_state,
