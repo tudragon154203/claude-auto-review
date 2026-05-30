@@ -9,7 +9,6 @@ from claude_auto_review.stop.orchestration.pending import resolve_pending_review
 from claude_auto_review.stop.orchestration.resolution import ReviewResolution
 
 
-
 def _mk_edit(file: str = "a.py", hash: str = "h1") -> EditRecord:
     return EditRecord(timestamp="2026-05-11T10:00:00+07:00", file=file, hash=hash)
 
@@ -34,6 +33,10 @@ def _ctx(project_root=Path("/fake"), client_id="c", settings=None, payload=None)
     )
 
 
+def _mock_emitter():
+    return MagicMock()
+
+
 class TestResolvePendingReview(unittest.TestCase):
     base_kwargs = {
         "state": [],
@@ -47,7 +50,8 @@ class TestResolvePendingReview(unittest.TestCase):
     def test_existing_pending_review_returns_review(self, mock_run, mock_find):
         review = _mk_review()
         mock_find.return_value = review
-        result = resolve_pending_review(_ctx(), **self.base_kwargs)
+        emitter = _mock_emitter()
+        result = resolve_pending_review(_ctx(), **self.base_kwargs, emitter=emitter)
         self.assertIsInstance(result, ReviewResolution)
         self.assertEqual(result.review, review)
         mock_run.assert_not_called()
@@ -59,29 +63,31 @@ class TestResolvePendingReview(unittest.TestCase):
         mock_result.stdout = ""
         mock_result.stderr = ""
         mock_run.return_value = mock_result
-        resolve_pending_review(_ctx(), **self.base_kwargs)
+        emitter = _mock_emitter()
+        result = resolve_pending_review(_ctx(), **self.base_kwargs, emitter=emitter)
         mock_run.assert_called_once()
 
     @patch("claude_auto_review.stop.orchestration.pending.find_pending_review_for_files")
     @patch("claude_auto_review.stop.orchestration.review_executor.run_review_prompt", side_effect=subprocess.TimeoutExpired(cmd="x", timeout=60))
     def test_timeout_blocks_stop(self, mock_run, mock_find):
         mock_find.return_value = None
-        result = resolve_pending_review(_ctx(), **self.base_kwargs)
+        emitter = _mock_emitter()
+        result = resolve_pending_review(_ctx(), **self.base_kwargs, emitter=emitter)
         self.assertEqual(result.exit_code, 2)
 
     @patch("claude_auto_review.stop.orchestration.pending.find_pending_review_for_files")
     @patch("claude_auto_review.stop.orchestration.review_executor.run_review_prompt", side_effect=OSError("boom"))
     def test_error_blocks_stop(self, mock_run, mock_find):
         mock_find.return_value = None
-        result = resolve_pending_review(_ctx(), **self.base_kwargs)
+        emitter = _mock_emitter()
+        result = resolve_pending_review(_ctx(), **self.base_kwargs, emitter=emitter)
         self.assertEqual(result.exit_code, 2)
 
     @patch("claude_auto_review.stop.orchestration.review_executor._reload_client_state")
     @patch("claude_auto_review.stop.orchestration.pending.find_pending_review_for_files")
     @patch("claude_auto_review.stop.orchestration.review_executor.run_review_prompt")
-    @patch("claude_auto_review.stop.orchestration.response_actions.approve_response")
     @patch("claude_auto_review.stop.orchestration.review_executor._block_review_prompt_failure")
-    def test_prompt_runs_but_no_review_created_blocks(self, mock_block, mock_approve, mock_run, mock_find, mock_reload):
+    def test_prompt_runs_but_no_review_created_blocks(self, mock_block, mock_run, mock_find, mock_reload):
         mock_find.return_value = None
         mock_result = MagicMock()
         mock_result.stdout = ""
@@ -91,26 +97,27 @@ class TestResolvePendingReview(unittest.TestCase):
         mock_find_second = mock_find
         mock_find_second.return_value = None
 
-        result = resolve_pending_review(_ctx(), **self.base_kwargs)
+        emitter = _mock_emitter()
+        result = resolve_pending_review(_ctx(), **self.base_kwargs, emitter=emitter)
         self.assertEqual(result.exit_code, 2)
         mock_block.assert_called_once()
-        mock_approve.assert_not_called()
+        emitter.approve.assert_not_called()
 
     @patch("claude_auto_review.stop.orchestration.review_executor._reload_client_state")
     @patch("claude_auto_review.stop.orchestration.pending.find_pending_review_for_files", return_value=None)
     @patch("claude_auto_review.stop.orchestration.review_executor.run_review_prompt")
-    @patch("claude_auto_review.stop.orchestration.response_actions.approve_response")
-    def test_prompt_can_clear_unreviewed_and_emits_approval_response(self, mock_approve, mock_run, mock_find, mock_reload):
+    def test_prompt_can_clear_unreviewed_and_emits_approval_response(self, mock_run, mock_find, mock_reload):
         mock_result = MagicMock()
         mock_result.stdout = ""
         mock_result.stderr = ""
         mock_run.return_value = mock_result
         mock_reload.return_value = ([], [])
 
-        result = resolve_pending_review(_ctx(), **self.base_kwargs)
+        emitter = _mock_emitter()
+        result = resolve_pending_review(_ctx(), **self.base_kwargs, emitter=emitter)
 
         self.assertEqual(result.exit_code, 0)
-        mock_approve.assert_called_once_with("Claude Auto Review: stop approved (no_unreviewed_files_after_review)")
+        emitter.approve.assert_called_once_with("Claude Auto Review: stop approved (no_unreviewed_files_after_review)")
 
 
 if __name__ == "__main__":

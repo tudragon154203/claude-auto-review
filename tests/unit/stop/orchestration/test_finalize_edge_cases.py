@@ -31,6 +31,10 @@ def _ctx(project_root=Path("/fake"), client_id="c", settings=None, payload=None)
     )
 
 
+def _mock_emitter():
+    return MagicMock()
+
+
 class TestFinalizeEdgeCases(unittest.TestCase):
     def setUp(self):
         self.resolution = ReviewResolution(
@@ -44,21 +48,23 @@ class TestFinalizeEdgeCases(unittest.TestCase):
     @patch("claude_auto_review.stop.orchestration.finalize_eval.classify_review_artifact_state")
     def test_missing_review_file_blocks(self, mock_classify, mock_block_pending, mock_covered):
         mock_classify.side_effect = [MagicMock(status="pending"), MagicMock(status="pending")]
-        result = finalize_review_stop(_ctx(), self.resolution)
+        emitter = _mock_emitter()
+        result = finalize_review_stop(_ctx(), self.resolution, emitter=emitter)
         self.assertEqual(result, EXIT_REVIEW_FAILED)
 
     @patch("claude_auto_review.stop.orchestration.finalize.get_entries_covered_by_review", return_value=[])
-    @patch("claude_auto_review.stop.orchestration.finalize.block_response")
     @patch("claude_auto_review.stop.orchestration.finalize.log_event")
     def test_invalid_reviewer_backend_blocks_instead_of_approving(
-        self, mock_log, mock_block_response, mock_covered
+        self, mock_log, mock_covered
     ):
+        emitter = _mock_emitter()
         result = finalize_review_stop(
             _ctx(settings=PluginSettings.from_mapping({"reviewerBackend": "codyx"})),
             self.resolution,
+            emitter=emitter,
         )
         self.assertEqual(result, EXIT_REVIEW_FAILED)
-        mock_block_response.assert_called_once_with(
+        emitter.block.assert_called_once_with(
             "Claude Auto Review: invalid reviewerBackend setting",
             "Unsupported reviewer backend: codyx",
         )
@@ -87,7 +93,8 @@ class TestFinalizeEdgeCases(unittest.TestCase):
     ):
         mock_classify.side_effect = [MagicMock(status="pending"), MagicMock(status="pending")]
         mock_block_pending.return_value = EXIT_REVIEW_FAILED
-        result = finalize_review_stop(_ctx(), self.resolution)
+        emitter = _mock_emitter()
+        result = finalize_review_stop(_ctx(), self.resolution, emitter=emitter)
         self.assertEqual(result, EXIT_REVIEW_FAILED)
         mock_autocomplete_log.assert_any_call(
             Path("/fake"),
@@ -105,9 +112,8 @@ class TestFinalizeEdgeCases(unittest.TestCase):
 
     @patch("claude_auto_review.stop.orchestration.finalize.get_entries_covered_by_review", return_value=[])
     @patch("claude_auto_review.stop.orchestration.finalize_plan_executor.apply_completed_review")
-    @patch("claude_auto_review.stop.orchestration.finalize.block_response")
     def test_completed_clean_with_remaining_files_blocks(
-        self, mock_block_response, mock_apply, mock_covered
+        self, mock_apply, mock_covered
     ):
         with tempfile.TemporaryDirectory() as tmpdir:
             project_root = Path(tmpdir)
@@ -120,9 +126,10 @@ class TestFinalizeEdgeCases(unittest.TestCase):
             )
             mock_apply.return_value = [EditRecord(timestamp="t", file="still.ts", hash="abc")]
             resolution = ReviewResolution(state=[], unreviewed=[], review=_mk_review("r1", "fake/r.md"))
-            result = finalize_review_stop(_ctx(project_root=project_root), resolution)
+            emitter = _mock_emitter()
+            result = finalize_review_stop(_ctx(project_root=project_root), resolution, emitter=emitter)
             self.assertEqual(result, EXIT_REVIEW_FAILED)
-            mock_block_response.assert_called_once()
+            emitter.block.assert_called_once()
 
 
 if __name__ == "__main__":

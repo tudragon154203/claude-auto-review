@@ -10,7 +10,7 @@ from claude_auto_review.runtime.events import log_event
 from claude_auto_review.runtime.process import run_captured
 from claude_auto_review.state.store.queries import get_unreviewed_files
 from claude_auto_review.state.store.read import load_state
-from claude_auto_review.stop.response import block_response
+from claude_auto_review.stop.response import ResponseEmitter
 from claude_auto_review.stop.orchestration.context import RuntimeContext
 
 
@@ -41,8 +41,8 @@ def _reload_client_state(ctx: RuntimeContext):
     return state, get_unreviewed_files(state)
 
 
-def _block_review_prompt_failure(files_str, result):
-    block_response(
+def _block_review_prompt_failure(files_str, result, *, emitter):
+    emitter.block(
         f"Claude Auto Review: Failed to create review for {files_str}.",
         f"review_prompt.py ran but no review was created.\n\nOutput:\n{result.stdout}\n\nErrors:\n{result.stderr}",
     )

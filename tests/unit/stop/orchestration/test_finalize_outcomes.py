@@ -2,6 +2,7 @@ import unittest
 from types import SimpleNamespace
 
 from claude_auto_review.stop.orchestration.finalize_outcomes import (
+    FinalizeEffect,
     artifact_status_name,
     plan_for_artifact_state,
     plan_for_invalid_settings,
@@ -18,12 +19,12 @@ class TestFinalizeOutcomes(unittest.TestCase):
 
     def test_complete_clean_maps_to_apply_plan(self):
         plan = plan_for_artifact_state(SimpleNamespace(status="complete_clean"))
-        self.assertEqual(plan.effect, "apply_completed_clean_review")
+        self.assertEqual(plan.effect, FinalizeEffect.APPLY_COMPLETED_CLEAN_REVIEW)
         self.assertEqual(plan.result.action, FinalizeAction.APPROVED)
 
     def test_complete_findings_maps_to_block_plan(self):
         plan = plan_for_artifact_state(SimpleNamespace(status="complete_findings"))
-        self.assertEqual(plan.effect, "record_findings_block")
+        self.assertEqual(plan.effect, FinalizeEffect.RECORD_FINDINGS_BLOCK)
         self.assertEqual(plan.result.action, FinalizeAction.BLOCKED_FINDINGS)
 
     def test_pending_returns_no_plan(self):

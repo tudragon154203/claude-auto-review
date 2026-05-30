@@ -1,14 +1,23 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from enum import Enum
 
 from claude_auto_review.stop.orchestration.resolution import FinalizeAction, FinalizeResult
+
+
+class FinalizeEffect(Enum):
+    APPLY_COMPLETED_CLEAN_REVIEW = "apply_completed_clean_review"
+    RECORD_FINDINGS_BLOCK = "record_findings_block"
+    INVALID_SETTINGS_BLOCK = "invalid_settings_block"
+    PARTIAL_REVIEW_BLOCK = "partial_review_block"
+    PENDING_REVIEW_BLOCK = "pending_review_block"
 
 
 @dataclass(frozen=True)
 class FinalizePlan:
     result: FinalizeResult
-    effect: str
+    effect: FinalizeEffect
 
 
 def approved_result() -> FinalizeResult:
@@ -29,28 +38,28 @@ def artifact_status_name(artifact_state) -> str | None:
 def plan_for_artifact_state(artifact_state):
     status_name = artifact_status_name(artifact_state)
     if status_name == "complete_clean":
-        return FinalizePlan(result=approved_result(), effect="apply_completed_clean_review")
+        return FinalizePlan(result=approved_result(), effect=FinalizeEffect.APPLY_COMPLETED_CLEAN_REVIEW)
     if status_name == "complete_findings":
-        return FinalizePlan(result=blocked_result(FinalizeAction.BLOCKED_FINDINGS), effect="record_findings_block")
+        return FinalizePlan(result=blocked_result(FinalizeAction.BLOCKED_FINDINGS), effect=FinalizeEffect.RECORD_FINDINGS_BLOCK)
     return None
 
 
 def plan_for_invalid_settings():
     return FinalizePlan(
         result=blocked_result(FinalizeAction.BLOCKED_INVALID_SETTINGS),
-        effect="invalid_settings_block",
+        effect=FinalizeEffect.INVALID_SETTINGS_BLOCK,
     )
 
 
 def plan_for_partial_review():
     return FinalizePlan(
         result=blocked_result(FinalizeAction.BLOCKED_PARTIAL_REVIEW),
-        effect="partial_review_block",
+        effect=FinalizeEffect.PARTIAL_REVIEW_BLOCK,
     )
 
 
 def plan_for_pending_review():
     return FinalizePlan(
         result=blocked_result(FinalizeAction.BLOCKED_PENDING),
-        effect="pending_review_block",
+        effect=FinalizeEffect.PENDING_REVIEW_BLOCK,
     )

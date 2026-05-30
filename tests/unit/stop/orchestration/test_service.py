@@ -26,6 +26,7 @@ def _snapshot(events=None):
 
 
 def _deps(**overrides):
+    from unittest.mock import MagicMock
     base = StopFlowDependencies(
         load_state_snapshot=lambda *_args, **_kwargs: _snapshot(),
         get_unreviewed_files=lambda snapshot: snapshot.unreviewed_files,
@@ -34,6 +35,7 @@ def _deps(**overrides):
         resolve_pending_review=lambda *_args, **_kwargs: TerminalResolution(exit_code=2),
         get_reviewer_prompt_script=lambda: "reviewer.py",
         log_event=lambda *_args, **_kwargs: None,
+        emitter=MagicMock(),
     )
     values = base.__dict__ | overrides
     return StopFlowDependencies(**values)

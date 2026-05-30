@@ -4,9 +4,11 @@ from __future__ import annotations
 
 from claude_auto_review.stop.orchestration.context import RuntimeContext
 from claude_auto_review.stop.orchestration.deps import (
+    StopFlowDependencies,
     build_default_dependencies,
 )
 from claude_auto_review.stop.orchestration.service import StopFlowService
+from claude_auto_review.stop.response import ResponseEmitter, StdoutResponseEmitter
 
 
 class StopDecisionEngine:
@@ -24,7 +26,9 @@ class StopDecisionEngine:
         finalize_review_stop_fn=None,
         get_reviewer_prompt_script_fn=None,
         log_event_fn=None,
+        emitter: ResponseEmitter | None = None,
     ):
+        self._emitter = emitter or StdoutResponseEmitter()
         deps, finalize_fn = build_default_dependencies(
             load_state_snapshot_fn=load_state_snapshot_fn,
             get_unreviewed_files_fn=get_unreviewed_files_fn,
@@ -34,6 +38,7 @@ class StopDecisionEngine:
             get_reviewer_prompt_script_fn=get_reviewer_prompt_script_fn,
             log_event_fn=log_event_fn,
             finalize_review_stop_fn=finalize_review_stop_fn,
+            emitter=self._emitter,
         )
         self.ctx = ctx
         self._service = StopFlowService(self.ctx, deps)
@@ -46,5 +51,6 @@ class StopDecisionEngine:
     def evaluate(self):
         return self._service.evaluate()
 
-    def finalize(self, resolution):
-        return self._finalize_review_stop(self.ctx, resolution)
+    def finalize(self, resolution, *, emitter=None):
+        emitter = emitter or self._emitter
+        return self._finalize_review_stop(self.ctx, resolution, emitter=emitter)

@@ -47,16 +47,16 @@ class TestPromptRunner(unittest.TestCase):
             returncode=0,
         )
 
-    @patch("claude_auto_review.stop.reviews.review_prompt_runner.block_response")
-    def test_block_review_prompt_failure_formats_message(self, mock_block):
+    def test_block_review_prompt_failure_formats_message(self):
         result = MagicMock(stdout="stdout text", stderr="stderr text")
+        emitter = MagicMock()
 
-        _block_review_prompt_failure("a.ts", result)
+        _block_review_prompt_failure("a.ts", result, emitter=emitter)
 
-        mock_block.assert_called_once()
-        self.assertIn("Failed to create review for a.ts.", mock_block.call_args.args[0])
-        self.assertIn("stdout text", mock_block.call_args.args[1])
-        self.assertIn("stderr text", mock_block.call_args.args[1])
+        emitter.block.assert_called_once()
+        self.assertIn("Failed to create review for a.ts.", emitter.block.call_args.args[0])
+        self.assertIn("stdout text", emitter.block.call_args.args[1])
+        self.assertIn("stderr text", emitter.block.call_args.args[1])
 
     @patch("claude_auto_review.stop.reviews.review_prompt_runner.get_unreviewed_files", return_value=[{"file": "a.ts"}])
     @patch("claude_auto_review.stop.reviews.review_prompt_runner.load_state", return_value=[{"type": "edit"}])

@@ -25,6 +25,7 @@ def evaluate_artifact_and_plan(
     plan_for_artifact_state_fn=None,
     apply_plan_fn=None,
     attempt_autocomplete_fn=None,
+    emitter=None,
 ):
     """Classify artifact state, attempt autocomplete if needed, and apply a finalize plan.
 
@@ -43,7 +44,7 @@ def evaluate_artifact_and_plan(
     )
     plan = plan_for_artifact_state_fn(artifact_state)
     if plan is not None:
-        return apply_plan_fn(ctx, plan, review_id, review_path, covered_entries, unreviewed)
+        return apply_plan_fn(ctx, plan, review_id, review_path, covered_entries, unreviewed, emitter=emitter)
 
     autocomplete_result = attempt_autocomplete_fn(ctx, review_id, review_path, prompt_file)
 
@@ -54,7 +55,7 @@ def evaluate_artifact_and_plan(
     )
     plan = plan_for_artifact_state_fn(artifact_state)
     if plan is not None:
-        return apply_plan_fn(ctx, plan, review_id, review_path, covered_entries, unreviewed)
+        return apply_plan_fn(ctx, plan, review_id, review_path, covered_entries, unreviewed, emitter=emitter)
 
     if autocomplete_result is not None and autocomplete_result.status == AutocompleteStatus.EMPTY_STDOUT:
         log_event(

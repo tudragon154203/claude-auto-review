@@ -14,14 +14,14 @@ from claude_auto_review.stop.orchestration.finalize_outcomes import (
 )
 from claude_auto_review.stop.orchestration.resolution import FinalizeResult, ReviewResolution
 from claude_auto_review.stop.orchestration.response_actions import block_pending_review
-from claude_auto_review.stop.response import approve_response, block_response
+from claude_auto_review.stop.response import ResponseEmitter
 from claude_auto_review.stop.reviews.review_prompt_runner import _review_prompt_path
 from claude_auto_review.stop.reviews.selection import get_entries_covered_by_review
 from claude_auto_review.stop.orchestration.finalize_payloads import _invalid_backend_payload
 
 
 def finalize_review_stop_result(
-    ctx: RuntimeContext, resolution: ReviewResolution
+    ctx: RuntimeContext, resolution: ReviewResolution, *, emitter: ResponseEmitter
 ) -> tuple[FinalizeResult, ResponsePayload | None]:
     state = resolution.state
     unreviewed = resolution.unreviewed
@@ -49,19 +49,20 @@ def finalize_review_stop_result(
         prompt_file,
         covered_entries,
         unreviewed,
+        emitter=emitter,
     )
     if eval_result is not None:
         return eval_result  # type: ignore[no-any-return]
 
-    block_pending_review(ctx, review_id, review_path, prompt_file, unreviewed)
+    block_pending_review(ctx, review_id, review_path, prompt_file, unreviewed, emitter=emitter)
     return plan_for_pending_review().result, None
 
 
-def finalize_review_stop(ctx: RuntimeContext, resolution: ReviewResolution) -> int:
-    result, payload = finalize_review_stop_result(ctx, resolution)
+def finalize_review_stop(ctx: RuntimeContext, resolution: ReviewResolution, *, emitter: ResponseEmitter) -> int:
+    result, payload = finalize_review_stop_result(ctx, resolution, emitter=emitter)
     if payload is not None:
         if payload.feedback is None:
-            approve_response(payload.system_message)
+            emitter.approve(payload.system_message)
         else:
-            block_response(payload.system_message, payload.feedback)
+            emitter.block(payload.system_message, payload.feedback)
     return result.exit_code

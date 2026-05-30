@@ -7,10 +7,10 @@ from claude_auto_review.stop.orchestration.resolution import ReviewResolution
 from claude_auto_review.stop.reviews.selection import find_pending_review_for_files
 
 
-def resolve_pending_review(ctx: RuntimeContext, state, unreviewed, timeout_hours, review_prompt_script):
+def resolve_pending_review(ctx: RuntimeContext, state, unreviewed, timeout_hours, review_prompt_script, *, emitter):
     review = find_pending_review_for_files(state, unreviewed, ctx.project_root, timeout_hours)
     if review:
         return ReviewResolution(review=review, state=state, unreviewed=unreviewed)
 
     files_str = build_unreviewed_files_string(unreviewed)
-    return execute_review_prompt(ctx, unreviewed, timeout_hours, review_prompt_script, files_str)
+    return execute_review_prompt(ctx, unreviewed, timeout_hours, review_prompt_script, files_str, emitter=emitter)

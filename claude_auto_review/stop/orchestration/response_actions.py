@@ -6,10 +6,9 @@ from claude_auto_review.paths.path_utils import local_now_iso
 from claude_auto_review.state.models import StopBlockedRecord
 from claude_auto_review.state.store.writer import StateEventWriter
 from claude_auto_review.stop.feedback_format import build_unreviewed_files_string
-from claude_auto_review.stop.response import block_response
 from claude_auto_review.stop.orchestration.context import RuntimeContext
 from claude_auto_review.stop.orchestration.resolution import StopFlowResolution, TerminalResolution
-from claude_auto_review.stop.response import approve_response
+from claude_auto_review.stop.response import ResponseEmitter
 
 
 def _display_path(path, project_root):
@@ -24,6 +23,8 @@ def fail_review(
     files_str: str,
     exit_code: int,
     event_type: str,
+    *,
+    emitter: ResponseEmitter,
     script: str | None = None,
     error: Exception | None = None,
 ) -> StopFlowResolution:
@@ -37,19 +38,19 @@ def fail_review(
     )
     if exit_code == EXIT_REVIEW_FAILED:
         if error:
-            block_response(
+            emitter.block(
                 f"Claude Auto Review: Error generating review for {files_str}.",
                 f"Failed to run review_prompt.py: {error}",
             )
         else:
-            block_response(
+            emitter.block(
                 f"Claude Auto Review: Timeout generating review for {files_str}.",
                 "The review generation timed out. Check the logs and try again.",
             )
     return TerminalResolution(exit_code=exit_code)
 
 
-def approve_no_unreviewed_after_review(ctx: RuntimeContext) -> None:
+def approve_no_unreviewed_after_review(ctx: RuntimeContext, *, emitter: ResponseEmitter) -> None:
     """Emit approval when no unreviewed files remain after a review completes."""
     log_event(
         ctx.project_root,
@@ -57,14 +58,14 @@ def approve_no_unreviewed_after_review(ctx: RuntimeContext) -> None:
         client_id=ctx.client_id,
         reason="no_unreviewed_files_after_review",
     )
-    approve_response("Claude Auto Review: stop approved (no_unreviewed_files_after_review)")
+    emitter.approve("Claude Auto Review: stop approved (no_unreviewed_files_after_review)")
 
 
-def block_pending_review(ctx: RuntimeContext, review_id, review_path, prompt_path, unreviewed):
+def block_pending_review(ctx: RuntimeContext, review_id, review_path, prompt_path, unreviewed, *, emitter: ResponseEmitter):
     files_str = build_unreviewed_files_string(unreviewed)
     review_path_rel = _display_path(review_path, ctx.project_root)
     prompt_path_rel = _display_path(prompt_path, ctx.project_root)
-    block_response(
+    emitter.block(
         f"Claude Auto Review: Review {review_id} created for {files_str}.",
         (
             f"Review file created at:\n  {review_path_rel}\n\n"

@@ -57,6 +57,7 @@ class StopFlowService:
             unreviewed,
             resolve_pending_review_fn=self.deps.resolve_pending_review,
             get_reviewer_prompt_script_fn=self.deps.get_reviewer_prompt_script,
+            emitter=self.deps.emitter,
         )
 
     def run(self) -> StopDecision:

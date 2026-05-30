@@ -74,13 +74,18 @@ def run_pending_stage(
     *,
     resolve_pending_review_fn: PendingReviewResolver,
     get_reviewer_prompt_script_fn: ReviewerPromptScriptProvider,
+    emitter=None,
 ) -> StopDecision:
+    kwargs = {}
+    if emitter is not None:
+        kwargs["emitter"] = emitter
     resolution = resolve_pending_review_fn(
         ctx,
         state,
         unreviewed,
         ctx.settings.pending_review_timeout_hours,
         get_reviewer_prompt_script_fn(),
+        **kwargs,
     )
     if isinstance(resolution, TerminalResolution):
         return StopDecision(kind=StopDecisionKind.TERMINAL, details={"exit_code": resolution.exit_code})
