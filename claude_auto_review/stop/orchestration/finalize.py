@@ -53,7 +53,7 @@ def finalize_review_stop_result(
         unreviewed,
     )
     if eval_result is not None:
-        return eval_result
+        return eval_result  # type: ignore[no-any-return]
 
     block_pending_review(ctx, review_id, review_path, prompt_file, unreviewed)
     return plan_for_pending_review().result, None

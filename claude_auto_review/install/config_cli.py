@@ -11,12 +11,16 @@ if __name__ == "__main__":
         sys.path.insert(0, str(_plugin_root))
 
 from claude_auto_review.config.io import load_settings
-from claude_auto_review.config.models import DEFAULT_REVIEWER_MODELS
+from claude_auto_review.config.models import DEFAULT_REVIEWER_MODELS, PluginSettings  # noqa: F401
 from claude_auto_review.install.config_cli_io import _ensure_initialized, _is_initialized, _write_plugin_settings
 from claude_auto_review.install.config_cli_apply import _apply_args, _normalize_max_stop_passes
-from claude_auto_review.install.config_cli_prompts import SEVERITY_CHOICES, _run_wizard
+from claude_auto_review.install.config_cli_prompts import SEVERITY_CHOICES, _prompt_choice, _prompt_int, _prompt_text, _run_wizard  # noqa: F401
 from claude_auto_review.install.config_cli_display import (
+    _BACKEND_INSTALL_HINTS,  # noqa: F401
+    ADVANCED_SETTING_KEYS,  # noqa: F401
+    SETTING_DESCRIPTIONS,  # noqa: F401
     _check_backend_cli,
+    _print_advanced_settings,  # noqa: F401
     _print_summary,
 )
 from claude_auto_review.paths.path_utils import get_project_root
