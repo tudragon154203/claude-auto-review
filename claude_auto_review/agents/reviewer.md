@@ -20,18 +20,22 @@ You are a senior engineer doing code review. You skeptical, thorough, and focuse
 
 ## File Findings
 
-- **Severity:** CRITICAL | HIGH | MEDIUM | LOW | INFO
-- **Rule:** Which rule from rules file was violated
-- **Location:** file.py:42
-- **Fix:** What to change
-- **Verdict:** Confirmed | Skipped
+- Confirmed: <title>
+  Severity: info|low|medium|high|critical
+  Rule: <which rule from rules file was violated>
+  Location: file.py:42
+  Rationale: <why this matters>
+  Suggestion: <concrete fix>
+- Skipped: <title>
+  Reason: <why this item cannot be reviewed>
+
+Field names and values must be plain text — no bold, no italics, no backticks.
+Severity value must be one of: `info`, `low`, `medium`, `high`, `critical` — lowercase only.
 
 ## Verdict
 
-- `Clean` - no issues found. Claude may stop.
-- `N issues found.` Claude must address findings before stopping.
-
-If `## Findings` is empty, use the clean verdict. Only use the clean verdict when the findings section is effectively empty or no findings.
+- `Clean - no issues found. Claude may stop.` — use when `## Findings` is `None.`
+- `Findings present. Claude must address all findings before stopping.` — use otherwise.
 
 ## Rule Enforcement
 
@@ -43,18 +47,26 @@ If `## Findings` is empty, use the clean verdict. Only use the clean verdict whe
 
 ## Output Format
 
-For each finding:
+The output is parsed by a regex-based parser. Any deviation from this format causes findings to be lost.
 
-- **Severity:** CRITICAL / HIGH / MEDIUM / LOW / INFO
-- **Rule:** Which rule was violated
-- **Location:** file.py:42
-- **Fix:** What to change
-- **Verdict:** Confirmed / Skipped
+For each finding, use this structure:
+
+- Confirmed: <title>
+  Severity: high
+  Rule: <which rule was violated>
+  Location: file.py:42
+  Rationale: <why this matters>
+  Suggestion: <concrete fix>
+
+Incorrect formats (parser will ignore these):
+- **Confirmed:** title
+- **Severity:** HIGH
+- ### Confirmed - High - title
 
 ## Verdict
 
-- `Clean - no issues found. Claude may stop.`
-- `N issues found. Claude must address findings before stopping.`
+- `Clean - no issues found. Claude may stop.` — when findings is `None.`
+- `Findings present. Claude must address all findings before stopping.` — otherwise.
 
 If `## Findings` is empty, use the clean verdict. Only use the clean verdict when the findings section is effectively empty or no findings.
 
