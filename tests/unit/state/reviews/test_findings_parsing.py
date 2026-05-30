@@ -67,7 +67,8 @@ class TestParseReviewFindings(unittest.TestCase):
         )
         findings = parse_review_findings(content)
         self.assertEqual(len(findings), 1)
-        self.assertIsNone(findings[0].severity)
+        # "High-level" is not a valid verdict-severity badge → <unrecognized>
+        self.assertEqual(findings[0].severity, "<unrecognized>")
         self.assertEqual(findings[0].verdict, "Confirmed")
 
     def test_ignores_hyphenated_inline_badges(self):

@@ -75,11 +75,12 @@ class TestHasReviewFindings(unittest.TestCase):
         content = "## Findings\n" "### 1. [Critical] Safety issue\n" "**Verdict:** Skipped\n"
         self.assertFalse(has_blocking_review_findings(content, "info"))
 
-    def test_has_blocking_review_findings_missing_severity_blocks(self):
-        """Missing severity (no field at all) always blocks."""
+    def test_has_blocking_review_findings_missing_severity_with_canonical_fields_is_ambiguous(self):
+        """Missing severity with canonical fields (no contradiction) is ambiguous —
+        F2 fix: treat as non-blocking rather than conservative block."""
         content = "## Findings\n" "### 1. Missing severity heading\n" "**Verdict:** Confirmed\n"
-        self.assertTrue(has_blocking_review_findings(content, "medium"))
-        self.assertTrue(has_blocking_review_findings(content, "high"))
+        self.assertFalse(has_blocking_review_findings(content, "medium"))
+        self.assertFalse(has_blocking_review_findings(content, "high"))
 
     def test_has_blocking_review_findings_unparseable_confirmed_severity_blocks(self):
         """Unrecognized severity in brackets is treated as the default blocking level (medium)."""
@@ -275,7 +276,9 @@ class TestHasReviewFindings(unittest.TestCase):
         )
         findings = parse_review_findings(content)
         self.assertEqual(len(findings), 1)
-        self.assertIsNone(findings[0].severity)
+        # "High-level" is not a valid verdict-severity badge; the single-word
+        # fallback marks it as <unrecognized> rather than dropping to None.
+        self.assertEqual(findings[0].severity, "<unrecognized>")
         self.assertEqual(findings[0].verdict, "Confirmed")
 
     def test_parse_review_findings_ignores_hyphenated_inline_badges(self):
@@ -385,6 +388,8 @@ class TestHasReviewFindings(unittest.TestCase):
         self.assertIn("Module import is invalid", findings[0].raw_text)
 
     def test_has_blocking_review_findings_codex_inline_without_severity_blocks(self):
+        """F2: codex-style finding with canonical fields but no contradiction →
+        ambiguous, does not block."""
         content = (
             "## Findings\n"
             "1. **Confirmed - Module import is invalid**\n"
@@ -394,8 +399,8 @@ class TestHasReviewFindings(unittest.TestCase):
             "## Verdict\n"
             "1 issue found. Claude must address all findings before stopping.\n"
         )
-        self.assertTrue(has_blocking_review_findings(content, "medium"))
-        self.assertTrue(has_blocking_review_findings(content, "info"))
+        self.assertFalse(has_blocking_review_findings(content, "medium"))
+        self.assertFalse(has_blocking_review_findings(content, "info"))
 
     def test_parse_review_findings_ignores_severity_field_in_prose(self):
         content = (

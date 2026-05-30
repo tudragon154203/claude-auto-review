@@ -55,11 +55,12 @@ class TestParseReviewFindingsEdgeCases(unittest.TestCase):
         self.assertEqual(findings[0].verdict, "confirmed")
 
     def test_bracket_confirmed_invalid_severity_not_treated_as_verdict_severity(self):
-        """[Confirmed-Invalid] doesn't split into verdict+severity — severity not recognized."""
+        """[Confirmed-Invalid] splits into verdict=confirmed, severity=<unrecognized>."""
         content = "## Findings\n### [Confirmed-Invalid] Something\n**Verdict:** Confirmed\n"
         findings = parse_review_findings(content)
         self.assertEqual(len(findings), 1)
-        self.assertEqual(findings[0].verdict, "Confirmed")
+        self.assertEqual(findings[0].verdict, "confirmed")
+        self.assertEqual(findings[0].severity, "<unrecognized>")
 
     # --- Canonical indented fields ---
 
