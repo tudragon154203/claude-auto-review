@@ -8,7 +8,7 @@ You must review the changed files before stopping. Use the reviewer agent behavi
 
 Output only the final review markdown to stdout. It will be captured and saved to the review file. Do not emit progress updates, planning notes, or any text before or after the final markdown review. You do not have Write or Edit tools.
 
-Use this exact structure:
+Use this exact structure. The review is parsed by a regex-based parser. Any deviation from this format causes findings to be lost.
 
 ```markdown
 # Review {review_id} - {readable_timestamp}
@@ -21,7 +21,7 @@ Backend: {reviewer_backend} | Model: {reviewer_model}
 
 ## Findings
 - Confirmed: <title>
-  Severity: info|low|medium|high|critical
+  Severity: <info|low|medium|high|critical>
   Location: path:line
   Rationale: <why this matters>
   Suggestion: <concrete fix>
@@ -35,12 +35,26 @@ Clean - no issues found. Claude may stop.
 Rules for `## Findings`:
 - Use only top-level `- Confirmed:` or `- Skipped:` entries for findings.
 - Put details on indented `Field: value` lines under that bullet.
+  Field names and values must be plain text — no bold, no italics, no backticks.
+  Correct: `  Severity: high`
+  Wrong:   `  **Severity:** high` or `  - Severity: high`
+- Severity value must be one of: `info`, `low`, `medium`, `high`, `critical` — lowercase only.
 - If there are no findings, write exactly `None.` under `## Findings`.
 - Do not write notes, commentary, or summaries inside `## Findings`.
+- Do not add blank lines, horizontal rules, or code blocks between findings.
 
 Rules for `## Verdict`:
-- If `## Findings` is `None.`, write exactly `Clean - no issues found. Claude may stop.`
-- Otherwise write exactly `Findings present. Claude must address all findings before stopping.`
+- If `## Findings` is exactly `None.`, write verbatim: `Clean - no issues found. Claude may stop.`
+- Otherwise write verbatim: `Findings present. Claude must address all findings before stopping.`
+
+Incorrect formats (parser will ignore these):
+```
+- **Confirmed:** title
+  **Severity:** High
+### Confirmed - High - title
+- Confirmed: title (severity: medium)
+Clean — no issues found
+```
 
 ## Files To Review
 {file_list}
