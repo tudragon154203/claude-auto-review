@@ -51,7 +51,7 @@ def create_review_prompt_files(ctx: RuntimeContext, unreviewed, settings=None):
 
     rules = read_if_exists(resolve_rules_file_path(ctx.project_root, settings))
     diff = all_session_diffs(files, ctx.project_root, ctx.client_id)
-    snapshots = ""
+    snapshots = ""  # noqa: F841 — reserved for future snapshot embedding
 
     reviewer_backend = settings.reviewer_backend
     try:

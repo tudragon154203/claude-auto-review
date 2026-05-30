@@ -7,7 +7,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[4]
 sys.path.insert(0, str(REPO_ROOT))
 
-from tests.int.hooks.support import HookTestCase
+from tests.int.hooks.support import HookTestCase  # noqa: E402
 
 
 class TestUninstallFlow(HookTestCase, unittest.TestCase):

@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from claude_auto_review.stop.orchestration.context import RuntimeContext, StopDecision
 from claude_auto_review.stop.orchestration.deps import StopFlowDependencies as StopFlowDependencies
-from claude_auto_review.stop.orchestration.resolution import StopDecisionKind
 from claude_auto_review.stop.orchestration.stages import (
     run_allow_no_unreviewed_stage,
     run_circuit_breaker_stage,

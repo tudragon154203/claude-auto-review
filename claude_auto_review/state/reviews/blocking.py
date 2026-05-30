@@ -6,7 +6,8 @@ import re
 from claude_auto_review.config.models import (
     DEFAULT_MINIMUM_BLOCKING_SEVERITY,
 )
-from claude_auto_review.state.reviews.detection import _CONTRADICTION_RE, _is_no_findings_line, has_review_findings
+from claude_auto_review.state.reviews.detection import has_review_findings
+from claude_auto_review.state.reviews.no_findings import _CONTRADICTION_RE, _is_no_findings_line
 from claude_auto_review.state.reviews.parsing import _UNRECOGNIZED_SEVERITY, parse_review_findings
 
 logger = logging.getLogger(__name__)

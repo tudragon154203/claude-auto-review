@@ -55,11 +55,6 @@ class TestPathUtils(StateTestCase, unittest.TestCase):
         result = get_state_path(project_root)
         self.assertEqual(result, project_root / ".claude" / "claude-auto-review" / "state.jsonl")
 
-    def test_get_state_path_returns_correct_path(self):
-        project_root = self.temp_project()
-        result = get_state_path(project_root)
-        self.assertEqual(result, project_root / ".claude" / "claude-auto-review" / "state.jsonl")
-
     def test_get_client_runtime_dir_refreshes_deleted_cached_path(self):
         project_root = self.temp_project()
         client_id = "session-a"

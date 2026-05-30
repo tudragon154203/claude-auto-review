@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-from pathlib import Path
 
 from claude_auto_review.runtime.hook_identity import command_targets_plugin
 

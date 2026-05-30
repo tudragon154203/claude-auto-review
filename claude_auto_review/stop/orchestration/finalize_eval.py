@@ -11,7 +11,6 @@ from claude_auto_review.stop.orchestration.finalize_plan_executor import _apply_
 from claude_auto_review.stop.orchestration.finalize_autocomplete import _attempt_review_autocomplete
 from claude_auto_review.stop.orchestration.review_artifact_evaluator import classify_review_artifact_state
 from claude_auto_review.stop.reviews.enums import AutocompleteStatus
-from claude_auto_review.stop.reviews.review_result import AutocompleteResult
 
 
 def evaluate_artifact_and_plan(

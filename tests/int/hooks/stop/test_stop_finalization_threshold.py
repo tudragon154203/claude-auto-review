@@ -1,7 +1,6 @@
 import json
 import unittest
 
-from claude_auto_review.state.store.read import load_state
 from tests.int.hooks.support import HookTestCase
 from tests.support import start_classifier_server
 

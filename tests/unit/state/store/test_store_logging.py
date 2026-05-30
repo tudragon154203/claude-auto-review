@@ -4,7 +4,6 @@ from claude_auto_review.paths.path_utils import get_state_path, local_now_iso
 from claude_auto_review.runtime.client_dirs import client_state_path
 from claude_auto_review.runtime.events import log_event
 from claude_auto_review.runtime.setup import ensure_client_runtime
-from claude_auto_review.state.store.write import append_state_event
 from tests.unit.state.support import StateTestCase
 
 

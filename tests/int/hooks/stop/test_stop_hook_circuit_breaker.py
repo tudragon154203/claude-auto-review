@@ -6,7 +6,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[4]
 sys.path.insert(0, str(REPO_ROOT))
 from claude_auto_review.state.models import EditRecord  # noqa: E402
-from claude_auto_review.state.store.queries import consecutive_stop_blocks
+from claude_auto_review.state.store.queries import consecutive_stop_blocks  # noqa: E402
 from claude_auto_review.state.store.read import load_state  # noqa: E402
 from claude_auto_review.state.store.write import append_state_event  # noqa: E402
 from tests.int.hooks.support import HookTestCase  # noqa: E402
@@ -74,7 +74,6 @@ class TestStopHookCircuitBreaker(HookTestCase, unittest.TestCase):
     def test_stop_hook_circuit_breaker_settings_override(self):
         """maxStopPasses can be overridden in project settings."""
         project_root = self.project_root
-        client_id = self.CLIENT_ID
         (project_root / ".claude" / "settings.json").write_text(
             json.dumps({"claude-auto-review": {"maxStopPasses": 2, "lastAssistantMessageClassifierEnabled": False}}),
             encoding="utf-8",
