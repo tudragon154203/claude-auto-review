@@ -153,6 +153,18 @@ class TestHookInputExtraction(StateTestCase, unittest.TestCase):
         payload = {"tool_input": {"command": "python -c \"print('rm fake.ts')\""}}
         self.assertEqual(extract_file_paths_from_hook_input(payload), [])
 
+    def test_no_paths_from_python_build_command(self):
+        payload = {"tool_input": {"command": "python build; Write-Host Done"}}
+        self.assertEqual(extract_file_paths_from_hook_input(payload), [])
+
+    def test_no_paths_from_powershell_write_host(self):
+        payload = {"tool_input": {"command": 'Write-Host "Done"; Write-Host "Exit: $exit"'}}
+        self.assertEqual(extract_file_paths_from_hook_input(payload), [])
+
+    def test_remove_item_still_tracked(self):
+        payload = {"tool_input": {"command": 'Remove-Item -Path "dist" -Recurse -Force'}}
+        self.assertEqual(extract_file_paths_from_hook_input(payload), ["dist"])
+
     def test_combined_file_path_and_command(self):
         payload = {"tool_input": {"file_path": "a.ts", "command": 'rm "b.ts"'}}
         self.assertEqual(extract_file_paths_from_hook_input(payload), ["a.ts", "b.ts"])

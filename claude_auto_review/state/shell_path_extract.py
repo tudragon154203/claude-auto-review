@@ -145,10 +145,22 @@ def _extract_paths_from_shell_command(command, project_root=None):
             continue
 
         handler = _handler_for_command(command_name)
-        if handler is not None:
-            if handler in (_move_targets, _git_move_targets):
-                paths.extend(handler(tokens, project_root=project_root))
-            else:
-                paths.extend(handler(tokens))
+        if handler is None:
+            continue
+
+        file_op_names = {
+            "remove-item", "rm", "del",
+            "mv", "move", "move-item", "ren", "rename", "rename-item", "rni",
+            "cp", "copy", "copy-item",
+            "git", "cat", "echo", "printf",
+            "tee", "set-content", "out-file", "touch", "new-item",
+        }
+        if command_name not in file_op_names:
+            continue
+
+        if handler in (_move_targets, _git_move_targets):
+            paths.extend(handler(tokens, project_root=project_root))
+        else:
+            paths.extend(handler(tokens))
 
     return paths
