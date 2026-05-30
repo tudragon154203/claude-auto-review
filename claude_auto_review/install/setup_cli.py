@@ -159,7 +159,11 @@ def _check_and_repair_reviewer(plugin_root: Path) -> tuple[str | None, list[str]
     if not source_path.is_file():
         return None, ["reviewer.md not found — skipping format consistency check"], False
 
-    source_text = source_path.read_text(encoding="utf-8")
+    try:
+        source_text = source_path.read_text(encoding="utf-8")
+    except (UnicodeDecodeError, OSError) as exc:
+        return None, [f"reviewer.md read failed ({exc}); falling back to direct copy"], False
+
     repaired_text, warnings, was_modified = _analyze_reviewer(source_text)
 
     if was_modified:
