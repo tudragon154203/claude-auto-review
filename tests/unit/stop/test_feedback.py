@@ -5,13 +5,13 @@ from unittest.mock import patch
 
 from claude_auto_review.config.models import PluginSettings
 from claude_auto_review.state.models import EditRecord
-from claude_auto_review.stop.feedback import (
-    block_response,
+from claude_auto_review.stop.feedback_format import (
     build_review_completion_prompt,
     build_review_findings_feedback,
     build_unreviewed_files_string,
     review_feedback_max_chars,
 )
+from claude_auto_review.stop.response import block_response
 
 
 class TestFeedback(unittest.TestCase):

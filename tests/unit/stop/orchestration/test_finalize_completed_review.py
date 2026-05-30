@@ -8,7 +8,7 @@ from claude_auto_review.config.models import PluginSettings
 from claude_auto_review.state.models import ReviewMetadata
 from claude_auto_review.stop.orchestration.context import RuntimeContext
 from claude_auto_review.stop.orchestration.finalize import finalize_review_stop
-from claude_auto_review.stop.orchestration.resolution import FinalizeAction, StopFlowResolution
+from claude_auto_review.stop.orchestration.resolution import FinalizeAction, ReviewResolution
 
 
 def _mk_review(reviewId: str = "r1", reviewPath: str = "/fake/r.md") -> ReviewMetadata:
@@ -33,7 +33,7 @@ def _ctx(project_root=Path("/fake"), client_id="c", settings=None, payload=None)
 
 class TestFinalizeCompletedReview(unittest.TestCase):
     def setUp(self):
-        self.resolution = StopFlowResolution(
+        self.resolution = ReviewResolution(
             state=[],
             unreviewed=[],
             review=_mk_review("r1"),
@@ -92,7 +92,7 @@ class TestFinalizeCompletedReview(unittest.TestCase):
                 "Clean - no issues found. Claude may stop.\n",
                 encoding="utf-8",
             )
-            resolution = StopFlowResolution(state=[], unreviewed=[], review=_mk_review("r1", "fake/r.md"))
+            resolution = ReviewResolution(state=[], unreviewed=[], review=_mk_review("r1", "fake/r.md"))
             result = finalize_review_stop(_ctx(project_root=project_root), resolution)
             self.assertEqual(result, EXIT_STOP_APPROVED)
             mock_block.assert_not_called()
@@ -122,7 +122,7 @@ class TestFinalizeCompletedReview(unittest.TestCase):
                 "Clean - no issues found. Claude may stop.\n",
                 encoding="utf-8",
             )
-            resolution = StopFlowResolution(state=[], unreviewed=[], review=_mk_review("r1", "fake/r.md"))
+            resolution = ReviewResolution(state=[], unreviewed=[], review=_mk_review("r1", "fake/r.md"))
             result = finalize_review_stop(_ctx(project_root=project_root), resolution)
             self.assertEqual(result, EXIT_REVIEW_FAILED)
             mock_record.assert_called_once()

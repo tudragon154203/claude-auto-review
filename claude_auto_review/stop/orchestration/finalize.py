@@ -12,7 +12,7 @@ from claude_auto_review.stop.orchestration.finalize_outcomes import (
     plan_for_invalid_settings,
     plan_for_pending_review,
 )
-from claude_auto_review.stop.orchestration.resolution import FinalizeResult, StopFlowResolution
+from claude_auto_review.stop.orchestration.resolution import FinalizeResult, ReviewResolution
 from claude_auto_review.stop.orchestration.response_actions import block_pending_review
 from claude_auto_review.stop.response import approve_response, block_response
 from claude_auto_review.stop.reviews.review_prompt_runner import _review_prompt_path
@@ -21,13 +21,11 @@ from claude_auto_review.stop.orchestration.finalize_payloads import _invalid_bac
 
 
 def finalize_review_stop_result(
-    ctx: RuntimeContext, resolution: StopFlowResolution
+    ctx: RuntimeContext, resolution: ReviewResolution
 ) -> tuple[FinalizeResult, ResponsePayload | None]:
     state = resolution.state
     unreviewed = resolution.unreviewed
     review = resolution.review
-    if review is None:
-        raise ValueError("finalize_review_stop_result called with no review in resolution")
     state_snapshot = StateSnapshot.from_events(state)
     covered_entries = get_entries_covered_by_review(review, state, latest_by_file=state_snapshot.latest_entries_by_file)
     review_id = review.reviewId
@@ -59,7 +57,7 @@ def finalize_review_stop_result(
     return plan_for_pending_review().result, None
 
 
-def finalize_review_stop(ctx: RuntimeContext, resolution: StopFlowResolution) -> int:
+def finalize_review_stop(ctx: RuntimeContext, resolution: ReviewResolution) -> int:
     result, payload = finalize_review_stop_result(ctx, resolution)
     if payload is not None:
         if payload.feedback is None:

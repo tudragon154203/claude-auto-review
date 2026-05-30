@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
 from dataclasses import dataclass
 
 from claude_auto_review.paths.path_utils import get_reviewer_prompt_script
@@ -17,19 +16,27 @@ from claude_auto_review.stop.classifier.last_assistant_message import (
 )
 from claude_auto_review.stop.orchestration.pending import resolve_pending_review
 from claude_auto_review.stop.orchestration.finalize import finalize_review_stop
+from claude_auto_review.stop.orchestration.protocols import (
+    EventLogger,
+    FinalizeReviewStop,
+    LastAssistantMessageClassifier,
+    PendingReviewResolver,
+    ReviewerPromptScriptProvider,
+    StateLoader,
+    StopBlockCounter,
+    UnreviewedFilesQuery,
+)
 
 
 @dataclass(frozen=True)
 class StopFlowDependencies:
-    """Injectable callables for each stage of the stop-flow pipeline."""
-
-    load_state_snapshot: Callable
-    get_unreviewed_files: Callable
-    consecutive_stop_blocks: Callable
-    classify_last_assistant_message: Callable
-    resolve_pending_review: Callable
-    get_reviewer_prompt_script: Callable
-    log_event: Callable
+    load_state_snapshot: StateLoader
+    get_unreviewed_files: UnreviewedFilesQuery
+    consecutive_stop_blocks: StopBlockCounter
+    classify_last_assistant_message: LastAssistantMessageClassifier
+    resolve_pending_review: PendingReviewResolver
+    get_reviewer_prompt_script: ReviewerPromptScriptProvider
+    log_event: EventLogger
 
 
 def build_default_dependencies(
@@ -42,7 +49,7 @@ def build_default_dependencies(
     get_reviewer_prompt_script_fn=None,
     log_event_fn=None,
     finalize_review_stop_fn=None,
-) -> tuple[StopFlowDependencies, Callable]:
+) -> tuple[StopFlowDependencies, FinalizeReviewStop]:
     """Build StopFlowDependencies with sensible defaults and return (deps, finalize_fn)."""
     return StopFlowDependencies(
         load_state_snapshot=load_state_snapshot_fn or load_state_snapshot,

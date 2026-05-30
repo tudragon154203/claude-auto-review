@@ -10,7 +10,7 @@ from claude_auto_review.runtime.events import log_event
 from claude_auto_review.runtime.process import run_captured
 from claude_auto_review.state.store.queries import get_unreviewed_files
 from claude_auto_review.state.store.read import load_state
-from claude_auto_review.stop.feedback import block_response
+from claude_auto_review.stop.response import block_response
 from claude_auto_review.stop.orchestration.context import RuntimeContext
 
 

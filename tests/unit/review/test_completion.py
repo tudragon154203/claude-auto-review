@@ -2,15 +2,16 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from claude_auto_review.review.completion import _format_duration, apply_completed_review
+from claude_auto_review.review.completion import apply_completed_review
+from claude_auto_review.timestamps import format_duration
 from claude_auto_review.state.models import EditRecord, ReviewCompletedRecord, ReviewMetadata, StopBlockedRecord
 
 
 class TestFormatDuration(unittest.TestCase):
     def test_format_duration_uses_hours_minutes_seconds(self):
-        self.assertEqual(_format_duration(4833), "1h 20m 33s")
-        self.assertEqual(_format_duration(91.5), "1m 32s")
-        self.assertEqual(_format_duration(0), "0s")
+        self.assertEqual(format_duration(4833), "1h 20m 33s")
+        self.assertEqual(format_duration(91.5), "1m 32s")
+        self.assertEqual(format_duration(0), "0s")
 
 
 class TestCompletion(unittest.TestCase):

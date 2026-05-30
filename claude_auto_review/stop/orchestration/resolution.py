@@ -21,15 +21,18 @@ class FinalizeAction(str, Enum):
 
 
 @dataclass(frozen=True)
-class StopFlowResolution:
+class TerminalResolution:
+    exit_code: int
+
+
+@dataclass(frozen=True)
+class ReviewResolution:
+    review: ReviewMetadata
     state: list[StateEvent]
     unreviewed: list
-    review: ReviewMetadata | None = None
-    exit_code: int | None = None
 
-    @property
-    def is_terminal(self):
-        return self.exit_code is not None
+
+StopFlowResolution = TerminalResolution | ReviewResolution
 
 
 @dataclass(frozen=True)

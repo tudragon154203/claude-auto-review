@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from pathlib import Path, PurePath
+from typing import Callable
 
 from claude_auto_review.paths.shell_parsing import (
     GIT_MOVE_SUBCOMMANDS,
@@ -21,7 +22,7 @@ from claude_auto_review.paths.shell_parsing import (
 )
 
 
-def _multi_arg_targets(tokens):
+def _multi_arg_targets(tokens, project_root=None):
     return non_flag_args(tokens[1:])
 
 
@@ -58,7 +59,7 @@ def _move_args_to_tracked_paths(args, project_root=None):
     return list(args)
 
 
-def _copy_targets(tokens):
+def _copy_targets(tokens, project_root=None):
     args = non_flag_args(tokens[1:])
     if len(args) >= 2:
         return [args[-1]]
@@ -98,29 +99,38 @@ def _git_move_targets(tokens, project_root=None):
     return _move_args_to_tracked_paths(args, project_root=project_root)
 
 
-def _write_targets(tokens):
+def _write_targets(tokens, project_root=None):
     target = redirection_target(tokens[1:])
     return [target] if target else []
 
 
-def _path_command_targets(tokens):
+def _path_command_targets(tokens, project_root=None):
     target = option_value(tokens[1:], {"-path", "-literalpath", "-destination"})
     if target is None:
         target = first_path_token(tokens[1:])
     return [target] if target else []
 
 
-def _handler_for_command(command_name):
-    if command_name in SHELL_MULTI_ARG_COMMANDS or command_name == SHELL_DELETE_PS:
-        return _multi_arg_targets
-    if command_name in SHELL_MOVE_COMMANDS:
-        return _move_targets
-    if command_name in SHELL_COPY_COMMANDS:
-        return _copy_targets
-    if command_name == "git":
-        return _git_move_targets
-    if command_name in SHELL_WRITE_COMMANDS:
-        return _write_targets
-    if command_name in SHELL_PATH_COMMANDS:
-        return _path_command_targets
-    return None
+_HANDLER_TABLE: dict[str, Callable] = {}
+
+
+def _register_all():
+    for cmd in SHELL_MULTI_ARG_COMMANDS:
+        _HANDLER_TABLE[cmd] = _multi_arg_targets
+    _HANDLER_TABLE[SHELL_DELETE_PS] = _multi_arg_targets
+    for cmd in SHELL_MOVE_COMMANDS:
+        _HANDLER_TABLE[cmd] = _move_targets
+    for cmd in SHELL_COPY_COMMANDS:
+        _HANDLER_TABLE[cmd] = _copy_targets
+    _HANDLER_TABLE["git"] = _git_move_targets
+    for cmd in SHELL_WRITE_COMMANDS:
+        _HANDLER_TABLE[cmd] = _write_targets
+    for cmd in SHELL_PATH_COMMANDS:
+        _HANDLER_TABLE[cmd] = _path_command_targets
+
+
+_register_all()
+
+
+def handler_for_command(command_name):
+    return _HANDLER_TABLE.get(command_name)

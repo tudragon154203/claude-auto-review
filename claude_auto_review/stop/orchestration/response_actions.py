@@ -5,9 +5,10 @@ from claude_auto_review.runtime.events import log_event
 from claude_auto_review.paths.path_utils import local_now_iso
 from claude_auto_review.state.models import StopBlockedRecord
 from claude_auto_review.state.store.writer import StateEventWriter
-from claude_auto_review.stop.feedback import block_response, build_unreviewed_files_string
+from claude_auto_review.stop.feedback_format import build_unreviewed_files_string
+from claude_auto_review.stop.response import block_response
 from claude_auto_review.stop.orchestration.context import RuntimeContext
-from claude_auto_review.stop.orchestration.resolution import StopFlowResolution
+from claude_auto_review.stop.orchestration.resolution import StopFlowResolution, TerminalResolution
 from claude_auto_review.stop.response import approve_response
 
 
@@ -45,7 +46,7 @@ def fail_review(
                 f"Claude Auto Review: Timeout generating review for {files_str}.",
                 "The review generation timed out. Check the logs and try again.",
             )
-    return StopFlowResolution(state=[], unreviewed=[], exit_code=exit_code)
+    return TerminalResolution(exit_code=exit_code)
 
 
 def approve_no_unreviewed_after_review(ctx: RuntimeContext) -> None:

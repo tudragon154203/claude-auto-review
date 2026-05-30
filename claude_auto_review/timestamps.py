@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from datetime import datetime
 
+from claude_auto_review.config.constants import DURATION_ROUND_PRECISION, SECONDS_PER_HOUR, SECONDS_PER_MINUTE
+
 
 def local_now_iso():
     return datetime.now().astimezone().isoformat()
@@ -43,3 +45,28 @@ def is_older_than_hours(timestamp_str: str, timeout_hours: float) -> bool:
         return False
     age = hours_since(timestamp_str)
     return age is not None and age > timeout_hours
+
+
+def duration_seconds(start_timestamp: str | None, end_timestamp: str) -> float | None:
+    if not start_timestamp:
+        return None
+    try:
+        started = parse_iso_timestamp(start_timestamp)
+        completed = parse_iso_timestamp(end_timestamp)
+    except (ValueError, TypeError):
+        return None
+    return max(0.0, round((completed - started).total_seconds(), DURATION_ROUND_PRECISION))
+
+
+def format_duration(seconds: float) -> str:
+    total_seconds = max(0, round(seconds))
+    hours, remainder = divmod(total_seconds, SECONDS_PER_HOUR)
+    minutes, seconds = divmod(remainder, SECONDS_PER_MINUTE)
+    parts: list[str] = []
+    if hours:
+        parts.append(f"{hours}h")
+    if minutes:
+        parts.append(f"{minutes}m")
+    if seconds or not parts:
+        parts.append(f"{seconds}s")
+    return " ".join(parts)

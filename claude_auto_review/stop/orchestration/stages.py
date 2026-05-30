@@ -8,20 +8,27 @@ from __future__ import annotations
 
 from claude_auto_review.stop.classifier.enums import ClassifierStatus
 from claude_auto_review.stop.orchestration.context import RuntimeContext, StopDecision
-from claude_auto_review.stop.orchestration.resolution import StopDecisionKind
+from claude_auto_review.stop.orchestration.protocols import (
+    EventLogger,
+    LastAssistantMessageClassifier,
+    PendingReviewResolver,
+    ReviewerPromptScriptProvider,
+    StateLoader,
+    StopBlockCounter,
+    UnreviewedFilesQuery,
+)
+from claude_auto_review.stop.orchestration.resolution import StopDecisionKind, TerminalResolution
 from claude_auto_review.stop.reviews.enums import StopAllowReason
 
 
-def run_enabled_stage(ctx: RuntimeContext, *, log_event_fn) -> StopDecision | None:
-    """Return ALLOW if the plugin is disabled; otherwise continue."""
+def run_enabled_stage(ctx: RuntimeContext, *, log_event_fn: EventLogger) -> StopDecision | None:
     if ctx.settings.enabled:
         return None
     log_event_fn(ctx.project_root, "stop_disabled", client_id=ctx.client_id)
     return StopDecision(kind=StopDecisionKind.ALLOW, reason=StopAllowReason.DISABLED)
 
 
-def run_state_stage(ctx: RuntimeContext, *, load_state_snapshot_fn, get_unreviewed_files_fn):
-    """Load state snapshot and return (snapshot, events, unreviewed)."""
+def run_state_stage(ctx: RuntimeContext, *, load_state_snapshot_fn: StateLoader, get_unreviewed_files_fn: UnreviewedFilesQuery):
     state_snapshot = load_state_snapshot_fn(ctx.project_root, ctx.client_id)
     state = state_snapshot.events
     unreviewed = get_unreviewed_files_fn(state_snapshot)
@@ -29,16 +36,14 @@ def run_state_stage(ctx: RuntimeContext, *, load_state_snapshot_fn, get_unreview
 
 
 def run_allow_no_unreviewed_stage(unreviewed) -> StopDecision | None:
-    """Return ALLOW if there are no unreviewed files; otherwise continue."""
     if unreviewed:
         return None
     return StopDecision(kind=StopDecisionKind.ALLOW, reason=StopAllowReason.NO_UNREVIEWED_FILES)
 
 
 def run_circuit_breaker_stage(
-    ctx: RuntimeContext, state_snapshot, *, consecutive_stop_blocks_fn
+    ctx: RuntimeContext, state_snapshot, *, consecutive_stop_blocks_fn: StopBlockCounter
 ) -> StopDecision | None:
-    """Return ALLOW via circuit breaker if stop-block count has been exceeded."""
     block_count = consecutive_stop_blocks_fn(state_snapshot)
     if block_count < ctx.settings.max_stop_passes:
         return None
@@ -49,8 +54,7 @@ def run_circuit_breaker_stage(
     )
 
 
-def run_classifier_stage(ctx: RuntimeContext, *, classify_last_assistant_message_fn) -> StopDecision | None:
-    """Return ALLOW if the classifier says the last assistant turn was incomplete."""
+def run_classifier_stage(ctx: RuntimeContext, *, classify_last_assistant_message_fn: LastAssistantMessageClassifier) -> StopDecision | None:
     if not ctx.settings.last_assistant_message_classifier_enabled:
         return None
     result = classify_last_assistant_message_fn(ctx)
@@ -68,10 +72,9 @@ def run_pending_stage(
     state,
     unreviewed,
     *,
-    resolve_pending_review_fn,
-    get_reviewer_prompt_script_fn,
+    resolve_pending_review_fn: PendingReviewResolver,
+    get_reviewer_prompt_script_fn: ReviewerPromptScriptProvider,
 ) -> StopDecision:
-    """Resolve the pending review and return the appropriate decision."""
     resolution = resolve_pending_review_fn(
         ctx,
         state,
@@ -79,6 +82,6 @@ def run_pending_stage(
         ctx.settings.pending_review_timeout_hours,
         get_reviewer_prompt_script_fn(),
     )
-    if resolution.is_terminal:
+    if isinstance(resolution, TerminalResolution):
         return StopDecision(kind=StopDecisionKind.TERMINAL, details={"exit_code": resolution.exit_code})
     return StopDecision(kind=StopDecisionKind.FINALIZE, details={"resolution": resolution})

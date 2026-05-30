@@ -7,7 +7,7 @@ from claude_auto_review.config.models import PluginSettings
 from claude_auto_review.state.models import ReviewMetadata
 from claude_auto_review.stop.orchestration.context import RuntimeContext
 from claude_auto_review.stop.orchestration.finalize import finalize_review_stop
-from claude_auto_review.stop.orchestration.resolution import FinalizeAction, StopFlowResolution
+from claude_auto_review.stop.orchestration.resolution import FinalizeAction, ReviewResolution
 
 
 def _mk_review(reviewId: str = "r1", reviewPath: str = "/fake/r.md") -> ReviewMetadata:
@@ -32,7 +32,7 @@ def _ctx(project_root=Path("/fake"), client_id="c", settings=None, payload=None)
 
 class TestFinalizePendingReview(unittest.TestCase):
     def setUp(self):
-        self.resolution = StopFlowResolution(
+        self.resolution = ReviewResolution(
             state=[],
             unreviewed=[],
             review=_mk_review("r1"),

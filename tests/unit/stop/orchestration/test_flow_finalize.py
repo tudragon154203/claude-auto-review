@@ -1,6 +1,8 @@
 import unittest
 from pathlib import Path
 from types import SimpleNamespace
+
+from claude_auto_review.state.models import ReviewMetadata
 from unittest.mock import patch
 
 from claude_auto_review.config.models import PluginSettings
@@ -8,6 +10,7 @@ from claude_auto_review.state.models import EditRecord
 from claude_auto_review.state.snapshot import StateSnapshot
 from claude_auto_review.stop.orchestration.context import RuntimeContext
 from claude_auto_review.stop.orchestration.flow import run_stop_flow
+from claude_auto_review.stop.orchestration.resolution import ReviewResolution, TerminalResolution
 
 _STATE = [EditRecord(timestamp="2026-05-11T10:00:00+07:00", file="a.ts", hash="1", reviewed=False)]
 
@@ -53,8 +56,11 @@ class TestFlowFinalize(unittest.TestCase):
         mock_classify,
     ):
         mock_classify.return_value = SimpleNamespace(status="complete", reason="parsed_label")
-        mock_resolve.return_value.is_terminal = False
-        mock_resolve.return_value.exit_code = None
+        mock_resolve.return_value = ReviewResolution(
+            review=ReviewMetadata(reviewId="r1", timestamp="2026-01-01T00:00:00+00:00", reviewPath="", files=[], clientId="sid"),
+            state=[],
+            unreviewed=_STATE,
+        )
 
         result = run_stop_flow(
             _ctx(
@@ -81,8 +87,7 @@ class TestFlowFinalize(unittest.TestCase):
         mock_classify,
     ):
         mock_classify.return_value = None
-        mock_resolve.return_value.is_terminal = True
-        mock_resolve.return_value.exit_code = 2
+        mock_resolve.return_value = TerminalResolution(exit_code=2)
 
         settings = PluginSettings.from_mapping(
             {

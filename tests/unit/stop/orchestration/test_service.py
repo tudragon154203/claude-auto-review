@@ -1,12 +1,11 @@
 import unittest
 from pathlib import Path
-from types import SimpleNamespace
 
 from claude_auto_review.config.models import PluginSettings
-from claude_auto_review.state.models import EditRecord
+from claude_auto_review.state.models import EditRecord, ReviewMetadata
 from claude_auto_review.state.snapshot import StateSnapshot
 from claude_auto_review.stop.orchestration.context import RuntimeContext
-from claude_auto_review.stop.orchestration.resolution import StopDecisionKind
+from claude_auto_review.stop.orchestration.resolution import ReviewResolution, StopDecisionKind, TerminalResolution
 from claude_auto_review.stop.orchestration.service import StopFlowDependencies, StopFlowService
 
 
@@ -32,7 +31,7 @@ def _deps(**overrides):
         get_unreviewed_files=lambda snapshot: snapshot.unreviewed_files,
         consecutive_stop_blocks=lambda _snapshot: 0,
         classify_last_assistant_message=lambda _ctx: None,
-        resolve_pending_review=lambda *_args, **_kwargs: SimpleNamespace(is_terminal=True, exit_code=2),
+        resolve_pending_review=lambda *_args, **_kwargs: TerminalResolution(exit_code=2),
         get_reviewer_prompt_script=lambda: "reviewer.py",
         log_event=lambda *_args, **_kwargs: None,
     )
@@ -54,7 +53,7 @@ class TestStopFlowService(unittest.TestCase):
         self.assertEqual(decision.details, {"exit_code": 2})
 
     def test_service_returns_finalize_resolution(self):
-        resolution = SimpleNamespace(is_terminal=False, exit_code=None)
+        resolution = ReviewResolution(review=ReviewMetadata(reviewId="r1", timestamp="2026-01-01T00:00:00+00:00", reviewPath="", files=[], clientId="c1"), state=[], unreviewed=[])
         service = StopFlowService(_ctx(), _deps(resolve_pending_review=lambda *_args, **_kwargs: resolution))
         decision = service.run()
         self.assertEqual(decision.kind, StopDecisionKind.FINALIZE)

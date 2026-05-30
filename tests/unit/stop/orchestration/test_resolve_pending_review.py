@@ -6,6 +6,7 @@ from unittest.mock import MagicMock, patch
 from claude_auto_review.state.models import EditRecord, ReviewMetadata
 from claude_auto_review.stop.orchestration.context import RuntimeContext
 from claude_auto_review.stop.orchestration.pending import resolve_pending_review
+from claude_auto_review.stop.orchestration.resolution import ReviewResolution
 
 
 
@@ -47,8 +48,8 @@ class TestResolvePendingReview(unittest.TestCase):
         review = _mk_review()
         mock_find.return_value = review
         result = resolve_pending_review(_ctx(), **self.base_kwargs)
+        self.assertIsInstance(result, ReviewResolution)
         self.assertEqual(result.review, review)
-        self.assertFalse(result.is_terminal)
         mock_run.assert_not_called()
 
     @patch("claude_auto_review.stop.orchestration.pending.find_pending_review_for_files", return_value=None)

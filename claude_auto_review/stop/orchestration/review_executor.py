@@ -16,7 +16,7 @@ from claude_auto_review.stop.reviews.review_prompt_runner import (
     run_review_prompt,
 )
 from claude_auto_review.stop.orchestration.context import RuntimeContext
-from claude_auto_review.stop.orchestration.resolution import StopFlowResolution
+from claude_auto_review.stop.orchestration.resolution import StopFlowResolution, TerminalResolution, ReviewResolution
 from claude_auto_review.stop.orchestration.response_actions import (
     approve_no_unreviewed_after_review,
     fail_review,
@@ -31,14 +31,14 @@ def resolve_prompted_review(
     state, unreviewed = _reload_client_state(ctx)
     if not unreviewed:
         approve_no_unreviewed_after_review(ctx)
-        return StopFlowResolution(state=state, unreviewed=unreviewed, exit_code=0)
+        return TerminalResolution(exit_code=0)
 
     review = find_pending_review_for_files(state, unreviewed, ctx.project_root, timeout_hours)
     if not review:
         _block_review_prompt_failure(files_str, result)
-        return StopFlowResolution(state=state, unreviewed=unreviewed, exit_code=EXIT_REVIEW_FAILED)
+        return TerminalResolution(exit_code=EXIT_REVIEW_FAILED)
 
-    return StopFlowResolution(state=state, unreviewed=unreviewed, review=review)
+    return ReviewResolution(review=review, state=state, unreviewed=unreviewed)
 
 
 def execute_review_prompt(

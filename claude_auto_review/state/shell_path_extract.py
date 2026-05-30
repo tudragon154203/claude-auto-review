@@ -9,8 +9,8 @@ from claude_auto_review.paths.shell_parsing import (
 )
 from claude_auto_review.state.shell_handlers import (
     _git_move_targets,
-    _handler_for_command,
     _move_targets,
+    handler_for_command,
 )
 
 
@@ -30,7 +30,7 @@ def _extract_paths_from_shell_command(command, project_root=None):
                 paths.extend(_extract_paths_from_shell_command(nested, project_root=project_root))
             continue
 
-        handler = _handler_for_command(command_name)
+        handler = handler_for_command(command_name)
         if handler is None:
             continue
 

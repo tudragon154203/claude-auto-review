@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from claude_auto_review.config.constants import DURATION_ROUND_PRECISION, SECONDS_PER_HOUR, SECONDS_PER_MINUTE
 from claude_auto_review.paths.path_utils import local_now_iso
 from claude_auto_review.state.models import (
     EditRecord,
@@ -15,7 +14,7 @@ from claude_auto_review.state.models import (
 from claude_auto_review.state.store.queries import get_unreviewed_files
 from claude_auto_review.state.store.read import load_state, load_state_snapshot
 from claude_auto_review.state.store.write import append_state_event, mark_files_reviewed
-from claude_auto_review.timestamps import parse_iso_timestamp
+from claude_auto_review.timestamps import duration_seconds, format_duration
 
 REASON_PARTIAL_REVIEW = "partial_review"
 
@@ -25,31 +24,6 @@ def _review_entry_for_id(state: list[StateEvent], review_id: str) -> ReviewMetad
         if isinstance(entry, ReviewMetadata) and entry.reviewId == review_id:
             return entry
     return None
-
-
-def _duration_seconds(start_timestamp: str | None, end_timestamp: str) -> float | None:
-    if not start_timestamp:
-        return None
-    try:
-        started = parse_iso_timestamp(start_timestamp)
-        completed = parse_iso_timestamp(end_timestamp)
-    except (ValueError, TypeError):
-        return None
-    return max(0.0, round((completed - started).total_seconds(), DURATION_ROUND_PRECISION))
-
-
-def _format_duration(seconds: float) -> str:
-    total_seconds = max(0, round(seconds))
-    hours, remainder = divmod(total_seconds, SECONDS_PER_HOUR)
-    minutes, seconds = divmod(remainder, SECONDS_PER_MINUTE)
-    parts: list[str] = []
-    if hours:
-        parts.append(f"{hours}h")
-    if minutes:
-        parts.append(f"{minutes}m")
-    if seconds or not parts:
-        parts.append(f"{seconds}s")
-    return " ".join(parts)
 
 
 def _validate_covered_entries(covered_entries: list[EditRecord]) -> list[EditRecord]:
@@ -70,13 +44,13 @@ def _review_completed_entry(
     client_id: str,
 ) -> ReviewCompletedRecord:
     review = _review_entry_for_id(state_before, review_id)
-    duration = _duration_seconds(review.timestamp if review else None, timestamp)
+    duration = duration_seconds(review.timestamp if review else None, timestamp)
     return ReviewCompletedRecord(
         timestamp=timestamp,
         reviewId=review_id,
         files=[ReviewFileRecord(file=entry.file, hash=entry.hash) for entry in validated_entries],
         clientId=client_id,
-        duration=_format_duration(duration) if duration is not None else None,
+        duration=format_duration(duration) if duration is not None else None,
         durationSeconds=duration,
     )
 

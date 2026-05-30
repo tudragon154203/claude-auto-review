@@ -8,6 +8,7 @@ from claude_auto_review.state.models import EditRecord, StopBlockedRecord
 from claude_auto_review.state.snapshot import StateSnapshot
 from claude_auto_review.stop.orchestration.context import RuntimeContext
 from claude_auto_review.stop.orchestration.flow import run_stop_flow
+from claude_auto_review.stop.orchestration.resolution import TerminalResolution
 
 _UNREVIEWED = [EditRecord(timestamp="2026-05-11T10:00:00+07:00", file="a.ts", hash="1")]
 _STATE = [EditRecord(timestamp="2026-05-11T10:00:00+07:00", file="a.ts", hash="1", reviewed=False)]
@@ -99,8 +100,7 @@ class TestFlowClassifier(unittest.TestCase):
         mock_classify,
     ):
         mock_classify.return_value = SimpleNamespace(status="complete", reason="parsed_label")
-        mock_resolve.return_value.is_terminal = True
-        mock_resolve.return_value.exit_code = 0
+        mock_resolve.return_value = TerminalResolution(exit_code=0)
 
         result = run_stop_flow(
             _ctx(
@@ -152,8 +152,7 @@ class TestFlowClassifier(unittest.TestCase):
         mock_resolve,
         mock_classify,
     ):
-        mock_resolve.return_value.is_terminal = True
-        mock_resolve.return_value.exit_code = 2
+        mock_resolve.return_value = TerminalResolution(exit_code=2)
 
         result = run_stop_flow(
             _ctx(

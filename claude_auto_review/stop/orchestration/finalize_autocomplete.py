@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Any
 
 from claude_auto_review.runtime.events import log_event
-from claude_auto_review.stop.feedback import build_review_completion_prompt
+from claude_auto_review.stop.feedback_format import build_review_completion_prompt
 from claude_auto_review.stop.orchestration.context import RuntimeContext
 from claude_auto_review.stop.reviews.enums import AutocompleteStatus
 from claude_auto_review.stop.reviews.prompt_runner import attempt_stop_autocomplete

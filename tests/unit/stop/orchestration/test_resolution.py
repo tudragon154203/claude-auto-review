@@ -1,13 +1,19 @@
 import unittest
 
-from claude_auto_review.stop.orchestration.resolution import StopFlowResolution
+from claude_auto_review.stop.orchestration.resolution import (
+    ReviewResolution,
+    StopFlowResolution,
+    TerminalResolution,
+)
 
 
 class TestStopFlowResolution(unittest.TestCase):
-    def test_is_terminal_when_exit_code_set(self):
-        r = StopFlowResolution(state=[], unreviewed=[], exit_code=2)
-        self.assertTrue(r.is_terminal)
+    def test_terminal_is_terminal(self):
+        r = TerminalResolution(exit_code=2)
+        self.assertTrue(isinstance(r, StopFlowResolution))
+        self.assertEqual(r.exit_code, 2)
 
-    def test_is_not_terminal_when_no_exit_code(self):
-        r = StopFlowResolution(state=[], unreviewed=[], review={"reviewId": "r1"})
-        self.assertFalse(r.is_terminal)
+    def test_review_resolution_not_terminal(self):
+        r = ReviewResolution(state=[], unreviewed=[], review={"reviewId": "r1"})
+        self.assertTrue(isinstance(r, StopFlowResolution))
+        self.assertEqual(r.review["reviewId"], "r1")
