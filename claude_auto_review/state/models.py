@@ -5,6 +5,7 @@ from typing import Protocol
 
 from claude_auto_review.state.classification_record import ClassificationRecord
 from claude_auto_review.state.edit_record import EditRecord, StopBlockedRecord
+from claude_auto_review.state.event_types import StateEvent
 from claude_auto_review.state.file_record import (
     ReviewFileRecord as ReviewFileRecord,
     _coerce_review_file_entries as _coerce_review_file_entries,
@@ -58,12 +59,3 @@ class ReviewEntry(Protocol):
     files: list[ReviewFileRecord]
 
 
-# Union of all state event types for type annotations
-StateEvent = (
-    EditRecord
-    | StopBlockedRecord
-    | ReviewMetadata
-    | ReviewCompletedRecord
-    | ClassificationRecord
-    | ReviewAutocompleteRecord
-)

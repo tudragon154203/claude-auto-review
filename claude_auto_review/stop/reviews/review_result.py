@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from pathlib import Path
 
 from claude_auto_review.runtime.events import log_event
 from claude_auto_review.state.reviews.normalization import normalize_review_verdict_content
@@ -21,6 +22,27 @@ class AutocompleteResult:
 
     def __bool__(self):
         return self.output_written
+
+
+def normalize_and_write_review(
+    raw_stdout: str,
+    review_path: Path,
+    *,
+    client_id: str,
+    minimum_blocking_severity: str,
+) -> str:
+    """Normalize review verdict content and write the result to disk.
+
+    Returns the normalized output string.
+    """
+    normalized = normalize_review_verdict_content(
+        raw_stdout,
+        client_id=client_id,
+        minimum_blocking_severity=minimum_blocking_severity,
+    )
+    normalized_text = normalized or ""
+    review_path.write_text(normalized_text, encoding="utf-8", newline="\n")
+    return normalized_text
 
 
 def _process_review_result(ctx: RuntimeContext, result, review_path, review_id, backend):
@@ -70,12 +92,12 @@ def _process_review_result(ctx: RuntimeContext, result, review_path, review_id, 
             returncode=result.returncode,
         )
 
-    normalized_output = normalize_review_verdict_content(
+    normalized_output = normalize_and_write_review(
         result.stdout,
+        Path(review_path),
         client_id=ctx.client_id,
         minimum_blocking_severity=ctx.settings.minimum_blocking_severity,
     )
-    review_path.write_text(normalized_output, encoding="utf-8", newline="\n")
     log_event(
         ctx.project_root,
         "stop_hook_reviewer_output_written",

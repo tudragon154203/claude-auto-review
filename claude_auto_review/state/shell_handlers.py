@@ -114,6 +114,15 @@ def _path_command_targets(tokens, project_root=None):
 _HANDLER_TABLE: dict[str, Callable] = {}
 
 
+def register_handler(command_name: str, handler: Callable) -> None:
+    """Register or replace a handler for a shell command name.
+
+    This is the OCP extension point — new commands can be added
+    without modifying the built-in registry.
+    """
+    _HANDLER_TABLE[command_name] = handler
+
+
 def _register_all():
     for cmd in SHELL_MULTI_ARG_COMMANDS:
         _HANDLER_TABLE[cmd] = _multi_arg_targets

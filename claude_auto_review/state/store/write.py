@@ -6,12 +6,10 @@ from pathlib import Path
 from claude_auto_review.runtime.client_dirs import client_state_path
 from claude_auto_review.runtime.context import resolve_client_id, resolve_project_root
 from claude_auto_review.runtime.setup import ensure_client_runtime
-from claude_auto_review.state.models import (
-    EditRecord,
-    ReviewFileRecord,
-    ReviewMetadata,
-    StateEvent,
-)
+from claude_auto_review.state.edit_record import EditRecord
+from claude_auto_review.state.event_types import StateEvent
+from claude_auto_review.state.file_record import ReviewFileRecord
+from claude_auto_review.state.review_records import ReviewMetadata
 from claude_auto_review.state.store.writer import StateEventWriter
 from claude_auto_review.timestamps import local_now_iso
 
@@ -55,27 +53,31 @@ def _reviewed_edit_entry(entry: EditRecord, review_id: str, timestamp: str) -> E
     )
 
 
-def _write_context(project_root, client_id):
-    return resolve_project_root(project_root), resolve_client_id(client_id)
+def _resolve_state_file(project_root=None, client_id="") -> tuple[Path, Path, str]:
+    resolved_root: Path = resolve_project_root(project_root)
+    resolved_client: str = resolve_client_id(client_id)
+    ensure_client_runtime(resolved_root, resolved_client)
+    return resolved_root, client_state_path(resolved_root, resolved_client), resolved_client
 
 
 def append_state_event(event: StateEvent, project_root=None, client_id=""):
-    project_root, client_id = _write_context(project_root, client_id)
-    ensure_client_runtime(project_root, client_id)
-    state_file = client_state_path(project_root, client_id)
+    """Append a state event to the client JSONL state file."""
+    _, state_file, _ = _resolve_state_file(project_root, client_id)
     write_jsonl_line(state_file, event.to_dict())
 
 
 def mark_files_reviewed(entries: list[EditRecord], review_id: str, project_root=None, client_id="", timestamp=None):
-    project_root, client_id = _write_context(project_root, client_id)
+    """Write reviewed-edit entries for each entry to the state file."""
     if not timestamp:
         timestamp = local_now_iso()
-    writer = StateEventWriter(project_root, client_id)
-    writer.append_marked_reviewed(entries, review_id, timestamp)
+    for entry in entries:
+        append_state_event(_reviewed_edit_entry(entry, review_id, timestamp), project_root, client_id=client_id)
 
 
 def append_review_started(entries: list[EditRecord], review_id: str, review_path: str, project_root=None, client_id=""):
-    project_root, client_id = _write_context(project_root, client_id)
-    StateEventWriter(project_root, client_id).append(
-        _review_state_entry(entries, review_id, review_path, client_id, project_root)
+    """Write a review-started metadata entry to the state file."""
+    resolved_root, state_file, resolved_client = _resolve_state_file(project_root, client_id)
+    write_jsonl_line(
+        state_file,
+        _review_state_entry(entries, review_id, review_path, resolved_client, resolved_root).to_dict(),
     )

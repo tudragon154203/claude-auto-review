@@ -2,7 +2,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from claude_auto_review.config.models import PluginSettings
+
+DEFAULT_FEEDBACK_MAX_CHARS = 9000
 
 
 def _file_of(entry):
@@ -28,11 +29,9 @@ def review_feedback_max_chars(settings):
     return settings.review_feedback_max_chars
 
 
-def _minimum_blocking_severity_message(minimum_blocking_severity):
+def _minimum_blocking_severity_message(minimum_blocking_severity=None):
     severity = str(minimum_blocking_severity or "").strip().lower()
-    if not severity:
-        severity = PluginSettings().minimum_blocking_severity
-    if severity == "info":
+    if not severity or severity == "info":
         return "All Confirmed findings block stopping."
     return (
         f"Confirmed findings at {severity.title()} severity or higher block stopping. "
@@ -42,7 +41,7 @@ def _minimum_blocking_severity_message(minimum_blocking_severity):
 
 def read_review_feedback(review_path, max_chars=None, project_root=None):
     if max_chars is None:
-        max_chars = PluginSettings().review_feedback_max_chars
+        max_chars = DEFAULT_FEEDBACK_MAX_CHARS
     path = Path(review_path)
     display = path.relative_to(project_root).as_posix() if project_root else str(path)
     if not path.is_file():
