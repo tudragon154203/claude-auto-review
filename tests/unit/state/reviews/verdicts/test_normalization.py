@@ -1,7 +1,7 @@
 import unittest
 from unittest.mock import patch
 
-from claude_auto_review.state.reviews.findings import has_blocking_review_findings
+from claude_auto_review.state.reviews.blocking import has_blocking_review_findings
 from claude_auto_review.state.reviews.normalization import normalize_review_verdict_content
 
 

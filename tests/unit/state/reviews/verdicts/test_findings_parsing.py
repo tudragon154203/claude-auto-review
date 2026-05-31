@@ -1,10 +1,8 @@
 import unittest
 
-from claude_auto_review.state.reviews.findings import (
-    has_blocking_review_findings,
-    has_review_findings,
-    parse_review_findings,
-)
+from claude_auto_review.state.reviews.blocking import has_blocking_review_findings
+from claude_auto_review.state.reviews.detection import has_review_findings
+from claude_auto_review.state.reviews.parsing import parse_review_findings
 
 
 class TestHasReviewFindings(unittest.TestCase):

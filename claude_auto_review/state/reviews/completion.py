@@ -3,7 +3,7 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-from claude_auto_review.state.reviews.findings import has_review_findings
+from claude_auto_review.state.reviews.detection import has_review_findings
 from claude_auto_review.state.reviews.review_text import extract_review_verdict_text, get_review_verdict_text
 
 # Patterns that unambiguously signal a completed review verdict.

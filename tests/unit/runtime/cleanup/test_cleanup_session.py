@@ -18,7 +18,7 @@ class TestCleanupSession(StateTestCase, unittest.TestCase):
         self.assertFalse((project_root / ".claude" / "claude-auto-review" / "state.jsonl").exists())
 
     def test_cancel_runtime_removes_client_data(self):
-        from tests.support import client_dir
+        from tests.support_paths import client_dir
 
         project_root = self.temp_project()
         ensure_client_runtime(project_root, "test-client")
@@ -61,7 +61,7 @@ class TestCleanupSession(StateTestCase, unittest.TestCase):
         self.assertEqual(mock_log.call_args.kwargs["target"], str(runtime_dir))
 
     def test_cancel_session_removes_client_state(self):
-        from tests.support import client_dir as _client_dir
+        from tests.support_paths import client_dir as _client_dir
 
         project_root = self.temp_project()
         ensure_client_runtime(project_root, "session-a")
@@ -79,7 +79,7 @@ class TestCleanupSession(StateTestCase, unittest.TestCase):
         self.assertEqual(removed, [])
 
     def test_cancel_session_does_not_overmatch_underscore_suffix(self):
-        from tests.support import client_dir as _client_dir
+        from tests.support_paths import client_dir as _client_dir
 
         project_root = self.temp_project()
         ensure_client_runtime(project_root, "team_alpha")

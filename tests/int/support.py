@@ -3,7 +3,7 @@ import unittest
 from pathlib import Path
 
 from claude_auto_review.runtime.setup import ensure_client_runtime
-from tests.support import TempProjectMixin
+from tests.support_mixins import TempProjectMixin
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 

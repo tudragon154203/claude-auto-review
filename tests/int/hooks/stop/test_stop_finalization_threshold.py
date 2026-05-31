@@ -2,7 +2,7 @@ import json
 import unittest
 
 from tests.int.hooks.support import HookTestCase
-from tests.support import start_classifier_server
+from tests.support_classifier_server import start_classifier_server
 
 
 class TestStopFinalizationThreshold(HookTestCase, unittest.TestCase):

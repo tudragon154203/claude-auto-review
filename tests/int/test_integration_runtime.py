@@ -17,7 +17,7 @@ from claude_auto_review.state.store.write import append_state_event
 from claude_auto_review.stop.classifier.last_assistant_message import classify_last_assistant_message
 from claude_auto_review.stop.orchestration.context import RuntimeContext
 from tests.int.support import REPO_ROOT, IntegrationTestCase, _FakeResponse
-from tests.support import client_dir
+from tests.support_paths import client_dir
 
 
 class IntegrationRuntimeTests(IntegrationTestCase):

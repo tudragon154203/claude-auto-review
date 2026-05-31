@@ -1,7 +1,8 @@
 import tempfile
 from pathlib import Path
 
-from tests.support import SubprocessMixin, TempProjectMixin, client_dir
+from tests.support_mixins import SubprocessMixin, TempProjectMixin
+from tests.support_paths import client_dir
 
 
 class HookTestCase(TempProjectMixin, SubprocessMixin):

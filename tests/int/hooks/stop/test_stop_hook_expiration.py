@@ -10,7 +10,7 @@ from claude_auto_review.state.models import ReviewFileRecord, ReviewMetadata  # 
 from claude_auto_review.state.store.read import load_state  # noqa: E402
 from claude_auto_review.state.store.write import append_state_event  # noqa: E402
 from tests.int.hooks.support import HookTestCase  # noqa: E402
-from tests.support import client_relpath  # noqa: E402
+from tests.support_paths import client_relpath  # noqa: E402
 
 
 class TestStopHookExpiration(HookTestCase, unittest.TestCase):

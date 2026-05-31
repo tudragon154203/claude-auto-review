@@ -42,7 +42,7 @@ class TestPostToolUseSettings(HookTestCase, unittest.TestCase):
         self.assertEqual([entry.file for entry in load_state(project_root, "test-session")], ["src/app.py"])
 
     def test_writes_lifecycle_log_without_stdout(self):
-        from tests.support import client_dir
+        from tests.support_paths import client_dir
 
         project_root = self.temp_project()
         (project_root / "src" / "app.ts").write_text("export const value = 1;\n", encoding="utf-8")

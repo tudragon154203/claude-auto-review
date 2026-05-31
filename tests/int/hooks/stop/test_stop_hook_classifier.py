@@ -6,7 +6,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[4]
 sys.path.insert(0, str(REPO_ROOT))
 from tests.int.hooks.support import HookTestCase  # noqa: E402
-from tests.support import client_dir  # noqa: E402
+from tests.support_paths import client_dir  # noqa: E402
 
 
 class TestStopHookClassifier(HookTestCase, unittest.TestCase):

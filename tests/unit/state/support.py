@@ -1,4 +1,4 @@
-from tests.support import TempProjectMixin
+from tests.support_mixins import TempProjectMixin
 
 
 class StateTestCase(TempProjectMixin):

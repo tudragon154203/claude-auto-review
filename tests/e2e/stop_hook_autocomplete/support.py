@@ -5,7 +5,7 @@ from claude_auto_review.state.reviews.completion import is_review_complete
 from claude_auto_review.state.store.queries import get_unreviewed_files
 from claude_auto_review.state.store.read import load_state
 from tests.e2e.support import EndToEndTestCase
-from tests.support import client_dir
+from tests.support_paths import client_dir
 
 
 class StopHookAutocompleteTestCase(EndToEndTestCase):

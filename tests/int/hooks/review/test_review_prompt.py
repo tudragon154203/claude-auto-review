@@ -10,7 +10,7 @@ sys.path.insert(0, str(REPO_ROOT))
 from claude_auto_review.state.models import EditRecord  # noqa: E402
 from claude_auto_review.state.store.write import append_state_event  # noqa: E402
 from tests.int.hooks.support import HookTestCase  # noqa: E402
-from tests.support import client_dir  # noqa: E402
+from tests.support_paths import client_dir  # noqa: E402
 
 
 class TestReviewPrompt(HookTestCase, unittest.TestCase):

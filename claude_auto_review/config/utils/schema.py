@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from claude_auto_review.config.constants import DEFAULT_RULES_FILE as DEFAULT_RULES_FILE  # noqa: F401
-
 SETTING_ENABLED = "enabled"
 SETTING_RULES_FILE = "rulesFile"
 SETTING_INCLUDE_EXTS = "includeExtensions"

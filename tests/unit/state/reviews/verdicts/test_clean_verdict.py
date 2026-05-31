@@ -142,10 +142,8 @@ class TestNormalizeCleanContradictions(unittest.TestCase):
 
     def test_normalize_produces_consistent_clean_state(self):
         """After normalization, is_review_clean_content and has_review_findings should agree."""
-        from claude_auto_review.state.reviews.findings import (
-            has_blocking_review_findings,
-            has_review_findings,
-        )
+        from claude_auto_review.state.reviews.blocking import has_blocking_review_findings
+        from claude_auto_review.state.reviews.detection import has_review_findings
 
         content_with_low_findings_and_clean_verdict = (
             "## Findings\n"

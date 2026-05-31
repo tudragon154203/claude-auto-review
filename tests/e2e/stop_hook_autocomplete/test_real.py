@@ -1,7 +1,7 @@
 import unittest
 
 from tests.e2e.stop_hook_autocomplete.support import StopHookAutocompleteTestCase
-from tests.support import real_claude_cli_available, real_codex_cli_available, real_opencode_cli_available
+from tests.support_paths import real_claude_cli_available, real_codex_cli_available, real_opencode_cli_available
 
 
 class EndToEndStopHookAutocompleteRealTests(StopHookAutocompleteTestCase):
