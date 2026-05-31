@@ -26,13 +26,30 @@ class TestBuildOpencodeReviewArgs(unittest.TestCase):
     def test_returns_run_with_file_flag(self):
         prompt_file = Path("/tmp/prompt.md")
         args = _build_opencode_review_args("model", prompt_file)
-        self.assertEqual(args[:2], ["run", "Review the attached prompt file and respond with your findings."])
+        self.assertEqual(args[:3], ["run", "--pure", "Review the attached prompt file and respond with your findings."])
         self.assertIn("--file", args)
         file_idx = args.index("--file")
         self.assertEqual(args[file_idx + 1], str(prompt_file))
 
-    def test_ignores_model_argument(self):
+    def test_passes_model_argument_through(self):
         args = _build_opencode_review_args("my-model", Path("/tmp/prompt.md"))
+        self.assertIn("--model", args)
+        model_idx = args.index("--model")
+        self.assertEqual(args[model_idx + 1], "my-model")
+        self.assertIn("--file", args)
+        self.assertLess(args.index("--model"), args.index("--file"))
+        self.assertEqual(args[1], "--pure")
+
+    def test_skips_model_when_default(self):
+        args = _build_opencode_review_args("default", Path("/tmp/prompt.md"))
+        self.assertNotIn("--model", args)
+
+    def test_skips_model_when_none_string(self):
+        args = _build_opencode_review_args("none", Path("/tmp/prompt.md"))
+        self.assertNotIn("--model", args)
+
+    def test_skips_model_when_empty(self):
+        args = _build_opencode_review_args("", Path("/tmp/prompt.md"))
         self.assertNotIn("--model", args)
 
     def test_does_not_include_allowed_tools(self):

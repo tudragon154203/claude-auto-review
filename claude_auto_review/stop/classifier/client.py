@@ -31,12 +31,9 @@ def _request_url(base_url):
     return f"{sanitized}/v1/messages"
 
 
-def call_classifier_api(message_text, base_url, api_key, started_at, timeout_seconds, model, urlopen=None):
-    message_chars = len(message_text)
-    urlopen = request.urlopen if urlopen is None else urlopen
-
+def _build_classifier_request(message_text, api_key, model, base_url):
     body = json.dumps(build_classifier_request_body(message_text, model)).encode("utf-8")
-    req = request.Request(
+    return request.Request(
         _request_url(base_url),
         data=body,
         headers={
@@ -47,72 +44,56 @@ def call_classifier_api(message_text, base_url, api_key, started_at, timeout_sec
         method="POST",
     )
 
+
+def _error_result(status, reason, started_at, message_chars, *, model, base_url, http_status=None):
+    return result_factory(
+        status,
+        reason,
+        started_at,
+        message_chars,
+        model=model,
+        base_url=base_url,
+        http_status=http_status,
+    )
+
+
+def _request_classifier(req, timeout_seconds, urlopen):
     try:
         with urlopen(req, timeout=timeout_seconds) as response:
-            response_bytes = response.read()
+            return response.read()
     except error.HTTPError as exc:
-        return result_factory(
-            ClassifierStatus.ERROR,
-            ClassifierReason.HTTP_ERROR,
-            started_at,
-            message_chars,
-            model=model,
-            base_url=base_url,
-            http_status=exc.code,
-        )
-    except TimeoutError:
-        return result_factory(
-            ClassifierStatus.ERROR,
-            ClassifierReason.HTTP_TIMEOUT,
-            started_at,
-            message_chars,
-            model=model,
-            base_url=base_url,
-        )
+        raise RuntimeError((ClassifierReason.HTTP_ERROR, exc.code)) from exc
+    except TimeoutError as exc:
+        raise RuntimeError((ClassifierReason.HTTP_TIMEOUT, None)) from exc
     except error.URLError as exc:
         reason = getattr(exc, "reason", None)
         if isinstance(reason, socket.timeout):
-            return result_factory(
-                ClassifierStatus.ERROR,
-                ClassifierReason.HTTP_TIMEOUT,
-                started_at,
-                message_chars,
-                model=model,
-                base_url=base_url,
-            )
-        else:
-            return result_factory(
-                ClassifierStatus.ERROR,
-                ClassifierReason.HTTP_ERROR,
-                started_at,
-                message_chars,
-                model=model,
-                base_url=base_url,
-            )
-    except (OSError, RuntimeError):
-        return result_factory(
-            ClassifierStatus.ERROR,
-            ClassifierReason.HTTP_ERROR,
-            started_at,
-            message_chars,
-            model=model,
-            base_url=base_url,
-        )
+            raise RuntimeError((ClassifierReason.HTTP_TIMEOUT, None)) from exc
+        raise RuntimeError((ClassifierReason.HTTP_ERROR, None)) from exc
+    except (OSError, RuntimeError) as exc:
+        raise RuntimeError((ClassifierReason.HTTP_ERROR, None)) from exc
 
+
+def _decode_response(response_bytes, started_at, message_chars, *, model, base_url):
     try:
         response_data = json.loads(response_bytes.decode("utf-8"))
     except (UnicodeDecodeError, json.JSONDecodeError, TypeError, ValueError):
-        return result_factory(
-            ClassifierStatus.ERROR,
-            ClassifierReason.BAD_RESPONSE,
-            started_at,
-            message_chars,
-            model=model,
-            base_url=base_url,
-        )
+        return _error_result(ClassifierStatus.ERROR, ClassifierReason.BAD_RESPONSE, started_at, message_chars, model=model, base_url=base_url)
 
     label, reason = parse_classifier_label(response_data)
     debug_response = response_payload_debug_json(response_data)
-    return result_factory(
-        label, reason, started_at, message_chars, model=model, base_url=base_url, debug_response=debug_response
-    )
+    return result_factory(label, reason, started_at, message_chars, model=model, base_url=base_url, debug_response=debug_response)
+
+
+def call_classifier_api(message_text, base_url, api_key, started_at, timeout_seconds, model, urlopen=None):
+    message_chars = len(message_text)
+    urlopen = request.urlopen if urlopen is None else urlopen
+    req = _build_classifier_request(message_text, api_key, model, base_url)
+
+    try:
+        response_bytes = _request_classifier(req, timeout_seconds, urlopen)
+    except RuntimeError as exc:
+        reason, http_status = exc.args[0]
+        return _error_result(ClassifierStatus.ERROR, reason, started_at, message_chars, model=model, base_url=base_url, http_status=http_status)
+
+    return _decode_response(response_bytes, started_at, message_chars, model=model, base_url=base_url)

@@ -30,9 +30,12 @@ def _build_codex_review_args(model):
 
 
 def _build_opencode_review_args(model, prompt_file):
-    return [
+    args = [
         "run",
+        "--pure",
         "Review the attached prompt file and respond with your findings.",
-        "--file",
-        str(prompt_file),
     ]
+    if model not in ("", "default", "none"):
+        args.extend(["--model", model])
+    args.extend(["--file", str(prompt_file)])
+    return args

@@ -28,6 +28,14 @@ def blocked_result(action: FinalizeAction) -> FinalizeResult:
     return FinalizeResult(action=action, exit_code=2)
 
 
+_ARTIFACT_STATE_PLANS = {
+    "complete_clean": FinalizePlan(result=approved_result(), effect=FinalizeEffect.APPLY_COMPLETED_CLEAN_REVIEW),
+    "complete_findings": FinalizePlan(
+        result=blocked_result(FinalizeAction.BLOCKED_FINDINGS), effect=FinalizeEffect.RECORD_FINDINGS_BLOCK
+    ),
+}
+
+
 def artifact_status_name(artifact_state) -> str | None:
     status = getattr(artifact_state, "status", None)
     if status is None:
@@ -36,12 +44,7 @@ def artifact_status_name(artifact_state) -> str | None:
 
 
 def plan_for_artifact_state(artifact_state):
-    status_name = artifact_status_name(artifact_state)
-    if status_name == "complete_clean":
-        return FinalizePlan(result=approved_result(), effect=FinalizeEffect.APPLY_COMPLETED_CLEAN_REVIEW)
-    if status_name == "complete_findings":
-        return FinalizePlan(result=blocked_result(FinalizeAction.BLOCKED_FINDINGS), effect=FinalizeEffect.RECORD_FINDINGS_BLOCK)
-    return None
+    return _ARTIFACT_STATE_PLANS.get(artifact_status_name(artifact_state))
 
 
 def plan_for_invalid_settings():

@@ -155,23 +155,40 @@ class TestBuildOpencodeReviewArgs(unittest.TestCase):
         prompt_file = Path("/tmp/prompt.md")
         args = _build_opencode_review_args("claude-sonnet-4-6", prompt_file)
         self.assertEqual(args[0], "run")
+        self.assertEqual(args[1], "--pure")
+        self.assertIn("--model", args)
+        model_idx = args.index("--model")
+        self.assertEqual(args[model_idx + 1], "claude-sonnet-4-6")
         self.assertIn("--file", args)
         file_idx = args.index("--file")
         self.assertEqual(args[file_idx + 1], str(prompt_file))
 
-    def test_ignores_model_argument(self):
+    def test_passes_model_argument_through(self):
         args = _build_opencode_review_args("gpt-5", Path("/tmp/prompt.md"))
+        self.assertIn("--model", args)
+        model_idx = args.index("--model")
+        self.assertEqual(args[model_idx + 1], "gpt-5")
+
+    def test_skips_model_when_default(self):
+        args = _build_opencode_review_args("default", Path("/tmp/prompt.md"))
+        self.assertNotIn("--model", args)
+
+    def test_skips_model_when_none_string(self):
+        args = _build_opencode_review_args("none", Path("/tmp/prompt.md"))
+        self.assertNotIn("--model", args)
+
+    def test_skips_model_when_empty(self):
+        args = _build_opencode_review_args("", Path("/tmp/prompt.md"))
         self.assertNotIn("--model", args)
 
     def test_no_sandbox_or_allowed_tools(self):
-        args = _build_opencode_review_args("model", Path("/tmp/prompt.md"))
+        args = _build_opencode_review_args("my-model", Path("/tmp/prompt.md"))
         self.assertNotIn("--sandbox", args)
         self.assertNotIn("--allowedTools", args)
         self.assertNotIn("--print", args)
-        self.assertNotIn("--model", args)
 
     def test_no_stdin_dash(self):
-        args = _build_opencode_review_args("model", Path("/tmp/prompt.md"))
+        args = _build_opencode_review_args("my-model", Path("/tmp/prompt.md"))
         self.assertNotIn("-", args)
 
 
