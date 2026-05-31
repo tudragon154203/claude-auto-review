@@ -56,12 +56,11 @@ class TestStopDecisionEngine(unittest.TestCase):
 
     @patch("claude_auto_review.stop.orchestration.decision_engine.StdoutResponseEmitter")
     def test_default_emitter_created_when_none(self, MockEmitter):
-        engine = StopDecisionEngine(_ctx())
+        StopDecisionEngine(_ctx())
         MockEmitter.assert_called()
 
     def test_service_property(self):
-        engine = StopDecisionEngine(_ctx())
-        self.assertIsNotNone(engine.service)
+        self.assertIsNotNone(StopDecisionEngine(_ctx()).service)
 
 
 if __name__ == "__main__":

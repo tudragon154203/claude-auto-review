@@ -64,7 +64,7 @@ class TestResolvePendingReview(unittest.TestCase):
         mock_result.stderr = ""
         mock_run.return_value = mock_result
         emitter = _mock_emitter()
-        result = resolve_pending_review(_ctx(), **self.base_kwargs, emitter=emitter)
+        resolve_pending_review(_ctx(), **self.base_kwargs, emitter=emitter)
         mock_run.assert_called_once()
 
     @patch("claude_auto_review.stop.orchestration.pending.find_pending_review_for_files")

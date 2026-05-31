@@ -28,9 +28,11 @@ def _register_default_backends() -> None:
 
     from .prompt_runner_codex import _attempt_codex_autocomplete
     from .prompt_runner_claude import _attempt_claude_autocomplete
+    from .prompt_runner_opencode import _attempt_opencode_autocomplete
 
     register_backend("codex", _attempt_codex_autocomplete)
     register_backend("claude", _attempt_claude_autocomplete)
+    register_backend("opencode", _attempt_opencode_autocomplete)
 
 
 def _run_review_cli(cli_path, args, *, cwd, timeout, input_text=None):

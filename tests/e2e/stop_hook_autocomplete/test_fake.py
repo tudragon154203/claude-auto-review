@@ -22,3 +22,14 @@ class EndToEndStopHookAutocompleteFakeTests(StopHookAutocompleteTestCase):
         self.assert_review_completed(project_root, "Clean - no issues found. Claude may stop.")
         self.assert_fake_codex_run(project_root)
         self.assert_state_fully_reviewed(project_root)
+
+    def test_stop_hook_auto_completes_review_with_fake_opencode(self):
+        project_root = self.temp_project()
+        self.configure_opencode_backend(project_root)
+        self.create_tracked_app(project_root)
+
+        stop = self.stop(project_root, use_fake_claude=False, use_fake_opencode=True)
+        self.assert_stop_approved(stop)
+        self.assert_review_completed(project_root, "Clean - no issues found. Claude may stop.")
+        self.assert_fake_opencode_run(project_root)
+        self.assert_state_fully_reviewed(project_root)

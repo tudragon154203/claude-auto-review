@@ -16,6 +16,13 @@ class StopHookAutocompleteTestCase(EndToEndTestCase):
             encoding="utf-8",
         )
 
+    def configure_opencode_backend(self, project_root):
+        (project_root / ".claude").mkdir(parents=True, exist_ok=True)
+        (project_root / ".claude" / "settings.json").write_text(
+            json.dumps({"claude-auto-review": {"reviewerBackend": "opencode"}}),
+            encoding="utf-8",
+        )
+
     def create_tracked_app(self, project_root):
         (project_root / "src" / "app.ts").write_text("export const value = 1;\n", encoding="utf-8")
         self.track(project_root, "src/app.ts")
@@ -82,6 +89,19 @@ class StopHookAutocompleteTestCase(EndToEndTestCase):
         log_content = (client_dir(project_root) / "state.jsonl").read_text(encoding="utf-8")
         self.assertIn("stop_hook_reviewer_done", log_content)
         self.assertIn('"backend":"codex"', log_content)
+
+    def assert_fake_opencode_run(self, project_root):
+        run_dir = client_dir(project_root) / "run"
+        cli_args = json.loads((run_dir / "opencode-cli-args.json").read_text(encoding="utf-8"))
+        self.assertEqual(cli_args[0], "run")
+        self.assertIn("--file", cli_args)
+        file_idx = cli_args.index("--file")
+        merged_path = Path(cli_args[file_idx + 1])
+        self.assertTrue(str(merged_path).endswith("-merged-prompt.md"))
+
+        log_content = (client_dir(project_root) / "state.jsonl").read_text(encoding="utf-8")
+        self.assertIn("stop_hook_reviewer_done", log_content)
+        self.assertIn('"backend":"opencode"', log_content)
 
     def assert_reviewer_done_logged(self, project_root, backend=None):
         log_content = (client_dir(project_root) / "state.jsonl").read_text(encoding="utf-8")

@@ -7,4 +7,5 @@ from tests.support_paths import (  # noqa: F401
     real_claude_cli_available,
     real_cli_available,
     real_codex_cli_available,
+    real_opencode_cli_available,
 )

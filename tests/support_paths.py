@@ -30,6 +30,11 @@ def real_codex_cli_available():
     return shutil.which("codex") is not None
 
 
+def real_opencode_cli_available():
+    """Return True if opencode is on PATH."""
+    return shutil.which("opencode") is not None
+
+
 def real_cli_available():
     """Backward-compatible alias for the real Claude CLI gate."""
     return real_claude_cli_available()

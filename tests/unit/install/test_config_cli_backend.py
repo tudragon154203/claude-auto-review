@@ -38,6 +38,24 @@ class TestCheckBackendCli(unittest.TestCase):
         output = buf.getvalue()
         self.assertIn("npm install -g @anthropic-ai/claude-code", output)
 
+    @patch("claude_auto_review.install.config_cli_display.shutil.which", return_value=None)
+    def test_not_found_opencode_shows_opencode_hint(self, mock_which):
+        buf = io.StringIO()
+        with patch("sys.stdout", buf):
+            config_cli._check_backend_cli("opencode")
+        output = buf.getvalue()
+        self.assertIn("[WARN] opencode CLI not found", output)
+        self.assertIn("npm install -g opencode-ai", output)
+
+    @patch("claude_auto_review.install.config_cli_display.shutil.which", return_value="/usr/local/bin/opencode")
+    def test_found_opencode_prints_checkmark(self, mock_which):
+        buf = io.StringIO()
+        with patch("sys.stdout", buf):
+            config_cli._check_backend_cli("opencode")
+        output = buf.getvalue()
+        self.assertIn("opencode CLI found", output)
+        self.assertIn("/usr/local/bin/opencode", output)
+
     @patch("claude_auto_review.install.config_cli_display.shutil.which", return_value="/usr/bin/codex")
     def test_non_interactive_backend_flag_checks_cli(self, mock_which):
         with tempfile.TemporaryDirectory() as tmp:

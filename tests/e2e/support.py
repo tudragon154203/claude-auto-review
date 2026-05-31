@@ -28,6 +28,7 @@ class EndToEndTestCase(TempProjectMixin, SubprocessMixin, unittest.TestCase):
         client_id="test-session",
         use_fake_claude=None,
         use_fake_codex=False,
+        use_fake_opencode=False,
         env_overrides=None,
     ):
         return self.run_python(
@@ -36,6 +37,7 @@ class EndToEndTestCase(TempProjectMixin, SubprocessMixin, unittest.TestCase):
             client_id=client_id,
             use_fake_claude=use_fake_claude,
             use_fake_codex=use_fake_codex,
+            use_fake_opencode=use_fake_opencode,
             env_overrides=env_overrides,
         )
 

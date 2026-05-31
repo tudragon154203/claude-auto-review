@@ -27,3 +27,12 @@ def _build_codex_review_args(model):
         model,
         "-",
     ]
+
+
+def _build_opencode_review_args(model, prompt_file):
+    return [
+        "run",
+        "Review the attached prompt file and respond with your findings.",
+        "--file",
+        str(prompt_file),
+    ]

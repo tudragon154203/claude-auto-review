@@ -100,6 +100,7 @@ The review runner now supports both backends through the `reviewerBackend` setti
 
 - `claude` keeps the current `claude -p` behavior.
 - `codex` runs `codex exec --json` in non-interactive mode.
+- `opencode` runs `opencode run --file <merged-prompt>` in non-interactive mode.
 - Unsupported backend values fail closed instead of silently falling back.
 
 ## Key Subprocess Differences

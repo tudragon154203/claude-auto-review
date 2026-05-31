@@ -3,10 +3,7 @@
 from __future__ import annotations
 
 from claude_auto_review.stop.orchestration.context import RuntimeContext
-from claude_auto_review.stop.orchestration.deps import (
-    StopFlowDependencies,
-    build_default_dependencies,
-)
+from claude_auto_review.stop.orchestration.deps import build_default_dependencies
 from claude_auto_review.stop.orchestration.service import StopFlowService
 from claude_auto_review.stop.response import ResponseEmitter, StdoutResponseEmitter
 

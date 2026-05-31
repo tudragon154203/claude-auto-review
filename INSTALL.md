@@ -27,7 +27,7 @@ This command is interactive by default. It:
 You can also use non-interactive flags now:
 
 ```bash
-claude-auto-review config --backend codex --severity high --max-stop-passes 7 --non-interactive
+claude-auto-review config --backend opencode --severity high --max-stop-passes 7 --non-interactive
 ```
 
 ## Prerequisites

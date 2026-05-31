@@ -10,6 +10,7 @@ from claude_auto_review.stop.reviews.prompt_runner import (
 from claude_auto_review.stop.reviews.review_args import (
     _build_claude_review_args,
     _build_codex_review_args,
+    _build_opencode_review_args,
 )
 
 
@@ -147,6 +148,31 @@ class TestPromptRunnerCodex(unittest.TestCase):
         mock_which.assert_called_once_with("claude")
         self.assertEqual(mock_run.call_args.kwargs.get("input"), None)
         self.assertIn("user prompt", mock_run.call_args.args[0])
+
+
+class TestBuildOpencodeReviewArgs(unittest.TestCase):
+    def test_returns_run_with_file_flag(self):
+        prompt_file = Path("/tmp/prompt.md")
+        args = _build_opencode_review_args("claude-sonnet-4-6", prompt_file)
+        self.assertEqual(args[0], "run")
+        self.assertIn("--file", args)
+        file_idx = args.index("--file")
+        self.assertEqual(args[file_idx + 1], str(prompt_file))
+
+    def test_ignores_model_argument(self):
+        args = _build_opencode_review_args("gpt-5", Path("/tmp/prompt.md"))
+        self.assertNotIn("--model", args)
+
+    def test_no_sandbox_or_allowed_tools(self):
+        args = _build_opencode_review_args("model", Path("/tmp/prompt.md"))
+        self.assertNotIn("--sandbox", args)
+        self.assertNotIn("--allowedTools", args)
+        self.assertNotIn("--print", args)
+        self.assertNotIn("--model", args)
+
+    def test_no_stdin_dash(self):
+        args = _build_opencode_review_args("model", Path("/tmp/prompt.md"))
+        self.assertNotIn("-", args)
 
 
 if __name__ == "__main__":

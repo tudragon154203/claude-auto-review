@@ -7,6 +7,11 @@ from claude_auto_review.config.models import (
     REVIEWER_BACKENDS,
     PluginSettings,
 )
+from claude_auto_review.config.reviewer import (
+    DEFAULT_REVIEWER_MODELS,
+    resolve_reviewer_backend,
+    resolve_reviewer_model,
+)
 
 
 class TestReviewerBackendSetting(unittest.TestCase):
@@ -42,8 +47,8 @@ class TestReviewerBackendSetting(unittest.TestCase):
             ],
         )
 
-    def test_reviewer_backends_contains_claude_and_codex(self):
-        self.assertEqual(REVIEWER_BACKENDS, frozenset({"claude", "codex"}))
+    def test_reviewer_backends_contains_all_three(self):
+        self.assertEqual(REVIEWER_BACKENDS, frozenset({"claude", "codex", "opencode"}))
 
     def test_get_reviewer_backend_returns_claude_when_unset(self):
         self.assertEqual(PluginSettings().resolved_reviewer_backend(), "claude")
@@ -84,6 +89,44 @@ class TestReviewerBackendSetting(unittest.TestCase):
             ).resolved_reviewer_model(),
             "custom-reviewer-model",
         )
+
+    def test_get_reviewer_backend_returns_opencode_when_set(self):
+        self.assertEqual(
+            PluginSettings.from_mapping({"reviewerBackend": "opencode"}).resolved_reviewer_backend(),
+            "opencode",
+        )
+
+    def test_get_reviewer_backend_normalizes_opencode_case(self):
+        self.assertEqual(
+            PluginSettings.from_mapping({"reviewerBackend": "OpenCode"}).resolved_reviewer_backend(),
+            "opencode",
+        )
+
+    def test_get_reviewer_model_defaults_for_opencode_backend(self):
+        self.assertEqual(
+            PluginSettings.from_mapping({"reviewerBackend": "opencode"}).resolved_reviewer_model(),
+            "opencode/big-pickle",
+        )
+
+
+class TestResolveFunctions(unittest.TestCase):
+    def test_resolve_reviewer_backend_returns_known(self):
+        for backend in ("claude", "codex", "opencode"):
+            self.assertEqual(resolve_reviewer_backend(backend), backend)
+
+    def test_resolve_reviewer_backend_rejects_unknown(self):
+        with self.assertRaises(ValueError):
+            resolve_reviewer_backend("unknown")
+
+    def test_resolve_reviewer_model_returns_explicit(self):
+        self.assertEqual(resolve_reviewer_model("custom-model", backend="claude"), "custom-model")
+
+    def test_resolve_reviewer_model_defaults_per_backend(self):
+        for backend, expected in DEFAULT_REVIEWER_MODELS.items():
+            self.assertEqual(resolve_reviewer_model(None, backend=backend), expected)
+
+    def test_resolve_reviewer_model_fallback_for_unknown_backend(self):
+        self.assertEqual(resolve_reviewer_model(None, backend="nonexistent"), DEFAULT_REVIEWER_MODELS["claude"])
 
 
 if __name__ == "__main__":

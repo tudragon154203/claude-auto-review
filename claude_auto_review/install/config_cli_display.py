@@ -14,6 +14,7 @@ from claude_auto_review.config.utils.schema import (
 _BACKEND_INSTALL_HINTS = {
     "claude": "npm install -g @anthropic-ai/claude-code",
     "codex": "npm install -g @openai/codex",
+    "opencode": "npm install -g opencode-ai",
 }
 
 ADVANCED_SETTING_KEYS = tuple(

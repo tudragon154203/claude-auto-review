@@ -10,7 +10,7 @@ After each file edit (Write/Edit/MultiEdit/Delete), the plugin tracks the file h
 ## Features
 
 - Tracks file edits through Claude Code hooks and blocks stop until changes are reviewed.
-- Supports reviewer CLI backends via `reviewerBackend` (`claude` or `codex`).
+- Supports reviewer CLI backends via `reviewerBackend` (`claude`, `codex`, or `opencode`).
 - Uses a last-message classifier to skip review generation when Claude should keep working.
 - Enforces a stop circuit breaker with `maxStopPasses`.
 - Live-reloads `.claude/settings.json` without a restart.

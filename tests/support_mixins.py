@@ -99,6 +99,43 @@ class SubprocessMixin:
         )
         fake_script.chmod(0o755)
 
+    @staticmethod
+    def _write_fake_opencode_cli(fake_dir, capture_file):
+        fake_script = fake_dir / "opencode"
+        fake_script.write_text(
+            "#!/usr/bin/env python3\n"
+            "import json\n"
+            "import os\n"
+            "from pathlib import Path\n"
+            "import sys\n\n"
+            "capture = os.environ.get('OPENCODE_FAKE_CAPTURE_FILE')\n"
+            "if capture:\n"
+            "    path = Path(capture)\n"
+            "    path.parent.mkdir(parents=True, exist_ok=True)\n"
+            "    path.write_text(json.dumps(sys.argv[1:], indent=2), encoding='utf-8')\n"
+            "print('# Review fake-opencode')\n"
+            "print()\n"
+            "print('## Files Reviewed')\n"
+            "print('- fake.ts (hash: deadbeef)')\n"
+            "print()\n"
+            "print('## Findings')\n"
+            "print()\n"
+            "print('Clean - no issues found. Claude may stop.')\n"
+            "print()\n"
+            "print('## Verdict')\n"
+            "print()\n"
+            "print('Clean - no issues found. Claude may stop.')\n",
+            encoding="utf-8",
+            newline="\n",
+        )
+        fake_cmd = fake_dir / "opencode.cmd"
+        fake_cmd.write_text(
+            f'@echo off\n"{sys.executable}" "%~dp0opencode" %*\n',
+            encoding="utf-8",
+            newline="\n",
+        )
+        fake_script.chmod(0o755)
+
     def run_python(
         self,
         script,
@@ -108,6 +145,7 @@ class SubprocessMixin:
         env_overrides=None,
         use_fake_claude=None,
         use_fake_codex=False,
+        use_fake_opencode=False,
         timeout=None,
         stdin_session_id_payload=None,
     ):
@@ -121,7 +159,7 @@ class SubprocessMixin:
             use_fake_claude = str(script).replace("\\", "/").endswith("hooks/stop_hook.py")
 
         fake_dir = None
-        if use_fake_claude or use_fake_codex:
+        if use_fake_claude or use_fake_codex or use_fake_opencode:
             fake_dir = Path(tempfile.mkdtemp(prefix="claude-fake-"))
             env["PATH"] = str(fake_dir) + os.pathsep + env.get("PATH", "")
             run_dir = client_run_dir(project_root, client_id)
@@ -135,6 +173,10 @@ class SubprocessMixin:
                 self._write_fake_codex_cli(fake_dir, capture_file, stdin_file)
                 env["CODEX_FAKE_CAPTURE_FILE"] = str(capture_file)
                 env["CODEX_FAKE_STDIN_FILE"] = str(stdin_file)
+            if use_fake_opencode:
+                capture_file = run_dir / "opencode-cli-args.json"
+                self._write_fake_opencode_cli(fake_dir, capture_file)
+                env["OPENCODE_FAKE_CAPTURE_FILE"] = str(capture_file)
 
         if env_overrides:
             env.update(env_overrides)
