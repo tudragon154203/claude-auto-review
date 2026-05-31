@@ -1,6 +1,8 @@
 import unittest
 from pathlib import Path
 
+from tests.support_paths import FAKE_ROOT
+
 from claude_auto_review.config.models import PluginSettings
 from claude_auto_review.state.models import EditRecord, ReviewMetadata
 from claude_auto_review.state.snapshot import StateSnapshot
@@ -11,7 +13,7 @@ from claude_auto_review.stop.orchestration.service import StopFlowDependencies, 
 
 def _ctx(**kwargs):
     return RuntimeContext(
-        project_root=kwargs.get("project_root", Path("/fake")),
+        project_root=kwargs.get("project_root", FAKE_ROOT),
         client_id=kwargs.get("client_id", "sid"),
         settings=kwargs.get(
             "settings", PluginSettings(enabled=True, pending_review_timeout_hours=1, max_stop_passes=5)

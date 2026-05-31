@@ -3,6 +3,8 @@ import unittest
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
+from tests.support_paths import FAKE_ROOT
+
 from claude_auto_review.config.constants import EXIT_REVIEW_FAILED
 from claude_auto_review.config.models import PluginSettings
 from claude_auto_review.state.models import EditRecord, ReviewMetadata
@@ -22,7 +24,7 @@ def _mk_review(reviewId: str = "r1", reviewPath: str = "/fake/r.md") -> ReviewMe
     )
 
 
-def _ctx(project_root=Path("/fake"), client_id="c", settings=None, payload=None):
+def _ctx(project_root=FAKE_ROOT, client_id="c", settings=None, payload=None):
     return RuntimeContext(
         project_root=project_root,
         client_id=client_id,
@@ -69,7 +71,7 @@ class TestFinalizeEdgeCases(unittest.TestCase):
             "Unsupported reviewer backend: codyx",
         )
         mock_log.assert_any_call(
-            Path("/fake"),
+            FAKE_ROOT,
             "stop_hook_invalid_reviewer_backend",
             client_id="c",
             error="Unsupported reviewer backend: codyx",
@@ -97,13 +99,13 @@ class TestFinalizeEdgeCases(unittest.TestCase):
         result = finalize_review_stop(_ctx(), self.resolution, emitter=emitter)
         self.assertEqual(result, EXIT_REVIEW_FAILED)
         mock_autocomplete_log.assert_any_call(
-            Path("/fake"),
+            FAKE_ROOT,
             "stop_hook_reviewer_retry",
             client_id="c",
             reviewId="r1",
         )
         mock_log.assert_any_call(
-            Path("/fake"),
+            FAKE_ROOT,
             "stop_hook_reviewer_empty_blocked",
             client_id="c",
             reviewId="r1",

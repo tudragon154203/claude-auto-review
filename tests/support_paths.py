@@ -1,5 +1,6 @@
 import os
 import shutil
+import tempfile
 from pathlib import Path
 
 from claude_auto_review.runtime.client_dirs import get_client_runtime_dir
@@ -14,6 +15,8 @@ def client_relpath(project_root, client_id="test-session"):
 
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
+
+FAKE_ROOT = Path(tempfile.gettempdir()) / "claude-auto-review-fake"
 
 
 def real_claude_cli_available():

@@ -4,9 +4,10 @@ from unittest.mock import MagicMock, patch
 
 from claude_auto_review.stop.orchestration.context import RuntimeContext
 from claude_auto_review.stop.reviews.prompt_runner import attempt_stop_autocomplete
+from tests.support_paths import FAKE_ROOT
 
 
-def _ctx(project_root=Path("/fake"), client_id="c"):
+def _ctx(project_root=FAKE_ROOT, client_id="c"):
     return RuntimeContext(project_root=project_root, client_id=client_id)
 
 

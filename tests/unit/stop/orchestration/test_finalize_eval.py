@@ -3,6 +3,8 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import MagicMock
 
+from tests.support_paths import FAKE_ROOT
+
 from claude_auto_review.config.models import PluginSettings
 from claude_auto_review.stop.orchestration.context import RuntimeContext
 from claude_auto_review.stop.orchestration.finalize_eval import evaluate_artifact_and_plan
@@ -10,7 +12,7 @@ from claude_auto_review.stop.orchestration.finalize_eval import evaluate_artifac
 
 def _ctx(**kwargs):
     return RuntimeContext(
-        project_root=kwargs.get("project_root", Path("/fake")),
+        project_root=kwargs.get("project_root", FAKE_ROOT),
         client_id=kwargs.get("client_id", "sid"),
         settings=kwargs.get(
             "settings", PluginSettings(enabled=True, pending_review_timeout_hours=1, max_stop_passes=5)

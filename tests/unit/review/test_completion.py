@@ -5,6 +5,7 @@ from unittest.mock import patch
 from claude_auto_review.review.completion import apply_completed_review
 from claude_auto_review.timestamps import format_duration
 from claude_auto_review.state.models import EditRecord, ReviewCompletedRecord, ReviewMetadata, StopBlockedRecord
+from tests.support_paths import FAKE_ROOT
 
 
 class TestFormatDuration(unittest.TestCase):
@@ -37,7 +38,7 @@ class TestCompletion(unittest.TestCase):
         ],
     )
     def test_apply_completed_review_with_remaining_files(self, mock_load, mock_unreviewed, mock_append, mock_mark):
-        remaining = apply_completed_review(Path("/fake"), "cid", "rid", [])
+        remaining = apply_completed_review(FAKE_ROOT, "cid", "rid", [])
         self.assertTrue(len(remaining) > 0)
         self.assertEqual(mock_append.call_count, 3)
 
@@ -73,7 +74,7 @@ class TestCompletion(unittest.TestCase):
         ],
     )
     def test_apply_completed_review_with_no_remaining_files(self, mock_load, mock_unreviewed, mock_append, mock_mark):
-        remaining = apply_completed_review(Path("/fake"), "cid", "rid", [])
+        remaining = apply_completed_review(FAKE_ROOT, "cid", "rid", [])
         self.assertEqual(len(remaining), 0)
         self.assertEqual(mock_append.call_count, 2)
 
@@ -97,12 +98,12 @@ class TestCompletion(unittest.TestCase):
     )
     def test_apply_completed_review_raises_on_missing_hash(self, mock_load, mock_unreviewed, mock_append, mock_mark):
         with self.assertRaises(ValueError):
-            apply_completed_review(Path("/fake"), "cid", "rid", [{"file": "a.ts"}])
+            apply_completed_review(FAKE_ROOT, "cid", "rid", [{"file": "a.ts"}])
 
     def test_apply_completed_review_raises_on_non_dict_entry(self):
         with self.assertRaises(ValueError):
-            apply_completed_review(Path("/fake"), "cid", "rid", [{"reviewId": "x"}])
+            apply_completed_review(FAKE_ROOT, "cid", "rid", [{"reviewId": "x"}])
 
     def test_apply_completed_review_raises_on_missing_file(self):
         with self.assertRaises(ValueError):
-            apply_completed_review(Path("/fake"), "cid", "rid", [{"hash": "123"}])
+            apply_completed_review(FAKE_ROOT, "cid", "rid", [{"hash": "123"}])

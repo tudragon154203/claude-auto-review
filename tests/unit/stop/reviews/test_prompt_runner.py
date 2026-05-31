@@ -11,9 +11,10 @@ from claude_auto_review.stop.reviews.review_prompt_runner import (
     _review_prompt_path,
     run_review_prompt,
 )
+from tests.support_paths import FAKE_ROOT
 
 
-def _ctx(project_root=Path("/fake"), client_id="client-1"):
+def _ctx(project_root=FAKE_ROOT, client_id="client-1"):
     return RuntimeContext(project_root=project_root, client_id=client_id)
 
 
@@ -39,7 +40,7 @@ class TestPromptRunner(unittest.TestCase):
         self.assertEqual(mock_run.call_args.kwargs["timeout"], 60)
         self.assertEqual(mock_run.call_args.kwargs["env"], env)
         mock_log.assert_called_once_with(
-            Path("/fake"),
+            FAKE_ROOT,
             "stop_hook_review_invoked",
             client_id="client-1",
             stdout="ok",

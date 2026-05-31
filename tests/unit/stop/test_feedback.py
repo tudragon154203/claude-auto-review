@@ -3,6 +3,8 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
+from tests.support_paths import FAKE_ROOT
+
 from claude_auto_review.config.models import PluginSettings
 from claude_auto_review.state.models import EditRecord
 from claude_auto_review.stop.feedback_format import (
@@ -23,7 +25,7 @@ class TestFeedback(unittest.TestCase):
         self.assertEqual(build_unreviewed_files_string(entries), "a.ts, b.ts")
 
     def test_build_review_completion_prompt(self):
-        review_path = Path("/fake/review.md")
+        review_path = FAKE_ROOT / "review.md"
         prompt = build_review_completion_prompt(review_path)
         self.assertIn(str(review_path), prompt)
         self.assertIn("Return only the final markdown review to stdout.", prompt)

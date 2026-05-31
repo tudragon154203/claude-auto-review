@@ -2,6 +2,8 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
+from tests.support_paths import FAKE_ROOT
+
 from claude_auto_review.runtime.cleanup.paths import _iter_runtime_cleanup_targets, _remove_tree
 from claude_auto_review.runtime.cleanup.session import cancel_runtime, cancel_session
 from claude_auto_review.runtime.setup import ensure_client_runtime, ensure_runtime
@@ -117,7 +119,7 @@ class TestCleanupSession(StateTestCase, unittest.TestCase):
         self.assertFalse(result)
 
     def test_iter_runtime_cleanup_targets_returns_expected_paths(self):
-        runtime = Path("/fake/runtime")
+        runtime = FAKE_ROOT / "runtime"
         targets = list(_iter_runtime_cleanup_targets(runtime))
 
         self.assertEqual(

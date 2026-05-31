@@ -12,11 +12,12 @@ from claude_auto_review.stop.reviews.review_args import (
     _build_codex_review_args,
     _build_opencode_review_args,
 )
+from tests.support_paths import FAKE_ROOT
 
 
 class TestPromptRunnerCodex(unittest.TestCase):
     def _ctx(self):
-        return RuntimeContext(project_root=Path("/fake"), client_id="client-1")
+        return RuntimeContext(project_root=FAKE_ROOT, client_id="client-1")
 
     def test_build_codex_review_args(self):
         self.assertEqual(

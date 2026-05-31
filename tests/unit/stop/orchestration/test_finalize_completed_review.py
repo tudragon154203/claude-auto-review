@@ -3,6 +3,8 @@ import unittest
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
+from tests.support_paths import FAKE_ROOT
+
 from claude_auto_review.config.constants import EXIT_REVIEW_FAILED, EXIT_STOP_APPROVED
 from claude_auto_review.config.models import PluginSettings
 from claude_auto_review.state.models import ReviewMetadata
@@ -22,7 +24,7 @@ def _mk_review(reviewId: str = "r1", reviewPath: str = "/fake/r.md") -> ReviewMe
     )
 
 
-def _ctx(project_root=Path("/fake"), client_id="c", settings=None, payload=None):
+def _ctx(project_root=FAKE_ROOT, client_id="c", settings=None, payload=None):
     return RuntimeContext(
         project_root=project_root,
         client_id=client_id,
@@ -55,7 +57,7 @@ class TestFinalizeCompletedReview(unittest.TestCase):
         self.assertEqual(result, EXIT_STOP_APPROVED)
         emitter.approve.assert_called_once_with("Claude Auto Review: review r1 clean, all files covered")
         mock_plan_log.assert_any_call(
-            Path("/fake"),
+            FAKE_ROOT,
             "stop_approved",
             client_id="c",
             reason=FinalizeAction.APPROVED,

@@ -2,6 +2,8 @@ import unittest
 from pathlib import Path
 from types import SimpleNamespace
 
+from tests.support_paths import FAKE_ROOT
+
 from claude_auto_review.state.models import ReviewMetadata
 from unittest.mock import patch
 
@@ -21,7 +23,7 @@ def _snapshot(*, events=_STATE):
 
 def _ctx(**overrides):
     return RuntimeContext(
-        project_root=overrides.get("project_root", Path("/fake")),
+        project_root=overrides.get("project_root", FAKE_ROOT),
         client_id=overrides.get("client_id", "sid"),
         settings=overrides.get(
             "settings",
@@ -42,7 +44,7 @@ class TestFlowFinalize(unittest.TestCase):
         result = run_stop_flow(_ctx(settings=PluginSettings(enabled=False, pending_review_timeout_hours=1, max_stop_passes=5)))
 
         self.assertEqual(result, 0)
-        mock_log.assert_called_once_with(Path("/fake"), "stop_disabled", client_id="sid")
+        mock_log.assert_called_once_with(FAKE_ROOT, "stop_disabled", client_id="sid")
 
     @patch("claude_auto_review.stop.orchestration.deps.classify_last_assistant_message")
     @patch("claude_auto_review.stop.orchestration.deps.finalize_review_stop", return_value=2)

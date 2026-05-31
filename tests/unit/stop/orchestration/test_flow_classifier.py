@@ -3,6 +3,8 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
 
+from tests.support_paths import FAKE_ROOT
+
 from claude_auto_review.config.models import PluginSettings
 from claude_auto_review.state.models import EditRecord, StopBlockedRecord
 from claude_auto_review.state.snapshot import StateSnapshot
@@ -20,7 +22,7 @@ def _snapshot(*, events=_STATE):
 
 def _ctx(**overrides):
     return RuntimeContext(
-        project_root=overrides.get("project_root", Path("/fake")),
+        project_root=overrides.get("project_root", FAKE_ROOT),
         client_id=overrides.get("client_id", "sid"),
         settings=overrides.get(
             "settings",

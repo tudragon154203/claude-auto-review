@@ -5,9 +5,10 @@ from unittest.mock import MagicMock, patch
 
 from claude_auto_review.stop.orchestration.context import RuntimeContext
 from claude_auto_review.stop.reviews.prompt_runner import attempt_stop_autocomplete
+from tests.support_paths import FAKE_ROOT
 
 
-def _ctx(project_root=Path("/fake"), client_id="c"):
+def _ctx(project_root=FAKE_ROOT, client_id="c"):
     return RuntimeContext(project_root=project_root, client_id=client_id)
 
 
@@ -23,7 +24,7 @@ class TestAutoCompleteCLI(unittest.TestCase):
             user_prompt="finish",
         )
         self.assertFalse(result)
-        mock_log.assert_called_with(Path("/fake"), "stop_hook_reviewer_not_found", client_id="c", backend="claude")
+        mock_log.assert_called_with(FAKE_ROOT, "stop_hook_reviewer_not_found", client_id="c", backend="claude")
 
     @patch("claude_auto_review.stop.reviews.prompt_runner_claude.log_event")
     @patch("claude_auto_review.stop.reviews.prompt_runner_claude.shutil.which", return_value="/usr/bin/claude")
@@ -37,7 +38,7 @@ class TestAutoCompleteCLI(unittest.TestCase):
         )
         self.assertFalse(result)
         mock_log.assert_called_with(
-            Path("/fake"), "stop_hook_prompt_not_found", client_id="c", path=str(Path("/nonexistent.md"))
+            FAKE_ROOT, "stop_hook_prompt_not_found", client_id="c", path=str(Path("/nonexistent.md"))
         )
 
     @patch("claude_auto_review.stop.reviews.prompt_runner_claude.log_event")
@@ -57,7 +58,7 @@ class TestAutoCompleteCLI(unittest.TestCase):
         )
         self.assertFalse(result)
         mock_log.assert_called_with(
-            Path("/fake"), "stop_hook_reviewer_timeout", client_id="c", reviewId="r", backend="claude"
+            FAKE_ROOT, "stop_hook_reviewer_timeout", client_id="c", reviewId="r", backend="claude"
         )
 
     @patch("claude_auto_review.stop.reviews.prompt_runner_claude.log_event")
@@ -91,7 +92,7 @@ class TestAutoCompleteCLI(unittest.TestCase):
         )
         self.assertFalse(result)
         mock_log.assert_called_with(
-            Path("/fake"), "stop_hook_reviewer_error", client_id="c", error="boom", backend="claude", reviewId="r"
+            FAKE_ROOT, "stop_hook_reviewer_error", client_id="c", error="boom", backend="claude", reviewId="r"
         )
 
     @patch("claude_auto_review.stop.reviews.prompt_runner.run_captured")

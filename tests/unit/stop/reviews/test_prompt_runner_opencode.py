@@ -16,10 +16,11 @@ from claude_auto_review.stop.reviews.prompt_runner_opencode import (
     _write_merged_prompt,
 )
 from claude_auto_review.stop.reviews.review_args import _build_opencode_review_args
+from tests.support_paths import FAKE_ROOT
 
 
 def _ctx():
-    return RuntimeContext(project_root=Path("/fake"), client_id="client-1")
+    return RuntimeContext(project_root=FAKE_ROOT, client_id="client-1")
 
 
 class TestBuildOpencodeReviewArgs(unittest.TestCase):

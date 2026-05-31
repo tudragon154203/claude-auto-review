@@ -7,6 +7,7 @@ from claude_auto_review.state.models import EditRecord, ReviewMetadata
 from claude_auto_review.stop.orchestration.context import RuntimeContext
 from claude_auto_review.stop.orchestration.pending import resolve_pending_review
 from claude_auto_review.stop.orchestration.resolution import ReviewResolution
+from tests.support_paths import FAKE_ROOT
 
 
 def _mk_edit(file: str = "a.py", hash: str = "h1") -> EditRecord:
@@ -17,14 +18,14 @@ def _mk_review(reviewId: str = "r1") -> ReviewMetadata:
     return ReviewMetadata(
         timestamp="2026-05-11T10:00:00+07:00",
         reviewId=reviewId,
-        reviewPath="/fake/r.md",
+        reviewPath=str(FAKE_ROOT / "r.md"),
         files=[],
         clientId="c",
         status="pending",
     )
 
 
-def _ctx(project_root=Path("/fake"), client_id="c", settings=None, payload=None):
+def _ctx(project_root=FAKE_ROOT, client_id="c", settings=None, payload=None):
     return RuntimeContext(
         project_root=project_root,
         client_id=client_id,
@@ -42,7 +43,7 @@ class TestResolvePendingReview(unittest.TestCase):
         "state": [],
         "unreviewed": [_mk_edit()],
         "timeout_hours": 1,
-        "review_prompt_script": Path("/fake/script"),
+        "review_prompt_script": FAKE_ROOT / "script",
     }
 
     @patch("claude_auto_review.stop.orchestration.pending.find_pending_review_for_files")
