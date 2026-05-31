@@ -153,9 +153,11 @@ class TestConfigCli(unittest.TestCase):
         self.assertIn("Please enter 0 or a positive number.", output)
 
     def test_print_advanced_settings_lists_non_wizard_keys(self):
+        from claude_auto_review.config.models import PluginSettings
+        settings = PluginSettings()
         stdout = io.StringIO()
         with patch("sys.stdout", stdout):
-            config_cli._print_advanced_settings(Path("/tmp/settings.json"))
+            config_cli._print_advanced_settings(Path("/tmp/settings.json"), settings)
 
         output = stdout.getvalue()
         self.assertIn("enabled", output)

@@ -3,6 +3,7 @@ from __future__ import annotations
 import shutil
 from pathlib import Path
 
+from claude_auto_review.config.models import PluginSettings
 from claude_auto_review.config.utils.schema import (
     KNOWN_SETTING_KEYS,
     SETTING_MAX_STOP_PASSES,
@@ -59,14 +60,16 @@ def _check_backend_cli(backend: str) -> None:
     print(f"    Install with: {hint}")
 
 
-def _print_advanced_settings(settings_path: Path) -> None:
+def _print_advanced_settings(settings_path: Path, settings: PluginSettings) -> None:
+    mapping = settings.to_mapping()
     print("- Other available settings in `.claude/settings.json` under `claude-auto-review`:")
     for key in ADVANCED_SETTING_KEYS:
-        print(f"  - {key}: {SETTING_DESCRIPTIONS.get(key, 'Advanced setting')}")
+        value = mapping.get(key, "")
+        print(f"  - {key}: {SETTING_DESCRIPTIONS.get(key, 'Advanced setting')} (current: {value!r})")
     print(f"- Full config location: {settings_path}")
 
 
-def _print_summary(project_root: Path, initialized_before: bool, settings_path: Path, settings) -> None:
+def _print_summary(project_root: Path, initialized_before: bool, settings_path: Path, settings: PluginSettings) -> None:
     runtime_dir = project_root / ".claude" / "claude-auto-review"
     print()
     print("Configuration saved.")
@@ -79,4 +82,4 @@ def _print_summary(project_root: Path, initialized_before: bool, settings_path: 
         f"minimumBlockingSeverity={settings.minimum_blocking_severity}, "
         f"maxStopPasses={settings.max_stop_passes}"
     )
-    _print_advanced_settings(settings_path)
+    _print_advanced_settings(settings_path, settings)
