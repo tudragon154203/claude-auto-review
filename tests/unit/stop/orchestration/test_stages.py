@@ -3,13 +3,13 @@ from types import SimpleNamespace
 from unittest.mock import MagicMock
 
 from tests.support_paths import FAKE_ROOT
-from claude_auto_review.config.models import PluginSettings
-from claude_auto_review.state.edit_record import EditRecord
-from claude_auto_review.state.snapshot import StateSnapshot
+from claude_auto_review.config.settings.models import PluginSettings
+from claude_auto_review.state.records.edit import EditRecord
+from claude_auto_review.state.snapshots.snapshot import StateSnapshot
 from claude_auto_review.stop.classifier.enums import ClassifierStatus
-from claude_auto_review.stop.orchestration.context import RuntimeContext
-from claude_auto_review.stop.orchestration.resolution import StopDecisionKind, TerminalResolution
-from claude_auto_review.stop.orchestration.stages import (
+from claude_auto_review.stop.orchestration.types.context import RuntimeContext
+from claude_auto_review.stop.orchestration.types.resolution import StopDecisionKind, TerminalResolution
+from claude_auto_review.stop.orchestration.pipeline.stages import (
     _build_classifier_result_persistor,
     run_allow_no_unreviewed_stage,
     run_circuit_breaker_stage,
@@ -18,7 +18,7 @@ from claude_auto_review.stop.orchestration.stages import (
     run_pending_stage,
     run_state_stage,
 )
-from claude_auto_review.stop.reviews.enums import StopAllowReason
+from claude_auto_review.stop.reviews.types.enums import StopAllowReason
 
 
 def _ctx(**kwargs):

@@ -3,9 +3,9 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from claude_auto_review.config.file_filters import should_skip_file
-from claude_auto_review.config.io import load_settings
-from claude_auto_review.config.models import PluginSettings
+from claude_auto_review.config.resolvers.files import should_skip_file
+from claude_auto_review.config.io.settings_file import load_settings
+from claude_auto_review.config.settings.models import PluginSettings
 from claude_auto_review.runtime.setup import ensure_runtime
 
 

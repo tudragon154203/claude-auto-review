@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from claude_auto_review.config.constants import DURATION_ROUND_PRECISION, SECONDS_PER_HOUR, SECONDS_PER_MINUTE
+from claude_auto_review.config.constants.time_units import DURATION_ROUND_PRECISION, SECONDS_PER_HOUR, SECONDS_PER_MINUTE
 
 
 def local_now_iso():

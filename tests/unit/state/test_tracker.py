@@ -1,6 +1,6 @@
 import unittest
 
-from claude_auto_review.state.edit_record import EditRecord, StopBlockedRecord
+from claude_auto_review.state.records.edit import EditRecord, StopBlockedRecord
 from claude_auto_review.state.tracker import StateTracker
 from tests.unit.state.support import StateTestCase
 

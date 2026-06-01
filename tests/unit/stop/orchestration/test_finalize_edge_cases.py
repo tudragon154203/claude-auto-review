@@ -5,14 +5,14 @@ from unittest.mock import MagicMock, patch
 
 from tests.support_paths import FAKE_ROOT
 
-from claude_auto_review.config.constants import EXIT_REVIEW_FAILED
-from claude_auto_review.config.models import PluginSettings
-from claude_auto_review.state.edit_record import EditRecord
-from claude_auto_review.state.review_records import ReviewMetadata
-from claude_auto_review.stop.orchestration.context import RuntimeContext
+from claude_auto_review.config.constants.exit_codes import EXIT_REVIEW_FAILED
+from claude_auto_review.config.settings.models import PluginSettings
+from claude_auto_review.state.records.edit import EditRecord
+from claude_auto_review.state.records.review import ReviewMetadata
+from claude_auto_review.stop.orchestration.types.context import RuntimeContext
 from claude_auto_review.stop.orchestration.deps import build_default_eval_deps
-from claude_auto_review.stop.orchestration.finalize import finalize_review_stop
-from claude_auto_review.stop.orchestration.resolution import ReviewResolution
+from claude_auto_review.stop.orchestration.finalize.core import finalize_review_stop
+from claude_auto_review.stop.orchestration.types.resolution import ReviewResolution
 
 
 def _mk_review(reviewId: str = "r1", reviewPath: str = "/fake/r.md") -> ReviewMetadata:
@@ -47,15 +47,15 @@ class TestFinalizeEdgeCases(unittest.TestCase):
             review=_mk_review("r1"),
         )
 
-    @patch("claude_auto_review.stop.orchestration.finalize.get_entries_covered_by_review", return_value=[])
-    @patch("claude_auto_review.stop.orchestration.finalize.block_pending_review")
+    @patch("claude_auto_review.stop.orchestration.finalize.core.get_entries_covered_by_review", return_value=[])
+    @patch("claude_auto_review.stop.orchestration.finalize.core.block_pending_review")
     def test_missing_review_file_blocks(self, mock_block_pending, mock_covered):
         mock_classify = MagicMock(side_effect=[MagicMock(status="pending"), MagicMock(status="pending")])
         emitter = _mock_emitter()
         result = finalize_review_stop(_ctx(), self.resolution, deps=build_default_eval_deps(emitter=emitter, classify_fn=mock_classify))
         self.assertEqual(result, EXIT_REVIEW_FAILED)
 
-    @patch("claude_auto_review.stop.orchestration.finalize.get_entries_covered_by_review", return_value=[])
+    @patch("claude_auto_review.stop.orchestration.finalize.core.get_entries_covered_by_review", return_value=[])
     def test_invalid_reviewer_backend_blocks_instead_of_approving(
         self, mock_covered
     ):
@@ -78,11 +78,11 @@ class TestFinalizeEdgeCases(unittest.TestCase):
             error="Unsupported reviewer backend: codyx",
         )
 
-    @patch("claude_auto_review.stop.orchestration.finalize.get_entries_covered_by_review", return_value=[])
-    @patch("claude_auto_review.stop.orchestration.finalize.block_pending_review")
-    @patch("claude_auto_review.stop.orchestration.finalize_autocomplete.build_review_completion_prompt")
+    @patch("claude_auto_review.stop.orchestration.finalize.core.get_entries_covered_by_review", return_value=[])
+    @patch("claude_auto_review.stop.orchestration.finalize.core.block_pending_review")
+    @patch("claude_auto_review.stop.orchestration.finalize.autocomplete.build_review_completion_prompt")
     @patch(
-        "claude_auto_review.stop.orchestration.finalize_autocomplete.attempt_stop_autocomplete",
+        "claude_auto_review.stop.orchestration.finalize.autocomplete.attempt_stop_autocomplete",
         side_effect=[
             MagicMock(status="empty_stdout"),
             MagicMock(status="empty_stdout"),
@@ -114,8 +114,8 @@ class TestFinalizeEdgeCases(unittest.TestCase):
         )
         mock_block_pending.assert_called_once()
 
-    @patch("claude_auto_review.stop.orchestration.finalize.get_entries_covered_by_review", return_value=[])
-    @patch("claude_auto_review.stop.orchestration.finalize_plan_executor.apply_completed_review")
+    @patch("claude_auto_review.stop.orchestration.finalize.core.get_entries_covered_by_review", return_value=[])
+    @patch("claude_auto_review.stop.orchestration.finalize.plan_executor.apply_completed_review")
     def test_completed_clean_with_remaining_files_blocks(
         self, mock_apply, mock_covered
     ):

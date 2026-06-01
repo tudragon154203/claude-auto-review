@@ -1,0 +1,6 @@
+from __future__ import annotations
+
+SECONDS_PER_MINUTE = 60
+SECONDS_PER_HOUR = 3600
+MS_PER_SECOND = 1000
+DURATION_ROUND_PRECISION = 3

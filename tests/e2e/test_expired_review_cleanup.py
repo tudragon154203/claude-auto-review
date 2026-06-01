@@ -59,7 +59,7 @@ class ExpiredReviewCleanupE2ETests(EndToEndTestCase):
         client_id = "cleanup-expired"
         (project_root / "src" / "test.ts").write_text("const x = 1;\n", encoding="utf-8")
 
-        setup = self.run_python("claude_auto_review/install/setup_cli.py", project_root)
+        setup = self.run_python("claude_auto_review/install/cli/setup.py", project_root)
         self.assertEqual(setup.returncode, 0)
 
         self.track(project_root, "src/test.ts", client_id=client_id)
@@ -108,7 +108,7 @@ class ExpiredReviewCleanupE2ETests(EndToEndTestCase):
         client_id = "cleanup-fresh"
         (project_root / "src" / "app.ts").write_text("let y = 2;\n", encoding="utf-8")
 
-        setup = self.run_python("claude_auto_review/install/setup_cli.py", project_root)
+        setup = self.run_python("claude_auto_review/install/cli/setup.py", project_root)
         self.assertEqual(setup.returncode, 0)
 
         self.track(project_root, "src/app.ts", client_id=client_id)

@@ -3,19 +3,19 @@ import tempfile
 from datetime import datetime
 from pathlib import Path
 
-from claude_auto_review.config.io import load_settings
-from claude_auto_review.config.models import DEFAULT_TIMEOUT_SECONDS, PluginSettings
+from claude_auto_review.config.io.settings_file import load_settings
+from claude_auto_review.config.settings.models import DEFAULT_TIMEOUT_SECONDS, PluginSettings
 from claude_auto_review.paths.path_utils import get_state_path
 from claude_auto_review.runtime.cleanup.session import cancel_runtime
 from claude_auto_review.runtime.client_dirs import client_state_path
 from claude_auto_review.runtime.events import log_event
 from claude_auto_review.runtime.setup import ensure_client_runtime, ensure_project_settings, ensure_runtime
-from claude_auto_review.state.edit_record import EditRecord
+from claude_auto_review.state.records.edit import EditRecord
 from claude_auto_review.state.store.queries import consecutive_stop_blocks
 from claude_auto_review.state.store.read import load_state
 from claude_auto_review.state.store.write import append_state_event
 from claude_auto_review.stop.classifier.last_assistant_message import classify_last_assistant_message
-from claude_auto_review.stop.orchestration.context import RuntimeContext
+from claude_auto_review.stop.orchestration.types.context import RuntimeContext
 from tests.int.support import REPO_ROOT, IntegrationTestCase, _FakeResponse
 from tests.support_paths import client_dir
 

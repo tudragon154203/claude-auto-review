@@ -3,9 +3,9 @@ from __future__ import annotations
 from collections.abc import Callable
 from typing import Any
 
-from claude_auto_review.stop.orchestration.context import ResponsePayload, RuntimeContext, StopDecision
+from claude_auto_review.stop.orchestration.types.context import ResponsePayload, RuntimeContext, StopDecision
 from claude_auto_review.stop.orchestration.decision_engine import StopDecisionEngine
-from claude_auto_review.stop.orchestration.resolution import StopDecisionKind
+from claude_auto_review.stop.orchestration.types.resolution import StopDecisionKind
 from claude_auto_review.stop.response import ResponseEmitter, StdoutResponseEmitter
 
 StopHandler = Callable[[StopDecisionEngine, StopDecision, ResponseEmitter], int]

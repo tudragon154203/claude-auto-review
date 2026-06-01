@@ -10,7 +10,7 @@ class EndToEndLifecycleTests(EndToEndTestCase):
         project_root = self.temp_project()
         (project_root / "src" / "main.ts").write_text("const x = 1;\n", encoding="utf-8")
 
-        setup = self.run_python("claude_auto_review/install/setup_cli.py", project_root)
+        setup = self.run_python("claude_auto_review/install/cli/setup.py", project_root)
         self.assertEqual(setup.returncode, 0)
 
         self.track(project_root, "src/main.ts")
@@ -24,7 +24,7 @@ class EndToEndLifecycleTests(EndToEndTestCase):
         project_root = self.temp_project()
         (project_root / "src" / "app.ts").write_text("const value = 1;\n", encoding="utf-8")
 
-        setup = self.run_python("claude_auto_review/install/setup_cli.py", project_root)
+        setup = self.run_python("claude_auto_review/install/cli/setup.py", project_root)
         self.assertEqual(setup.returncode, 0, setup.stderr)
         self.assertTrue(self.runtime_script(project_root, "review_prompt.py").exists())
         self.assertTrue(self.runtime_script(project_root, "cancel_claude_auto_review.py").exists())
@@ -94,7 +94,7 @@ class EndToEndLifecycleTests(EndToEndTestCase):
         self.track(project_root, "src/a.ts")
         self.review(project_root)
 
-        cancel = self.run_python("claude_auto_review/install/cancel_cli.py", project_root)
+        cancel = self.run_python("claude_auto_review/install/cli/cancel.py", project_root)
         self.assertEqual(cancel.returncode, 0)
 
         (project_root / "src" / "b.ts").write_text("b\n", encoding="utf-8")
@@ -176,8 +176,8 @@ class EndToEndLifecycleTests(EndToEndTestCase):
     def test_setup_idempotent_e2e(self):
         project_root = self.temp_project()
 
-        self.assertEqual(self.run_python("claude_auto_review/install/setup_cli.py", project_root).returncode, 0)
-        self.assertEqual(self.run_python("claude_auto_review/install/setup_cli.py", project_root).returncode, 0)
+        self.assertEqual(self.run_python("claude_auto_review/install/cli/setup.py", project_root).returncode, 0)
+        self.assertEqual(self.run_python("claude_auto_review/install/cli/setup.py", project_root).returncode, 0)
 
         self.assertTrue((project_root / ".claude" / "claude-auto-review" / "scripts" / "review_prompt.py").exists())
         self.assertTrue((project_root / ".claude" / "claude-auto-review" / "review-rules.md").exists())

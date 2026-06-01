@@ -2,19 +2,19 @@ import unittest
 from unittest.mock import MagicMock
 
 from tests.support_paths import FAKE_ROOT
-from claude_auto_review.config.models import PluginSettings
-from claude_auto_review.state.edit_record import EditRecord
-from claude_auto_review.state.review_records import ReviewMetadata
-from claude_auto_review.state.snapshot import StateSnapshot
-from claude_auto_review.stop.orchestration.context import RuntimeContext
+from claude_auto_review.config.settings.models import PluginSettings
+from claude_auto_review.state.records.edit import EditRecord
+from claude_auto_review.state.records.review import ReviewMetadata
+from claude_auto_review.state.snapshots.snapshot import StateSnapshot
+from claude_auto_review.stop.orchestration.types.context import RuntimeContext
 from claude_auto_review.stop.orchestration.deps import (
     ClassifierDeps,
     ReviewDeps,
     StateDeps,
     StopFlowDependencies,
 )
-from claude_auto_review.stop.orchestration.resolution import ReviewResolution, StopDecisionKind, TerminalResolution
-from claude_auto_review.stop.orchestration.service import StopFlowService
+from claude_auto_review.stop.orchestration.types.resolution import ReviewResolution, StopDecisionKind, TerminalResolution
+from claude_auto_review.stop.orchestration.pipeline.service import StopFlowService
 
 
 def _ctx(**kwargs):

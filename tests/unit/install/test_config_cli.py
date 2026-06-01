@@ -5,7 +5,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from claude_auto_review.install import config_cli
+from claude_auto_review.install.cli import config as config_cli
 
 
 # ── shared helpers ────────────────────────────────────────────────────────────
@@ -153,7 +153,7 @@ class TestConfigCli(unittest.TestCase):
         self.assertIn("Please enter 0 or a positive number.", output)
 
     def test_print_advanced_settings_lists_non_wizard_keys(self):
-        from claude_auto_review.config.models import PluginSettings
+        from claude_auto_review.config.settings.models import PluginSettings
         settings = PluginSettings()
         stdout = io.StringIO()
         with patch("sys.stdout", stdout):
@@ -187,12 +187,12 @@ class TestConfigCli(unittest.TestCase):
                 return settings_path
 
             stdout = io.StringIO()
-            with patch("claude_auto_review.install.config_cli.get_project_root", return_value=project_root), patch(
-                "claude_auto_review.install.config_cli_io.ensure_runtime", side_effect=fake_runtime
+            with patch("claude_auto_review.install.cli.config.get_project_root", return_value=project_root), patch(
+                "claude_auto_review.install.config.io.ensure_runtime", side_effect=fake_runtime
             ), patch(
-                "claude_auto_review.install.config_cli_io._settings_path", side_effect=fake_project_settings
+                "claude_auto_review.install.config.io._settings_path", side_effect=fake_project_settings
             ), patch(
-                "claude_auto_review.install.config_cli.log_event"
+                "claude_auto_review.install.cli.config.log_event"
             ) as mock_log, patch("sys.stdout", stdout):
                 result = config_cli.main(["--backend", "codex", "--severity", "high", "--max-stop-passes", "7", "--non-interactive"])
 
@@ -221,9 +221,9 @@ class TestConfigCli(unittest.TestCase):
                 encoding="utf-8",
             )
 
-            with patch("claude_auto_review.install.config_cli.get_project_root", return_value=project_root), patch(
-                "claude_auto_review.install.config_cli._run_wizard"
-            ) as mock_wizard, patch("claude_auto_review.install.config_cli.log_event"):
+            with patch("claude_auto_review.install.cli.config.get_project_root", return_value=project_root), patch(
+                "claude_auto_review.install.cli.config._run_wizard"
+            ) as mock_wizard, patch("claude_auto_review.install.cli.config.log_event"):
                 result = config_cli.main(["--non-interactive"])
 
             self.assertEqual(result, 0)
@@ -243,9 +243,9 @@ class TestConfigCli(unittest.TestCase):
             )
 
             stdout = io.StringIO()
-            with patch("claude_auto_review.install.config_cli.get_project_root", return_value=project_root), patch(
+            with patch("claude_auto_review.install.cli.config.get_project_root", return_value=project_root), patch(
                 "builtins.input", side_effect=["", "", "", ""]
-            ), patch("claude_auto_review.install.config_cli.log_event"), patch("sys.stdout", stdout):
+            ), patch("claude_auto_review.install.cli.config.log_event"), patch("sys.stdout", stdout):
                 result = config_cli.main([])
 
             self.assertEqual(result, 0)
@@ -270,8 +270,8 @@ class TestConfigCli(unittest.TestCase):
                 encoding="utf-8",
             )
 
-            with patch("claude_auto_review.install.config_cli.get_project_root", return_value=project_root), patch(
-                "claude_auto_review.install.config_cli.log_event"
+            with patch("claude_auto_review.install.cli.config.get_project_root", return_value=project_root), patch(
+                "claude_auto_review.install.cli.config.log_event"
             ):
                 result = config_cli.main(["--backend", "codex", "--non-interactive"])
 
@@ -293,9 +293,9 @@ class TestConfigCli(unittest.TestCase):
                 encoding="utf-8",
             )
 
-            with patch("claude_auto_review.install.config_cli.get_project_root", return_value=project_root), patch(
+            with patch("claude_auto_review.install.cli.config.get_project_root", return_value=project_root), patch(
                 "builtins.input", side_effect=["", "", "", ""]
-            ), patch("claude_auto_review.install.config_cli.log_event"):
+            ), patch("claude_auto_review.install.cli.config.log_event"):
                 result = config_cli.main(["--backend", "codex"])
 
             self.assertEqual(result, 0)

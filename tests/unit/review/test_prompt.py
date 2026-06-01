@@ -3,8 +3,8 @@ import unittest
 from unittest.mock import patch, MagicMock
 from pathlib import Path
 
-from claude_auto_review.config.models import PluginSettings
-from claude_auto_review.state.edit_record import EditRecord
+from claude_auto_review.config.settings.models import PluginSettings
+from claude_auto_review.state.records.edit import EditRecord
 from claude_auto_review.review.prompt import _log_failure, _run_review_prompt, main
 from claude_auto_review.stop.feedback_format import build_unreviewed_files_string
 from tests.support_paths import FAKE_ROOT

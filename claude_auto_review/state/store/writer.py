@@ -6,9 +6,9 @@ from pathlib import Path
 
 from claude_auto_review.runtime.client_dirs import client_state_path
 from claude_auto_review.runtime.setup import ensure_client_runtime
-from claude_auto_review.state.edit_record import EditRecord
-from claude_auto_review.state.event_types import StateEvent
-from claude_auto_review.state.review_records import ReviewMetadata
+from claude_auto_review.state.records.edit import EditRecord
+from claude_auto_review.state.records.events import StateEvent
+from claude_auto_review.state.records.review import ReviewMetadata
 from claude_auto_review.timestamps import local_now_iso
 
 

@@ -1,13 +1,13 @@
 import unittest
 
-from claude_auto_review.config.models import (
+from claude_auto_review.config.settings.models import (
     DEFAULT_CLAUDE_REVIEWER_MODEL,
     DEFAULT_CODEX_REVIEWER_MODEL,
     DEFAULT_REVIEWER_BACKEND,
     REVIEWER_BACKENDS,
     PluginSettings,
 )
-from claude_auto_review.config.reviewer import (
+from claude_auto_review.config.reviewer.backends import (
     DEFAULT_REVIEWER_MODELS,
     resolve_reviewer_backend,
     resolve_reviewer_model,

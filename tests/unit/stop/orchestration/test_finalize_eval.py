@@ -5,8 +5,8 @@ from unittest.mock import MagicMock
 
 from tests.support_paths import FAKE_ROOT
 
-from claude_auto_review.config.models import PluginSettings
-from claude_auto_review.stop.orchestration.context import RuntimeContext
+from claude_auto_review.config.settings.models import PluginSettings
+from claude_auto_review.stop.orchestration.types.context import RuntimeContext
 from claude_auto_review.stop.orchestration.deps import (
     ReviewEvalDeps,
     ReviewClassifierDeps,
@@ -14,9 +14,9 @@ from claude_auto_review.stop.orchestration.deps import (
     ReviewExecutorDeps,
     AutocompleteDeps,
 )
-from claude_auto_review.stop.orchestration.finalize_eval import orchestrate_review_eval
-from claude_auto_review.stop.orchestration.finalize_outcomes import FinalizeEffect, FinalizePlan, approved_result
-from claude_auto_review.stop.reviews.enums import AutocompleteStatus
+from claude_auto_review.stop.orchestration.finalize.eval import orchestrate_review_eval
+from claude_auto_review.stop.orchestration.finalize.outcomes import FinalizeEffect, FinalizePlan, approved_result
+from claude_auto_review.stop.reviews.types.enums import AutocompleteStatus
 
 
 def _ctx(**kwargs):

@@ -1,6 +1,6 @@
 import unittest
 
-from claude_auto_review.state.file_record import (
+from claude_auto_review.state.records.file import (
     ReviewFileRecord,
     _coerce_review_file_entries,
     _parse_review_file_entries,

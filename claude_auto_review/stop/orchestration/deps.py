@@ -12,9 +12,9 @@ from claude_auto_review.state.store.queries import consecutive_stop_blocks, get_
 from claude_auto_review.state.store.read import load_state_snapshot
 from claude_auto_review.state.store.writer import StateEventWriter as _ConcreteStateEventWriter
 from claude_auto_review.stop.classifier.last_assistant_message import classify_last_assistant_message
-from claude_auto_review.stop.orchestration.finalize import finalize_review_stop
-from claude_auto_review.stop.orchestration.pending import resolve_pending_review
-from claude_auto_review.stop.orchestration.protocols import (
+from claude_auto_review.stop.orchestration.finalize.core import finalize_review_stop
+from claude_auto_review.stop.orchestration.finalize.pending import resolve_pending_review
+from claude_auto_review.stop.orchestration.types.protocols import (
     ApplyFinalizePlan,
     AttemptReviewAutocomplete,
     ClassifierPersistFactory,
@@ -31,7 +31,7 @@ from claude_auto_review.stop.orchestration.protocols import (
     StopBlockCounter,
     UnreviewedFilesQuery,
 )
-from claude_auto_review.stop.orchestration.stages import _build_classifier_result_persistor
+from claude_auto_review.stop.orchestration.pipeline.stages import _build_classifier_result_persistor
 from claude_auto_review.stop.response import StdoutResponseEmitter
 
 
@@ -171,10 +171,10 @@ def build_default_eval_deps(
     state_event_writer_factory=None,
     emitter=None,
 ):
-    from claude_auto_review.stop.orchestration.finalize_autocomplete import attempt_review_autocomplete
-    from claude_auto_review.stop.orchestration.finalize_outcomes import plan_for_artifact_state
-    from claude_auto_review.stop.orchestration.finalize_plan_executor import apply_finalize_plan_result
-    from claude_auto_review.stop.orchestration.review_artifact_evaluator import classify_review_artifact
+    from claude_auto_review.stop.orchestration.finalize.autocomplete import attempt_review_autocomplete
+    from claude_auto_review.stop.orchestration.finalize.outcomes import plan_for_artifact_state
+    from claude_auto_review.stop.orchestration.finalize.plan_executor import apply_finalize_plan_result
+    from claude_auto_review.stop.orchestration.finalize.review_artifact_evaluator import classify_review_artifact
 
     _log = _resolve(log_event, log_event_fn)
     _writer = _resolve(_ConcreteStateEventWriter, state_event_writer_factory)

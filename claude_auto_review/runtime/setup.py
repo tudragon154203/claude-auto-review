@@ -4,12 +4,12 @@ import shutil
 from importlib import resources
 from pathlib import Path
 
-from claude_auto_review.config.hooks_merge import (
+from claude_auto_review.config.io.hooks import (
     load_hooks_document,
     merge_hook_buckets,
     merge_unique_hook_list,
 )
-from claude_auto_review.config.project_settings import ensure_project_settings_document
+from claude_auto_review.config.io.project import ensure_project_settings_document
 from claude_auto_review.paths.path_utils import RUNTIME_DIR, STATE_RELATIVE_PATH
 from claude_auto_review.runtime.client_dirs import get_client_runtime_dir
 from claude_auto_review.runtime.context import resolve_project_root

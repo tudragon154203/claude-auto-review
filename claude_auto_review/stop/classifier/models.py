@@ -3,9 +3,10 @@ from __future__ import annotations
 import time
 from dataclasses import dataclass
 
-from claude_auto_review.config.constants import DEFAULT_CLASSIFIER_TIMEOUT_SECONDS, MS_PER_SECOND
-from claude_auto_review.config.models import DEFAULT_CLASSIFIER_MODEL
-from claude_auto_review.state.classification_record import ClassificationRecord
+from claude_auto_review.config.constants.defaults import DEFAULT_CLASSIFIER_TIMEOUT_SECONDS
+from claude_auto_review.config.constants.time_units import MS_PER_SECOND
+from claude_auto_review.config.settings.models import DEFAULT_CLASSIFIER_MODEL
+from claude_auto_review.state.records.classification import ClassificationRecord
 from claude_auto_review.timestamps import local_now_iso
 
 CLASSIFIER_MAX_TOKENS = 8

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from claude_auto_review.stop.orchestration.deps import build_default_dependencies, build_default_eval_deps
-from claude_auto_review.stop.orchestration.service import StopFlowService
+from claude_auto_review.stop.orchestration.pipeline.service import StopFlowService
 from claude_auto_review.stop.response import ResponseEmitter, StdoutResponseEmitter
 
 

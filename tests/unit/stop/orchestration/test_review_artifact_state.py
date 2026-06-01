@@ -2,7 +2,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from claude_auto_review.stop.orchestration.review_artifact_evaluator import classify_review_artifact
+from claude_auto_review.stop.orchestration.finalize.review_artifact_evaluator import classify_review_artifact
 
 
 class TestReviewArtifactState(unittest.TestCase):

@@ -5,7 +5,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-from claude_auto_review.install.uninstall_cli import _remove_plugin_hooks, main
+from claude_auto_review.install.cli.uninstall import _remove_plugin_hooks, main
 
 
 class TestUninstall(unittest.TestCase):
@@ -49,9 +49,9 @@ class TestUninstall(unittest.TestCase):
         # Everything removed -> "hooks" itself should be removed from settings if empty
         self.assertNotIn("hooks", settings)
 
-    @patch("claude_auto_review.install.uninstall_cli.get_project_root")
-    @patch("claude_auto_review.install.uninstall_cli.log_event")
-    @patch("claude_auto_review.install.uninstall_cli.ensure_gitignore_entries")
+    @patch("claude_auto_review.install.cli.uninstall.get_project_root")
+    @patch("claude_auto_review.install.cli.uninstall.log_event")
+    @patch("claude_auto_review.install.cli.uninstall.ensure_gitignore_entries")
     def test_main_uninstall_full(self, mock_gitignore, mock_log, mock_get_root):
         mock_get_root.return_value = self.project_root
 

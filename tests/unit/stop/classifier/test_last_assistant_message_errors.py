@@ -3,14 +3,14 @@ import json
 import unittest
 from urllib import error
 
-from claude_auto_review.config.models import PluginSettings
+from claude_auto_review.config.settings.models import PluginSettings
 from claude_auto_review.state.store.read import load_state
 from claude_auto_review.state.store.writer import StateEventWriter
 from claude_auto_review.stop.classifier.last_assistant_message import (
     classify_last_assistant_message,
 )
 from claude_auto_review.stop.classifier.models import CLASSIFICATION_EVENT
-from claude_auto_review.stop.orchestration.context import RuntimeContext
+from claude_auto_review.stop.orchestration.types.context import RuntimeContext
 from tests.unit.state.support import StateTestCase
 
 

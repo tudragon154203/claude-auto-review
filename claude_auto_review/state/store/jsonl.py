@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
-from claude_auto_review.state.event_types import StateEvent
+from claude_auto_review.state.records.events import StateEvent
 from claude_auto_review.state.store.parsing import parse_event
 
 

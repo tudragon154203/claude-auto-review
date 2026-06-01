@@ -4,8 +4,8 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from claude_auto_review.runtime.context import resolve_client_id, resolve_project_root
-from claude_auto_review.state.edit_record import EditRecord
-from claude_auto_review.state.event_types import StateEvent
+from claude_auto_review.state.records.edit import EditRecord
+from claude_auto_review.state.records.events import StateEvent
 from claude_auto_review.state.store.write import append_review_started, append_state_event, mark_files_reviewed
 
 

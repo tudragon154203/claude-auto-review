@@ -5,13 +5,13 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from claude_auto_review.install import config_cli
+from claude_auto_review.install.cli import config as config_cli
 
 
 class TestCheckBackendCli(unittest.TestCase):
     """Tests for _check_backend_cli output."""
 
-    @patch("claude_auto_review.install.config_cli_display.shutil.which", return_value="/usr/local/bin/claude")
+    @patch("claude_auto_review.install.config.display.shutil.which", return_value="/usr/local/bin/claude")
     def test_found_prints_checkmark(self, mock_which):
         buf = io.StringIO()
         with patch("sys.stdout", buf):
@@ -21,7 +21,7 @@ class TestCheckBackendCli(unittest.TestCase):
         self.assertIn("/usr/local/bin/claude", output)
         self.assertNotIn("not found", output)
 
-    @patch("claude_auto_review.install.config_cli_display.shutil.which", return_value=None)
+    @patch("claude_auto_review.install.config.display.shutil.which", return_value=None)
     def test_not_found_prints_warning_with_hint(self, mock_which):
         buf = io.StringIO()
         with patch("sys.stdout", buf):
@@ -30,7 +30,7 @@ class TestCheckBackendCli(unittest.TestCase):
         self.assertIn("[WARN] codex CLI not found", output)
         self.assertIn("npm install -g @openai/codex", output)
 
-    @patch("claude_auto_review.install.config_cli_display.shutil.which", return_value=None)
+    @patch("claude_auto_review.install.config.display.shutil.which", return_value=None)
     def test_not_found_claude_shows_claude_hint(self, mock_which):
         buf = io.StringIO()
         with patch("sys.stdout", buf):
@@ -38,7 +38,7 @@ class TestCheckBackendCli(unittest.TestCase):
         output = buf.getvalue()
         self.assertIn("npm install -g @anthropic-ai/claude-code", output)
 
-    @patch("claude_auto_review.install.config_cli_display.shutil.which", return_value=None)
+    @patch("claude_auto_review.install.config.display.shutil.which", return_value=None)
     def test_not_found_opencode_shows_opencode_hint(self, mock_which):
         buf = io.StringIO()
         with patch("sys.stdout", buf):
@@ -47,7 +47,7 @@ class TestCheckBackendCli(unittest.TestCase):
         self.assertIn("[WARN] opencode CLI not found", output)
         self.assertIn("npm install -g opencode-ai", output)
 
-    @patch("claude_auto_review.install.config_cli_display.shutil.which", return_value="/usr/local/bin/opencode")
+    @patch("claude_auto_review.install.config.display.shutil.which", return_value="/usr/local/bin/opencode")
     def test_found_opencode_prints_checkmark(self, mock_which):
         buf = io.StringIO()
         with patch("sys.stdout", buf):
@@ -56,7 +56,7 @@ class TestCheckBackendCli(unittest.TestCase):
         self.assertIn("opencode CLI found", output)
         self.assertIn("/usr/local/bin/opencode", output)
 
-    @patch("claude_auto_review.install.config_cli_display.shutil.which", return_value="/usr/bin/codex")
+    @patch("claude_auto_review.install.config.display.shutil.which", return_value="/usr/bin/codex")
     def test_non_interactive_backend_flag_checks_cli(self, mock_which):
         with tempfile.TemporaryDirectory() as tmp:
             settings_path = Path(tmp) / ".claude" / "settings.json"

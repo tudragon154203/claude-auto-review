@@ -7,9 +7,9 @@ concerns independent.
 
 from __future__ import annotations
 
-from claude_auto_review.state.edit_record import EditRecord
-from claude_auto_review.state.event_types import StateEvent
-from claude_auto_review.state.snapshot import StateSnapshot
+from claude_auto_review.state.records.edit import EditRecord
+from claude_auto_review.state.records.events import StateEvent
+from claude_auto_review.state.snapshots.snapshot import StateSnapshot
 
 
 def _state_snapshot(state: list[StateEvent] | StateSnapshot) -> StateSnapshot:

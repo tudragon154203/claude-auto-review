@@ -1,7 +1,7 @@
 import unittest
 from types import SimpleNamespace
 
-from claude_auto_review.stop.orchestration.finalize_outcomes import (
+from claude_auto_review.stop.orchestration.finalize.outcomes import (
     FinalizeEffect,
     artifact_status_name,
     plan_for_artifact_state,
@@ -9,7 +9,7 @@ from claude_auto_review.stop.orchestration.finalize_outcomes import (
     plan_for_partial_review,
     plan_for_pending_review,
 )
-from claude_auto_review.stop.orchestration.resolution import FinalizeAction
+from claude_auto_review.stop.orchestration.types.resolution import FinalizeAction
 
 
 class TestFinalizeOutcomes(unittest.TestCase):

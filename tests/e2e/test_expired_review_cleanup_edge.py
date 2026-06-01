@@ -58,7 +58,7 @@ class ExpiredReviewCleanupEdgeTests(EndToEndTestCase):
         project_root = self.temp_project()
         client_id = "cleanup-mixed"
 
-        setup = self.run_python("claude_auto_review/install/setup_cli.py", project_root)
+        setup = self.run_python("claude_auto_review/install/cli/setup.py", project_root)
         self.assertEqual(setup.returncode, 0)
 
         self._write_settings(project_root, timeout_hours=1)
@@ -97,7 +97,7 @@ class ExpiredReviewCleanupEdgeTests(EndToEndTestCase):
         project_root = self.temp_project()
         client_id = "cleanup-log"
 
-        setup = self.run_python("claude_auto_review/install/setup_cli.py", project_root)
+        setup = self.run_python("claude_auto_review/install/cli/setup.py", project_root)
         self.assertEqual(setup.returncode, 0)
 
         self._write_settings(project_root, timeout_hours=1)

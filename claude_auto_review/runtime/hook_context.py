@@ -4,12 +4,12 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Protocol, runtime_checkable
 
-from claude_auto_review.config.io import load_settings
+from claude_auto_review.config.io.settings_file import load_settings
 from claude_auto_review.paths.path_utils import get_project_root
 from claude_auto_review.runtime.client_dirs import get_client_id
 from claude_auto_review.runtime.context import get_payload_session_id, read_json_payload
 from claude_auto_review.runtime.setup import ensure_client_runtime
-from claude_auto_review.stop.orchestration.context import RuntimeContext
+from claude_auto_review.stop.orchestration.types.context import RuntimeContext
 
 
 @runtime_checkable

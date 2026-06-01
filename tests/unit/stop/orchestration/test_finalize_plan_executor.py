@@ -2,14 +2,14 @@ import unittest
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-from claude_auto_review.config.models import PluginSettings
-from claude_auto_review.stop.orchestration.context import RuntimeContext
-from claude_auto_review.stop.orchestration.finalize_outcomes import FinalizeEffect
-from claude_auto_review.stop.orchestration.finalize_plan_executor import (
+from claude_auto_review.config.settings.models import PluginSettings
+from claude_auto_review.stop.orchestration.types.context import RuntimeContext
+from claude_auto_review.stop.orchestration.finalize.outcomes import FinalizeEffect
+from claude_auto_review.stop.orchestration.finalize.plan_executor import (
     _apply_completed_clean_review_result,
     apply_finalize_plan_result,
 )
-from claude_auto_review.stop.orchestration.resolution import FinalizeAction, FinalizeResult
+from claude_auto_review.stop.orchestration.types.resolution import FinalizeAction, FinalizeResult
 from tests.support_paths import FAKE_ROOT
 
 
@@ -25,8 +25,8 @@ def _ctx(**kwargs):
 
 
 class TestApplyCompletedCleanReviewResult(unittest.TestCase):
-    @patch("claude_auto_review.stop.orchestration.finalize_plan_executor.log_event")
-    @patch("claude_auto_review.stop.orchestration.finalize_plan_executor.apply_completed_review")
+    @patch("claude_auto_review.stop.orchestration.finalize.plan_executor.log_event")
+    @patch("claude_auto_review.stop.orchestration.finalize.plan_executor.apply_completed_review")
     def test_no_remaining_returns_approved(self, mock_apply, mock_log):
         mock_apply.return_value = []
         ctx = _ctx()
@@ -36,7 +36,7 @@ class TestApplyCompletedCleanReviewResult(unittest.TestCase):
         self.assertIsNotNone(payload)
         mock_log.assert_called_once()
 
-    @patch("claude_auto_review.stop.orchestration.finalize_plan_executor.apply_completed_review")
+    @patch("claude_auto_review.stop.orchestration.finalize.plan_executor.apply_completed_review")
     def test_remaining_returns_partial_review(self, mock_apply):
         mock_apply.return_value = ["file1.ts"]
         ctx = _ctx()
@@ -46,7 +46,7 @@ class TestApplyCompletedCleanReviewResult(unittest.TestCase):
 
 
 class TestApplyFinalizePlanResult(unittest.TestCase):
-    @patch("claude_auto_review.stop.orchestration.finalize_plan_executor._apply_completed_clean_review_result")
+    @patch("claude_auto_review.stop.orchestration.finalize.plan_executor._apply_completed_clean_review_result")
     def test_apply_completed_clean_review_effect(self, mock_apply_clean):
         expected = (FinalizeResult(action=FinalizeAction.APPROVED, exit_code=0), MagicMock())
         mock_apply_clean.return_value = expected
@@ -56,8 +56,8 @@ class TestApplyFinalizePlanResult(unittest.TestCase):
         result = apply_finalize_plan_result(ctx, plan, "r1", Path("/review.md"), [], [], state_event_writer=writer)
         self.assertEqual(result, expected)
 
-    @patch("claude_auto_review.stop.orchestration.finalize_plan_executor.block_completed_review_findings")
-    @patch("claude_auto_review.stop.orchestration.finalize_plan_executor.record_completed_review")
+    @patch("claude_auto_review.stop.orchestration.finalize.plan_executor.block_completed_review_findings")
+    @patch("claude_auto_review.stop.orchestration.finalize.plan_executor.record_completed_review")
     def test_record_findings_block_effect(self, mock_record, mock_block):
         block_result = MagicMock()
         block_result.state_record = MagicMock()

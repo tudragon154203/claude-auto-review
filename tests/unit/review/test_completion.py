@@ -3,8 +3,8 @@ from unittest.mock import patch
 
 from claude_auto_review.review.completion import apply_completed_review
 from claude_auto_review.timestamps import format_duration
-from claude_auto_review.state.edit_record import EditRecord, StopBlockedRecord
-from claude_auto_review.state.review_records import ReviewCompletedRecord, ReviewMetadata
+from claude_auto_review.state.records.edit import EditRecord, StopBlockedRecord
+from claude_auto_review.state.records.review import ReviewCompletedRecord, ReviewMetadata
 from tests.support_paths import FAKE_ROOT
 
 

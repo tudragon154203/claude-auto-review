@@ -1,6 +1,6 @@
 import unittest
 
-from claude_auto_review.stop.orchestration.resolution import (
+from claude_auto_review.stop.orchestration.types.resolution import (
     ReviewResolution,
     StopFlowResolution,
     TerminalResolution,

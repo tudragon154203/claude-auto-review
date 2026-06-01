@@ -5,7 +5,7 @@ import sys
 import unittest
 
 from claude_auto_review.paths.path_utils import get_state_path
-from claude_auto_review.state.edit_record import EditRecord
+from claude_auto_review.state.records.edit import EditRecord
 from claude_auto_review.state.store.write import append_state_event
 from tests.int.hooks.support import HookTestCase
 
@@ -17,7 +17,7 @@ class TestCancelFlow(HookTestCase, unittest.TestCase):
         self.run_python("hooks/post_tool_use.py", project_root, json.dumps({"file_path": "src/app.ts"}))
         self.run_python("claude_auto_review/review/prompt.py", project_root)
 
-        cancel = self.run_python("claude_auto_review/install/cancel_cli.py", project_root)
+        cancel = self.run_python("claude_auto_review/install/cli/cancel.py", project_root)
         self.assertEqual(cancel.returncode, 0)
         self.assertFalse(
             (
@@ -35,7 +35,7 @@ class TestCancelFlow(HookTestCase, unittest.TestCase):
 
     def test_project_local_cancel_shim_runs(self):
         project_root = self.temp_project()
-        self.run_python("claude_auto_review/install/setup_cli.py", project_root)
+        self.run_python("claude_auto_review/install/cli/setup.py", project_root)
         append_state_event(
             EditRecord(
                 timestamp="2026-05-05T08:00:00+07:00",

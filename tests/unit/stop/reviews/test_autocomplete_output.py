@@ -2,8 +2,8 @@ import unittest
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-from claude_auto_review.stop.orchestration.context import RuntimeContext
-from claude_auto_review.stop.reviews.prompt_runner import attempt_stop_autocomplete
+from claude_auto_review.stop.orchestration.types.context import RuntimeContext
+from claude_auto_review.stop.reviews.runners.dispatcher import attempt_stop_autocomplete
 from tests.support_paths import FAKE_ROOT
 
 
@@ -12,9 +12,9 @@ def _ctx(project_root=FAKE_ROOT, client_id="c"):
 
 
 class TestAutoCompleteOutput(unittest.TestCase):
-    @patch("claude_auto_review.stop.reviews.review_result.log_event")
-    @patch("claude_auto_review.stop.reviews.cli_runner.run_captured")
-    @patch("claude_auto_review.stop.reviews.prompt_runner_claude.shutil.which", return_value="/usr/bin/claude")
+    @patch("claude_auto_review.stop.reviews.types.result.log_event")
+    @patch("claude_auto_review.stop.reviews.runners.cli.run_captured")
+    @patch("claude_auto_review.stop.reviews.runners.claude.shutil.which", return_value="/usr/bin/claude")
     @patch("pathlib.Path.write_text")
     @patch("pathlib.Path.is_file", return_value=True)
     def test_successful_completion_writes_output(self, mock_is_file, mock_write_text, mock_which, mock_run, mock_log):
@@ -29,9 +29,9 @@ class TestAutoCompleteOutput(unittest.TestCase):
         self.assertTrue(result)
         self.assertEqual(result.status, "output_written")
 
-    @patch("claude_auto_review.stop.reviews.review_result.log_event")
-    @patch("claude_auto_review.stop.reviews.cli_runner.run_captured")
-    @patch("claude_auto_review.stop.reviews.prompt_runner_claude.shutil.which", return_value="/usr/bin/claude")
+    @patch("claude_auto_review.stop.reviews.types.result.log_event")
+    @patch("claude_auto_review.stop.reviews.runners.cli.run_captured")
+    @patch("claude_auto_review.stop.reviews.runners.claude.shutil.which", return_value="/usr/bin/claude")
     @patch("pathlib.Path.write_text")
     @patch("pathlib.Path.is_file", return_value=True)
     def test_contradictory_clean_verdict_with_blocking_findings_does_not_complete(
@@ -61,9 +61,9 @@ class TestAutoCompleteOutput(unittest.TestCase):
             mock_write_text.call_args.args[0],
         )
 
-    @patch("claude_auto_review.stop.reviews.review_result.log_event")
-    @patch("claude_auto_review.stop.reviews.cli_runner.run_captured")
-    @patch("claude_auto_review.stop.reviews.prompt_runner_claude.shutil.which", return_value="/usr/bin/claude")
+    @patch("claude_auto_review.stop.reviews.types.result.log_event")
+    @patch("claude_auto_review.stop.reviews.runners.cli.run_captured")
+    @patch("claude_auto_review.stop.reviews.runners.claude.shutil.which", return_value="/usr/bin/claude")
     @patch("pathlib.Path.write_text")
     @patch("pathlib.Path.is_file", return_value=True)
     def test_clean_verdict_with_low_findings_kept_as_clean(
@@ -97,9 +97,9 @@ class TestAutoCompleteOutput(unittest.TestCase):
             mock_write_text.call_args.args[0],
         )
 
-    @patch("claude_auto_review.stop.reviews.review_result.log_event")
-    @patch("claude_auto_review.stop.reviews.cli_runner.run_captured")
-    @patch("claude_auto_review.stop.reviews.prompt_runner_claude.shutil.which", return_value="/usr/bin/claude")
+    @patch("claude_auto_review.stop.reviews.types.result.log_event")
+    @patch("claude_auto_review.stop.reviews.runners.cli.run_captured")
+    @patch("claude_auto_review.stop.reviews.runners.claude.shutil.which", return_value="/usr/bin/claude")
     @patch("pathlib.Path.write_text")
     @patch("pathlib.Path.is_file", return_value=True)
     def test_completion_with_remaining_is_left_to_finalization(

@@ -64,7 +64,7 @@ class TestUninstallFlow(HookTestCase, unittest.TestCase):
         )
 
         uninstall = subprocess.run(
-            [sys.executable, str(REPO_ROOT / "claude_auto_review" / "install" / "uninstall_cli.py")],
+            [sys.executable, str(REPO_ROOT / "claude_auto_review" / "install" / "cli" / "uninstall.py")],
             cwd=project_root,
             capture_output=True,
             text=True,

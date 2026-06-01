@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from claude_auto_review.state.review_records import ReviewMetadata
+from claude_auto_review.state.records.review import ReviewMetadata
 from claude_auto_review.timestamps import is_older_than_hours
 
 

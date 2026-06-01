@@ -3,14 +3,14 @@ from __future__ import annotations
 
 import sys
 
-from claude_auto_review.config.file_filters import should_skip_file
+from claude_auto_review.config.resolvers.files import should_skip_file
 from claude_auto_review.hooks.common import run_hook
 from claude_auto_review.paths.path_utils import DELETED_FILE_HASH, local_now_iso
 from claude_auto_review.paths.uri_utils import normalize_relative_path
 from claude_auto_review.review.prompting.diff_mode import capture_session_snapshot
 from claude_auto_review.runtime.events import log_event
-from claude_auto_review.state.hook_input import extract_file_paths_from_hook_input
-from claude_auto_review.state.edit_record import EditRecord
+from claude_auto_review.state.extraction.hook_input import extract_file_paths_from_hook_input
+from claude_auto_review.state.records.edit import EditRecord
 from claude_auto_review.state.store.queries import was_hash_reviewed
 from claude_auto_review.state.store.read import get_file_hash
 from claude_auto_review.state.tracker import StateTracker

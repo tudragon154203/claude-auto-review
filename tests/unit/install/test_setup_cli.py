@@ -3,7 +3,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from claude_auto_review.install.setup_cli import main
+from claude_auto_review.install.cli.setup import main
 
 
 class TestSetupCli(unittest.TestCase):
@@ -13,13 +13,13 @@ class TestSetupCli(unittest.TestCase):
             base_dir = project_root / ".claude" / "claude-auto-review"
 
             with (
-                patch("claude_auto_review.install.setup_cli.get_project_root", return_value=project_root),
-                patch("claude_auto_review.install.setup_cli.ensure_runtime", return_value={"base_dir": base_dir}),
-                patch("claude_auto_review.install.setup_cli.ensure_project_settings"),
-                patch("claude_auto_review.install.setup_cli.write_runtime_shims"),
-                patch("claude_auto_review.install.setup_cli.copy_if_changed"),
-                patch("claude_auto_review.install.setup_cli.ensure_gitignore_entries"),
-                patch("claude_auto_review.install.setup_cli.log_event") as mock_log,
+                patch("claude_auto_review.install.cli.setup.get_project_root", return_value=project_root),
+                patch("claude_auto_review.install.cli.setup.ensure_runtime", return_value={"base_dir": base_dir}),
+                patch("claude_auto_review.install.cli.setup.ensure_project_settings"),
+                patch("claude_auto_review.install.cli.setup.write_runtime_shims"),
+                patch("claude_auto_review.install.cli.setup.copy_if_changed"),
+                patch("claude_auto_review.install.cli.setup.ensure_gitignore_entries"),
+                patch("claude_auto_review.install.cli.setup.log_event") as mock_log,
                 patch("builtins.print") as mock_print,
             ):
                 result = main()

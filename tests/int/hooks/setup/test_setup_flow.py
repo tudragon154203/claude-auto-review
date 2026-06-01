@@ -10,7 +10,7 @@ from tests.int.hooks.support import HookTestCase
 class TestSetupFlow(HookTestCase, unittest.TestCase):
     def test_setup_script_creates_runtime_shims_agents_rules_and_gitignore_entries(self):
         project_root = self.temp_project()
-        setup = self.run_python("claude_auto_review/install/setup_cli.py", project_root)
+        setup = self.run_python("claude_auto_review/install/cli/setup.py", project_root)
         self.assertEqual(setup.returncode, 0)
         self.assertTrue((project_root / ".claude" / "claude-auto-review" / "scripts" / "review_prompt.py").exists())
         self.assertTrue(
@@ -53,7 +53,7 @@ class TestSetupFlow(HookTestCase, unittest.TestCase):
             encoding="utf-8",
         )
 
-        setup = self.run_python("claude_auto_review/install/setup_cli.py", project_root)
+        setup = self.run_python("claude_auto_review/install/cli/setup.py", project_root)
         self.assertEqual(setup.returncode, 0)
         settings = json.loads(settings_path.read_text(encoding="utf-8"))
         stop_commands = [hook["command"] for entry in settings["hooks"]["Stop"] for hook in entry["hooks"]]
@@ -62,8 +62,8 @@ class TestSetupFlow(HookTestCase, unittest.TestCase):
 
     def test_setup_script_is_idempotent_for_gitignore_entries(self):
         project_root = self.temp_project()
-        self.run_python("claude_auto_review/install/setup_cli.py", project_root)
-        self.run_python("claude_auto_review/install/setup_cli.py", project_root)
+        self.run_python("claude_auto_review/install/cli/setup.py", project_root)
+        self.run_python("claude_auto_review/install/cli/setup.py", project_root)
         lines = (project_root / ".gitignore").read_text(encoding="utf-8").splitlines()
         self.assertEqual(lines.count(".claude/claude-auto-review/"), 1)
         self.assertEqual(lines.count(".claude/claude-auto-review/state.jsonl"), 0)
@@ -74,8 +74,8 @@ class TestSetupFlow(HookTestCase, unittest.TestCase):
 
     def test_setup_script_is_idempotent_for_hooks_entries(self):
         project_root = self.temp_project()
-        self.run_python("claude_auto_review/install/setup_cli.py", project_root)
-        self.run_python("claude_auto_review/install/setup_cli.py", project_root)
+        self.run_python("claude_auto_review/install/cli/setup.py", project_root)
+        self.run_python("claude_auto_review/install/cli/setup.py", project_root)
         settings = json.loads((project_root / ".claude" / "settings.json").read_text(encoding="utf-8"))
         self.assertEqual(len(settings["hooks"]["PostToolUse"]), 1)
         self.assertEqual(len(settings["hooks"]["Stop"]), 1)
@@ -84,7 +84,7 @@ class TestSetupFlow(HookTestCase, unittest.TestCase):
     def test_project_local_shim_runs_review_prompt(self):
         project_root = self.temp_project()
         (project_root / "src" / "app.ts").write_text("export const value = 1;\n", encoding="utf-8")
-        self.run_python("claude_auto_review/install/setup_cli.py", project_root)
+        self.run_python("claude_auto_review/install/cli/setup.py", project_root)
         self.run_python("hooks/post_tool_use.py", project_root, json.dumps({"file_path": "src/app.ts"}))
         shim = project_root / ".claude" / "claude-auto-review" / "scripts" / "review_prompt.py"
         result = subprocess.run(

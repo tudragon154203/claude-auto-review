@@ -8,8 +8,8 @@ from claude_auto_review.stop.orchestration.flow import (
     _handle_terminal,
     dispatch_stop_decision,
 )
-from claude_auto_review.stop.orchestration.resolution import StopDecisionKind
-from claude_auto_review.stop.reviews.enums import StopAllowReason
+from claude_auto_review.stop.orchestration.types.resolution import StopDecisionKind
+from claude_auto_review.stop.reviews.types.enums import StopAllowReason
 
 
 class TestFlowDispatch(unittest.TestCase):

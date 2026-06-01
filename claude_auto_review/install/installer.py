@@ -25,7 +25,7 @@ def write_runtime_shims(runtime_scripts, plugin_root):
     )
     _write_text_if_changed(
         runtime_scripts / "cancel_claude_auto_review.py",
-        build_runpy_shim_content(plugin_root / "install" / "cancel_cli.py"),
+        build_runpy_shim_content(plugin_root / "install" / "cli" / "cancel.py"),
     )
 
 

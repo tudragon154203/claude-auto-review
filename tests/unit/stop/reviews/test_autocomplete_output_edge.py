@@ -2,8 +2,8 @@ import unittest
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-from claude_auto_review.stop.orchestration.context import RuntimeContext
-from claude_auto_review.stop.reviews.prompt_runner import attempt_stop_autocomplete
+from claude_auto_review.stop.orchestration.types.context import RuntimeContext
+from claude_auto_review.stop.reviews.runners.dispatcher import attempt_stop_autocomplete
 from tests.support_paths import FAKE_ROOT
 
 
@@ -12,9 +12,9 @@ def _ctx(project_root=FAKE_ROOT, client_id="c"):
 
 
 class TestAutoCompleteOutputEdgeCases(unittest.TestCase):
-    @patch("claude_auto_review.stop.reviews.review_result.log_event")
-    @patch("claude_auto_review.stop.reviews.cli_runner.run_captured")
-    @patch("claude_auto_review.stop.reviews.prompt_runner_claude.shutil.which", return_value="/usr/bin/claude")
+    @patch("claude_auto_review.stop.reviews.types.result.log_event")
+    @patch("claude_auto_review.stop.reviews.runners.cli.run_captured")
+    @patch("claude_auto_review.stop.reviews.runners.claude.shutil.which", return_value="/usr/bin/claude")
     @patch("pathlib.Path.write_text")
     @patch("pathlib.Path.is_file", return_value=True)
     def test_non_empty_stdout_overwrites_review_file_even_without_verdict(
@@ -41,9 +41,9 @@ class TestAutoCompleteOutputEdgeCases(unittest.TestCase):
             newline="\n",
         )
 
-    @patch("claude_auto_review.stop.reviews.review_result.log_event")
-    @patch("claude_auto_review.stop.reviews.cli_runner.run_captured")
-    @patch("claude_auto_review.stop.reviews.prompt_runner_claude.shutil.which", return_value="/usr/bin/claude")
+    @patch("claude_auto_review.stop.reviews.types.result.log_event")
+    @patch("claude_auto_review.stop.reviews.runners.cli.run_captured")
+    @patch("claude_auto_review.stop.reviews.runners.claude.shutil.which", return_value="/usr/bin/claude")
     @patch("pathlib.Path.write_text")
     @patch("pathlib.Path.is_file", return_value=True)
     def test_structured_review_without_verdict_is_persisted_as_is(
@@ -80,9 +80,9 @@ class TestAutoCompleteOutputEdgeCases(unittest.TestCase):
             newline="\n",
         )
 
-    @patch("claude_auto_review.stop.reviews.review_result.log_event")
-    @patch("claude_auto_review.stop.reviews.cli_runner.run_captured")
-    @patch("claude_auto_review.stop.reviews.prompt_runner_codex.shutil.which", return_value="/usr/bin/codex")
+    @patch("claude_auto_review.stop.reviews.types.result.log_event")
+    @patch("claude_auto_review.stop.reviews.runners.cli.run_captured")
+    @patch("claude_auto_review.stop.reviews.runners.codex.shutil.which", return_value="/usr/bin/codex")
     @patch("pathlib.Path.write_text")
     @patch("pathlib.Path.unlink")
     @patch("pathlib.Path.read_bytes")

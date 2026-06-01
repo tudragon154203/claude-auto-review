@@ -3,11 +3,11 @@ import unittest
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-from claude_auto_review.stop.orchestration.context import RuntimeContext
-from claude_auto_review.stop.reviews.prompt_runner import (
+from claude_auto_review.stop.orchestration.types.context import RuntimeContext
+from claude_auto_review.stop.reviews.runners.dispatcher import (
     attempt_stop_autocomplete,
 )
-from claude_auto_review.stop.reviews.review_args import (
+from claude_auto_review.stop.reviews.runners.args import (
     _build_claude_review_args,
     _build_codex_review_args,
     _build_opencode_review_args,
@@ -49,11 +49,11 @@ class TestPromptRunnerCodex(unittest.TestCase):
             )
 
     @patch(
-        "claude_auto_review.stop.reviews.review_result.normalize_review_verdict_content",
+        "claude_auto_review.stop.reviews.types.result.normalize_review_verdict_content",
         side_effect=lambda s, client_id=None, minimum_blocking_severity="medium": s,
     )
-    @patch("claude_auto_review.stop.reviews.cli_runner.run_captured")
-    @patch("claude_auto_review.stop.reviews.prompt_runner_codex.shutil.which", return_value="/usr/bin/codex")
+    @patch("claude_auto_review.stop.reviews.runners.cli.run_captured")
+    @patch("claude_auto_review.stop.reviews.runners.codex.shutil.which", return_value="/usr/bin/codex")
     def test_attempt_stop_autocomplete_prefers_codex_last_message_file(self, mock_which, mock_run, _mock_norm):
         review_path = Path(tempfile.gettempdir()) / "review-last-message.md"
         prompt_file = Path(tempfile.gettempdir()) / "prompt-last-message.md"
@@ -89,11 +89,11 @@ class TestPromptRunnerCodex(unittest.TestCase):
         mock_which.assert_called_once_with("codex")
 
     @patch(
-        "claude_auto_review.stop.reviews.review_result.normalize_review_verdict_content",
+        "claude_auto_review.stop.reviews.types.result.normalize_review_verdict_content",
         side_effect=lambda s, client_id=None, minimum_blocking_severity="medium": s,
     )
-    @patch("claude_auto_review.stop.reviews.cli_runner.run_captured")
-    @patch("claude_auto_review.stop.reviews.prompt_runner_codex.shutil.which", return_value="/usr/bin/codex")
+    @patch("claude_auto_review.stop.reviews.runners.cli.run_captured")
+    @patch("claude_auto_review.stop.reviews.runners.codex.shutil.which", return_value="/usr/bin/codex")
     def test_attempt_stop_autocomplete_uses_codex_backend(self, mock_which, mock_run, _mock_norm):
         review_path = Path(tempfile.gettempdir()) / "review.md"
         prompt_file = Path(tempfile.gettempdir()) / "prompt.md"
@@ -123,11 +123,11 @@ class TestPromptRunnerCodex(unittest.TestCase):
         self.assertEqual(mock_run.call_args.kwargs["input"], "system prompt\n\nuser prompt")
 
     @patch(
-        "claude_auto_review.stop.reviews.review_result.normalize_review_verdict_content",
+        "claude_auto_review.stop.reviews.types.result.normalize_review_verdict_content",
         side_effect=lambda s, client_id=None, minimum_blocking_severity="medium": s,
     )
-    @patch("claude_auto_review.stop.reviews.cli_runner.run_captured")
-    @patch("claude_auto_review.stop.reviews.prompt_runner_claude.shutil.which", return_value="/usr/bin/claude")
+    @patch("claude_auto_review.stop.reviews.runners.cli.run_captured")
+    @patch("claude_auto_review.stop.reviews.runners.claude.shutil.which", return_value="/usr/bin/claude")
     def test_attempt_stop_autocomplete_uses_claude_backend(self, mock_which, mock_run, _mock_norm):
         review_path = Path(tempfile.gettempdir()) / "review-claude.md"
         prompt_file = Path(tempfile.gettempdir()) / "prompt-claude.md"

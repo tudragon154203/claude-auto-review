@@ -3,7 +3,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from claude_auto_review.config.models import PluginSettings
+from claude_auto_review.config.settings.models import PluginSettings
 from claude_auto_review.review.prompting.flow import (
     _review_id_from_timestamp,
     create_review_prompt_files,
@@ -11,8 +11,8 @@ from claude_auto_review.review.prompting.flow import (
 )
 from claude_auto_review.runtime.client_dirs import client_reviews_dir, client_run_dir
 from claude_auto_review.runtime.setup import ensure_client_runtime
-from claude_auto_review.state.edit_record import EditRecord
-from claude_auto_review.stop.orchestration.context import RuntimeContext
+from claude_auto_review.state.records.edit import EditRecord
+from claude_auto_review.stop.orchestration.types.context import RuntimeContext
 
 
 class TestReviewPromptFlow(unittest.TestCase):

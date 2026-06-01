@@ -5,17 +5,17 @@ import unittest
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-from claude_auto_review.stop.orchestration.context import RuntimeContext
-from claude_auto_review.stop.reviews.enums import AutocompleteStatus
-from claude_auto_review.stop.reviews.prompt_runner import (
+from claude_auto_review.stop.orchestration.types.context import RuntimeContext
+from claude_auto_review.stop.reviews.types.enums import AutocompleteStatus
+from claude_auto_review.stop.reviews.runners.dispatcher import (
     _register_default_backends,
     attempt_stop_autocomplete,
 )
-from claude_auto_review.stop.reviews.prompt_runner_opencode import (
+from claude_auto_review.stop.reviews.runners.opencode import (
     _SAFE_RE,
     _write_merged_prompt,
 )
-from claude_auto_review.stop.reviews.review_args import _build_opencode_review_args
+from claude_auto_review.stop.reviews.runners.args import _build_opencode_review_args
 from tests.support_paths import FAKE_ROOT
 
 
@@ -67,7 +67,7 @@ class TestBuildOpencodeReviewArgs(unittest.TestCase):
 
 class TestOpencodeBackendRegistration(unittest.TestCase):
     def test_opencode_registered_after_defaults(self):
-        from claude_auto_review.stop.reviews.prompt_runner import _BACKEND_REGISTRY
+        from claude_auto_review.stop.reviews.runners.dispatcher import _BACKEND_REGISTRY
 
         _BACKEND_REGISTRY.clear()
         _register_default_backends()
@@ -75,9 +75,9 @@ class TestOpencodeBackendRegistration(unittest.TestCase):
 
 
 class TestOpencodeAutocomplete(unittest.TestCase):
-    @patch("claude_auto_review.stop.reviews.prompt_runner_opencode.shutil.which", return_value=None)
+    @patch("claude_auto_review.stop.reviews.runners.opencode.shutil.which", return_value=None)
     def test_cli_not_found(self, mock_which):
-        from claude_auto_review.stop.reviews.prompt_runner import _BACKEND_REGISTRY
+        from claude_auto_review.stop.reviews.runners.dispatcher import _BACKEND_REGISTRY
 
         _BACKEND_REGISTRY.clear()
         _register_default_backends()
@@ -88,9 +88,9 @@ class TestOpencodeAutocomplete(unittest.TestCase):
         )
         self.assertEqual(result.status, AutocompleteStatus.CLI_NOT_FOUND)
 
-    @patch("claude_auto_review.stop.reviews.prompt_runner_opencode.shutil.which", return_value="/usr/bin/opencode")
+    @patch("claude_auto_review.stop.reviews.runners.opencode.shutil.which", return_value="/usr/bin/opencode")
     def test_prompt_not_found(self, mock_which):
-        from claude_auto_review.stop.reviews.prompt_runner import _BACKEND_REGISTRY
+        from claude_auto_review.stop.reviews.runners.dispatcher import _BACKEND_REGISTRY
 
         _BACKEND_REGISTRY.clear()
         _register_default_backends()
@@ -102,11 +102,11 @@ class TestOpencodeAutocomplete(unittest.TestCase):
         self.assertEqual(result.status, AutocompleteStatus.PROMPT_NOT_FOUND)
 
     @patch(
-        "claude_auto_review.stop.reviews.review_result.normalize_review_verdict_content",
+        "claude_auto_review.stop.reviews.types.result.normalize_review_verdict_content",
         side_effect=lambda s, client_id=None, minimum_blocking_severity="medium": s,
     )
-    @patch("claude_auto_review.stop.reviews.cli_runner.run_captured")
-    @patch("claude_auto_review.stop.reviews.prompt_runner_opencode.shutil.which", return_value="/usr/bin/opencode")
+    @patch("claude_auto_review.stop.reviews.runners.cli.run_captured")
+    @patch("claude_auto_review.stop.reviews.runners.opencode.shutil.which", return_value="/usr/bin/opencode")
     def test_output_written_on_success(self, mock_which, mock_run, _mock_norm):
         captured_merged = {}
 
@@ -126,7 +126,7 @@ class TestOpencodeAutocomplete(unittest.TestCase):
         prompt_file = Path(tempfile.gettempdir()) / "prompt-opencode-ok.md"
         prompt_file.write_text("system prompt", encoding="utf-8")
 
-        from claude_auto_review.stop.reviews.prompt_runner import _BACKEND_REGISTRY
+        from claude_auto_review.stop.reviews.runners.dispatcher import _BACKEND_REGISTRY
 
         _BACKEND_REGISTRY.clear()
         _register_default_backends()
@@ -145,8 +145,8 @@ class TestOpencodeAutocomplete(unittest.TestCase):
         # Verify file is in the client run directory (prompt_file.parent), not system temp
         self.assertEqual(captured_merged["path"].parent, prompt_file.parent)
 
-    @patch("claude_auto_review.stop.reviews.cli_runner.run_captured")
-    @patch("claude_auto_review.stop.reviews.prompt_runner_opencode.shutil.which", return_value="/usr/bin/opencode")
+    @patch("claude_auto_review.stop.reviews.runners.cli.run_captured")
+    @patch("claude_auto_review.stop.reviews.runners.opencode.shutil.which", return_value="/usr/bin/opencode")
     def test_nonzero_returncode(self, mock_which, mock_run):
         prompt_file = Path(tempfile.gettempdir()) / "prompt-opencode-nonzero.md"
         prompt_file.write_text("system", encoding="utf-8")
@@ -154,7 +154,7 @@ class TestOpencodeAutocomplete(unittest.TestCase):
             stdout="error output", stderr="some error", returncode=1,
         )
 
-        from claude_auto_review.stop.reviews.prompt_runner import _BACKEND_REGISTRY
+        from claude_auto_review.stop.reviews.runners.dispatcher import _BACKEND_REGISTRY
 
         _BACKEND_REGISTRY.clear()
         _register_default_backends()
@@ -168,18 +168,18 @@ class TestOpencodeAutocomplete(unittest.TestCase):
         self.assertEqual(result.returncode, 1)
 
     @patch(
-        "claude_auto_review.stop.reviews.prompt_runner_opencode.shutil.which",
+        "claude_auto_review.stop.reviews.runners.opencode.shutil.which",
         return_value="/usr/bin/opencode",
     )
     @patch(
-        "claude_auto_review.stop.reviews.cli_runner.run_captured",
+        "claude_auto_review.stop.reviews.runners.cli.run_captured",
         side_effect=subprocess.TimeoutExpired(cmd="opencode", timeout=60),
     )
     def test_timeout(self, mock_run, mock_which):
         prompt_file = Path(tempfile.gettempdir()) / "prompt-opencode-timeout.md"
         prompt_file.write_text("system", encoding="utf-8")
 
-        from claude_auto_review.stop.reviews.prompt_runner import _BACKEND_REGISTRY
+        from claude_auto_review.stop.reviews.runners.dispatcher import _BACKEND_REGISTRY
 
         _BACKEND_REGISTRY.clear()
         _register_default_backends()
@@ -192,18 +192,18 @@ class TestOpencodeAutocomplete(unittest.TestCase):
         self.assertEqual(result.status, AutocompleteStatus.TIMEOUT)
 
     @patch(
-        "claude_auto_review.stop.reviews.prompt_runner_opencode.shutil.which",
+        "claude_auto_review.stop.reviews.runners.opencode.shutil.which",
         return_value="/usr/bin/opencode",
     )
     @patch(
-        "claude_auto_review.stop.reviews.cli_runner.run_captured",
+        "claude_auto_review.stop.reviews.runners.cli.run_captured",
         side_effect=OSError("permission denied"),
     )
     def test_os_error(self, mock_run, mock_which):
         prompt_file = Path(tempfile.gettempdir()) / "prompt-opencode-err.md"
         prompt_file.write_text("system", encoding="utf-8")
 
-        from claude_auto_review.stop.reviews.prompt_runner import _BACKEND_REGISTRY
+        from claude_auto_review.stop.reviews.runners.dispatcher import _BACKEND_REGISTRY
 
         _BACKEND_REGISTRY.clear()
         _register_default_backends()
@@ -215,13 +215,13 @@ class TestOpencodeAutocomplete(unittest.TestCase):
 
         self.assertEqual(result.status, AutocompleteStatus.ERROR)
 
-    @patch("claude_auto_review.stop.reviews.prompt_runner_opencode.shutil.which", return_value="/usr/bin/opencode")
+    @patch("claude_auto_review.stop.reviews.runners.opencode.shutil.which", return_value="/usr/bin/opencode")
     def test_prompt_file_read_error(self, mock_which):
         prompt_file = MagicMock(spec=Path)
         prompt_file.is_file.return_value = True
         prompt_file.read_text.side_effect = PermissionError("access denied")
 
-        from claude_auto_review.stop.reviews.prompt_runner import _BACKEND_REGISTRY
+        from claude_auto_review.stop.reviews.runners.dispatcher import _BACKEND_REGISTRY
 
         _BACKEND_REGISTRY.clear()
         _register_default_backends()
@@ -234,14 +234,14 @@ class TestOpencodeAutocomplete(unittest.TestCase):
         self.assertEqual(result.status, AutocompleteStatus.ERROR)
         self.assertIn("access denied", result.stderr)
 
-    @patch("claude_auto_review.stop.reviews.cli_runner.run_captured")
-    @patch("claude_auto_review.stop.reviews.prompt_runner_opencode.shutil.which", return_value="/usr/bin/opencode")
+    @patch("claude_auto_review.stop.reviews.runners.cli.run_captured")
+    @patch("claude_auto_review.stop.reviews.runners.opencode.shutil.which", return_value="/usr/bin/opencode")
     def test_empty_stdout(self, mock_which, mock_run):
         prompt_file = Path(tempfile.gettempdir()) / "prompt-opencode-empty.md"
         prompt_file.write_text("system", encoding="utf-8")
         mock_run.return_value = MagicMock(stdout="   ", stderr="", returncode=0)
 
-        from claude_auto_review.stop.reviews.prompt_runner import _BACKEND_REGISTRY
+        from claude_auto_review.stop.reviews.runners.dispatcher import _BACKEND_REGISTRY
 
         _BACKEND_REGISTRY.clear()
         _register_default_backends()
@@ -254,11 +254,11 @@ class TestOpencodeAutocomplete(unittest.TestCase):
         self.assertEqual(result.status, AutocompleteStatus.EMPTY_STDOUT)
 
     @patch(
-        "claude_auto_review.stop.reviews.review_result.normalize_review_verdict_content",
+        "claude_auto_review.stop.reviews.types.result.normalize_review_verdict_content",
         side_effect=lambda s, client_id=None, minimum_blocking_severity="medium": s,
     )
-    @patch("claude_auto_review.stop.reviews.cli_runner.run_captured")
-    @patch("claude_auto_review.stop.reviews.prompt_runner_opencode.shutil.which", return_value="/usr/bin/opencode")
+    @patch("claude_auto_review.stop.reviews.runners.cli.run_captured")
+    @patch("claude_auto_review.stop.reviews.runners.opencode.shutil.which", return_value="/usr/bin/opencode")
     def test_dispatch_via_attempt_stop_autocomplete(self, mock_which, mock_run, _mock_norm):
         review_path = Path(tempfile.gettempdir()) / "review-opencode-dispatch.md"
         prompt_file = Path(tempfile.gettempdir()) / "prompt-opencode-dispatch.md"
@@ -319,11 +319,11 @@ class TestWriteMergedPrompt(unittest.TestCase):
 
 class TestEmptyPromptFallback(unittest.TestCase):
     @patch(
-        "claude_auto_review.stop.reviews.review_result.normalize_review_verdict_content",
+        "claude_auto_review.stop.reviews.types.result.normalize_review_verdict_content",
         side_effect=lambda s, client_id=None, minimum_blocking_severity="medium": s,
     )
-    @patch("claude_auto_review.stop.reviews.cli_runner.run_captured")
-    @patch("claude_auto_review.stop.reviews.prompt_runner_opencode.shutil.which", return_value="/usr/bin/opencode")
+    @patch("claude_auto_review.stop.reviews.runners.cli.run_captured")
+    @patch("claude_auto_review.stop.reviews.runners.opencode.shutil.which", return_value="/usr/bin/opencode")
     def test_empty_prompt_file_uses_user_prompt_only(self, mock_which, mock_run, _mock_norm):
         captured_merged = {}
 
@@ -341,7 +341,7 @@ class TestEmptyPromptFallback(unittest.TestCase):
         prompt_file = Path(tempfile.gettempdir()) / "prompt-opencode-empty-prompt.md"
         prompt_file.write_text("", encoding="utf-8")
 
-        from claude_auto_review.stop.reviews.prompt_runner import _BACKEND_REGISTRY
+        from claude_auto_review.stop.reviews.runners.dispatcher import _BACKEND_REGISTRY
 
         _BACKEND_REGISTRY.clear()
         _register_default_backends()
@@ -359,11 +359,11 @@ class TestEmptyPromptFallback(unittest.TestCase):
 
 class TestMergedFileCleanup(unittest.TestCase):
     @patch(
-        "claude_auto_review.stop.reviews.review_result.normalize_review_verdict_content",
+        "claude_auto_review.stop.reviews.types.result.normalize_review_verdict_content",
         side_effect=lambda s, client_id=None, minimum_blocking_severity="medium": s,
     )
-    @patch("claude_auto_review.stop.reviews.cli_runner.run_captured")
-    @patch("claude_auto_review.stop.reviews.prompt_runner_opencode.shutil.which", return_value="/usr/bin/opencode")
+    @patch("claude_auto_review.stop.reviews.runners.cli.run_captured")
+    @patch("claude_auto_review.stop.reviews.runners.opencode.shutil.which", return_value="/usr/bin/opencode")
     def test_merged_file_cleaned_up_on_success(self, mock_which, mock_run, _mock_norm):
         merged_path_ref = [None]
 
@@ -379,7 +379,7 @@ class TestMergedFileCleanup(unittest.TestCase):
         prompt_file = Path(tempfile.gettempdir()) / "prompt-opencode-cleanup.md"
         prompt_file.write_text("sys", encoding="utf-8")
 
-        from claude_auto_review.stop.reviews.prompt_runner import _BACKEND_REGISTRY
+        from claude_auto_review.stop.reviews.runners.dispatcher import _BACKEND_REGISTRY
 
         _BACKEND_REGISTRY.clear()
         _register_default_backends()
@@ -391,16 +391,16 @@ class TestMergedFileCleanup(unittest.TestCase):
 
         self.assertFalse(merged_path_ref[0].exists(), "Merged file should be cleaned up after success")
 
-    @patch("claude_auto_review.stop.reviews.prompt_runner_opencode.shutil.which", return_value="/usr/bin/opencode")
+    @patch("claude_auto_review.stop.reviews.runners.opencode.shutil.which", return_value="/usr/bin/opencode")
     @patch(
-        "claude_auto_review.stop.reviews.cli_runner.run_captured",
+        "claude_auto_review.stop.reviews.runners.cli.run_captured",
         side_effect=subprocess.TimeoutExpired(cmd="opencode", timeout=60),
     )
     def test_merged_file_cleaned_up_on_timeout(self, mock_run, mock_which):
         prompt_file = Path(tempfile.gettempdir()) / "prompt-opencode-cleanup-to.md"
         prompt_file.write_text("sys", encoding="utf-8")
 
-        from claude_auto_review.stop.reviews.prompt_runner import _BACKEND_REGISTRY
+        from claude_auto_review.stop.reviews.runners.dispatcher import _BACKEND_REGISTRY
 
         _BACKEND_REGISTRY.clear()
         _register_default_backends()

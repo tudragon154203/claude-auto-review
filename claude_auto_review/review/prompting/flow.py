@@ -4,7 +4,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 
-from claude_auto_review.config.rules import resolve_rules_file_path
+from claude_auto_review.config.resolvers.rules import resolve_rules_file_path
 from claude_auto_review.paths.path_utils import local_now_iso
 from claude_auto_review.review.prompting.diff_mode import all_session_diffs
 from claude_auto_review.review.prompting.generation import (
@@ -13,7 +13,7 @@ from claude_auto_review.review.prompting.generation import (
     read_if_exists,
 )
 from claude_auto_review.runtime.client_dirs import client_reviews_dir, client_run_dir
-from claude_auto_review.stop.orchestration.context import RuntimeContext
+from claude_auto_review.stop.orchestration.types.context import RuntimeContext
 from claude_auto_review.timestamps import parse_iso_timestamp
 
 

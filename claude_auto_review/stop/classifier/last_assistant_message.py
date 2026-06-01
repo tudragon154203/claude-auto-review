@@ -10,7 +10,7 @@ from claude_auto_review.stop.classifier.extraction import extract_last_assistant
 from claude_auto_review.stop.classifier.models import (
     result_factory,
 )
-from claude_auto_review.stop.orchestration.context import RuntimeContext
+from claude_auto_review.stop.orchestration.types.context import RuntimeContext
 
 
 def classify_last_assistant_message(

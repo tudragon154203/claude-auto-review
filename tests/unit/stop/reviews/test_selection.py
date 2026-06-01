@@ -1,9 +1,9 @@
 import unittest
 
-from claude_auto_review.state.edit_record import EditRecord
-from claude_auto_review.state.file_record import ReviewFileRecord
-from claude_auto_review.state.review_records import ReviewMetadata
-from claude_auto_review.stop.reviews.selection import find_pending_review_for_files, get_entries_covered_by_review
+from claude_auto_review.state.records.edit import EditRecord
+from claude_auto_review.state.records.file import ReviewFileRecord
+from claude_auto_review.state.records.review import ReviewMetadata
+from claude_auto_review.stop.reviews.selection.matching import find_pending_review_for_files, get_entries_covered_by_review
 
 
 def _mk_edit(file: str, hash: str, reviewed: bool = False) -> EditRecord:

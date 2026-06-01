@@ -2,10 +2,10 @@ import unittest
 
 from claude_auto_review.runtime.client_dirs import client_state_path
 from claude_auto_review.runtime.setup import ensure_client_runtime, ensure_runtime
-from claude_auto_review.state.classification_record import ClassificationRecord
-from claude_auto_review.state.edit_record import EditRecord, StopBlockedRecord
-from claude_auto_review.state.file_record import ReviewFileRecord
-from claude_auto_review.state.review_records import (
+from claude_auto_review.state.records.classification import ClassificationRecord
+from claude_auto_review.state.records.edit import EditRecord, StopBlockedRecord
+from claude_auto_review.state.records.file import ReviewFileRecord
+from claude_auto_review.state.records.review import (
     ReviewAutocompleteRecord,
     ReviewCompletedRecord,
     ReviewMetadata,

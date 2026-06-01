@@ -13,8 +13,8 @@ from typing import Any
 
 from claude_auto_review.paths.uri_utils import normalize_relative_path
 from claude_auto_review.runtime.context import resolve_client_id, resolve_project_root
-from claude_auto_review.state.event_types import StateEvent
-from claude_auto_review.state.snapshot import StateSnapshot
+from claude_auto_review.state.records.events import StateEvent
+from claude_auto_review.state.snapshots.snapshot import StateSnapshot
 from claude_auto_review.state.store.jsonl import parse_jsonl_state_records
 
 

@@ -1,6 +1,6 @@
 import unittest
 
-from claude_auto_review.stop.reviews.codex_output import _extract_codex_final_message
+from claude_auto_review.stop.reviews.runners.codex_output import _extract_codex_final_message
 
 
 class TestExtractCodexFinalMessage(unittest.TestCase):

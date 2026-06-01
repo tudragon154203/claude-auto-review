@@ -9,12 +9,12 @@ from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
 
 SUBCOMMANDS = {
-    "config": "claude_auto_review.install.config_cli",
-    "install": "claude_auto_review.install.setup_cli",
-    "cancel": "claude_auto_review.install.cancel_cli",
+    "config": "claude_auto_review.install.cli.config",
+    "install": "claude_auto_review.install.cli.setup",
+    "cancel": "claude_auto_review.install.cli.cancel",
     "prompt": "claude_auto_review.review.prompt",
-    "uninstall": "claude_auto_review.install.uninstall_cli",
-    "update": "claude_auto_review.install.update_cli",
+    "uninstall": "claude_auto_review.install.cli.uninstall",
+    "update": "claude_auto_review.install.cli.update",
 }
 
 

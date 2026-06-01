@@ -3,10 +3,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
-from claude_auto_review.state.edit_record import EditRecord
-from claude_auto_review.state.event_types import StateEvent
-from claude_auto_review.state.models import FileHash
-from claude_auto_review.state.snapshot import StateSnapshot
+from claude_auto_review.state.records.edit import EditRecord
+from claude_auto_review.state.records.events import StateEvent
+from claude_auto_review.state.records.models import FileHash
+from claude_auto_review.state.snapshots.snapshot import StateSnapshot
 from claude_auto_review.state.store.queries import consecutive_stop_blocks, get_unreviewed_files
 from claude_auto_review.state.store.read import load_state_snapshot
 from claude_auto_review.state.store.write import append_review_started, append_state_event, mark_files_reviewed

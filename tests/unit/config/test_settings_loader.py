@@ -1,10 +1,10 @@
 import json
 import unittest
 
-from claude_auto_review.config.file_filters import should_skip_file
-from claude_auto_review.config.io import load_settings
-from claude_auto_review.config.models import DEFAULT_TIMEOUT_SECONDS, PluginSettings
-from claude_auto_review.config.rules import resolve_rules_file_path
+from claude_auto_review.config.resolvers.files import should_skip_file
+from claude_auto_review.config.io.settings_file import load_settings
+from claude_auto_review.config.settings.models import DEFAULT_TIMEOUT_SECONDS, PluginSettings
+from claude_auto_review.config.resolvers.rules import resolve_rules_file_path
 from tests.unit.state.support import StateTestCase
 
 

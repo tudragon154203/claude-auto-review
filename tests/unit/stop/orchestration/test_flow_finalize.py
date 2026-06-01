@@ -3,15 +3,15 @@ from types import SimpleNamespace
 
 from tests.support_paths import FAKE_ROOT
 
-from claude_auto_review.state.review_records import ReviewMetadata
+from claude_auto_review.state.records.review import ReviewMetadata
 from unittest.mock import patch
 
-from claude_auto_review.config.models import PluginSettings
-from claude_auto_review.state.edit_record import EditRecord
-from claude_auto_review.state.snapshot import StateSnapshot
-from claude_auto_review.stop.orchestration.context import RuntimeContext
+from claude_auto_review.config.settings.models import PluginSettings
+from claude_auto_review.state.records.edit import EditRecord
+from claude_auto_review.state.snapshots.snapshot import StateSnapshot
+from claude_auto_review.stop.orchestration.types.context import RuntimeContext
 from claude_auto_review.stop.orchestration.flow import run_stop_flow
-from claude_auto_review.stop.orchestration.resolution import ReviewResolution, TerminalResolution
+from claude_auto_review.stop.orchestration.types.resolution import ReviewResolution, TerminalResolution
 
 _STATE = [EditRecord(timestamp="2026-05-11T10:00:00+07:00", file="a.ts", hash="1", reviewed=False)]
 

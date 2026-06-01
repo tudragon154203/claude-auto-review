@@ -9,7 +9,7 @@ from claude_auto_review.review.prompting.generation import (
 )
 from claude_auto_review.review.prompting.rendering import current_file_snapshots, format_review_timestamp
 from claude_auto_review.review.prompting.templates import format_review_file
-from claude_auto_review.state.edit_record import EditRecord
+from claude_auto_review.state.records.edit import EditRecord
 
 REPO_ROOT = Path(__file__).resolve().parents[4]
 

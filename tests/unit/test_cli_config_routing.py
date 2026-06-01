@@ -10,7 +10,7 @@ class TestCliConfigRouting(unittest.TestCase):
         module.main.return_value = 123
 
         with (
-            patch.dict("sys.modules", {"claude_auto_review.install.config_cli": module}),
+            patch.dict("sys.modules", {"claude_auto_review.install.cli.config": module}),
             patch("sys.argv", ["claude-auto-review", "config", "--backend", "codex"]),
         ):
             result = cli.main()

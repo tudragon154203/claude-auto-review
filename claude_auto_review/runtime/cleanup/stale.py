@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import time
 
-from claude_auto_review.config.constants import SECONDS_PER_HOUR
-from claude_auto_review.config.io import load_settings
+from claude_auto_review.config.constants.time_units import SECONDS_PER_HOUR
+from claude_auto_review.config.io.settings_file import load_settings
 from claude_auto_review.paths.path_utils import CLIENTS_DIR
 from claude_auto_review.runtime.cleanup.paths import _remove_tree
 from claude_auto_review.runtime.client_dirs import invalidate_client_runtime_dir_cache

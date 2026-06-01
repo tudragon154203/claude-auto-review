@@ -3,9 +3,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from claude_auto_review.paths.path_utils import local_now_iso
-from claude_auto_review.state.edit_record import StopBlockedRecord
+from claude_auto_review.state.records.edit import StopBlockedRecord
 from claude_auto_review.stop.feedback_format import build_review_findings_feedback, review_feedback_max_chars
-from claude_auto_review.stop.orchestration.resolution import FinalizeAction
+from claude_auto_review.stop.orchestration.types.resolution import FinalizeAction
 from claude_auto_review.stop.response import ResponseEmitter
 
 

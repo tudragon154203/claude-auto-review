@@ -5,8 +5,8 @@ from unittest.mock import patch
 
 from tests.support_paths import FAKE_ROOT
 
-from claude_auto_review.config.models import PluginSettings
-from claude_auto_review.state.edit_record import EditRecord
+from claude_auto_review.config.settings.models import PluginSettings
+from claude_auto_review.state.records.edit import EditRecord
 from claude_auto_review.stop.feedback_format import (
     build_review_completion_prompt,
     build_review_findings_feedback,
