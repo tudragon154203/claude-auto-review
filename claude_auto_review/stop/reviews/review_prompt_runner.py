@@ -47,9 +47,11 @@ def _block_review_prompt_failure(files_str, result, *, emitter):
     )
 
 
-def build_review_prompt_env(payload: dict[str, Any]) -> dict[str, str]:
+def build_review_prompt_env(payload: Any) -> dict[str, str]:
     """Build the subprocess environment for running the review prompt script."""
     env = os.environ.copy()
+    if not isinstance(payload, dict):
+        return env
     session_id = payload.get("session_id")
     if session_id:
         env["CLAUDE_SESSION_ID"] = session_id

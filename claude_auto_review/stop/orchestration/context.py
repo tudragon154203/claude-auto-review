@@ -14,7 +14,7 @@ class RuntimeContext:
     project_root: Path
     client_id: str
     settings: PluginSettings = field(default_factory=PluginSettings)
-    payload: dict[str, Any] = field(default_factory=dict)
+    payload: Any = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
