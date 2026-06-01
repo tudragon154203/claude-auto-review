@@ -36,3 +36,4 @@ def parse_event(raw: dict[str, Any]) -> StateEvent | None:
         return parser(raw)
     except (TypeError, KeyError, ValueError):
         return None
+

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from claude_auto_review.state.models import ReviewMetadata
+from claude_auto_review.state.review_records import ReviewMetadata
 from claude_auto_review.timestamps import is_older_than_hours
 
 
@@ -14,3 +14,4 @@ def is_review_expired(review_entry: ReviewMetadata, timeout_hours: float | int) 
     if not timestamp_str:
         return False
     return is_older_than_hours(timestamp_str, float(timeout_hours))
+

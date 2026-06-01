@@ -16,13 +16,13 @@ def _emit_response(payload: ResponsePayload, *, emitter):
     return 2
 
 
-def _handle_allow(decision: StopDecision, *, emitter):
+def _handle_allow(engine, decision: StopDecision, *, emitter):
     if decision.reason is None:
         raise ValueError("ALLOW decision missing reason")
     return _emit_response(ResponsePayload(system_message=f"Claude Auto Review: stop approved ({decision.reason.value})"), emitter=emitter)
 
 
-def _handle_terminal(decision: StopDecision):
+def _handle_terminal(engine, decision: StopDecision, *, emitter):
     details = decision.details or {}
     return details["exit_code"]
 
@@ -32,7 +32,11 @@ def _handle_finalize(engine: StopDecisionEngine, decision: StopDecision, *, emit
     return engine.finalize(details["resolution"], emitter=emitter)
 
 
-_HANDLER_REGISTRY: dict[StopDecisionKind, Callable] = {}
+_HANDLER_REGISTRY: dict[StopDecisionKind, Callable] = {
+    StopDecisionKind.ALLOW: _handle_allow,
+    StopDecisionKind.TERMINAL: _handle_terminal,
+    StopDecisionKind.FINALIZE: _handle_finalize,
+}
 
 
 def register_stop_handler(kind: StopDecisionKind, handler: Callable) -> None:
@@ -44,30 +48,13 @@ def register_stop_handler(kind: StopDecisionKind, handler: Callable) -> None:
     _HANDLER_REGISTRY[kind] = handler
 
 
-def _register_default_handlers():
-    _HANDLER_REGISTRY[StopDecisionKind.ALLOW] = None
-    _HANDLER_REGISTRY[StopDecisionKind.TERMINAL] = None
-    _HANDLER_REGISTRY[StopDecisionKind.FINALIZE] = None
-
-
-_register_default_handlers()
-
-
 def run_stop_flow(ctx: RuntimeContext, *, emitter=None):
     """Main entry point for the stop hook — evaluates, finalizes, and emits the response."""
     emitter = emitter or StdoutResponseEmitter()
     engine = StopDecisionEngine(ctx, emitter=emitter)
     decision = engine.evaluate()
 
-    if decision.kind == StopDecisionKind.ALLOW:
-        return _handle_allow(decision, emitter=emitter)
-    if decision.kind == StopDecisionKind.TERMINAL:
-        return _handle_terminal(decision)
-    if decision.kind == StopDecisionKind.FINALIZE:
-        return _handle_finalize(engine, decision, emitter=emitter)
-
-    custom_handler = _HANDLER_REGISTRY.get(decision.kind)
-    if custom_handler is not None:
-        return custom_handler(engine, decision, emitter=emitter)
-
+    handler = _HANDLER_REGISTRY.get(decision.kind)
+    if handler is not None:
+        return handler(engine, decision, emitter=emitter)
     return _handle_finalize(engine, decision, emitter=emitter)

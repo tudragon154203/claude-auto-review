@@ -1,5 +1,4 @@
 import unittest
-from pathlib import Path
 from unittest.mock import patch
 
 from claude_auto_review.review.completion import apply_completed_review

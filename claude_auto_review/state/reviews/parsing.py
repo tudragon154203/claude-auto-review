@@ -3,10 +3,8 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 
-from claude_auto_review.config.severity import MINIMUM_BLOCKING_SEVERITIES
 from claude_auto_review.state.reviews.review_text import extract_review_findings_text
-
-_UNRECOGNIZED_SEVERITY = "<unrecognized>"
+from claude_auto_review.state.reviews.severity import _UNRECOGNIZED_SEVERITY, _normalize_severity
 
 _FINDING_BULLET_RE = re.compile(r"^[-*]\s*(Confirmed|Skipped):\s*(.*)$", re.IGNORECASE)
 _LEGACY_FINDING_START_RE = re.compile(r"^###\s+|^\d+[.)]?\s*\*{1,2}\s*(?:Confirmed|Skipped)\s*-\s*", re.IGNORECASE)
@@ -28,21 +26,6 @@ class ReviewFinding:
     verdict: str | None
     raw_text: str
 
-
-def _normalize_severity(value: str | None) -> str | None:
-    if value is None:
-        return None
-    severity = value.strip().lower()
-    if severity in MINIMUM_BLOCKING_SEVERITIES:
-        return severity
-    # Explicit "none" means the reviewer intentionally declined to assign
-    # a severity — treat it the same as no severity field at all.
-    if severity == "none":
-        return None
-    # Any other value (e.g. "not queue", "n/a", typos) is an unrecognized
-    # severity — preserve it so downstream blocking logic treats the finding
-    # as ambiguous rather than silently dropping it.
-    return _UNRECOGNIZED_SEVERITY
 
 
 def _legacy_heading_severity(line: str) -> tuple[str | None, str | None]:

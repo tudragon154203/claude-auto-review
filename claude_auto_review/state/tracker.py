@@ -3,7 +3,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
-from claude_auto_review.state.models import EditRecord, FileHash, StateEvent
+from claude_auto_review.state.edit_record import EditRecord
+from claude_auto_review.state.event_types import StateEvent
+from claude_auto_review.state.models import FileHash
 from claude_auto_review.state.snapshot import StateSnapshot
 from claude_auto_review.state.store.queries import consecutive_stop_blocks, get_unreviewed_files
 from claude_auto_review.state.store.read import load_state_snapshot
@@ -41,3 +43,4 @@ class StateTracker:
     @staticmethod
     def file_hash(value: str) -> FileHash:
         return FileHash(value)
+

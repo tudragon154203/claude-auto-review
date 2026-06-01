@@ -8,13 +8,13 @@ from claude_auto_review.state.edit_record import EditRecord
 from claude_auto_review.state.event_types import StateEvent
 from claude_auto_review.state.review_records import ReviewMetadata
 from claude_auto_review.state.snapshot_helpers import (
-    consecutive_stop_block_count,
     edit_entry_key,
     is_edit_entry,
     latest_by_key,
     latest_unreviewed_files,
     parsed_timestamp,
 )
+from claude_auto_review.state.stop_blocks import consecutive_stop_block_count
 
 
 @dataclass(frozen=True)

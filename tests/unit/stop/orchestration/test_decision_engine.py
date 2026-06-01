@@ -1,5 +1,4 @@
 import unittest
-from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 from tests.support_paths import FAKE_ROOT

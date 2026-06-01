@@ -3,7 +3,10 @@ from __future__ import annotations
 from collections.abc import Iterable, Iterator, Sequence
 
 from claude_auto_review.runtime.events import log_event
-from claude_auto_review.state.models import EditRecord, ReviewFileRecord, ReviewMetadata, StateEvent
+from claude_auto_review.state.edit_record import EditRecord
+from claude_auto_review.state.event_types import StateEvent
+from claude_auto_review.state.file_record import ReviewFileRecord
+from claude_auto_review.state.review_records import ReviewMetadata
 from claude_auto_review.state.reviews.expiry import is_review_expired
 from claude_auto_review.state.reviews.matching_hash import entry_file_hash_pairs, review_file_hash_pairs
 from claude_auto_review.state.store.queries import ensure_state_snapshot
@@ -69,3 +72,4 @@ def _pending_reviews_matching_entries(
         project_root=project_root,
         timeout_hours=timeout_hours,
     )
+

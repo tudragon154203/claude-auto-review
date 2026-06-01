@@ -56,11 +56,14 @@ def build_default_dependencies(
 ) -> tuple[StopFlowDependencies, FinalizeReviewStop]:
     """Build StopFlowDependencies with sensible defaults and return (deps, finalize_fn)."""
     emitter = emitter or StdoutResponseEmitter()
+
+    classifier_fn = classify_last_assistant_message_fn if classify_last_assistant_message_fn is not None else classify_last_assistant_message
+
     return StopFlowDependencies(
         load_state_snapshot=load_state_snapshot_fn if load_state_snapshot_fn is not None else load_state_snapshot,  # type: ignore[arg-type]
         get_unreviewed_files=get_unreviewed_files_fn if get_unreviewed_files_fn is not None else get_unreviewed_files,  # type: ignore[arg-type]
         consecutive_stop_blocks=consecutive_stop_blocks_fn if consecutive_stop_blocks_fn is not None else consecutive_stop_blocks,  # type: ignore[arg-type]
-        classify_last_assistant_message=classify_last_assistant_message_fn if classify_last_assistant_message_fn is not None else classify_last_assistant_message,  # type: ignore[arg-type]
+        classify_last_assistant_message=classifier_fn,  # type: ignore[arg-type]
         resolve_pending_review=resolve_pending_review_fn if resolve_pending_review_fn is not None else resolve_pending_review,  # type: ignore[arg-type]
         get_reviewer_prompt_script=get_reviewer_prompt_script_fn if get_reviewer_prompt_script_fn is not None else get_reviewer_prompt_script,  # type: ignore[arg-type]
         log_event=log_event_fn if log_event_fn is not None else log_event,  # type: ignore[arg-type]

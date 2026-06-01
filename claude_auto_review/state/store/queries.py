@@ -7,7 +7,8 @@ concerns independent.
 
 from __future__ import annotations
 
-from claude_auto_review.state.models import EditRecord, StateEvent
+from claude_auto_review.state.edit_record import EditRecord
+from claude_auto_review.state.event_types import StateEvent
 from claude_auto_review.state.snapshot import StateSnapshot
 
 
@@ -45,3 +46,4 @@ def get_unreviewed_files(state_or_snapshot: list[StateEvent] | StateSnapshot) ->
 def consecutive_stop_blocks(state_or_snapshot: list[StateEvent] | StateSnapshot) -> int:
     """Count how many stop_blocked events appear at the tail of the event log."""
     return ensure_state_snapshot(state_or_snapshot).consecutive_stop_blocks
+

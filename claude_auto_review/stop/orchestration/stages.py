@@ -57,7 +57,14 @@ def run_circuit_breaker_stage(
 def run_classifier_stage(ctx: RuntimeContext, *, classify_last_assistant_message_fn: LastAssistantMessageClassifier) -> StopDecision | None:
     if not ctx.settings.last_assistant_message_classifier_enabled:
         return None
-    result = classify_last_assistant_message_fn(ctx)
+    from claude_auto_review.state.store.writer import StateEventWriter
+
+    def _persist(result):
+        StateEventWriter(project_root=ctx.project_root, client_id=ctx.client_id).append(
+            result.as_state_entry(include_debug=ctx.settings.debug)
+        )
+
+    result = classify_last_assistant_message_fn(ctx, persist=_persist)
     if result is None or result.status != ClassifierStatus.INCOMPLETE:
         return None
     return StopDecision(

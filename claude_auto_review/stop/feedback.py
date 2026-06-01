@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from claude_auto_review.paths.path_utils import local_now_iso
-from claude_auto_review.state.models import StopBlockedRecord
+from claude_auto_review.state.edit_record import StopBlockedRecord
 from claude_auto_review.stop.feedback_format import build_review_findings_feedback, review_feedback_max_chars
 from claude_auto_review.stop.orchestration.resolution import FinalizeAction
 from claude_auto_review.stop.response import ResponseEmitter
@@ -43,3 +43,4 @@ def block_completed_review_findings(ctx, review_id, review_path, unreviewed, *, 
     result = prepare_findings_block(ctx, review_id, review_path, unreviewed)
     emitter.block(result.system_message, result.feedback)
     return result
+

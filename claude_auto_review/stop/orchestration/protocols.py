@@ -5,7 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, Protocol, runtime_checkable
 
-from claude_auto_review.state.models import StateEvent
+from claude_auto_review.state.event_types import StateEvent
 from claude_auto_review.state.snapshot import StateSnapshot
 from claude_auto_review.stop.classifier.models import AssistantMessageClassificationResult
 from claude_auto_review.stop.orchestration.context import RuntimeContext
@@ -32,7 +32,8 @@ class StopBlockCounter(Protocol):
 @runtime_checkable
 class LastAssistantMessageClassifier(Protocol):
     def __call__(
-        self, ctx: RuntimeContext, env: dict[str, str] | None = ..., urlopen: Any | None = ...
+        self, ctx: RuntimeContext, env: dict[str, str] | None = ..., urlopen: Any | None = ...,
+        *, persist: Any | None = ...,
     ) -> AssistantMessageClassificationResult | None: ...
 
 
@@ -61,3 +62,4 @@ class EventLogger(Protocol):
 @runtime_checkable
 class FinalizeReviewStop(Protocol):
     def __call__(self, ctx: RuntimeContext, resolution: ReviewResolution, *, emitter: ResponseEmitter) -> int: ...
+

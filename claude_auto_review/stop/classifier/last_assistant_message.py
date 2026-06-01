@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import os
 import time
+from typing import Callable
 
-from claude_auto_review.state.store.writer import StateEventWriter
 from claude_auto_review.stop.classifier.client import call_classifier_api, sanitize_base_url
 from claude_auto_review.stop.classifier.enums import ClassifierReason, ClassifierStatus
 from claude_auto_review.stop.classifier.extraction import extract_last_assistant_message_text
@@ -13,12 +13,13 @@ from claude_auto_review.stop.classifier.models import (
 from claude_auto_review.stop.orchestration.context import RuntimeContext
 
 
-def _persist_result(result, ctx):
-    include_debug = ctx.settings.debug
-    StateEventWriter(ctx.project_root, ctx.client_id).append(result.as_state_entry(include_debug=include_debug))
-
-
-def classify_last_assistant_message(ctx: RuntimeContext, env=None, urlopen=None):
+def classify_last_assistant_message(
+    ctx: RuntimeContext,
+    env=None,
+    urlopen=None,
+    *,
+    persist: Callable | None = None,
+):
     if not ctx.settings.last_assistant_message_classifier_enabled:
         return None
 
@@ -28,7 +29,8 @@ def classify_last_assistant_message(ctx: RuntimeContext, env=None, urlopen=None)
 
     if not message_text:
         result = result_factory(ClassifierStatus.SKIPPED, ClassifierReason.MISSING_MESSAGE, started_at, 0)
-        _persist_result(result, ctx)
+        if persist is not None:
+            persist(result)
         return result
 
     env = os.environ if env is None else env
@@ -37,13 +39,15 @@ def classify_last_assistant_message(ctx: RuntimeContext, env=None, urlopen=None)
 
     if not base_url:
         result = result_factory(ClassifierStatus.ERROR, ClassifierReason.MISSING_BASE_URL, started_at, message_chars)
-        _persist_result(result, ctx)
+        if persist is not None:
+            persist(result)
         return result
     if not api_key:
         result = result_factory(
             ClassifierStatus.ERROR, ClassifierReason.MISSING_API_KEY, started_at, message_chars, base_url=base_url
         )
-        _persist_result(result, ctx)
+        if persist is not None:
+            persist(result)
         return result
 
     timeout_seconds = ctx.settings.last_assistant_message_classifier_timeout_seconds
@@ -57,5 +61,6 @@ def classify_last_assistant_message(ctx: RuntimeContext, env=None, urlopen=None)
         model,
         urlopen=urlopen,
     )
-    _persist_result(result, ctx)
+    if persist is not None:
+        persist(result)
     return result

@@ -98,21 +98,30 @@ class IntegrationRuntimeTests(IntegrationTestCase):
         client_id = "classifier-integration"
         ensure_client_runtime(project_root, client_id)
 
-        result = classify_last_assistant_message(
-            RuntimeContext(
-                project_root=project_root,
-                client_id=client_id,
-                settings=PluginSettings(
-                    last_assistant_message_classifier_enabled=True,
-                    last_assistant_message_classifier_timeout_seconds=10,
-                ),
-                payload={"last_assistant_message": "Final answer."},
+        ctx = RuntimeContext(
+            project_root=project_root,
+            client_id=client_id,
+            settings=PluginSettings(
+                last_assistant_message_classifier_enabled=True,
+                last_assistant_message_classifier_timeout_seconds=10,
             ),
+            payload={"last_assistant_message": "Final answer."},
+        )
+        from claude_auto_review.state.store.writer import StateEventWriter
+
+        def _persist(result):
+            StateEventWriter(project_root=project_root, client_id=client_id).append(
+                result.as_state_entry(include_debug=ctx.settings.debug)
+            )
+
+        result = classify_last_assistant_message(
+            ctx,
             env={
                 "ANTHROPIC_BASE_URL": "http://127.0.0.1:13456",
                 "ANTHROPIC_API_KEY": "secret-key",
             },
             urlopen=lambda req, timeout: _FakeResponse({"content": [{"type": "text", "text": "complete"}]}),
+            persist=_persist,
         )
 
         self.assertEqual(result.status, "complete")

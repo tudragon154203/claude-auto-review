@@ -5,7 +5,7 @@ from dataclasses import dataclass
 
 from claude_auto_review.config.constants import DEFAULT_CLASSIFIER_TIMEOUT_SECONDS, MS_PER_SECOND
 from claude_auto_review.config.models import DEFAULT_CLASSIFIER_MODEL
-from claude_auto_review.state.models import ClassificationRecord
+from claude_auto_review.state.classification_record import ClassificationRecord
 from claude_auto_review.timestamps import local_now_iso
 
 CLASSIFIER_MAX_TOKENS = 8
@@ -65,3 +65,4 @@ def result_factory(
         http_status=http_status,
         debug_response=debug_response,
     )
+

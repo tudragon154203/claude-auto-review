@@ -6,7 +6,6 @@ from typing import Any, cast
 
 from claude_auto_review.state.edit_record import EditRecord
 from claude_auto_review.state.event_types import StateEvent
-from claude_auto_review.state.review_records import ReviewMetadata
 from claude_auto_review.paths.path_utils import is_runtime_relative_path
 from claude_auto_review.timestamps import parse_iso_timestamp
 
@@ -63,15 +62,3 @@ def latest_unreviewed_files(entries: list[StateEvent]) -> list[EditRecord]:
     ]
 
 
-def consecutive_stop_block_count(entries: list[StateEvent]) -> int:
-    count = 0
-    for entry in reversed(entries):
-        if isinstance(entry, ReviewMetadata):
-            continue
-        if isinstance(entry, EditRecord) and not entry.reviewed:
-            continue
-        if getattr(entry, "type", None) == "stop_blocked":
-            count += 1
-            continue
-        break
-    return count

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from claude_auto_review.state.models import EditRecord, ReviewMetadata
+from claude_auto_review.state.edit_record import EditRecord
+from claude_auto_review.state.review_records import ReviewMetadata
 from claude_auto_review.state.reviews.matching import best_pending_review_exactly_matching_entries
 from claude_auto_review.state.reviews.matching_hash import review_file_hash_pairs
 from claude_auto_review.state.snapshot import StateSnapshot
@@ -25,3 +26,4 @@ def get_entries_covered_by_review(review_entry: ReviewMetadata, state_entries=No
         if isinstance(entry, EditRecord) and (file_path, entry.hash) in review_files:
             result.append(entry)
     return result
+

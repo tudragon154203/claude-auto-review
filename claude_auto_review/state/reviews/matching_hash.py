@@ -3,7 +3,9 @@ from __future__ import annotations
 from collections.abc import Sequence
 from typing import TypedDict
 
-from claude_auto_review.state.models import EditRecord, ReviewFileRecord, ReviewMetadata
+from claude_auto_review.state.edit_record import EditRecord
+from claude_auto_review.state.file_record import ReviewFileRecord
+from claude_auto_review.state.review_records import ReviewMetadata
 
 
 class PendingReviewCandidate(TypedDict):
@@ -17,3 +19,4 @@ def entry_file_hash_pairs(entries: Sequence[EditRecord | ReviewFileRecord]) -> s
 
 def review_file_hash_pairs(review_entry: ReviewMetadata) -> set[tuple[str, str]]:
     return entry_file_hash_pairs(review_entry.files)
+

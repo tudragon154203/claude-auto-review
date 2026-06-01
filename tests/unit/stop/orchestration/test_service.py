@@ -1,5 +1,4 @@
 import unittest
-from pathlib import Path
 
 from tests.support_paths import FAKE_ROOT
 
@@ -33,7 +32,7 @@ def _deps(**overrides):
         load_state_snapshot=lambda *_args, **_kwargs: _snapshot(),
         get_unreviewed_files=lambda snapshot: snapshot.unreviewed_files,
         consecutive_stop_blocks=lambda _snapshot: 0,
-        classify_last_assistant_message=lambda _ctx: None,
+        classify_last_assistant_message=lambda _ctx, **_kwargs: None,
         resolve_pending_review=lambda *_args, **_kwargs: TerminalResolution(exit_code=2),
         get_reviewer_prompt_script=lambda: "reviewer.py",
         log_event=lambda *_args, **_kwargs: None,

@@ -13,7 +13,7 @@ from typing import Any
 
 from claude_auto_review.paths.uri_utils import normalize_relative_path
 from claude_auto_review.runtime.context import resolve_client_id, resolve_project_root
-from claude_auto_review.state.models import StateEvent
+from claude_auto_review.state.event_types import StateEvent
 from claude_auto_review.state.snapshot import StateSnapshot
 from claude_auto_review.state.store.jsonl import parse_jsonl_state_records
 
@@ -77,3 +77,4 @@ def get_file_hash(file_path: str | Path, project_root: str | Path | None = None)
 
 def load_state(project_root: str | Path | None = None, client_id: str | None = None) -> list[StateEvent]:
     return list(load_state_snapshot(project_root, client_id).events)
+

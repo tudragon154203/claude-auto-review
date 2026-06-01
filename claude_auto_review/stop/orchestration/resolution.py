@@ -3,7 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from enum import Enum
 
-from claude_auto_review.state.models import ReviewMetadata, StateEvent
+from claude_auto_review.state.event_types import StateEvent
+from claude_auto_review.state.review_records import ReviewMetadata
 
 
 class StopDecisionKind(str, Enum):
@@ -39,3 +40,4 @@ StopFlowResolution = TerminalResolution | ReviewResolution
 class FinalizeResult:
     action: FinalizeAction
     exit_code: int
+

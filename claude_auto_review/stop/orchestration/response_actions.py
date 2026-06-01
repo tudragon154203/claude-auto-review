@@ -3,7 +3,7 @@ from __future__ import annotations
 from claude_auto_review.config.constants import EXIT_REVIEW_FAILED
 from claude_auto_review.runtime.events import log_event
 from claude_auto_review.paths.path_utils import local_now_iso
-from claude_auto_review.state.models import StopBlockedRecord
+from claude_auto_review.state.edit_record import StopBlockedRecord
 from claude_auto_review.state.store.writer import StateEventWriter
 from claude_auto_review.stop.feedback_format import build_unreviewed_files_string
 from claude_auto_review.stop.orchestration.context import RuntimeContext
@@ -84,3 +84,4 @@ def block_pending_review(ctx: RuntimeContext, review_id, review_path, prompt_pat
         )
     )
     return 2
+

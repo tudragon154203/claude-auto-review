@@ -10,7 +10,7 @@ from claude_auto_review.paths.uri_utils import normalize_relative_path
 from claude_auto_review.review.prompting.diff_mode import capture_session_snapshot
 from claude_auto_review.runtime.events import log_event
 from claude_auto_review.state.hook_input import extract_file_paths_from_hook_input
-from claude_auto_review.state.models import EditRecord
+from claude_auto_review.state.edit_record import EditRecord
 from claude_auto_review.state.store.queries import was_hash_reviewed
 from claude_auto_review.state.store.read import get_file_hash
 from claude_auto_review.state.tracker import StateTracker
@@ -78,3 +78,4 @@ def main():
 
 if __name__ == "__main__":
     raise SystemExit(main())
+

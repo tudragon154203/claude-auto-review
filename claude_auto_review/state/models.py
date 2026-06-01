@@ -57,5 +57,3 @@ class ReviewEntry(Protocol):
     timestamp: str
     reviewId: str
     files: list[ReviewFileRecord]
-
-

@@ -1,5 +1,4 @@
 import unittest
-from pathlib import Path
 from types import SimpleNamespace
 
 from tests.support_paths import FAKE_ROOT

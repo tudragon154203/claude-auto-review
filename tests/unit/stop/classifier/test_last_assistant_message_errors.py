@@ -5,6 +5,7 @@ from urllib import error
 
 from claude_auto_review.config.models import PluginSettings
 from claude_auto_review.state.store.read import load_state
+from claude_auto_review.state.store.writer import StateEventWriter
 from claude_auto_review.stop.classifier.last_assistant_message import (
     classify_last_assistant_message,
 )
@@ -34,6 +35,15 @@ def _make_ctx(project_root, payload=None, settings=None):
         settings=settings if settings is not None else PluginSettings(),
         payload=payload if payload is not None else {"last_assistant_message": "some message"},
     )
+
+
+def _make_persist(ctx):
+    writer = StateEventWriter(project_root=ctx.project_root, client_id=ctx.client_id)
+
+    def persist(result):
+        writer.append(result.as_state_entry(include_debug=ctx.settings.debug))
+
+    return persist
 
 
 class TestLastAssistantMessageErrors(StateTestCase, unittest.TestCase):
@@ -70,11 +80,12 @@ class TestLastAssistantMessageErrors(StateTestCase, unittest.TestCase):
     def test_debug_response_is_logged_for_all_labels(self):
         payload = {"content": [{"text": "unknown"}], "id": "msg-debug"}
         debug_response = json.dumps(payload, separators=(",", ":"))
-
+        ctx = _make_ctx(self.project_root, {"last_assistant_message": "Message"}, self.settings)
         classify_last_assistant_message(
-            _make_ctx(self.project_root, {"last_assistant_message": "Message"}, self.settings),
+            ctx,
             env=self.env,
             urlopen=lambda req, timeout: _FakeResponse(payload),
+            persist=_make_persist(ctx),
         )
 
         state = load_state(self.project_root, self.client_id)
@@ -82,18 +93,19 @@ class TestLastAssistantMessageErrors(StateTestCase, unittest.TestCase):
 
     def test_debug_response_not_logged_when_debug_off(self):
         payload = {"content": [{"text": "unknown"}], "id": "msg-nodebug"}
-
-        classify_last_assistant_message(
-            _make_ctx(
-                self.project_root,
-                {"last_assistant_message": "Message"},
-                PluginSettings(
-                    last_assistant_message_classifier_enabled=True,
-                    debug=False,
-                ),
+        ctx = _make_ctx(
+            self.project_root,
+            {"last_assistant_message": "Message"},
+            PluginSettings(
+                last_assistant_message_classifier_enabled=True,
+                debug=False,
             ),
+        )
+        classify_last_assistant_message(
+            ctx,
             env=self.env,
             urlopen=lambda req, timeout: _FakeResponse(payload),
+            persist=_make_persist(ctx),
         )
 
         state = load_state(self.project_root, self.client_id)
@@ -135,10 +147,12 @@ class TestLastAssistantMessageErrors(StateTestCase, unittest.TestCase):
         self.assertEqual(result.reason, "bad_response")
 
     def test_missing_message_is_logged_as_skipped(self):
+        ctx = _make_ctx(self.project_root, {}, self.settings)
         result = classify_last_assistant_message(
-            _make_ctx(self.project_root, {}, self.settings),
+            ctx,
             env=self.env,
             urlopen=lambda req, timeout: _FakeResponse({"content": [{"text": "complete"}]}),
+            persist=_make_persist(ctx),
         )
         self.assertEqual(result.status, "skipped")
         self.assertEqual(result.reason, "missing_message")
@@ -146,10 +160,12 @@ class TestLastAssistantMessageErrors(StateTestCase, unittest.TestCase):
         self.assertEqual(state[-1].type, CLASSIFICATION_EVENT)
 
     def test_missing_env_fails_open_and_persists_separate_state_type(self):
+        ctx = _make_ctx(self.project_root, {"last_assistant_message": "Message"}, self.settings)
         result = classify_last_assistant_message(
-            _make_ctx(self.project_root, {"last_assistant_message": "Message"}, self.settings),
+            ctx,
             env={},
             urlopen=lambda req, timeout: _FakeResponse({"content": [{"text": "complete"}]}),
+            persist=_make_persist(ctx),
         )
         self.assertEqual(result.status, "error")
         self.assertEqual(result.reason, "missing_base_url")
