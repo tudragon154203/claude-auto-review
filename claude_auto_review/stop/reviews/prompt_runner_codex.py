@@ -7,6 +7,7 @@ from pathlib import Path
 
 from claude_auto_review.runtime.events import log_event
 
+from claude_auto_review.stop.reviews.cli_runner import run_review_cli
 from claude_auto_review.stop.reviews.codex_output import _extract_codex_final_message
 from claude_auto_review.stop.reviews.review_args import _build_codex_review_args
 from claude_auto_review.stop.reviews.review_result import AutocompleteResult, _process_review_result
@@ -32,8 +33,6 @@ def _attempt_codex_autocomplete(
     reviewer_timeout_seconds,
     model,
 ):
-    from claude_auto_review.stop.reviews.prompt_runner import _run_review_cli
-
     codex_cli = shutil.which("codex")
     if not codex_cli:
         log_event(ctx.project_root, "stop_hook_reviewer_not_found", client_id=ctx.client_id, backend="codex")
@@ -55,7 +54,7 @@ def _attempt_codex_autocomplete(
         ) as temp_output:
             output_file = Path(temp_output.name)
         args = [*args[:-1], "--output-last-message", str(output_file), args[-1]]
-        cli_result = _run_review_cli(
+        cli_result = run_review_cli(
             codex_cli,
             args,
             cwd=ctx.project_root,

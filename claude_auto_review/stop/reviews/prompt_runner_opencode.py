@@ -7,6 +7,7 @@ from pathlib import Path
 
 from claude_auto_review.runtime.events import log_event
 
+from claude_auto_review.stop.reviews.cli_runner import run_review_cli
 from claude_auto_review.stop.reviews.review_args import _build_opencode_review_args
 from claude_auto_review.stop.reviews.review_result import AutocompleteResult, _process_review_result
 from claude_auto_review.stop.reviews.enums import AutocompleteStatus
@@ -21,8 +22,6 @@ def _attempt_opencode_autocomplete(
     reviewer_timeout_seconds,
     model,
 ):
-    from claude_auto_review.stop.reviews.prompt_runner import _run_review_cli
-
     opencode_cli = shutil.which("opencode")
     if not opencode_cli:
         log_event(ctx.project_root, "stop_hook_reviewer_not_found", client_id=ctx.client_id, backend="opencode")
@@ -49,7 +48,7 @@ def _attempt_opencode_autocomplete(
     try:
         args = _build_opencode_review_args(model, merged_file)
         try:
-            cli_result = _run_review_cli(
+            cli_result = run_review_cli(
                 opencode_cli,
                 args,
                 cwd=ctx.project_root,

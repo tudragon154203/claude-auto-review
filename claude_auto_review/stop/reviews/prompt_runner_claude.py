@@ -5,21 +5,20 @@ import subprocess
 
 from claude_auto_review.runtime.events import log_event
 
+from claude_auto_review.stop.reviews.cli_runner import run_review_cli
 from claude_auto_review.stop.reviews.review_args import _build_claude_review_args
 from claude_auto_review.stop.reviews.review_result import AutocompleteResult, _process_review_result
 from claude_auto_review.stop.reviews.enums import AutocompleteStatus
 
 
 def _run_claude_cli(cli_path, prompt_file, user_prompt, cwd, timeout, model):
-    from claude_auto_review.stop.reviews.prompt_runner import _run_review_cli
-
     args = [
         *_build_claude_review_args(model),
         "--append-system-prompt-file",
         str(prompt_file),
         user_prompt,
     ]
-    return _run_review_cli(cli_path, args, cwd=cwd, timeout=timeout)
+    return run_review_cli(cli_path, args, cwd=cwd, timeout=timeout)
 
 
 def _attempt_claude_autocomplete(
@@ -31,8 +30,6 @@ def _attempt_claude_autocomplete(
     reviewer_timeout_seconds,
     model,
 ):
-    from claude_auto_review.stop.reviews.prompt_runner import _run_review_cli
-
     claude_cli = shutil.which("claude")
     if not claude_cli:
         log_event(ctx.project_root, "stop_hook_reviewer_not_found", client_id=ctx.client_id, backend="claude")
@@ -48,7 +45,7 @@ def _attempt_claude_autocomplete(
         user_prompt,
     ]
     try:
-        cli_result = _run_review_cli(
+        cli_result = run_review_cli(
             claude_cli,
             args,
             cwd=ctx.project_root,

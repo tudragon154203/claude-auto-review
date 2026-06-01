@@ -52,7 +52,7 @@ class TestPromptRunnerCodex(unittest.TestCase):
         "claude_auto_review.stop.reviews.review_result.normalize_review_verdict_content",
         side_effect=lambda s, client_id=None, minimum_blocking_severity="medium": s,
     )
-    @patch("claude_auto_review.stop.reviews.prompt_runner.run_captured")
+    @patch("claude_auto_review.stop.reviews.cli_runner.run_captured")
     @patch("claude_auto_review.stop.reviews.prompt_runner_codex.shutil.which", return_value="/usr/bin/codex")
     def test_attempt_stop_autocomplete_prefers_codex_last_message_file(self, mock_which, mock_run, _mock_norm):
         review_path = Path(tempfile.gettempdir()) / "review-last-message.md"
@@ -92,7 +92,7 @@ class TestPromptRunnerCodex(unittest.TestCase):
         "claude_auto_review.stop.reviews.review_result.normalize_review_verdict_content",
         side_effect=lambda s, client_id=None, minimum_blocking_severity="medium": s,
     )
-    @patch("claude_auto_review.stop.reviews.prompt_runner.run_captured")
+    @patch("claude_auto_review.stop.reviews.cli_runner.run_captured")
     @patch("claude_auto_review.stop.reviews.prompt_runner_codex.shutil.which", return_value="/usr/bin/codex")
     def test_attempt_stop_autocomplete_uses_codex_backend(self, mock_which, mock_run, _mock_norm):
         review_path = Path(tempfile.gettempdir()) / "review.md"
@@ -126,7 +126,7 @@ class TestPromptRunnerCodex(unittest.TestCase):
         "claude_auto_review.stop.reviews.review_result.normalize_review_verdict_content",
         side_effect=lambda s, client_id=None, minimum_blocking_severity="medium": s,
     )
-    @patch("claude_auto_review.stop.reviews.prompt_runner.run_captured")
+    @patch("claude_auto_review.stop.reviews.cli_runner.run_captured")
     @patch("claude_auto_review.stop.reviews.prompt_runner_claude.shutil.which", return_value="/usr/bin/claude")
     def test_attempt_stop_autocomplete_uses_claude_backend(self, mock_which, mock_run, _mock_norm):
         review_path = Path(tempfile.gettempdir()) / "review-claude.md"

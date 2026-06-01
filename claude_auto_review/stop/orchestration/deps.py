@@ -31,15 +31,38 @@ from claude_auto_review.stop.response import StdoutResponseEmitter
 
 
 @dataclass(frozen=True)
-class StopFlowDependencies:
+class StateDeps:
+    """State-related dependencies used by the state-loading and circuit-breaker stages."""
     load_state_snapshot: StateLoader
     get_unreviewed_files: UnreviewedFilesQuery
     consecutive_stop_blocks: StopBlockCounter
+
+
+@dataclass(frozen=True)
+class ClassifierDeps:
+    """Dependencies used by the classifier stage."""
     classify_last_assistant_message: LastAssistantMessageClassifier
+
+
+@dataclass(frozen=True)
+class ReviewDeps:
+    """Dependencies used by the pending-review stage."""
     resolve_pending_review: PendingReviewResolver
     get_reviewer_prompt_script: ReviewerPromptScriptProvider
+
+
+@dataclass(frozen=True)
+class StopFlowDependencies:
+    """Composite dependency container; composed of focused sub-containers."""
+    state: StateDeps
+    classifier: ClassifierDeps
+    review: ReviewDeps
     log_event: EventLogger
     emitter: ResponseEmitter
+
+
+def _resolve(default, override):
+    return override if override is not None else default
 
 
 def build_default_dependencies(
@@ -55,17 +78,19 @@ def build_default_dependencies(
     emitter=None,
 ) -> tuple[StopFlowDependencies, FinalizeReviewStop]:
     """Build StopFlowDependencies with sensible defaults and return (deps, finalize_fn)."""
-    emitter = emitter or StdoutResponseEmitter()
-
-    classifier_fn = classify_last_assistant_message_fn if classify_last_assistant_message_fn is not None else classify_last_assistant_message
-
     return StopFlowDependencies(
-        load_state_snapshot=load_state_snapshot_fn if load_state_snapshot_fn is not None else load_state_snapshot,  # type: ignore[arg-type]
-        get_unreviewed_files=get_unreviewed_files_fn if get_unreviewed_files_fn is not None else get_unreviewed_files,  # type: ignore[arg-type]
-        consecutive_stop_blocks=consecutive_stop_blocks_fn if consecutive_stop_blocks_fn is not None else consecutive_stop_blocks,  # type: ignore[arg-type]
-        classify_last_assistant_message=classifier_fn,  # type: ignore[arg-type]
-        resolve_pending_review=resolve_pending_review_fn if resolve_pending_review_fn is not None else resolve_pending_review,  # type: ignore[arg-type]
-        get_reviewer_prompt_script=get_reviewer_prompt_script_fn if get_reviewer_prompt_script_fn is not None else get_reviewer_prompt_script,  # type: ignore[arg-type]
-        log_event=log_event_fn if log_event_fn is not None else log_event,  # type: ignore[arg-type]
-        emitter=emitter,
-    ), finalize_review_stop_fn if finalize_review_stop_fn is not None else finalize_review_stop  # type: ignore[arg-type]
+        state=StateDeps(
+            load_state_snapshot=_resolve(load_state_snapshot, load_state_snapshot_fn),  # type: ignore[arg-type]
+            get_unreviewed_files=_resolve(get_unreviewed_files, get_unreviewed_files_fn),  # type: ignore[arg-type]
+            consecutive_stop_blocks=_resolve(consecutive_stop_blocks, consecutive_stop_blocks_fn),  # type: ignore[arg-type]
+        ),
+        classifier=ClassifierDeps(
+            classify_last_assistant_message=_resolve(classify_last_assistant_message, classify_last_assistant_message_fn),  # type: ignore[arg-type]
+        ),
+        review=ReviewDeps(
+            resolve_pending_review=_resolve(resolve_pending_review, resolve_pending_review_fn),  # type: ignore[arg-type]
+            get_reviewer_prompt_script=_resolve(get_reviewer_prompt_script, get_reviewer_prompt_script_fn),  # type: ignore[arg-type]
+        ),
+        log_event=_resolve(log_event, log_event_fn),  # type: ignore[arg-type]
+        emitter=emitter or StdoutResponseEmitter(),
+    ), _resolve(finalize_review_stop, finalize_review_stop_fn)  # type: ignore[arg-type]

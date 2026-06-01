@@ -5,10 +5,14 @@ from typing import Callable
 from claude_auto_review.config.models import DEFAULT_REVIEWER_MODEL
 from claude_auto_review.runtime import process as _process_mod
 from claude_auto_review.stop.orchestration.context import RuntimeContext
+from claude_auto_review.stop.reviews.cli_runner import run_review_cli
 from claude_auto_review.stop.reviews.review_result import AutocompleteResult
 
 # Exposed for test-patch compatibility (tests patch prompt_runner.run_captured)
 run_captured = _process_mod.run_captured
+
+# Re-export for backward compatibility; new code should import from cli_runner directly.
+_run_review_cli = run_review_cli
 
 AutocompleteFn = Callable[
     [RuntimeContext, str, object, object, str, int, str],
@@ -33,15 +37,6 @@ def _register_default_backends() -> None:
     register_backend("codex", _attempt_codex_autocomplete)
     register_backend("claude", _attempt_claude_autocomplete)
     register_backend("opencode", _attempt_opencode_autocomplete)
-
-
-def _run_review_cli(cli_path, args, *, cwd, timeout, input_text=None):
-    return run_captured(
-        [cli_path, *args],
-        cwd=cwd,
-        timeout=float(timeout),
-        input=input_text,
-    )
 
 
 def attempt_stop_autocomplete(

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -32,26 +33,20 @@ def _review_id_from_timestamp(timestamp):
     return "rev-" + parsed.strftime("%Y%m%d%H%M%S%f")
 
 
-def _review_prompt_paths(ctx: RuntimeContext, review_id):
+def resolve_review_paths(ctx: RuntimeContext, review_id: str) -> tuple[Path, Path]:
+    """Resolve the review file and prompt file paths for *review_id*."""
     return (
         client_reviews_dir(ctx.project_root, ctx.client_id) / f"review-{review_id}.md",
         client_run_dir(ctx.project_root, ctx.client_id) / f"review-{review_id}-prompt.md",
     )
 
 
-def _write_text_file(path, content):
-    path.write_text(content, encoding="utf-8", newline="\n")
-
-
-def create_review_prompt_files(ctx: RuntimeContext, unreviewed, settings=None):
-    settings = settings or ctx.settings
-    timestamp = local_now_iso()
-    review_id = _review_id_from_timestamp(timestamp)
+def build_review_prompt_content(ctx: RuntimeContext, unreviewed, settings, review_path: Path, *, review_id: str, timestamp: str, prompt_path: Path):
+    """Build prompt and review content strings. Pure assembly, no I/O."""
     files = [entry.file for entry in unreviewed]
 
     rules = read_if_exists(resolve_rules_file_path(ctx.project_root, settings))
     diff = all_session_diffs(files, ctx.project_root, ctx.client_id)
-    snapshots = ""  # noqa: F841 — reserved for future snapshot embedding
 
     reviewer_backend = settings.reviewer_backend
     try:
@@ -59,32 +54,50 @@ def create_review_prompt_files(ctx: RuntimeContext, unreviewed, settings=None):
     except (ValueError, KeyError):
         reviewer_model = settings.reviewer_model or ""
 
-    review_path, prompt_path = _review_prompt_paths(ctx, review_id)
-
-    _write_text_file(
-        prompt_path,
-        build_prompt(
-            review_id,
-            timestamp,
-            unreviewed,
-            rules,
-            diff,
-            review_path,
-            reviewer_backend=reviewer_backend,
-            reviewer_model=reviewer_model,
-        ),
-    )
-    _write_text_file(
+    prompt_content = build_prompt(
+        review_id,
+        timestamp,
+        unreviewed,
+        rules,
+        diff,
         review_path,
-        format_review_files(
-            unreviewed,
-            prompt_path,
-            review_id,
-            timestamp,
-            reviewer_backend=reviewer_backend,
-            reviewer_model=reviewer_model,
-        ),
+        reviewer_backend=reviewer_backend,
+        reviewer_model=reviewer_model,
     )
+    review_content = format_review_files(
+        unreviewed,
+        prompt_path,
+        review_id,
+        timestamp,
+        reviewer_backend=reviewer_backend,
+        reviewer_model=reviewer_model,
+    )
+    return prompt_content, review_content, files
+
+
+def _write_text_file(path, content):
+    path.write_text(content, encoding="utf-8", newline="\n")
+
+
+def create_review_prompt_files(
+    ctx: RuntimeContext,
+    unreviewed,
+    settings=None,
+    *,
+    writer: Callable[[Path, str], None] = _write_text_file,
+):
+    settings = settings or ctx.settings
+    timestamp = local_now_iso()
+    review_id = _review_id_from_timestamp(timestamp)
+
+    review_path, prompt_path = resolve_review_paths(ctx, review_id)
+    prompt_content, review_content, files = build_review_prompt_content(
+        ctx, unreviewed, settings, review_path,
+        review_id=review_id, timestamp=timestamp, prompt_path=prompt_path,
+    )
+
+    writer(prompt_path, prompt_content)
+    writer(review_path, review_content)
 
     return ReviewPromptArtifacts(
         review_id=review_id,

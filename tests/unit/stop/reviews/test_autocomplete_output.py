@@ -13,7 +13,7 @@ def _ctx(project_root=FAKE_ROOT, client_id="c"):
 
 class TestAutoCompleteOutput(unittest.TestCase):
     @patch("claude_auto_review.stop.reviews.review_result.log_event")
-    @patch("claude_auto_review.stop.reviews.prompt_runner.run_captured")
+    @patch("claude_auto_review.stop.reviews.cli_runner.run_captured")
     @patch("claude_auto_review.stop.reviews.prompt_runner_claude.shutil.which", return_value="/usr/bin/claude")
     @patch("pathlib.Path.write_text")
     @patch("pathlib.Path.is_file", return_value=True)
@@ -30,7 +30,7 @@ class TestAutoCompleteOutput(unittest.TestCase):
         self.assertEqual(result.status, "output_written")
 
     @patch("claude_auto_review.stop.reviews.review_result.log_event")
-    @patch("claude_auto_review.stop.reviews.prompt_runner.run_captured")
+    @patch("claude_auto_review.stop.reviews.cli_runner.run_captured")
     @patch("claude_auto_review.stop.reviews.prompt_runner_claude.shutil.which", return_value="/usr/bin/claude")
     @patch("pathlib.Path.write_text")
     @patch("pathlib.Path.is_file", return_value=True)
@@ -62,7 +62,7 @@ class TestAutoCompleteOutput(unittest.TestCase):
         )
 
     @patch("claude_auto_review.stop.reviews.review_result.log_event")
-    @patch("claude_auto_review.stop.reviews.prompt_runner.run_captured")
+    @patch("claude_auto_review.stop.reviews.cli_runner.run_captured")
     @patch("claude_auto_review.stop.reviews.prompt_runner_claude.shutil.which", return_value="/usr/bin/claude")
     @patch("pathlib.Path.write_text")
     @patch("pathlib.Path.is_file", return_value=True)
@@ -98,7 +98,7 @@ class TestAutoCompleteOutput(unittest.TestCase):
         )
 
     @patch("claude_auto_review.stop.reviews.review_result.log_event")
-    @patch("claude_auto_review.stop.reviews.prompt_runner.run_captured")
+    @patch("claude_auto_review.stop.reviews.cli_runner.run_captured")
     @patch("claude_auto_review.stop.reviews.prompt_runner_claude.shutil.which", return_value="/usr/bin/claude")
     @patch("pathlib.Path.write_text")
     @patch("pathlib.Path.is_file", return_value=True)

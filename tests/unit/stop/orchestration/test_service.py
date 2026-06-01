@@ -6,8 +6,9 @@ from claude_auto_review.config.models import PluginSettings
 from claude_auto_review.state.models import EditRecord, ReviewMetadata
 from claude_auto_review.state.snapshot import StateSnapshot
 from claude_auto_review.stop.orchestration.context import RuntimeContext
+from claude_auto_review.stop.orchestration.deps import ClassifierDeps, ReviewDeps, StateDeps, StopFlowDependencies
 from claude_auto_review.stop.orchestration.resolution import ReviewResolution, StopDecisionKind, TerminalResolution
-from claude_auto_review.stop.orchestration.service import StopFlowDependencies, StopFlowService
+from claude_auto_review.stop.orchestration.service import StopFlowService
 
 
 def _ctx(**kwargs):
@@ -26,20 +27,24 @@ def _snapshot(events=None):
     return StateSnapshot.from_events(events)
 
 
-def _deps(**overrides):
+def _deps(*, resolve_pending_review_fn=None):
     from unittest.mock import MagicMock
-    base = StopFlowDependencies(
-        load_state_snapshot=lambda *_args, **_kwargs: _snapshot(),
-        get_unreviewed_files=lambda snapshot: snapshot.unreviewed_files,
-        consecutive_stop_blocks=lambda _snapshot: 0,
-        classify_last_assistant_message=lambda _ctx, **_kwargs: None,
-        resolve_pending_review=lambda *_args, **_kwargs: TerminalResolution(exit_code=2),
-        get_reviewer_prompt_script=lambda: "reviewer.py",
+    return StopFlowDependencies(
+        state=StateDeps(
+            load_state_snapshot=lambda *_args, **_kwargs: _snapshot(),
+            get_unreviewed_files=lambda snapshot: snapshot.unreviewed_files,
+            consecutive_stop_blocks=lambda _snapshot: 0,
+        ),
+        classifier=ClassifierDeps(
+            classify_last_assistant_message=lambda _ctx, **_kwargs: None,
+        ),
+        review=ReviewDeps(
+            resolve_pending_review=resolve_pending_review_fn or (lambda *_args, **_kwargs: TerminalResolution(exit_code=2)),
+            get_reviewer_prompt_script=lambda: "reviewer.py",
+        ),
         log_event=lambda *_args, **_kwargs: None,
         emitter=MagicMock(),
     )
-    values = base.__dict__ | overrides
-    return StopFlowDependencies(**values)
 
 
 class TestStopFlowService(unittest.TestCase):
@@ -57,7 +62,7 @@ class TestStopFlowService(unittest.TestCase):
 
     def test_service_returns_finalize_resolution(self):
         resolution = ReviewResolution(review=ReviewMetadata(reviewId="r1", timestamp="2026-01-01T00:00:00+00:00", reviewPath="", files=[], clientId="c1"), state=[], unreviewed=[])
-        service = StopFlowService(_ctx(), _deps(resolve_pending_review=lambda *_args, **_kwargs: resolution))
+        service = StopFlowService(_ctx(), _deps(resolve_pending_review_fn=lambda *_args, **_kwargs: resolution))
         decision = service.run()
         self.assertEqual(decision.kind, StopDecisionKind.FINALIZE)
         self.assertIs(decision.details["resolution"], resolution)

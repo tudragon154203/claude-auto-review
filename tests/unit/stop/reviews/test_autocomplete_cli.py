@@ -43,7 +43,7 @@ class TestAutoCompleteCLI(unittest.TestCase):
 
     @patch("claude_auto_review.stop.reviews.prompt_runner_claude.log_event")
     @patch(
-        "claude_auto_review.stop.reviews.prompt_runner.run_captured",
+        "claude_auto_review.stop.reviews.cli_runner.run_captured",
         side_effect=subprocess.TimeoutExpired(cmd="claude", timeout=600),
     )
     @patch("claude_auto_review.stop.reviews.prompt_runner_claude.shutil.which", return_value="/usr/bin/claude")
@@ -62,7 +62,7 @@ class TestAutoCompleteCLI(unittest.TestCase):
         )
 
     @patch("claude_auto_review.stop.reviews.prompt_runner_claude.log_event")
-    @patch("claude_auto_review.stop.reviews.prompt_runner.run_captured")
+    @patch("claude_auto_review.stop.reviews.cli_runner.run_captured")
     @patch("claude_auto_review.stop.reviews.prompt_runner_claude.shutil.which", return_value="/usr/bin/claude")
     @patch("pathlib.Path.is_file", return_value=True)
     def test_passes_configured_timeout_to_subprocess(self, mock_is_file, mock_which, mock_run, mock_log):
@@ -78,7 +78,7 @@ class TestAutoCompleteCLI(unittest.TestCase):
         self.assertEqual(mock_run.call_args.kwargs["timeout"], 42.0)
 
     @patch("claude_auto_review.stop.reviews.prompt_runner_claude.log_event")
-    @patch("claude_auto_review.stop.reviews.prompt_runner.run_captured")
+    @patch("claude_auto_review.stop.reviews.cli_runner.run_captured")
     @patch("claude_auto_review.stop.reviews.prompt_runner_claude.shutil.which", return_value="/usr/bin/claude")
     @patch("pathlib.Path.is_file", return_value=True)
     def test_general_exception(self, mock_is_file, mock_which, mock_run, mock_log):
@@ -95,7 +95,7 @@ class TestAutoCompleteCLI(unittest.TestCase):
             FAKE_ROOT, "stop_hook_reviewer_error", client_id="c", error="boom", backend="claude", reviewId="r"
         )
 
-    @patch("claude_auto_review.stop.reviews.prompt_runner.run_captured")
+    @patch("claude_auto_review.stop.reviews.cli_runner.run_captured")
     def test_run_claude_cli_uses_append_system_prompt_file(self, mock_run):
         prompt_file = Path("/fake/prompt.md")
         from claude_auto_review.stop.reviews.prompt_runner_claude import _run_claude_cli

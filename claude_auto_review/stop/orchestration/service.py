@@ -28,8 +28,8 @@ class StopFlowService:
 
         state_snapshot, state, unreviewed = run_state_stage(
             self.ctx,
-            load_state_snapshot_fn=self.deps.load_state_snapshot,
-            get_unreviewed_files_fn=self.deps.get_unreviewed_files,
+            load_state_snapshot_fn=self.deps.state.load_state_snapshot,
+            get_unreviewed_files_fn=self.deps.state.get_unreviewed_files,
         )
 
         decision = run_allow_no_unreviewed_stage(unreviewed)
@@ -39,14 +39,14 @@ class StopFlowService:
         decision = run_circuit_breaker_stage(
             self.ctx,
             state_snapshot,
-            consecutive_stop_blocks_fn=self.deps.consecutive_stop_blocks,
+            consecutive_stop_blocks_fn=self.deps.state.consecutive_stop_blocks,
         )
         if decision is not None:
             return decision
 
         decision = run_classifier_stage(
             self.ctx,
-            classify_last_assistant_message_fn=self.deps.classify_last_assistant_message,
+            classify_last_assistant_message_fn=self.deps.classifier.classify_last_assistant_message,
         )
         if decision is not None:
             return decision
@@ -55,8 +55,8 @@ class StopFlowService:
             self.ctx,
             state,
             unreviewed,
-            resolve_pending_review_fn=self.deps.resolve_pending_review,
-            get_reviewer_prompt_script_fn=self.deps.get_reviewer_prompt_script,
+            resolve_pending_review_fn=self.deps.review.resolve_pending_review,
+            get_reviewer_prompt_script_fn=self.deps.review.get_reviewer_prompt_script,
             emitter=self.deps.emitter,
         )
 

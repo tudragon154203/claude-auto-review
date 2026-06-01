@@ -16,6 +16,51 @@ from claude_auto_review.state.store.read import get_file_hash
 from claude_auto_review.state.tracker import StateTracker
 
 
+def _process_single_edit(ctx, tracker, state_snapshot, settings, file_path, timestamp):
+    """Process one candidate file: skip, track deletion, or track edit. Returns True if tracked."""
+    project_root = ctx.project_root
+    client_id = ctx.client_id
+
+    if should_skip_file(file_path, settings):
+        reason = "runtime" if file_path.startswith(".claude/claude-auto-review/") else "settings"
+        log_event(project_root, "post_tool_use_skipped_file", client_id=client_id, file=file_path, reason=reason)
+        return False
+
+    file_hash = get_file_hash(file_path, project_root)
+    if not file_hash:
+        tracker.track_edit(
+            EditRecord(
+                timestamp=timestamp,
+                file=file_path,
+                hash=DELETED_FILE_HASH,
+                reviewed=False,
+                deleted=True,
+            )
+        )
+        log_event(
+            project_root,
+            "file_deletion_tracked",
+            client_id=client_id,
+            file=file_path,
+            hash=DELETED_FILE_HASH,
+            reviewed=False,
+        )
+        return True
+
+    capture_session_snapshot(file_path, project_root, client_id)
+    reviewed = was_hash_reviewed(state_snapshot, file_path, file_hash)
+    tracker.track_edit(
+        EditRecord(
+            timestamp=timestamp,
+            file=file_path,
+            hash=file_hash,
+            reviewed=reviewed,
+        )
+    )
+    log_event(project_root, "file_tracked", client_id=client_id, file=file_path, hash=file_hash, reviewed=reviewed)
+    return True
+
+
 def _run_post_tool_use(ctx):
     project_root = ctx.project_root
     client_id = ctx.client_id
@@ -34,41 +79,7 @@ def _run_post_tool_use(ctx):
         if not file_path:
             log_event(project_root, "post_tool_use_ignored_path", client_id=client_id, path=candidate)
             continue
-        if should_skip_file(file_path, settings):
-            reason = "runtime" if file_path.startswith(".claude/claude-auto-review/") else "settings"
-            log_event(project_root, "post_tool_use_skipped_file", client_id=client_id, file=file_path, reason=reason)
-            continue
-        file_hash = get_file_hash(file_path, project_root)
-        if not file_hash:
-            tracker.track_edit(
-                EditRecord(
-                    timestamp=timestamp,
-                    file=file_path,
-                    hash=DELETED_FILE_HASH,
-                    reviewed=False,
-                    deleted=True,
-                )
-            )
-            log_event(
-                project_root,
-                "file_deletion_tracked",
-                client_id=client_id,
-                file=file_path,
-                hash=DELETED_FILE_HASH,
-                reviewed=False,
-            )
-            continue
-        capture_session_snapshot(file_path, project_root, client_id)
-        reviewed = was_hash_reviewed(state_snapshot, file_path, file_hash)
-        tracker.track_edit(
-            EditRecord(
-                timestamp=timestamp,
-                file=file_path,
-                hash=file_hash,
-                reviewed=reviewed,
-            )
-        )
-        log_event(project_root, "file_tracked", client_id=client_id, file=file_path, hash=file_hash, reviewed=reviewed)
+        _process_single_edit(ctx, tracker, state_snapshot, settings, file_path, timestamp)
     return 0
 
 

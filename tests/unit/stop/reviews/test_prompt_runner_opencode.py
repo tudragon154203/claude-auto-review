@@ -105,7 +105,7 @@ class TestOpencodeAutocomplete(unittest.TestCase):
         "claude_auto_review.stop.reviews.review_result.normalize_review_verdict_content",
         side_effect=lambda s, client_id=None, minimum_blocking_severity="medium": s,
     )
-    @patch("claude_auto_review.stop.reviews.prompt_runner.run_captured")
+    @patch("claude_auto_review.stop.reviews.cli_runner.run_captured")
     @patch("claude_auto_review.stop.reviews.prompt_runner_opencode.shutil.which", return_value="/usr/bin/opencode")
     def test_output_written_on_success(self, mock_which, mock_run, _mock_norm):
         captured_merged = {}
@@ -145,7 +145,7 @@ class TestOpencodeAutocomplete(unittest.TestCase):
         # Verify file is in the client run directory (prompt_file.parent), not system temp
         self.assertEqual(captured_merged["path"].parent, prompt_file.parent)
 
-    @patch("claude_auto_review.stop.reviews.prompt_runner.run_captured")
+    @patch("claude_auto_review.stop.reviews.cli_runner.run_captured")
     @patch("claude_auto_review.stop.reviews.prompt_runner_opencode.shutil.which", return_value="/usr/bin/opencode")
     def test_nonzero_returncode(self, mock_which, mock_run):
         prompt_file = Path(tempfile.gettempdir()) / "prompt-opencode-nonzero.md"
@@ -172,7 +172,7 @@ class TestOpencodeAutocomplete(unittest.TestCase):
         return_value="/usr/bin/opencode",
     )
     @patch(
-        "claude_auto_review.stop.reviews.prompt_runner.run_captured",
+        "claude_auto_review.stop.reviews.cli_runner.run_captured",
         side_effect=subprocess.TimeoutExpired(cmd="opencode", timeout=60),
     )
     def test_timeout(self, mock_run, mock_which):
@@ -196,7 +196,7 @@ class TestOpencodeAutocomplete(unittest.TestCase):
         return_value="/usr/bin/opencode",
     )
     @patch(
-        "claude_auto_review.stop.reviews.prompt_runner.run_captured",
+        "claude_auto_review.stop.reviews.cli_runner.run_captured",
         side_effect=OSError("permission denied"),
     )
     def test_os_error(self, mock_run, mock_which):
@@ -234,7 +234,7 @@ class TestOpencodeAutocomplete(unittest.TestCase):
         self.assertEqual(result.status, AutocompleteStatus.ERROR)
         self.assertIn("access denied", result.stderr)
 
-    @patch("claude_auto_review.stop.reviews.prompt_runner.run_captured")
+    @patch("claude_auto_review.stop.reviews.cli_runner.run_captured")
     @patch("claude_auto_review.stop.reviews.prompt_runner_opencode.shutil.which", return_value="/usr/bin/opencode")
     def test_empty_stdout(self, mock_which, mock_run):
         prompt_file = Path(tempfile.gettempdir()) / "prompt-opencode-empty.md"
@@ -257,7 +257,7 @@ class TestOpencodeAutocomplete(unittest.TestCase):
         "claude_auto_review.stop.reviews.review_result.normalize_review_verdict_content",
         side_effect=lambda s, client_id=None, minimum_blocking_severity="medium": s,
     )
-    @patch("claude_auto_review.stop.reviews.prompt_runner.run_captured")
+    @patch("claude_auto_review.stop.reviews.cli_runner.run_captured")
     @patch("claude_auto_review.stop.reviews.prompt_runner_opencode.shutil.which", return_value="/usr/bin/opencode")
     def test_dispatch_via_attempt_stop_autocomplete(self, mock_which, mock_run, _mock_norm):
         review_path = Path(tempfile.gettempdir()) / "review-opencode-dispatch.md"
@@ -322,7 +322,7 @@ class TestEmptyPromptFallback(unittest.TestCase):
         "claude_auto_review.stop.reviews.review_result.normalize_review_verdict_content",
         side_effect=lambda s, client_id=None, minimum_blocking_severity="medium": s,
     )
-    @patch("claude_auto_review.stop.reviews.prompt_runner.run_captured")
+    @patch("claude_auto_review.stop.reviews.cli_runner.run_captured")
     @patch("claude_auto_review.stop.reviews.prompt_runner_opencode.shutil.which", return_value="/usr/bin/opencode")
     def test_empty_prompt_file_uses_user_prompt_only(self, mock_which, mock_run, _mock_norm):
         captured_merged = {}
@@ -362,7 +362,7 @@ class TestMergedFileCleanup(unittest.TestCase):
         "claude_auto_review.stop.reviews.review_result.normalize_review_verdict_content",
         side_effect=lambda s, client_id=None, minimum_blocking_severity="medium": s,
     )
-    @patch("claude_auto_review.stop.reviews.prompt_runner.run_captured")
+    @patch("claude_auto_review.stop.reviews.cli_runner.run_captured")
     @patch("claude_auto_review.stop.reviews.prompt_runner_opencode.shutil.which", return_value="/usr/bin/opencode")
     def test_merged_file_cleaned_up_on_success(self, mock_which, mock_run, _mock_norm):
         merged_path_ref = [None]
@@ -393,7 +393,7 @@ class TestMergedFileCleanup(unittest.TestCase):
 
     @patch("claude_auto_review.stop.reviews.prompt_runner_opencode.shutil.which", return_value="/usr/bin/opencode")
     @patch(
-        "claude_auto_review.stop.reviews.prompt_runner.run_captured",
+        "claude_auto_review.stop.reviews.cli_runner.run_captured",
         side_effect=subprocess.TimeoutExpired(cmd="opencode", timeout=60),
     )
     def test_merged_file_cleaned_up_on_timeout(self, mock_run, mock_which):
