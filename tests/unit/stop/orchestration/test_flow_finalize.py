@@ -3,11 +3,11 @@ from types import SimpleNamespace
 
 from tests.support_paths import FAKE_ROOT
 
-from claude_auto_review.state.models import ReviewMetadata
+from claude_auto_review.state.review_records import ReviewMetadata
 from unittest.mock import patch
 
 from claude_auto_review.config.models import PluginSettings
-from claude_auto_review.state.models import EditRecord
+from claude_auto_review.state.edit_record import EditRecord
 from claude_auto_review.state.snapshot import StateSnapshot
 from claude_auto_review.stop.orchestration.context import RuntimeContext
 from claude_auto_review.stop.orchestration.flow import run_stop_flow

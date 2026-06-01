@@ -2,14 +2,13 @@ import unittest
 
 from claude_auto_review.runtime.client_dirs import client_state_path
 from claude_auto_review.runtime.setup import ensure_client_runtime, ensure_runtime
-from claude_auto_review.state.models import (
-    ClassificationRecord,
-    EditRecord,
+from claude_auto_review.state.classification_record import ClassificationRecord
+from claude_auto_review.state.edit_record import EditRecord, StopBlockedRecord
+from claude_auto_review.state.file_record import ReviewFileRecord
+from claude_auto_review.state.review_records import (
     ReviewAutocompleteRecord,
     ReviewCompletedRecord,
-    ReviewFileRecord,
     ReviewMetadata,
-    StopBlockedRecord,
 )
 from claude_auto_review.state.store.read import load_state
 from claude_auto_review.state.store.queries import (

@@ -2,7 +2,8 @@ import subprocess
 import unittest
 from unittest.mock import MagicMock, patch
 
-from claude_auto_review.state.models import EditRecord, ReviewMetadata
+from claude_auto_review.state.edit_record import EditRecord
+from claude_auto_review.state.review_records import ReviewMetadata
 from claude_auto_review.stop.orchestration.context import RuntimeContext
 from claude_auto_review.stop.orchestration.pending import resolve_pending_review
 from claude_auto_review.stop.orchestration.resolution import ReviewResolution

@@ -3,7 +3,8 @@ import unittest
 from tests.support_paths import FAKE_ROOT
 
 from claude_auto_review.config.models import PluginSettings
-from claude_auto_review.state.models import EditRecord, ReviewMetadata
+from claude_auto_review.state.edit_record import EditRecord
+from claude_auto_review.state.review_records import ReviewMetadata
 from claude_auto_review.state.snapshot import StateSnapshot
 from claude_auto_review.stop.orchestration.context import RuntimeContext
 from claude_auto_review.stop.orchestration.deps import ClassifierDeps, ReviewDeps, StateDeps, StopFlowDependencies

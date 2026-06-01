@@ -5,7 +5,7 @@ from unittest.mock import MagicMock
 from tests.support_paths import FAKE_ROOT
 
 from claude_auto_review.config.models import PluginSettings
-from claude_auto_review.state.models import EditRecord
+from claude_auto_review.state.edit_record import EditRecord
 from claude_auto_review.state.snapshot import StateSnapshot
 from claude_auto_review.stop.classifier.enums import ClassifierStatus
 from claude_auto_review.stop.orchestration.context import RuntimeContext

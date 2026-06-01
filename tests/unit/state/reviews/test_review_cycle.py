@@ -1,7 +1,9 @@
 import unittest
 
 from claude_auto_review.runtime.setup import ensure_client_runtime, ensure_runtime
-from claude_auto_review.state.models import EditRecord, ReviewFileRecord, ReviewMetadata
+from claude_auto_review.state.edit_record import EditRecord
+from claude_auto_review.state.file_record import ReviewFileRecord
+from claude_auto_review.state.review_records import ReviewMetadata
 from claude_auto_review.state.reviews.matching import pending_reviews_for_entries
 from claude_auto_review.state.store.queries import latest_review_entries_by_id, was_hash_reviewed
 from claude_auto_review.state.store.read import load_state

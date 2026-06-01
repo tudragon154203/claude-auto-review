@@ -63,7 +63,7 @@ class TestProcess(unittest.TestCase):
             self.assertFalse(log_failure(FAKE_ROOT, "test_event", ValueError("boom")))
 
     def test_append_state_uses_shared_jsonl_append(self):
-        from claude_auto_review.state.models import EditRecord
+        from claude_auto_review.state.edit_record import EditRecord
         from claude_auto_review.state.store.write import append_state_event
 
         with (

@@ -1,6 +1,8 @@
 import unittest
 
-from claude_auto_review.state.models import EditRecord, ReviewFileRecord, ReviewMetadata
+from claude_auto_review.state.edit_record import EditRecord
+from claude_auto_review.state.file_record import ReviewFileRecord
+from claude_auto_review.state.review_records import ReviewMetadata
 from claude_auto_review.state.reviews.matching import (
     best_pending_review_covering_entries,
     best_pending_review_for_entries,

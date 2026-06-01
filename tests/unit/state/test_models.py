@@ -1,14 +1,13 @@
 import unittest
 
-from claude_auto_review.state.models import (
-    ClassificationRecord,
-    EditRecord,
-    FileHash,
+from claude_auto_review.state.classification_record import ClassificationRecord
+from claude_auto_review.state.edit_record import EditRecord, StopBlockedRecord
+from claude_auto_review.state.file_record import ReviewFileRecord
+from claude_auto_review.state.models import FileHash
+from claude_auto_review.state.review_records import (
     ReviewAutocompleteRecord,
     ReviewCompletedRecord,
-    ReviewFileRecord,
     ReviewMetadata,
-    StopBlockedRecord,
 )
 
 
