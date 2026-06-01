@@ -7,8 +7,15 @@ from tests.support_paths import FAKE_ROOT
 
 from claude_auto_review.config.models import PluginSettings
 from claude_auto_review.stop.orchestration.context import RuntimeContext
-from claude_auto_review.stop.orchestration.deps import EvalDeps
-from claude_auto_review.stop.orchestration.finalize_eval import evaluate_artifact_and_plan
+from claude_auto_review.stop.orchestration.deps import (
+    ReviewEvalDeps,
+    ReviewClassifierDeps,
+    ReviewPlannerDeps,
+    ReviewExecutorDeps,
+    AutocompleteDeps,
+)
+from claude_auto_review.stop.orchestration.finalize_eval import orchestrate_review_eval
+from claude_auto_review.stop.orchestration.finalize_outcomes import FinalizeEffect, FinalizePlan, approved_result
 from claude_auto_review.stop.reviews.enums import AutocompleteStatus
 
 
@@ -24,14 +31,22 @@ def _ctx(**kwargs):
 
 
 def _mock_eval_deps(*, classify_fn=None, plan_fn=None, apply_fn=None, autocomplete_fn=None, log_event_fn=None):
-    return EvalDeps(
-        classify_fn=classify_fn or MagicMock(),
-        plan_for_artifact_state_fn=plan_fn or MagicMock(),
-        apply_plan_fn=apply_fn or MagicMock(),
-        attempt_autocomplete_fn=autocomplete_fn or MagicMock(),
-        log_event_fn=log_event_fn if log_event_fn is not None else MagicMock(),
-        state_event_writer_factory=lambda p, c: MagicMock(),
-        emitter=MagicMock(),
+    return ReviewEvalDeps(
+        classifier=ReviewClassifierDeps(
+            classify_fn=classify_fn or MagicMock(),
+        ),
+        planner=ReviewPlannerDeps(
+            plan_for_artifact_state_fn=plan_fn or MagicMock(),
+        ),
+        executor=ReviewExecutorDeps(
+            apply_plan_fn=apply_fn or MagicMock(),
+            state_event_writer_factory=lambda p, c: MagicMock(),
+            emitter=MagicMock(),
+        ),
+        autocomplete=AutocompleteDeps(
+            attempt_autocomplete_fn=autocomplete_fn or MagicMock(),
+            log_event_fn=log_event_fn if log_event_fn is not None else MagicMock(),
+        ),
     )
 
 
@@ -39,20 +54,21 @@ class TestEvaluateArtifactAndPlan(unittest.TestCase):
     def _make_artifact_state(self, status_name):
         return SimpleNamespace(status=SimpleNamespace(value=status_name))
 
-    def test_plan_found_on_first_classification(self):
+    def test_terminal_plan_found_on_first_classification(self):
         artifact_state = self._make_artifact_state("complete_clean")
         classify_fn = MagicMock(return_value=artifact_state)
-        plan_fn = MagicMock(return_value=SimpleNamespace(effect="apply"))
+        plan_fn = MagicMock(return_value=FinalizePlan(result=approved_result(), effect=FinalizeEffect.APPLY_COMPLETED_CLEAN_REVIEW))
         apply_fn = MagicMock(return_value=("result", None))
 
         deps = _mock_eval_deps(classify_fn=classify_fn, plan_fn=plan_fn, apply_fn=apply_fn)
-        result = evaluate_artifact_and_plan(
+        result = orchestrate_review_eval(
             _ctx(), "r1", Path("/review.md"), Path("/prompt.md"), [], [],
             deps=deps,
         )
         self.assertEqual(result, ("result", None))
         apply_fn.assert_called_once()
         self.assertEqual(classify_fn.call_count, 1)
+
 
     def test_autocomplete_then_plan_found(self):
         pending_state = self._make_artifact_state("pending")
@@ -66,7 +82,7 @@ class TestEvaluateArtifactAndPlan(unittest.TestCase):
             classify_fn=classify_fn, plan_fn=plan_fn,
             apply_fn=apply_fn, autocomplete_fn=autocomplete_fn,
         )
-        result = evaluate_artifact_and_plan(
+        result = orchestrate_review_eval(
             _ctx(), "r1", Path("/review.md"), Path("/prompt.md"), [], [],
             deps=deps,
         )
@@ -83,7 +99,7 @@ class TestEvaluateArtifactAndPlan(unittest.TestCase):
         deps = _mock_eval_deps(
             classify_fn=classify_fn, plan_fn=plan_fn, autocomplete_fn=autocomplete_fn,
         )
-        result = evaluate_artifact_and_plan(
+        result = orchestrate_review_eval(
             _ctx(), "r1", Path("/review.md"), Path("/prompt.md"), [], [],
             deps=deps,
         )
@@ -100,7 +116,7 @@ class TestEvaluateArtifactAndPlan(unittest.TestCase):
             classify_fn=classify_fn, plan_fn=plan_fn,
             autocomplete_fn=autocomplete_fn, log_event_fn=log_fn,
         )
-        result = evaluate_artifact_and_plan(
+        result = orchestrate_review_eval(
             _ctx(), "r1", Path("/review.md"), Path("/prompt.md"), [], [],
             deps=deps,
         )
@@ -119,11 +135,34 @@ class TestEvaluateArtifactAndPlan(unittest.TestCase):
             classify_fn=classify_fn, plan_fn=plan_fn,
             autocomplete_fn=autocomplete_fn, log_event_fn=log_fn,
         )
-        result = evaluate_artifact_and_plan(
+        result = orchestrate_review_eval(
             _ctx(), "r1", Path("/review.md"), Path("/prompt.md"), [], [],
             deps=deps,
         )
         self.assertIsNone(result)
+        log_fn.assert_not_called()
+
+    def test_empty_stdout_followed_by_plan_does_not_log(self):
+        pending_state = self._make_artifact_state("pending")
+        clean_state = self._make_artifact_state("complete_clean")
+        classify_fn = MagicMock(side_effect=[pending_state, clean_state])
+        plan_fn = MagicMock(side_effect=[None, FinalizePlan(result=approved_result(), effect=FinalizeEffect.APPLY_COMPLETED_CLEAN_REVIEW)])
+        apply_fn = MagicMock(return_value=("result", None))
+        autocomplete_fn = MagicMock(return_value=SimpleNamespace(status=AutocompleteStatus.EMPTY_STDOUT))
+        log_fn = MagicMock()
+
+        deps = _mock_eval_deps(
+            classify_fn=classify_fn,
+            plan_fn=plan_fn,
+            apply_fn=apply_fn,
+            autocomplete_fn=autocomplete_fn,
+            log_event_fn=log_fn,
+        )
+        result = orchestrate_review_eval(
+            _ctx(), "r1", Path("/review.md"), Path("/prompt.md"), [], [],
+            deps=deps,
+        )
+        self.assertEqual(result, ("result", None))
         log_fn.assert_not_called()
 
 

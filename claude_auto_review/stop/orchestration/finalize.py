@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 
 from claude_auto_review.state.snapshot import StateSnapshot
 from claude_auto_review.stop.orchestration.context import ResponsePayload, RuntimeContext
-from claude_auto_review.stop.orchestration.finalize_eval import evaluate_artifact_and_plan
+from claude_auto_review.stop.orchestration.finalize_eval import orchestrate_review_eval
 from claude_auto_review.stop.orchestration.finalize_outcomes import (
     plan_for_invalid_settings,
     plan_for_pending_review,
@@ -19,11 +19,11 @@ from claude_auto_review.stop.reviews.selection import get_entries_covered_by_rev
 from claude_auto_review.stop.orchestration.finalize_payloads import _invalid_backend_payload
 
 if TYPE_CHECKING:
-    from claude_auto_review.stop.orchestration.deps import EvalDeps
+    from claude_auto_review.stop.orchestration.deps import ReviewEvalDeps
 
 
 def finalize_review_stop_result(
-    ctx: RuntimeContext, resolution: ReviewResolution, *, deps: EvalDeps
+    ctx: RuntimeContext, resolution: ReviewResolution, *, deps: ReviewEvalDeps
 ) -> tuple[FinalizeResult, ResponsePayload | None]:
     state = resolution.state
     unreviewed = resolution.unreviewed
@@ -36,7 +36,7 @@ def finalize_review_stop_result(
     try:
         ctx.settings.resolved_reviewer_backend()
     except ValueError as error:
-        deps.log_event_fn(
+        deps.autocomplete.log_event_fn(
             ctx.project_root,
             "stop_hook_invalid_reviewer_backend",
             client_id=ctx.client_id,
@@ -44,7 +44,7 @@ def finalize_review_stop_result(
         )
         return plan_for_invalid_settings().result, _invalid_backend_payload(error)
 
-    eval_result = evaluate_artifact_and_plan(
+    eval_result = orchestrate_review_eval(
         ctx,
         review_id,
         review_path,
@@ -56,15 +56,19 @@ def finalize_review_stop_result(
     if eval_result is not None:
         return eval_result  # type: ignore[no-any-return]
 
-    block_pending_review(ctx, review_id, review_path, prompt_file, unreviewed, emitter=deps.emitter, state_event_writer=deps.state_event_writer_factory(ctx.project_root, ctx.client_id))
+    writer = deps.executor.state_event_writer_factory(ctx.project_root, ctx.client_id)
+    block_pending_review(
+        ctx, review_id, review_path, prompt_file, unreviewed,
+        emitter=deps.executor.emitter, state_event_writer=writer
+    )
     return plan_for_pending_review().result, None
 
 
-def finalize_review_stop(ctx: RuntimeContext, resolution: ReviewResolution, *, deps: EvalDeps) -> int:
+def finalize_review_stop(ctx: RuntimeContext, resolution: ReviewResolution, *, deps: ReviewEvalDeps) -> int:
     result, payload = finalize_review_stop_result(ctx, resolution, deps=deps)
     if payload is not None:
         if payload.feedback is None:
-            deps.emitter.approve(payload.system_message)
+            deps.executor.emitter.approve(payload.system_message)
         else:
-            deps.emitter.block(payload.system_message, payload.feedback)
+            deps.executor.emitter.block(payload.system_message, payload.feedback)
     return result.exit_code

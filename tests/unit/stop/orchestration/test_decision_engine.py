@@ -47,7 +47,7 @@ class TestStopDecisionEngine(unittest.TestCase):
         engine = StopDecisionEngine(_ctx(), finalize_review_stop_fn=finalize_fn)
         engine.finalize(TerminalResolution(exit_code=0))
         _, kwargs = finalize_fn.call_args
-        self.assertIs(kwargs["deps"].emitter, engine.emitter)
+        self.assertIs(kwargs["deps"].executor.emitter, engine.emitter)
 
     def test_finalize_uses_provided_emitter(self):
         finalize_fn = MagicMock(return_value=0)
@@ -55,7 +55,7 @@ class TestStopDecisionEngine(unittest.TestCase):
         engine = StopDecisionEngine(_ctx(), finalize_review_stop_fn=finalize_fn, emitter=emitter)
         engine.finalize(TerminalResolution(exit_code=0))
         _, kwargs = finalize_fn.call_args
-        self.assertIs(kwargs["deps"].emitter, emitter)
+        self.assertIs(kwargs["deps"].executor.emitter, emitter)
 
     def test_run_delegates_to_service(self):
         engine = StopDecisionEngine(_ctx())

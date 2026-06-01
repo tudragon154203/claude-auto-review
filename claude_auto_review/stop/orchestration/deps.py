@@ -64,15 +64,53 @@ class StopFlowDependencies:
     finalize_review_stop: FinalizeReviewStop
 
 
+# --- Focused sub-deps for the review-eval pipeline ---
+# Each dataclass captures one narrow concern, replacing the previous
+# flat EvalDeps which lumped 7 unrelated fields together.
+
 @dataclass(frozen=True)
-class EvalDeps:
+class ReviewClassifierDeps:
+    """Review artifact classification."""
+
     classify_fn: ClassifyReviewArtifact
+
+
+@dataclass(frozen=True)
+class ReviewPlannerDeps:
+    """Planning a finalize action from a classified artifact state."""
+
     plan_for_artifact_state_fn: PlanForArtifactState
+
+
+@dataclass(frozen=True)
+class ReviewExecutorDeps:
+    """Executing a finalize plan and writing state."""
+
     apply_plan_fn: ApplyFinalizePlan
-    attempt_autocomplete_fn: AttemptReviewAutocomplete
-    log_event_fn: EventLogger
     state_event_writer_factory: Callable[[Path, str], StateEventWriterProtocol]
     emitter: ResponseEmitter
+
+
+@dataclass(frozen=True)
+class AutocompleteDeps:
+    """Attempting review autocomplete when no plan is available."""
+
+    attempt_autocomplete_fn: AttemptReviewAutocomplete
+    log_event_fn: EventLogger
+
+
+@dataclass(frozen=True)
+class ReviewEvalDeps:
+    """All deps required to run the review-eval pipeline.
+
+    Split into four focused sub-deps (ISP), each encapsulating a single
+    stage of the pipeline, so that callers only inject what they use.
+    """
+
+    classifier: ReviewClassifierDeps
+    planner: ReviewPlannerDeps
+    executor: ReviewExecutorDeps
+    autocomplete: AutocompleteDeps
 
 
 def _resolve(default, override):
@@ -120,7 +158,7 @@ def build_default_dependencies(
         emitter=emitter or StdoutResponseEmitter(),
         finalize_review_stop=_resolve(finalize_review_stop, finalize_review_stop_fn),
     )
-    return deps, deps.finalize_review_stop
+    return deps
 
 
 def build_default_eval_deps(
@@ -138,12 +176,24 @@ def build_default_eval_deps(
     from claude_auto_review.stop.orchestration.finalize_plan_executor import apply_finalize_plan_result
     from claude_auto_review.stop.orchestration.review_artifact_evaluator import classify_review_artifact
 
-    return EvalDeps(
-        classify_fn=_resolve(classify_review_artifact, classify_fn),
-        plan_for_artifact_state_fn=_resolve(plan_for_artifact_state, plan_for_artifact_state_fn),
-        apply_plan_fn=_resolve(apply_finalize_plan_result, apply_plan_fn),
-        attempt_autocomplete_fn=_resolve(attempt_review_autocomplete, attempt_autocomplete_fn),
-        log_event_fn=_resolve(log_event, log_event_fn),
-        state_event_writer_factory=_resolve(_ConcreteStateEventWriter, state_event_writer_factory),
-        emitter=emitter or StdoutResponseEmitter(),
+    _log = _resolve(log_event, log_event_fn)
+    _writer = _resolve(_ConcreteStateEventWriter, state_event_writer_factory)
+    _emitter = emitter or StdoutResponseEmitter()
+
+    return ReviewEvalDeps(
+        classifier=ReviewClassifierDeps(
+            classify_fn=_resolve(classify_review_artifact, classify_fn),
+        ),
+        planner=ReviewPlannerDeps(
+            plan_for_artifact_state_fn=_resolve(plan_for_artifact_state, plan_for_artifact_state_fn),
+        ),
+        executor=ReviewExecutorDeps(
+            apply_plan_fn=_resolve(apply_finalize_plan_result, apply_plan_fn),
+            state_event_writer_factory=_writer,
+            emitter=_emitter,
+        ),
+        autocomplete=AutocompleteDeps(
+            attempt_autocomplete_fn=_resolve(attempt_review_autocomplete, attempt_autocomplete_fn),
+            log_event_fn=_log,
+        ),
     )

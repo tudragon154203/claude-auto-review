@@ -85,21 +85,12 @@ def run_classifier_stage(
     ctx: RuntimeContext,
     *,
     classify_last_assistant_message_fn: LastAssistantMessageClassifier,
-    state_event_writer_factory: Callable[[Any, str], StateEventWriterProtocol] | None = None,
     classifier_persist_factory: ClassifierPersistFactory | None = None,
 ) -> StopDecision | None:
     if not ctx.settings.last_assistant_message_classifier_enabled:
         return None
 
-    if classifier_persist_factory is not None:
-        persist = classifier_persist_factory(ctx)
-    elif state_event_writer_factory is not None:
-        persist = _build_classifier_result_persistor(
-            ctx,
-            writer_factory=state_event_writer_factory,
-        )
-    else:
-        persist = None
+    persist = classifier_persist_factory(ctx) if classifier_persist_factory is not None else None
 
     result = classify_last_assistant_message_fn(ctx, persist=persist)
     if result is None or result.status != ClassifierStatus.INCOMPLETE:

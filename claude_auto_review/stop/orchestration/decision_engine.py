@@ -25,7 +25,7 @@ class StopDecisionEngine:
     ):
         self.ctx = ctx
         self.emitter = emitter or StdoutResponseEmitter()
-        self.deps, finalize_fn = build_default_dependencies(
+        self.deps = build_default_dependencies(
             load_state_snapshot_fn=load_state_snapshot_fn,
             get_unreviewed_files_fn=get_unreviewed_files_fn,
             consecutive_stop_blocks_fn=consecutive_stop_blocks_fn,
@@ -42,7 +42,6 @@ class StopDecisionEngine:
             emitter=self.emitter,
         )
         self._service = StopFlowService(self.ctx, deps=self.deps)
-        self._finalize_fn = finalize_fn
 
     def evaluate(self):
         return self._service.evaluate()
@@ -51,4 +50,4 @@ class StopDecisionEngine:
         return self._service.run()
 
     def finalize(self, resolution):
-        return self._finalize_fn(self.ctx, resolution, deps=self.eval_deps)
+        return self.deps.finalize_review_stop(self.ctx, resolution, deps=self.eval_deps)
