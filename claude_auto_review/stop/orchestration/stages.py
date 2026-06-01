@@ -6,6 +6,9 @@ terminate early, or ``None`` when it should continue to the next stage.
 
 from __future__ import annotations
 
+from collections.abc import Callable
+from typing import Any
+
 from claude_auto_review.stop.classifier.enums import ClassifierStatus
 from claude_auto_review.stop.orchestration.context import RuntimeContext, StopDecision
 from claude_auto_review.stop.orchestration.protocols import (
@@ -13,12 +16,15 @@ from claude_auto_review.stop.orchestration.protocols import (
     LastAssistantMessageClassifier,
     PendingReviewResolver,
     ReviewerPromptScriptProvider,
+    StateEventWriterProtocol,
     StateLoader,
     StopBlockCounter,
     UnreviewedFilesQuery,
 )
 from claude_auto_review.stop.orchestration.resolution import StopDecisionKind, TerminalResolution
 from claude_auto_review.stop.reviews.enums import StopAllowReason
+
+ClassifierPersistFactory = Callable[[RuntimeContext], Callable[[Any], None]]
 
 
 def run_enabled_stage(ctx: RuntimeContext, *, log_event_fn: EventLogger) -> StopDecision | None:
@@ -28,7 +34,12 @@ def run_enabled_stage(ctx: RuntimeContext, *, log_event_fn: EventLogger) -> Stop
     return StopDecision(kind=StopDecisionKind.ALLOW, reason=StopAllowReason.DISABLED)
 
 
-def run_state_stage(ctx: RuntimeContext, *, load_state_snapshot_fn: StateLoader, get_unreviewed_files_fn: UnreviewedFilesQuery):
+def run_state_stage(
+    ctx: RuntimeContext,
+    *,
+    load_state_snapshot_fn: StateLoader,
+    get_unreviewed_files_fn: UnreviewedFilesQuery,
+):
     state_snapshot = load_state_snapshot_fn(ctx.project_root, ctx.client_id)
     state = state_snapshot.events
     unreviewed = get_unreviewed_files_fn(state_snapshot)
@@ -42,7 +53,10 @@ def run_allow_no_unreviewed_stage(unreviewed) -> StopDecision | None:
 
 
 def run_circuit_breaker_stage(
-    ctx: RuntimeContext, state_snapshot, *, consecutive_stop_blocks_fn: StopBlockCounter
+    ctx: RuntimeContext,
+    state_snapshot,
+    *,
+    consecutive_stop_blocks_fn: StopBlockCounter,
 ) -> StopDecision | None:
     block_count = consecutive_stop_blocks_fn(state_snapshot)
     if block_count < ctx.settings.max_stop_passes:
@@ -54,20 +68,40 @@ def run_circuit_breaker_stage(
     )
 
 
-def run_classifier_stage(ctx: RuntimeContext, *, classify_last_assistant_message_fn: LastAssistantMessageClassifier, state_event_writer_factory=None) -> StopDecision | None:
+def _build_classifier_result_persistor(
+    ctx: RuntimeContext,
+    *,
+    writer_factory: Callable[[Any, str], StateEventWriterProtocol],
+) -> Callable[[Any], None]:
+    writer = writer_factory(ctx.project_root, ctx.client_id)
+
+    def _persist(result: Any) -> None:
+        writer.append(result.as_state_entry(include_debug=ctx.settings.debug))
+
+    return _persist
+
+
+def run_classifier_stage(
+    ctx: RuntimeContext,
+    *,
+    classify_last_assistant_message_fn: LastAssistantMessageClassifier,
+    state_event_writer_factory: Callable[[Any, str], StateEventWriterProtocol] | None = None,
+    classifier_persist_factory: ClassifierPersistFactory | None = None,
+) -> StopDecision | None:
     if not ctx.settings.last_assistant_message_classifier_enabled:
         return None
-    from claude_auto_review.state.store.writer import StateEventWriter
 
-    factory = state_event_writer_factory or StateEventWriter
-    writer = factory(ctx.project_root, ctx.client_id)
-
-    def _persist(result):
-        writer.append(
-            result.as_state_entry(include_debug=ctx.settings.debug)
+    if classifier_persist_factory is not None:
+        persist = classifier_persist_factory(ctx)
+    elif state_event_writer_factory is not None:
+        persist = _build_classifier_result_persistor(
+            ctx,
+            writer_factory=state_event_writer_factory,
         )
+    else:
+        persist = None
 
-    result = classify_last_assistant_message_fn(ctx, persist=_persist)
+    result = classify_last_assistant_message_fn(ctx, persist=persist)
     if result is None or result.status != ClassifierStatus.INCOMPLETE:
         return None
     return StopDecision(

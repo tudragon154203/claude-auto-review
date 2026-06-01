@@ -63,7 +63,7 @@ def load_and_ensure_normalized_review(
     return content
 
 
-def classify_review_artifact_state(
+def classify_review_artifact(
     review_path: Path,
     *,
     minimum_blocking_severity=DEFAULT_MINIMUM_BLOCKING_SEVERITY,

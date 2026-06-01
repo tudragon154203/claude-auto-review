@@ -1,14 +1,17 @@
 from __future__ import annotations
 
-from typing import Callable
+from collections.abc import Callable
+from typing import Any
 
 from claude_auto_review.stop.orchestration.context import ResponsePayload, RuntimeContext, StopDecision
 from claude_auto_review.stop.orchestration.decision_engine import StopDecisionEngine
 from claude_auto_review.stop.orchestration.resolution import StopDecisionKind
-from claude_auto_review.stop.response import StdoutResponseEmitter
+from claude_auto_review.stop.response import ResponseEmitter, StdoutResponseEmitter
+
+StopHandler = Callable[[StopDecisionEngine, StopDecision, ResponseEmitter], int]
 
 
-def _emit_response(payload: ResponsePayload, *, emitter):
+def _emit_response(payload: ResponsePayload, emitter: ResponseEmitter) -> int:
     if payload.feedback is None:
         emitter.approve(payload.system_message)
         return 0
@@ -16,45 +19,52 @@ def _emit_response(payload: ResponsePayload, *, emitter):
     return 2
 
 
-def _handle_allow(engine, decision: StopDecision, *, emitter):
+def _handle_allow(engine: StopDecisionEngine, decision: StopDecision, emitter: ResponseEmitter) -> int:
     if decision.reason is None:
         raise ValueError("ALLOW decision missing reason")
-    return _emit_response(ResponsePayload(system_message=f"Claude Auto Review: stop approved ({decision.reason.value})"), emitter=emitter)
+    return _emit_response(
+        ResponsePayload(
+            system_message=f"Claude Auto Review: stop approved ({decision.reason.value})"
+        ),
+        emitter=emitter,
+    )
 
 
-def _handle_terminal(engine, decision: StopDecision, *, emitter):
-    details = decision.details or {}
-    return details["exit_code"]
+def _handle_terminal(engine: StopDecisionEngine, decision: StopDecision, emitter: ResponseEmitter) -> int:
+    details: dict[str, Any] = decision.details or {}
+    return int(details["exit_code"])
 
 
-def _handle_finalize(engine: StopDecisionEngine, decision: StopDecision, *, emitter):
-    details = decision.details or {}
-    return engine.finalize(details["resolution"])
+def _handle_finalize(engine: StopDecisionEngine, decision: StopDecision, emitter: ResponseEmitter) -> int:
+    details: dict[str, Any] = decision.details or {}
+    return int(engine.finalize(details["resolution"]))
 
 
-_HANDLER_REGISTRY: dict[StopDecisionKind, Callable] = {
+_HANDLER_REGISTRY: dict[StopDecisionKind, StopHandler] = {
     StopDecisionKind.ALLOW: _handle_allow,
     StopDecisionKind.TERMINAL: _handle_terminal,
     StopDecisionKind.FINALIZE: _handle_finalize,
 }
 
 
-def register_stop_handler(kind: StopDecisionKind, handler: Callable) -> None:
-    """Register or replace a handler for a stop decision kind.
-
-    This is the OCP extension point — new decision kinds can be
-    handled without modifying run_stop_flow.
-    """
+def register_stop_handler(kind: StopDecisionKind, handler: StopHandler) -> None:
     _HANDLER_REGISTRY[kind] = handler
 
 
-def run_stop_flow(ctx: RuntimeContext, *, emitter=None):
-    """Main entry point for the stop hook — evaluates, finalizes, and emits the response."""
-    emitter = emitter or StdoutResponseEmitter()
-    engine = StopDecisionEngine(ctx, emitter=emitter)
-    decision = engine.evaluate()
-
+def dispatch_stop_decision(
+    engine: StopDecisionEngine,
+    decision: StopDecision,
+    *,
+    emitter: ResponseEmitter,
+) -> int:
     handler = _HANDLER_REGISTRY.get(decision.kind)
-    if handler is not None:
-        return handler(engine, decision, emitter=emitter)
-    return _handle_finalize(engine, decision, emitter=emitter)
+    if handler is None:
+        raise ValueError(f"Unhandled stop decision kind: {decision.kind}")
+    return handler(engine, decision, emitter)
+
+
+def run_stop_flow(ctx: RuntimeContext, *, emitter: ResponseEmitter | None = None) -> int:
+    response_emitter = emitter or StdoutResponseEmitter()
+    engine = StopDecisionEngine(ctx, emitter=response_emitter)
+    decision = engine.run()
+    return dispatch_stop_decision(engine, decision, emitter=response_emitter)

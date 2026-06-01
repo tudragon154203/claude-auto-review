@@ -7,7 +7,7 @@ from claude_auto_review.stop.orchestration.context import RuntimeContext
 from claude_auto_review.stop.orchestration.finalize_outcomes import FinalizeEffect
 from claude_auto_review.stop.orchestration.finalize_plan_executor import (
     _apply_completed_clean_review_result,
-    _apply_finalize_plan_result,
+    apply_finalize_plan_result,
 )
 from claude_auto_review.stop.orchestration.resolution import FinalizeAction, FinalizeResult
 from tests.support_paths import FAKE_ROOT
@@ -53,7 +53,7 @@ class TestApplyFinalizePlanResult(unittest.TestCase):
         plan = MagicMock(effect=FinalizeEffect.APPLY_COMPLETED_CLEAN_REVIEW)
         ctx = _ctx()
         writer = MagicMock()
-        result = _apply_finalize_plan_result(ctx, plan, "r1", Path("/review.md"), [], [], state_event_writer=writer)
+        result = apply_finalize_plan_result(ctx, plan, "r1", Path("/review.md"), [], [], state_event_writer=writer)
         self.assertEqual(result, expected)
 
     @patch("claude_auto_review.stop.orchestration.finalize_plan_executor.block_completed_review_findings")
@@ -69,7 +69,7 @@ class TestApplyFinalizePlanResult(unittest.TestCase):
         ctx = _ctx()
         writer = MagicMock()
         emitter = MagicMock()
-        result, payload = _apply_finalize_plan_result(ctx, plan, "r1", Path("/review.md"), [], [], state_event_writer=writer, emitter=emitter)
+        result, payload = apply_finalize_plan_result(ctx, plan, "r1", Path("/review.md"), [], [], state_event_writer=writer, emitter=emitter)
         self.assertEqual(result.action, FinalizeAction.BLOCKED_FINDINGS)
         self.assertIsNone(payload)
         mock_record.assert_called_once()
@@ -81,7 +81,7 @@ class TestApplyFinalizePlanResult(unittest.TestCase):
         ctx = _ctx()
         writer = MagicMock()
         with self.assertRaises(ValueError):
-            _apply_finalize_plan_result(ctx, plan, "r1", Path("/review.md"), [], [], state_event_writer=writer)
+            apply_finalize_plan_result(ctx, plan, "r1", Path("/review.md"), [], [], state_event_writer=writer)
 
 
 if __name__ == "__main__":

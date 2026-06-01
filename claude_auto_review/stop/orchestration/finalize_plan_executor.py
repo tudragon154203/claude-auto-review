@@ -30,7 +30,7 @@ def _apply_completed_clean_review_result(
     return plan_for_partial_review().result, _partial_review_payload(review_id, len(remaining))
 
 
-def _apply_finalize_plan_result(
+def apply_finalize_plan_result(
     ctx: RuntimeContext, plan: Any, review_id: str, review_path: Path, covered_entries: list[Any], unreviewed: list[Any], *, state_event_writer: StateEventWriterProtocol, emitter: ResponseEmitter | None = None
 ) -> tuple[FinalizeResult, ResponsePayload | None]:
     if plan.effect == FinalizeEffect.APPLY_COMPLETED_CLEAN_REVIEW:

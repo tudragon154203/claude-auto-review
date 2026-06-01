@@ -1,9 +1,7 @@
-"""Orchestrates the multi-stage stop decision pipeline."""
-
 from __future__ import annotations
 
 from claude_auto_review.stop.orchestration.context import RuntimeContext, StopDecision
-from claude_auto_review.stop.orchestration.deps import StopFlowDependencies as StopFlowDependencies
+from claude_auto_review.stop.orchestration.deps import StopFlowDependencies
 from claude_auto_review.stop.orchestration.stages import (
     run_allow_no_unreviewed_stage,
     run_circuit_breaker_stage,
@@ -15,9 +13,7 @@ from claude_auto_review.stop.orchestration.stages import (
 
 
 class StopFlowService:
-    """Orchestrates the multi-stage stop decision pipeline."""
-
-    def __init__(self, ctx: RuntimeContext, deps: StopFlowDependencies):
+    def __init__(self, ctx: RuntimeContext, *, deps: StopFlowDependencies):
         self.ctx = ctx
         self.deps = deps
 
@@ -47,7 +43,7 @@ class StopFlowService:
         decision = run_classifier_stage(
             self.ctx,
             classify_last_assistant_message_fn=self.deps.classifier.classify_last_assistant_message,
-            state_event_writer_factory=self.deps.classifier.state_event_writer_factory,
+            classifier_persist_factory=self.deps.classifier.classifier_persist_factory,
         )
         if decision is not None:
             return decision

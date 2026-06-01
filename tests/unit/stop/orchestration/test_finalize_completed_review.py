@@ -48,7 +48,7 @@ class TestFinalizeCompletedReview(unittest.TestCase):
 
     @patch("claude_auto_review.stop.orchestration.finalize.get_entries_covered_by_review", return_value=[])
     @patch("claude_auto_review.stop.orchestration.finalize_plan_executor.apply_completed_review", return_value=[])
-    @patch("claude_auto_review.stop.orchestration.review_artifact_evaluator.classify_review_artifact_state")
+    @patch("claude_auto_review.stop.orchestration.review_artifact_evaluator.classify_review_artifact")
     @patch("claude_auto_review.stop.orchestration.finalize_plan_executor.log_event")
     def test_completed_no_remaining_returns_0(self, mock_plan_log, mock_classify, mock_apply, mock_covered):
         mock_classify.return_value.status = "complete_clean"
@@ -67,7 +67,7 @@ class TestFinalizeCompletedReview(unittest.TestCase):
     @patch("claude_auto_review.stop.orchestration.finalize.get_entries_covered_by_review", return_value=[])
     @patch("claude_auto_review.stop.orchestration.finalize_plan_executor.record_completed_review")
     @patch("claude_auto_review.stop.orchestration.finalize_plan_executor.block_completed_review_findings")
-    @patch("claude_auto_review.stop.orchestration.review_artifact_evaluator.classify_review_artifact_state")
+    @patch("claude_auto_review.stop.orchestration.review_artifact_evaluator.classify_review_artifact")
     def test_completed_with_findings_returns_2(self, mock_classify, mock_block, mock_record, mock_covered):
         mock_classify.return_value.status = "complete_findings"
         emitter = _mock_emitter()

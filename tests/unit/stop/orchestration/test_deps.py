@@ -10,7 +10,7 @@ from claude_auto_review.stop.orchestration.deps import (
 
 
 class TestBuildDefaultDependencies(unittest.TestCase):
-    def test_returns_deps_and_finalize_fn(self):
+    def test_returns_dependencies_and_finalize_fn(self):
         deps, finalize_fn = build_default_dependencies()
         self.assertIsInstance(deps, StopFlowDependencies)
         self.assertTrue(callable(finalize_fn))
@@ -35,14 +35,14 @@ class TestBuildDefaultDependencies(unittest.TestCase):
         deps, _ = build_default_dependencies(classify_last_assistant_message_fn=fn)
         self.assertIs(deps.classifier.classify_last_assistant_message, fn)
 
-    def test_override_state_event_writer_factory(self):
+    def test_override_classifier_persist_factory(self):
         fn = MagicMock()
-        deps, _ = build_default_dependencies(state_event_writer_factory=fn)
-        self.assertIs(deps.classifier.state_event_writer_factory, fn)
+        deps, _ = build_default_dependencies(classifier_persist_factory=fn)
+        self.assertIs(deps.classifier.classifier_persist_factory, fn)
 
-    def test_default_state_event_writer_factory(self):
+    def test_default_classifier_persist_factory(self):
         deps, _ = build_default_dependencies()
-        self.assertTrue(callable(deps.classifier.state_event_writer_factory))
+        self.assertTrue(callable(deps.classifier.classifier_persist_factory))
 
     def test_override_resolve_pending_review(self):
         fn = MagicMock()
@@ -59,22 +59,15 @@ class TestBuildDefaultDependencies(unittest.TestCase):
         deps, _ = build_default_dependencies(log_event_fn=fn)
         self.assertIs(deps.log_event, fn)
 
-    def test_override_finalize_review_stop(self):
-        fn = MagicMock()
-        _, finalize_fn = build_default_dependencies(finalize_review_stop_fn=fn)
-        self.assertIs(finalize_fn, fn)
-
     def test_override_emitter(self):
         emitter = MagicMock()
         deps, _ = build_default_dependencies(emitter=emitter)
         self.assertIs(deps.emitter, emitter)
 
-    @patch("claude_auto_review.stop.orchestration.deps.StdoutResponseEmitter")
-    def test_default_emitter_when_none(self, MockEmitter):
-        mock_instance = MagicMock()
-        MockEmitter.return_value = mock_instance
-        deps, _ = build_default_dependencies()
-        self.assertIs(deps.emitter, mock_instance)
+    def test_override_finalize_review_stop(self):
+        fn = MagicMock()
+        _, finalize_fn = build_default_dependencies(finalize_review_stop_fn=fn)
+        self.assertIs(finalize_fn, fn)
 
 
 class TestBuildDefaultEvalDeps(unittest.TestCase):
@@ -82,31 +75,36 @@ class TestBuildDefaultEvalDeps(unittest.TestCase):
         deps = build_default_eval_deps()
         self.assertIsInstance(deps, EvalDeps)
 
-    def test_override_log_event(self):
+    def test_override_classify_fn(self):
         fn = MagicMock()
-        deps = build_default_eval_deps(log_event_fn=fn)
-        self.assertIs(deps.log_event_fn, fn)
+        deps = build_default_eval_deps(classify_fn=fn)
+        self.assertIs(deps.classify_fn, fn)
 
-    def test_override_emitter(self):
-        emitter = MagicMock()
-        deps = build_default_eval_deps(emitter=emitter)
-        self.assertIs(deps.emitter, emitter)
+    def test_override_plan_for_artifact_state_fn(self):
+        fn = MagicMock()
+        deps = build_default_eval_deps(plan_for_artifact_state_fn=fn)
+        self.assertIs(deps.plan_for_artifact_state_fn, fn)
+
+    def test_override_apply_plan_fn(self):
+        fn = MagicMock()
+        deps = build_default_eval_deps(apply_plan_fn=fn)
+        self.assertIs(deps.apply_plan_fn, fn)
+
+    def test_override_attempt_autocomplete_fn(self):
+        fn = MagicMock()
+        deps = build_default_eval_deps(attempt_autocomplete_fn=fn)
+        self.assertIs(deps.attempt_autocomplete_fn, fn)
 
     def test_override_state_event_writer_factory(self):
         fn = MagicMock()
         deps = build_default_eval_deps(state_event_writer_factory=fn)
         self.assertIs(deps.state_event_writer_factory, fn)
 
-    def test_all_defaults_are_callable(self):
+    @patch("claude_auto_review.stop.orchestration.deps._ConcreteStateEventWriter")
+    def test_default_state_event_writer_factory(self, writer_cls):
         deps = build_default_eval_deps()
-        self.assertTrue(callable(deps.classify_fn))
-        self.assertTrue(callable(deps.plan_for_artifact_state_fn))
-        self.assertTrue(callable(deps.apply_plan_fn))
-        self.assertTrue(callable(deps.attempt_autocomplete_fn))
-        self.assertTrue(callable(deps.log_event_fn))
         self.assertTrue(callable(deps.state_event_writer_factory))
-        self.assertTrue(callable(deps.emitter.approve))
-        self.assertTrue(callable(deps.emitter.block))
+        self.assertIs(deps.state_event_writer_factory, writer_cls)
 
 
 if __name__ == "__main__":

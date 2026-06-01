@@ -5,20 +5,24 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, Callable, Protocol, runtime_checkable
 
+from claude_auto_review.state.edit_record import EditRecord
 from claude_auto_review.state.event_types import StateEvent
 from claude_auto_review.state.snapshot import StateSnapshot
 from claude_auto_review.stop.classifier.models import AssistantMessageClassificationResult
 from claude_auto_review.stop.orchestration.context import ResponsePayload, RuntimeContext
-from claude_auto_review.stop.orchestration.resolution import FinalizeResult, ReviewResolution
-from claude_auto_review.state.edit_record import EditRecord
-from claude_auto_review.stop.response import ResponseEmitter
 from claude_auto_review.stop.orchestration.finalize_outcomes import FinalizePlan
+from claude_auto_review.stop.orchestration.resolution import FinalizeResult, ReviewResolution
 from claude_auto_review.stop.orchestration.review_artifact_evaluator import ReviewArtifactState
+from claude_auto_review.stop.response import ResponseEmitter
 
 
 @runtime_checkable
 class StateLoader(Protocol):
-    def __call__(self, project_root: str | Path | None = ..., client_id: str | None = ...) -> StateSnapshot: ...
+    def __call__(
+        self,
+        project_root: str | Path | None = ...,
+        client_id: str | None = ...,
+    ) -> StateSnapshot: ...
 
 
 @runtime_checkable
@@ -34,9 +38,12 @@ class StopBlockCounter(Protocol):
 @runtime_checkable
 class LastAssistantMessageClassifier(Protocol):
     def __call__(
-        self, ctx: RuntimeContext, env: dict[str, str] | None = ...,
+        self,
+        ctx: RuntimeContext,
+        env: dict[str, str] | None = ...,
         urlopen: Callable[..., Any] | None = ...,
-        *, persist: Callable[[AssistantMessageClassificationResult], None] | None = ...,
+        *,
+        persist: Callable[[AssistantMessageClassificationResult], None] | None = ...,
     ) -> AssistantMessageClassificationResult | None: ...
 
 
@@ -62,7 +69,13 @@ class ReviewerPromptScriptProvider(Protocol):
 
 @runtime_checkable
 class EventLogger(Protocol):
-    def __call__(self, project_root: str | Path, event_type: str, client_id: str | None = ..., **kwargs: Any) -> None: ...
+    def __call__(
+        self,
+        project_root: str | Path,
+        event_type: str,
+        client_id: str | None = ...,
+        **kwargs: Any,
+    ) -> None: ...
 
 
 @runtime_checkable
@@ -76,8 +89,19 @@ class StateEventWriterProtocol(Protocol):
 
 
 @runtime_checkable
+class ClassifierPersistFactory(Protocol):
+    def __call__(self, ctx: RuntimeContext) -> Callable[[AssistantMessageClassificationResult], None]: ...
+
+
+@runtime_checkable
 class ClassifyReviewArtifact(Protocol):
-    def __call__(self, review_path: Path, *, minimum_blocking_severity: str = ..., client_id: str | None = ...) -> ReviewArtifactState: ...
+    def __call__(
+        self,
+        review_path: Path,
+        *,
+        minimum_blocking_severity: str = ...,
+        client_id: str | None = ...,
+    ) -> ReviewArtifactState: ...
 
 
 @runtime_checkable
@@ -112,4 +136,3 @@ class AttemptReviewAutocomplete(Protocol):
         *,
         log_event_fn: Callable[..., Any] | None = None,
     ) -> Any: ...
-

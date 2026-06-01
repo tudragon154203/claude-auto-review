@@ -9,7 +9,7 @@ from claude_auto_review.stop.reviews.enums import AutocompleteStatus
 from claude_auto_review.stop.reviews.prompt_runner import attempt_stop_autocomplete
 
 
-def _attempt_review_autocomplete(
+def attempt_review_autocomplete(
     ctx: RuntimeContext,
     review_id: str,
     review_path: Path,

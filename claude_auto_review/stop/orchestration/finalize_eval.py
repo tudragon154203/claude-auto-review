@@ -22,11 +22,6 @@ def evaluate_artifact_and_plan(
     *,
     deps: EvalDeps,
 ):
-    """Classify artifact state, attempt autocomplete if needed, and apply a finalize plan.
-
-    Returns (result, payload) if a plan was determined, or None if the review
-    is still pending after autocomplete.
-    """
     writer = deps.state_event_writer_factory(ctx.project_root, ctx.client_id)
 
     artifact_state = deps.classify_fn(
@@ -36,9 +31,24 @@ def evaluate_artifact_and_plan(
     )
     plan = deps.plan_for_artifact_state_fn(artifact_state)
     if plan is not None:
-        return deps.apply_plan_fn(ctx, plan, review_id, review_path, covered_entries, unreviewed, state_event_writer=writer, emitter=deps.emitter)
+        return deps.apply_plan_fn(
+            ctx,
+            plan,
+            review_id,
+            review_path,
+            covered_entries,
+            unreviewed,
+            state_event_writer=writer,
+            emitter=deps.emitter,
+        )
 
-    autocomplete_result = deps.attempt_autocomplete_fn(ctx, review_id, review_path, prompt_file, log_event_fn=deps.log_event_fn)
+    autocomplete_result = deps.attempt_autocomplete_fn(
+        ctx,
+        review_id,
+        review_path,
+        prompt_file,
+        log_event_fn=deps.log_event_fn,
+    )
 
     artifact_state = deps.classify_fn(
         review_path,
@@ -47,14 +57,22 @@ def evaluate_artifact_and_plan(
     )
     plan = deps.plan_for_artifact_state_fn(artifact_state)
     if plan is not None:
-        return deps.apply_plan_fn(ctx, plan, review_id, review_path, covered_entries, unreviewed, state_event_writer=writer, emitter=deps.emitter)
+        return deps.apply_plan_fn(
+            ctx,
+            plan,
+            review_id,
+            review_path,
+            covered_entries,
+            unreviewed,
+            state_event_writer=writer,
+            emitter=deps.emitter,
+        )
 
     if autocomplete_result is not None and autocomplete_result.status == AutocompleteStatus.EMPTY_STDOUT:
         deps.log_event_fn(
             ctx.project_root,
-            "stop_hook_reviewer_empty_blocked",
+            'stop_hook_reviewer_empty_blocked',
             client_id=ctx.client_id,
             reviewId=review_id,
         )
-
     return None
