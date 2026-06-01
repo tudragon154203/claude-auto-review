@@ -7,7 +7,9 @@ from tests.support_paths import FAKE_ROOT
 
 from claude_auto_review.config.models import PluginSettings
 from claude_auto_review.stop.orchestration.context import RuntimeContext
+from claude_auto_review.stop.orchestration.deps import EvalDeps
 from claude_auto_review.stop.orchestration.finalize_eval import evaluate_artifact_and_plan
+from claude_auto_review.stop.reviews.enums import AutocompleteStatus
 
 
 def _ctx(**kwargs):
@@ -21,6 +23,18 @@ def _ctx(**kwargs):
     )
 
 
+def _mock_eval_deps(*, classify_fn=None, plan_fn=None, apply_fn=None, autocomplete_fn=None, log_event_fn=None):
+    return EvalDeps(
+        classify_fn=classify_fn or MagicMock(),
+        plan_for_artifact_state_fn=plan_fn or MagicMock(),
+        apply_plan_fn=apply_fn or MagicMock(),
+        attempt_autocomplete_fn=autocomplete_fn or MagicMock(),
+        log_event_fn=log_event_fn if log_event_fn is not None else MagicMock(),
+        state_event_writer_factory=lambda p, c: MagicMock(),
+        emitter=MagicMock(),
+    )
+
+
 class TestEvaluateArtifactAndPlan(unittest.TestCase):
     def _make_artifact_state(self, status_name):
         return SimpleNamespace(status=SimpleNamespace(value=status_name))
@@ -31,13 +45,13 @@ class TestEvaluateArtifactAndPlan(unittest.TestCase):
         plan_fn = MagicMock(return_value=SimpleNamespace(effect="apply"))
         apply_fn = MagicMock(return_value=("result", None))
 
+        deps = _mock_eval_deps(classify_fn=classify_fn, plan_fn=plan_fn, apply_fn=apply_fn)
         result = evaluate_artifact_and_plan(
             _ctx(), "r1", Path("/review.md"), Path("/prompt.md"), [], [],
-            classify_fn=classify_fn, plan_for_artifact_state_fn=plan_fn, apply_plan_fn=apply_fn,
+            deps=deps,
         )
         self.assertEqual(result, ("result", None))
         apply_fn.assert_called_once()
-        # Should not attempt autocomplete
         self.assertEqual(classify_fn.call_count, 1)
 
     def test_autocomplete_then_plan_found(self):
@@ -48,10 +62,13 @@ class TestEvaluateArtifactAndPlan(unittest.TestCase):
         apply_fn = MagicMock(return_value=("result", None))
         autocomplete_fn = MagicMock(return_value=SimpleNamespace(status="completed"))
 
+        deps = _mock_eval_deps(
+            classify_fn=classify_fn, plan_fn=plan_fn,
+            apply_fn=apply_fn, autocomplete_fn=autocomplete_fn,
+        )
         result = evaluate_artifact_and_plan(
             _ctx(), "r1", Path("/review.md"), Path("/prompt.md"), [], [],
-            classify_fn=classify_fn, plan_for_artifact_state_fn=plan_fn,
-            apply_plan_fn=apply_fn, attempt_autocomplete_fn=autocomplete_fn,
+            deps=deps,
         )
         self.assertEqual(result, ("result", None))
         self.assertEqual(classify_fn.call_count, 2)
@@ -63,10 +80,12 @@ class TestEvaluateArtifactAndPlan(unittest.TestCase):
         plan_fn = MagicMock(return_value=None)
         autocomplete_fn = MagicMock(return_value=SimpleNamespace(status="completed"))
 
+        deps = _mock_eval_deps(
+            classify_fn=classify_fn, plan_fn=plan_fn, autocomplete_fn=autocomplete_fn,
+        )
         result = evaluate_artifact_and_plan(
             _ctx(), "r1", Path("/review.md"), Path("/prompt.md"), [], [],
-            classify_fn=classify_fn, plan_for_artifact_state_fn=plan_fn,
-            apply_plan_fn=MagicMock(), attempt_autocomplete_fn=autocomplete_fn,
+            deps=deps,
         )
         self.assertIsNone(result)
 
@@ -74,15 +93,17 @@ class TestEvaluateArtifactAndPlan(unittest.TestCase):
         pending_state = self._make_artifact_state("pending")
         classify_fn = MagicMock(return_value=pending_state)
         plan_fn = MagicMock(return_value=None)
-        autocomplete_fn = MagicMock(return_value=SimpleNamespace(status="empty_stdout"))
+        autocomplete_fn = MagicMock(return_value=SimpleNamespace(status=AutocompleteStatus.EMPTY_STDOUT))
         log_fn = MagicMock()
 
-        with unittest.mock.patch("claude_auto_review.stop.orchestration.finalize_eval.log_event", log_fn):
-            result = evaluate_artifact_and_plan(
-                _ctx(), "r1", Path("/review.md"), Path("/prompt.md"), [], [],
-                classify_fn=classify_fn, plan_for_artifact_state_fn=plan_fn,
-                apply_plan_fn=MagicMock(), attempt_autocomplete_fn=autocomplete_fn,
-            )
+        deps = _mock_eval_deps(
+            classify_fn=classify_fn, plan_fn=plan_fn,
+            autocomplete_fn=autocomplete_fn, log_event_fn=log_fn,
+        )
+        result = evaluate_artifact_and_plan(
+            _ctx(), "r1", Path("/review.md"), Path("/prompt.md"), [], [],
+            deps=deps,
+        )
         self.assertIsNone(result)
         log_fn.assert_called_once()
         self.assertEqual(log_fn.call_args[0][1], "stop_hook_reviewer_empty_blocked")
@@ -91,15 +112,17 @@ class TestEvaluateArtifactAndPlan(unittest.TestCase):
         pending_state = self._make_artifact_state("pending")
         classify_fn = MagicMock(return_value=pending_state)
         plan_fn = MagicMock(return_value=None)
-        autocomplete_fn = MagicMock(return_value=SimpleNamespace(status="completed"))
+        autocomplete_fn = MagicMock(return_value=SimpleNamespace(status=AutocompleteStatus.OUTPUT_WRITTEN))
         log_fn = MagicMock()
 
-        with unittest.mock.patch("claude_auto_review.stop.orchestration.finalize_eval.log_event", log_fn):
-            result = evaluate_artifact_and_plan(
-                _ctx(), "r1", Path("/review.md"), Path("/prompt.md"), [], [],
-                classify_fn=classify_fn, plan_for_artifact_state_fn=plan_fn,
-                apply_plan_fn=MagicMock(), attempt_autocomplete_fn=autocomplete_fn,
-            )
+        deps = _mock_eval_deps(
+            classify_fn=classify_fn, plan_fn=plan_fn,
+            autocomplete_fn=autocomplete_fn, log_event_fn=log_fn,
+        )
+        result = evaluate_artifact_and_plan(
+            _ctx(), "r1", Path("/review.md"), Path("/prompt.md"), [], [],
+            deps=deps,
+        )
         self.assertIsNone(result)
         log_fn.assert_not_called()
 

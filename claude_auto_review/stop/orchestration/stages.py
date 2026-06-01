@@ -54,13 +54,16 @@ def run_circuit_breaker_stage(
     )
 
 
-def run_classifier_stage(ctx: RuntimeContext, *, classify_last_assistant_message_fn: LastAssistantMessageClassifier) -> StopDecision | None:
+def run_classifier_stage(ctx: RuntimeContext, *, classify_last_assistant_message_fn: LastAssistantMessageClassifier, state_event_writer_factory=None) -> StopDecision | None:
     if not ctx.settings.last_assistant_message_classifier_enabled:
         return None
     from claude_auto_review.state.store.writer import StateEventWriter
 
+    factory = state_event_writer_factory or StateEventWriter
+    writer = factory(ctx.project_root, ctx.client_id)
+
     def _persist(result):
-        StateEventWriter(project_root=ctx.project_root, client_id=ctx.client_id).append(
+        writer.append(
             result.as_state_entry(include_debug=ctx.settings.debug)
         )
 
@@ -82,10 +85,13 @@ def run_pending_stage(
     resolve_pending_review_fn: PendingReviewResolver,
     get_reviewer_prompt_script_fn: ReviewerPromptScriptProvider,
     emitter=None,
+    log_event_fn=None,
 ) -> StopDecision:
     kwargs = {}
     if emitter is not None:
         kwargs["emitter"] = emitter
+    if log_event_fn is not None:
+        kwargs["log_event_fn"] = log_event_fn
     resolution = resolve_pending_review_fn(
         ctx,
         state,

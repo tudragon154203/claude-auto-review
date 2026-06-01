@@ -40,20 +40,27 @@ class TestStopDecisionEngine(unittest.TestCase):
         self.assertEqual(result, 2)
         finalize_fn.assert_called_once()
 
+    def test_finalize_passes_eval_deps(self):
+        finalize_fn = MagicMock(return_value=0)
+        engine = StopDecisionEngine(_ctx(), finalize_review_stop_fn=finalize_fn)
+        engine.finalize(TerminalResolution(exit_code=0))
+        _, kwargs = finalize_fn.call_args
+        self.assertIn("deps", kwargs)
+
     def test_finalize_uses_provided_emitter(self):
         finalize_fn = MagicMock(return_value=0)
         emitter = MagicMock()
         engine = StopDecisionEngine(_ctx(), finalize_review_stop_fn=finalize_fn, emitter=emitter)
-        engine.finalize(TerminalResolution(exit_code=0), emitter=emitter)
+        engine.finalize(TerminalResolution(exit_code=0))
         _, kwargs = finalize_fn.call_args
-        self.assertIs(kwargs["emitter"], emitter)
+        self.assertIs(kwargs["deps"].emitter, emitter)
 
     def test_finalize_uses_default_emitter_when_none(self):
         finalize_fn = MagicMock(return_value=0)
         engine = StopDecisionEngine(_ctx(), finalize_review_stop_fn=finalize_fn)
         engine.finalize(TerminalResolution(exit_code=0))
         _, kwargs = finalize_fn.call_args
-        self.assertIs(kwargs["emitter"], engine._emitter)
+        self.assertIs(kwargs["deps"].emitter, engine._emitter)
 
     @patch("claude_auto_review.stop.orchestration.decision_engine.StdoutResponseEmitter")
     def test_default_emitter_created_when_none(self, MockEmitter):

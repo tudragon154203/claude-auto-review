@@ -9,7 +9,7 @@ from claude_auto_review.review.prompting.generation import (
 )
 from claude_auto_review.review.prompting.rendering import current_file_snapshots, format_review_timestamp
 from claude_auto_review.review.prompting.templates import format_review_file
-from claude_auto_review.state.models import EditRecord
+from claude_auto_review.state.edit_record import EditRecord
 
 REPO_ROOT = Path(__file__).resolve().parents[4]
 
@@ -24,7 +24,6 @@ class ReviewGenerationTests(unittest.TestCase):
         diff = "-old\n+new"
         review_path = Path("/tmp/review-123.md")
 
-        reviewer_line = "Backend: claude | Model: "
         expected = (
             f"# Claude Auto Review Request {review_id}\n"
             "\n"
@@ -38,23 +37,53 @@ class ReviewGenerationTests(unittest.TestCase):
             " file. Do not emit progress updates, planning notes, or any text before or after the final"
             " markdown review. You do not have Write or Edit tools.\n"
             "\n"
-            "Use this exact top matter:\n"
+            "Use this exact structure. The review is parsed by a regex-based parser. Any deviation from this format causes findings to be lost.\n"
             "\n"
             "```markdown\n"
             f"# Review {review_id} - {readable_timestamp}\n"
             "\n"
             "## Reviewer\n"
-            f"{reviewer_line}\n"
+            "Backend: claude | Model: \n"
             "\n"
             "## Files Reviewed\n"
             "- src/app.ts (hash: abc123)\n"
             "\n"
             "## Findings\n"
+            "- Confirmed: <title>\n"
+            "  Severity: <info|low|medium|high|critical>\n"
+            "  Location: path:line\n"
+            "  Rationale: <why this matters>\n"
+            "  Suggestion: <concrete fix>\n"
+            "- Skipped: <title>\n"
+            "  Reason: <why this item cannot be reviewed>\n"
+            "\n"
+            "## Verdict\n"
+            "Clean - no issues found. Claude may stop.\n"
             "```\n"
             "\n"
-            'If no findings exist, write "Clean - no issues found. Claude may stop." under "## Verdict".\n'
-            'If you record one or more findings under "## Findings", you MUST NOT use a clean verdict.'
-            ' End with a blocking verdict such as "N issues found. Claude must address all findings before stopping."\n'
+            "Rules for `## Findings`:\n"
+            "- Use only top-level `- Confirmed:` or `- Skipped:` entries for findings.\n"
+            "- Put details on indented `Field: value` lines under that bullet.\n"
+            "  Field names and values must be plain text — no bold, no italics, no backticks.\n"
+            "  Correct: `  Severity: high`\n"
+            "  Wrong:   `  **Severity:** high` or `  - Severity: high`\n"
+            "- Severity value must be one of: `info`, `low`, `medium`, `high`, `critical` — lowercase only.\n"
+            "- If there are no findings, write exactly `None.` under `## Findings`.\n"
+            "- Do not write notes, commentary, or summaries inside `## Findings`.\n"
+            "- Do not add blank lines, horizontal rules, or code blocks between findings.\n"
+            "\n"
+            "Rules for `## Verdict`:\n"
+            "- If `## Findings` is exactly `None.`, write verbatim: `Clean - no issues found. Claude may stop.`\n"
+            "- Otherwise write verbatim: `Findings present. Claude must address all findings before stopping.`\n"
+            "\n"
+            "Incorrect formats (parser will ignore these):\n"
+            "```\n"
+            "- **Confirmed:** title\n"
+            "  **Severity:** High\n"
+            "### Confirmed - High - title\n"
+            "- Confirmed: title (severity: medium)\n"
+            "Clean — no issues found\n"
+            "```\n"
             "\n"
             "## Files To Review\n"
             "- src/app.ts (hash: abc123)\n"
@@ -63,8 +92,7 @@ class ReviewGenerationTests(unittest.TestCase):
             "Rule one.\n"
             "\n"
             "## Session Diff\n"
-            "The diff below contains only changes made during this Claude Code session,"
-            " compared against the file state before the first edit.\n"
+            "The diff below contains only changes made during this Claude Code session, compared against the file state before the first edit.\n"
             "\n"
             "```diff\n"
             "-old\n"
@@ -74,10 +102,7 @@ class ReviewGenerationTests(unittest.TestCase):
             "Complete the review in a single response."
         )
 
-        self.assertEqual(
-            build_prompt(review_id, timestamp, entries, rules, diff, review_path),
-            expected,
-        )
+        self.assertEqual(build_prompt(review_id, timestamp, entries, rules, diff, review_path), expected)
 
     def test_format_review_file_matches_prompt_file_body(self):
         readable_timestamp = "2026-05-05 | 08:00:00 +07:00"

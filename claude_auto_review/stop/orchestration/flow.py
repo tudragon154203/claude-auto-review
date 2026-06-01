@@ -29,7 +29,7 @@ def _handle_terminal(engine, decision: StopDecision, *, emitter):
 
 def _handle_finalize(engine: StopDecisionEngine, decision: StopDecision, *, emitter):
     details = decision.details or {}
-    return engine.finalize(details["resolution"], emitter=emitter)
+    return engine.finalize(details["resolution"])
 
 
 _HANDLER_REGISTRY: dict[StopDecisionKind, Callable] = {

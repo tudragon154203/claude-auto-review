@@ -3,15 +3,14 @@ from __future__ import annotations
 from collections.abc import Callable
 from typing import Any
 
-from claude_auto_review.state.models import (
-    ClassificationRecord,
-    EditRecord,
+from claude_auto_review.state.classification_record import ClassificationRecord
+from claude_auto_review.state.edit_record import EditRecord, StopBlockedRecord
+from claude_auto_review.state.review_records import (
     ReviewAutocompleteRecord,
     ReviewCompletedRecord,
     ReviewMetadata,
-    StateEvent,
-    StopBlockedRecord,
 )
+from claude_auto_review.state.event_types import StateEvent
 
 _ParserFn = Callable[[dict[str, Any]], StateEvent]
 

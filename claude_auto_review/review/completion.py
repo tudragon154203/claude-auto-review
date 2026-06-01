@@ -3,14 +3,10 @@ from __future__ import annotations
 from pathlib import Path
 
 from claude_auto_review.paths.path_utils import local_now_iso
-from claude_auto_review.state.models import (
-    EditRecord,
-    ReviewCompletedRecord,
-    ReviewFileRecord,
-    ReviewMetadata,
-    StateEvent,
-    StopBlockedRecord,
-)
+from claude_auto_review.state.edit_record import EditRecord, StopBlockedRecord
+from claude_auto_review.state.file_record import ReviewFileRecord
+from claude_auto_review.state.review_records import ReviewCompletedRecord, ReviewMetadata
+from claude_auto_review.state.event_types import StateEvent
 from claude_auto_review.state.store.queries import get_unreviewed_files
 from claude_auto_review.state.store.read import load_state, load_state_snapshot
 from claude_auto_review.state.store.write import append_state_event, mark_files_reviewed

@@ -12,7 +12,7 @@ from claude_auto_review.review.prompting.rendering import (
     format_file_list,
     format_review_timestamp,
 )
-from claude_auto_review.state.models import ReviewFileRecord
+from claude_auto_review.state.file_record import ReviewFileRecord
 from claude_auto_review.timestamps import parse_iso_timestamp
 
 

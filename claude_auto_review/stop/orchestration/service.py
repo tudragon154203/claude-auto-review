@@ -47,6 +47,7 @@ class StopFlowService:
         decision = run_classifier_stage(
             self.ctx,
             classify_last_assistant_message_fn=self.deps.classifier.classify_last_assistant_message,
+            state_event_writer_factory=self.deps.classifier.state_event_writer_factory,
         )
         if decision is not None:
             return decision
@@ -58,6 +59,7 @@ class StopFlowService:
             resolve_pending_review_fn=self.deps.review.resolve_pending_review,
             get_reviewer_prompt_script_fn=self.deps.review.get_reviewer_prompt_script,
             emitter=self.deps.emitter,
+            log_event_fn=self.deps.log_event,
         )
 
     def run(self) -> StopDecision:

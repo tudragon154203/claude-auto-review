@@ -1,7 +1,6 @@
 ---
 name: claude-auto-review-reviewer
 description: Reviews code changes for semantic quality, security, and project conventions. Triggered by Claude Code Stop hook before Claude stops.
-model: fast
 tools: ["Read", "Grep", "Bash", "Glob", "Write"]
 ---
 

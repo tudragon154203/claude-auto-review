@@ -5,7 +5,7 @@ import sys
 import unittest
 
 from claude_auto_review.paths.path_utils import get_state_path
-from claude_auto_review.state.models import EditRecord
+from claude_auto_review.state.edit_record import EditRecord
 from claude_auto_review.state.store.write import append_state_event
 from tests.int.hooks.support import HookTestCase
 

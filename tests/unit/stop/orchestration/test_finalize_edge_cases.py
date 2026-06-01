@@ -7,8 +7,10 @@ from tests.support_paths import FAKE_ROOT
 
 from claude_auto_review.config.constants import EXIT_REVIEW_FAILED
 from claude_auto_review.config.models import PluginSettings
-from claude_auto_review.state.models import EditRecord, ReviewMetadata
+from claude_auto_review.state.edit_record import EditRecord
+from claude_auto_review.state.review_records import ReviewMetadata
 from claude_auto_review.stop.orchestration.context import RuntimeContext
+from claude_auto_review.stop.orchestration.deps import build_default_eval_deps
 from claude_auto_review.stop.orchestration.finalize import finalize_review_stop
 from claude_auto_review.stop.orchestration.resolution import ReviewResolution
 
@@ -47,23 +49,22 @@ class TestFinalizeEdgeCases(unittest.TestCase):
 
     @patch("claude_auto_review.stop.orchestration.finalize.get_entries_covered_by_review", return_value=[])
     @patch("claude_auto_review.stop.orchestration.finalize.block_pending_review")
-    @patch("claude_auto_review.stop.orchestration.finalize_eval.classify_review_artifact_state")
-    def test_missing_review_file_blocks(self, mock_classify, mock_block_pending, mock_covered):
-        mock_classify.side_effect = [MagicMock(status="pending"), MagicMock(status="pending")]
+    def test_missing_review_file_blocks(self, mock_block_pending, mock_covered):
+        mock_classify = MagicMock(side_effect=[MagicMock(status="pending"), MagicMock(status="pending")])
         emitter = _mock_emitter()
-        result = finalize_review_stop(_ctx(), self.resolution, emitter=emitter)
+        result = finalize_review_stop(_ctx(), self.resolution, deps=build_default_eval_deps(emitter=emitter, classify_fn=mock_classify))
         self.assertEqual(result, EXIT_REVIEW_FAILED)
 
     @patch("claude_auto_review.stop.orchestration.finalize.get_entries_covered_by_review", return_value=[])
-    @patch("claude_auto_review.stop.orchestration.finalize.log_event")
     def test_invalid_reviewer_backend_blocks_instead_of_approving(
-        self, mock_log, mock_covered
+        self, mock_covered
     ):
         emitter = _mock_emitter()
+        mock_log = MagicMock()
         result = finalize_review_stop(
             _ctx(settings=PluginSettings.from_mapping({"reviewerBackend": "codyx"})),
             self.resolution,
-            emitter=emitter,
+            deps=build_default_eval_deps(emitter=emitter, log_event_fn=mock_log),
         )
         self.assertEqual(result, EXIT_REVIEW_FAILED)
         emitter.block.assert_called_once_with(
@@ -79,8 +80,6 @@ class TestFinalizeEdgeCases(unittest.TestCase):
 
     @patch("claude_auto_review.stop.orchestration.finalize.get_entries_covered_by_review", return_value=[])
     @patch("claude_auto_review.stop.orchestration.finalize.block_pending_review")
-    @patch("claude_auto_review.stop.orchestration.finalize_eval.log_event")
-    @patch("claude_auto_review.stop.orchestration.finalize_autocomplete.log_event")
     @patch("claude_auto_review.stop.orchestration.finalize_autocomplete.build_review_completion_prompt")
     @patch(
         "claude_auto_review.stop.orchestration.finalize_autocomplete.attempt_stop_autocomplete",
@@ -89,16 +88,19 @@ class TestFinalizeEdgeCases(unittest.TestCase):
             MagicMock(status="empty_stdout"),
         ],
     )
-    @patch("claude_auto_review.stop.orchestration.finalize_eval.classify_review_artifact_state")
     def test_empty_stdout_after_retry_blocks_pending_review(
-        self, mock_classify, mock_auto, mock_prompt, mock_autocomplete_log, mock_log, mock_block_pending, mock_covered
+        self, mock_auto, mock_prompt, mock_block_pending, mock_covered
     ):
-        mock_classify.side_effect = [MagicMock(status="pending"), MagicMock(status="pending")]
+        mock_classify = MagicMock(side_effect=[MagicMock(status="pending"), MagicMock(status="pending")])
         mock_block_pending.return_value = EXIT_REVIEW_FAILED
         emitter = _mock_emitter()
-        result = finalize_review_stop(_ctx(), self.resolution, emitter=emitter)
+        mock_log = MagicMock()
+        result = finalize_review_stop(
+            _ctx(), self.resolution,
+            deps=build_default_eval_deps(emitter=emitter, log_event_fn=mock_log, classify_fn=mock_classify),
+        )
         self.assertEqual(result, EXIT_REVIEW_FAILED)
-        mock_autocomplete_log.assert_any_call(
+        mock_log.assert_any_call(
             FAKE_ROOT,
             "stop_hook_reviewer_retry",
             client_id="c",
@@ -129,7 +131,7 @@ class TestFinalizeEdgeCases(unittest.TestCase):
             mock_apply.return_value = [EditRecord(timestamp="t", file="still.ts", hash="abc")]
             resolution = ReviewResolution(state=[], unreviewed=[], review=_mk_review("r1", "fake/r.md"))
             emitter = _mock_emitter()
-            result = finalize_review_stop(_ctx(project_root=project_root), resolution, emitter=emitter)
+            result = finalize_review_stop(_ctx(project_root=project_root), resolution, deps=build_default_eval_deps(emitter=emitter))
             self.assertEqual(result, EXIT_REVIEW_FAILED)
             emitter.block.assert_called_once()
 

@@ -1,12 +1,13 @@
 from __future__ import annotations
 
+from typing import Any, Callable
+
 from claude_auto_review.config.constants import EXIT_REVIEW_FAILED
-from claude_auto_review.runtime.events import log_event
 from claude_auto_review.paths.path_utils import local_now_iso
 from claude_auto_review.state.edit_record import StopBlockedRecord
-from claude_auto_review.state.store.writer import StateEventWriter
 from claude_auto_review.stop.feedback_format import build_unreviewed_files_string
 from claude_auto_review.stop.orchestration.context import RuntimeContext
+from claude_auto_review.stop.orchestration.protocols import StateEventWriterProtocol
 from claude_auto_review.stop.orchestration.resolution import StopFlowResolution, TerminalResolution
 from claude_auto_review.stop.response import ResponseEmitter
 
@@ -25,17 +26,19 @@ def fail_review(
     event_type: str,
     *,
     emitter: ResponseEmitter,
+    log_event_fn: Callable[..., Any] | None = None,
     script: str | None = None,
     error: Exception | None = None,
 ) -> StopFlowResolution:
     """Emit failure response and return a terminal resolution."""
-    log_event(
-        ctx.project_root,
-        event_type,
-        client_id=ctx.client_id,
-        script=str(script) if script else None,
-        error=str(error) if error else None,
-    )
+    if log_event_fn:
+        log_event_fn(
+            ctx.project_root,
+            event_type,
+            client_id=ctx.client_id,
+            script=str(script) if script else None,
+            error=str(error) if error else None,
+        )
     if exit_code == EXIT_REVIEW_FAILED:
         if error:
             emitter.block(
@@ -50,18 +53,19 @@ def fail_review(
     return TerminalResolution(exit_code=exit_code)
 
 
-def approve_no_unreviewed_after_review(ctx: RuntimeContext, *, emitter: ResponseEmitter) -> None:
+def approve_no_unreviewed_after_review(ctx: RuntimeContext, *, emitter: ResponseEmitter, log_event_fn: Callable[..., Any] | None = None) -> None:
     """Emit approval when no unreviewed files remain after a review completes."""
-    log_event(
-        ctx.project_root,
-        "stop_approved",
-        client_id=ctx.client_id,
-        reason="no_unreviewed_files_after_review",
-    )
+    if log_event_fn:
+        log_event_fn(
+            ctx.project_root,
+            "stop_approved",
+            client_id=ctx.client_id,
+            reason="no_unreviewed_files_after_review",
+        )
     emitter.approve("Claude Auto Review: stop approved (no_unreviewed_files_after_review)")
 
 
-def block_pending_review(ctx: RuntimeContext, review_id, review_path, prompt_path, unreviewed, *, emitter: ResponseEmitter):
+def block_pending_review(ctx: RuntimeContext, review_id, review_path, prompt_path, unreviewed, *, emitter: ResponseEmitter, state_event_writer: StateEventWriterProtocol):
     files_str = build_unreviewed_files_string(unreviewed)
     review_path_rel = _display_path(review_path, ctx.project_root)
     prompt_path_rel = _display_path(prompt_path, ctx.project_root)
@@ -76,7 +80,7 @@ def block_pending_review(ctx: RuntimeContext, review_id, review_path, prompt_pat
             "stopping will be allowed."
         ),
     )
-    StateEventWriter(ctx.project_root, ctx.client_id).append(
+    state_event_writer.append(
         StopBlockedRecord(
             timestamp=local_now_iso(),
             reason="review_pending",

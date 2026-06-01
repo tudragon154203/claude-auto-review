@@ -7,8 +7,9 @@ from tests.support_paths import FAKE_ROOT
 
 from claude_auto_review.config.constants import EXIT_REVIEW_FAILED, EXIT_STOP_APPROVED
 from claude_auto_review.config.models import PluginSettings
-from claude_auto_review.state.models import ReviewMetadata
+from claude_auto_review.state.review_records import ReviewMetadata
 from claude_auto_review.stop.orchestration.context import RuntimeContext
+from claude_auto_review.stop.orchestration.deps import build_default_eval_deps
 from claude_auto_review.stop.orchestration.finalize import finalize_review_stop
 from claude_auto_review.stop.orchestration.resolution import FinalizeAction, ReviewResolution
 
@@ -47,13 +48,12 @@ class TestFinalizeCompletedReview(unittest.TestCase):
 
     @patch("claude_auto_review.stop.orchestration.finalize.get_entries_covered_by_review", return_value=[])
     @patch("claude_auto_review.stop.orchestration.finalize_plan_executor.apply_completed_review", return_value=[])
-    @patch("claude_auto_review.stop.orchestration.finalize_eval.classify_review_artifact_state")
-    @patch("claude_auto_review.stop.orchestration.finalize.log_event")
+    @patch("claude_auto_review.stop.orchestration.review_artifact_evaluator.classify_review_artifact_state")
     @patch("claude_auto_review.stop.orchestration.finalize_plan_executor.log_event")
-    def test_completed_no_remaining_returns_0(self, mock_plan_log, mock_log, mock_classify, mock_apply, mock_covered):
+    def test_completed_no_remaining_returns_0(self, mock_plan_log, mock_classify, mock_apply, mock_covered):
         mock_classify.return_value.status = "complete_clean"
         emitter = _mock_emitter()
-        result = finalize_review_stop(_ctx(), self.resolution, emitter=emitter)
+        result = finalize_review_stop(_ctx(), self.resolution, deps=build_default_eval_deps(emitter=emitter))
         self.assertEqual(result, EXIT_STOP_APPROVED)
         emitter.approve.assert_called_once_with("Claude Auto Review: review r1 clean, all files covered")
         mock_plan_log.assert_any_call(
@@ -67,11 +67,11 @@ class TestFinalizeCompletedReview(unittest.TestCase):
     @patch("claude_auto_review.stop.orchestration.finalize.get_entries_covered_by_review", return_value=[])
     @patch("claude_auto_review.stop.orchestration.finalize_plan_executor.record_completed_review")
     @patch("claude_auto_review.stop.orchestration.finalize_plan_executor.block_completed_review_findings")
-    @patch("claude_auto_review.stop.orchestration.finalize_eval.classify_review_artifact_state")
+    @patch("claude_auto_review.stop.orchestration.review_artifact_evaluator.classify_review_artifact_state")
     def test_completed_with_findings_returns_2(self, mock_classify, mock_block, mock_record, mock_covered):
         mock_classify.return_value.status = "complete_findings"
         emitter = _mock_emitter()
-        result = finalize_review_stop(_ctx(), self.resolution, emitter=emitter)
+        result = finalize_review_stop(_ctx(), self.resolution, deps=build_default_eval_deps(emitter=emitter))
         self.assertEqual(result, EXIT_REVIEW_FAILED)
         mock_block.assert_called_once()
         mock_record.assert_called_once()
@@ -97,7 +97,7 @@ class TestFinalizeCompletedReview(unittest.TestCase):
             )
             resolution = ReviewResolution(state=[], unreviewed=[], review=_mk_review("r1", "fake/r.md"))
             emitter = _mock_emitter()
-            result = finalize_review_stop(_ctx(project_root=project_root), resolution, emitter=emitter)
+            result = finalize_review_stop(_ctx(project_root=project_root), resolution, deps=build_default_eval_deps(emitter=emitter))
             self.assertEqual(result, EXIT_STOP_APPROVED)
             mock_block.assert_not_called()
             mock_apply.assert_called_once()
@@ -128,7 +128,7 @@ class TestFinalizeCompletedReview(unittest.TestCase):
             )
             resolution = ReviewResolution(state=[], unreviewed=[], review=_mk_review("r1", "fake/r.md"))
             emitter = _mock_emitter()
-            result = finalize_review_stop(_ctx(project_root=project_root), resolution, emitter=emitter)
+            result = finalize_review_stop(_ctx(project_root=project_root), resolution, deps=build_default_eval_deps(emitter=emitter))
             self.assertEqual(result, EXIT_REVIEW_FAILED)
             mock_record.assert_called_once()
             mock_block.assert_called_once()

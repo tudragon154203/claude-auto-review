@@ -52,13 +52,13 @@ class TestApplyFinalizePlanResult(unittest.TestCase):
         mock_apply_clean.return_value = expected
         plan = MagicMock(effect=FinalizeEffect.APPLY_COMPLETED_CLEAN_REVIEW)
         ctx = _ctx()
-        result = _apply_finalize_plan_result(ctx, plan, "r1", Path("/review.md"), [], [])
+        writer = MagicMock()
+        result = _apply_finalize_plan_result(ctx, plan, "r1", Path("/review.md"), [], [], state_event_writer=writer)
         self.assertEqual(result, expected)
 
-    @patch("claude_auto_review.stop.orchestration.finalize_plan_executor.StateEventWriter")
     @patch("claude_auto_review.stop.orchestration.finalize_plan_executor.block_completed_review_findings")
     @patch("claude_auto_review.stop.orchestration.finalize_plan_executor.record_completed_review")
-    def test_record_findings_block_effect(self, mock_record, mock_block, mock_writer):
+    def test_record_findings_block_effect(self, mock_record, mock_block):
         block_result = MagicMock()
         block_result.state_record = MagicMock()
         mock_block.return_value = block_result
@@ -67,17 +67,21 @@ class TestApplyFinalizePlanResult(unittest.TestCase):
             result=FinalizeResult(action=FinalizeAction.BLOCKED_FINDINGS, exit_code=2),
         )
         ctx = _ctx()
-        result, payload = _apply_finalize_plan_result(ctx, plan, "r1", Path("/review.md"), [], [])
+        writer = MagicMock()
+        emitter = MagicMock()
+        result, payload = _apply_finalize_plan_result(ctx, plan, "r1", Path("/review.md"), [], [], state_event_writer=writer, emitter=emitter)
         self.assertEqual(result.action, FinalizeAction.BLOCKED_FINDINGS)
         self.assertIsNone(payload)
         mock_record.assert_called_once()
         mock_block.assert_called_once()
+        writer.append.assert_called_once_with(block_result.state_record)
 
     def test_unsupported_effect_raises_value_error(self):
         plan = MagicMock(effect="unsupported_effect")
         ctx = _ctx()
+        writer = MagicMock()
         with self.assertRaises(ValueError):
-            _apply_finalize_plan_result(ctx, plan, "r1", Path("/review.md"), [], [])
+            _apply_finalize_plan_result(ctx, plan, "r1", Path("/review.md"), [], [], state_event_writer=writer)
 
 
 if __name__ == "__main__":

@@ -6,12 +6,12 @@ from unittest.mock import patch
 from claude_auto_review.config.models import PluginSettings
 from claude_auto_review.review.prompting.flow import (
     _review_id_from_timestamp,
-    _review_prompt_paths,
     create_review_prompt_files,
+    resolve_review_paths,
 )
 from claude_auto_review.runtime.client_dirs import client_reviews_dir, client_run_dir
 from claude_auto_review.runtime.setup import ensure_client_runtime
-from claude_auto_review.state.models import EditRecord
+from claude_auto_review.state.edit_record import EditRecord
 from claude_auto_review.stop.orchestration.context import RuntimeContext
 
 
@@ -22,7 +22,7 @@ class TestReviewPromptFlow(unittest.TestCase):
     def test_review_prompt_paths_place_files_under_expected_directories(self):
         project_root = Path(tempfile.mkdtemp(prefix="claude-auto-review-prompt-flow-"))
         ctx = RuntimeContext(project_root=project_root, client_id="1")
-        review_path, prompt_path = _review_prompt_paths(ctx, "rev-123")
+        review_path, prompt_path = resolve_review_paths(ctx, "rev-123")
 
         expected_reviews = client_reviews_dir(project_root, "1")
         self.assertEqual(review_path.parent, expected_reviews)
