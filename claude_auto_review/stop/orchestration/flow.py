@@ -4,11 +4,15 @@ from collections.abc import Callable
 from typing import Any
 
 from claude_auto_review.stop.orchestration.types.context import ResponsePayload, RuntimeContext, StopDecision
-from claude_auto_review.stop.orchestration.decision_engine import StopDecisionEngine, build_decision_engine
+from claude_auto_review.stop.orchestration.decision_engine import DependencyOverrides, StopDecisionEngine, build_decision_engine
 from claude_auto_review.stop.orchestration.types.resolution import StopDecisionKind
 from claude_auto_review.stop.response import ResponseEmitter, StdoutResponseEmitter
 
 StopHandler = Callable[[StopDecisionEngine, StopDecision, ResponseEmitter], int]
+
+
+def _build_response_payload(message: str, feedback: str | None = None) -> ResponsePayload:
+    return ResponsePayload(system_message=message, feedback=feedback)
 
 
 def _emit_response(payload: ResponsePayload, emitter: ResponseEmitter) -> int:
@@ -22,12 +26,8 @@ def _emit_response(payload: ResponsePayload, emitter: ResponseEmitter) -> int:
 def _handle_allow(engine: StopDecisionEngine, decision: StopDecision, emitter: ResponseEmitter) -> int:
     if decision.reason is None:
         raise ValueError("ALLOW decision missing reason")
-    return _emit_response(
-        ResponsePayload(
-            system_message=f"Claude Auto Review: stop approved ({decision.reason.value})"
-        ),
-        emitter=emitter,
-    )
+    payload = _build_response_payload(f"Claude Auto Review: stop approved ({decision.reason.value})")
+    return _emit_response(payload, emitter=emitter)
 
 
 def _handle_terminal(engine: StopDecisionEngine, decision: StopDecision, emitter: ResponseEmitter) -> int:
@@ -65,6 +65,6 @@ def dispatch_stop_decision(
 
 def run_stop_flow(ctx: RuntimeContext, *, emitter: ResponseEmitter | None = None) -> int:
     response_emitter = emitter or StdoutResponseEmitter()
-    engine = build_decision_engine(ctx, emitter=response_emitter)
+    engine = build_decision_engine(ctx, overrides=DependencyOverrides(emitter=response_emitter))
     decision = engine.run()
     return dispatch_stop_decision(engine, decision, emitter=response_emitter)

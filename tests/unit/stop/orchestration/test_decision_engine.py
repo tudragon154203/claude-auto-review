@@ -4,7 +4,7 @@ from unittest.mock import MagicMock, patch
 from tests.support_paths import FAKE_ROOT
 from claude_auto_review.config.settings.models import PluginSettings
 from claude_auto_review.stop.orchestration.types.context import RuntimeContext
-from claude_auto_review.stop.orchestration.decision_engine import StopDecisionEngine, build_decision_engine
+from claude_auto_review.stop.orchestration.decision_engine import DependencyOverrides, StopDecisionEngine, build_decision_engine
 from claude_auto_review.stop.orchestration.types.resolution import StopDecisionKind, TerminalResolution
 
 
@@ -31,20 +31,20 @@ class TestStopDecisionEngine(unittest.TestCase):
     def test_finalize_delegates_to_finalize_fn(self):
         finalize_fn = MagicMock(return_value=2)
         resolution = TerminalResolution(exit_code=2)
-        engine = build_decision_engine(_ctx(), finalize_review_stop_fn=finalize_fn)
+        engine = build_decision_engine(_ctx(), overrides=DependencyOverrides(finalize_review_stop_fn=finalize_fn))
         result = engine.finalize(resolution)
         self.assertEqual(result, 2)
 
     def test_finalize_passes_eval_deps(self):
         finalize_fn = MagicMock(return_value=0)
-        engine = build_decision_engine(_ctx(), finalize_review_stop_fn=finalize_fn)
+        engine = build_decision_engine(_ctx(), overrides=DependencyOverrides(finalize_review_stop_fn=finalize_fn))
         engine.finalize(TerminalResolution(exit_code=0))
         _, kwargs = finalize_fn.call_args
         self.assertIs(kwargs["deps"], engine.eval_deps)
 
     def test_finalize_uses_default_emitter_when_none(self):
         finalize_fn = MagicMock(return_value=0)
-        engine = build_decision_engine(_ctx(), finalize_review_stop_fn=finalize_fn)
+        engine = build_decision_engine(_ctx(), overrides=DependencyOverrides(finalize_review_stop_fn=finalize_fn))
         engine.finalize(TerminalResolution(exit_code=0))
         _, kwargs = finalize_fn.call_args
         self.assertIs(kwargs["deps"].executor.emitter, engine.emitter)
@@ -52,7 +52,9 @@ class TestStopDecisionEngine(unittest.TestCase):
     def test_finalize_uses_provided_emitter(self):
         finalize_fn = MagicMock(return_value=0)
         emitter = MagicMock()
-        engine = build_decision_engine(_ctx(), finalize_review_stop_fn=finalize_fn, emitter=emitter)
+        engine = build_decision_engine(
+            _ctx(), overrides=DependencyOverrides(finalize_review_stop_fn=finalize_fn, emitter=emitter)
+        )
         engine.finalize(TerminalResolution(exit_code=0))
         _, kwargs = finalize_fn.call_args
         self.assertIs(kwargs["deps"].executor.emitter, emitter)
@@ -68,7 +70,7 @@ class TestStopDecisionEngine(unittest.TestCase):
     def test_builds_eval_deps_with_engine_emitter(self, build_eval_deps):
         build_eval_deps.return_value = MagicMock()
         emitter = MagicMock()
-        build_decision_engine(_ctx(), emitter=emitter)
+        build_decision_engine(_ctx(), overrides=DependencyOverrides(emitter=emitter))
         _, kwargs = build_eval_deps.call_args
         self.assertIs(kwargs["emitter"], emitter)
 

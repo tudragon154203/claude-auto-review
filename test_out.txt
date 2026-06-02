@@ -1,0 +1,102 @@
+﻿python : ...sss........................................................................................................
+.......................................................................................................usage: 
+claude-auto-review config [-h] [--backend {claude,codex,opencode}]
+At line:1 char:1
++ python -m unittest discover -s tests 2>&1 | Out-File -FilePath test_o ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (...sss............odex,opencode}]:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+                                 [--model MODEL]
+                                 [--severity {info,low,medium,high,critical}]
+                                 [--max-stop-passes MAX_STOP_PASSES]
+                                 [--non-interactive]
+claude-auto-review config: error: maxStopPasses must be 0 or greater
+.......................................................................................................................
+.......................................................................................................................
+.......................................................................................................................
+.......................................................................................................................
+.......................................................................................................................
+....................................Claude Auto Review: stop approved (classifier_incomplete)
+..Claude Auto Review: stop approved (circuit_breaker)
+.Claude Auto Review: stop approved (no_unreviewed_files)
+......Claude Auto Review: stop approved (disabled)
+.......................................................................................................................
+..............
+----------------------------------------------------------------------
+Ran 986 tests in 89.636s
+
+OK (skipped=3)
+
+Configuration saved.
+- Setup: already initialized
+- Settings file: C:\Users\admib\AppData\Local\Temp\tmpvwqsrd4r\.claude\settings.json
+- Runtime directory: C:\Users\admib\AppData\Local\Temp\tmpvwqsrd4r\.claude\claude-auto-review
+- Important settings updated: reviewerBackend=claude, reviewerModel=claude-sonnet-4-6, minimumBlockingSeverity=medium, maxStopPasses=5
+- Other available settings in `.claude/settings.json` under `claude-auto-review`:
+  - classifierModel: Classifier model name (current: 'claude-haiku-4-5')
+  - debug: Include extra debug context in prompts and logs (current: True)
+  - enabled: Enable or disable the plugin (current: True)
+  - includeExtensions: Only review matching file extensions when set (current: [])
+  - lastAssistantMessageClassifierEnabled: Enable last assistant message classifier (current: True)
+  - lastAssistantMessageClassifierTimeoutSeconds: Classifier timeout in seconds (current: 20.0)
+  - pendingReviewTimeoutHours: Expire stale pending reviews after N hours (current: 1.0)
+  - reviewFeedbackMaxChars: Maximum characters shown in stop feedback (current: 9000)
+  - reviewerTimeoutSeconds: Reviewer subprocess timeout in seconds (current: 600)
+  - rulesFile: Review rules markdown file path (current: '.claude\\claude-auto-review\\review-rules.md')
+  - skipExtensions: Never review matching file extensions (current: [])
+  - staleClientTimeoutHours: Remove stale client sessions after N hours (current: 48.0)
+- Full config location: C:\Users\admib\AppData\Local\Temp\tmpvwqsrd4r\.claude\settings.json
+  [OK] codex CLI found: C:\nvm4w\nodejs\codex.CMD
+
+Configuration saved.
+- Setup: already initialized
+- Settings file: C:\Users\admib\AppData\Local\Temp\tmpz4t4otm2\.claude\settings.json
+- Runtime directory: C:\Users\admib\AppData\Local\Temp\tmpz4t4otm2\.claude\claude-auto-review
+- Important settings updated: reviewerBackend=codex, reviewerModel=gpt-5.4-mini, minimumBlockingSeverity=medium, maxStopPasses=5
+- Other available settings in `.claude/settings.json` under `claude-auto-review`:
+  - classifierModel: Classifier model name (current: 'claude-haiku-4-5')
+  - debug: Include extra debug context in prompts and logs (current: True)
+  - enabled: Enable or disable the plugin (current: True)
+  - includeExtensions: Only review matching file extensions when set (current: [])
+  - lastAssistantMessageClassifierEnabled: Enable last assistant message classifier (current: True)
+  - lastAssistantMessageClassifierTimeoutSeconds: Classifier timeout in seconds (current: 20.0)
+  - pendingReviewTimeoutHours: Expire stale pending reviews after N hours (current: 1.0)
+  - reviewFeedbackMaxChars: Maximum characters shown in stop feedback (current: 9000)
+  - reviewerTimeoutSeconds: Reviewer subprocess timeout in seconds (current: 600)
+  - rulesFile: Review rules markdown file path (current: '.claude\\claude-auto-review\\review-rules.md')
+  - skipExtensions: Never review matching file extensions (current: [])
+  - staleClientTimeoutHours: Remove stale client sessions after N hours (current: 48.0)
+- Full config location: C:\Users\admib\AppData\Local\Temp\tmpz4t4otm2\.claude\settings.json
+Claude Auto Review setup wizard
+  [OK] codex CLI found: C:\nvm4w\nodejs\codex.CMD
+
+Configuration saved.
+- Setup: already initialized
+- Settings file: C:\Users\admib\AppData\Local\Temp\tmpyvn9a1rz\.claude\settings.json
+- Runtime directory: C:\Users\admib\AppData\Local\Temp\tmpyvn9a1rz\.claude\claude-auto-review
+- Important settings updated: reviewerBackend=codex, reviewerModel=gpt-5.4-mini, minimumBlockingSeverity=medium, maxStopPasses=5
+- Other available settings in `.claude/settings.json` under `claude-auto-review`:
+  - classifierModel: Classifier model name (current: 'claude-haiku-4-5')
+  - debug: Include extra debug context in prompts and logs (current: True)
+  - enabled: Enable or disable the plugin (current: True)
+  - includeExtensions: Only review matching file extensions when set (current: [])
+  - lastAssistantMessageClassifierEnabled: Enable last assistant message classifier (current: True)
+  - lastAssistantMessageClassifierTimeoutSeconds: Classifier timeout in seconds (current: 20.0)
+  - pendingReviewTimeoutHours: Expire stale pending reviews after N hours (current: 1.0)
+  - reviewFeedbackMaxChars: Maximum characters shown in stop feedback (current: 9000)
+  - reviewerTimeoutSeconds: Reviewer subprocess timeout in seconds (current: 600)
+  - rulesFile: Review rules markdown file path (current: '.claude\\claude-auto-review\\review-rules.md')
+  - skipExtensions: Never review matching file extensions (current: [])
+  - staleClientTimeoutHours: Remove stale client sessions after N hours (current: 48.0)
+- Full config location: C:\Users\admib\AppData\Local\Temp\tmpyvn9a1rz\.claude\settings.json
+Claude Auto Review setup wizard
+  [OK] claude CLI found: C:\nvm4w\nodejs\claude.CMD
+Claude Auto Review setup wizard
+  [OK] codex CLI found: C:\nvm4w\nodejs\codex.CMD
+Claude Auto Review setup wizard
+  [OK] claude CLI found: C:\nvm4w\nodejs\claude.CMD
+{"systemMessage":"Claude Auto Review: stop approved (classifier_incomplete)"}
+{"systemMessage":"Claude Auto Review: stop approved (circuit_breaker)"}
+{"systemMessage":"Claude Auto Review: stop approved (no_unreviewed_files)"}
+{"systemMessage":"Claude Auto Review: stop approved (disabled)"}

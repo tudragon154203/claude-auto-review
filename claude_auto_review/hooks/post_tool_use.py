@@ -61,9 +61,13 @@ def _track_edited_file(ctx, state_snapshot, settings, file_path, timestamp):
     return True
 
 
+def _skip_reason(file_path: str) -> str:
+    return "runtime" if file_path.startswith(".claude/claude-auto-review/") else "settings"
+
+
 def _process_single_edit(ctx, state_snapshot, settings, file_path, timestamp):
     if should_skip_file(file_path, settings):
-        reason = "runtime" if file_path.startswith(".claude/claude-auto-review/") else "settings"
+        reason = _skip_reason(file_path)
         log_event(ctx.project_root, "post_tool_use_skipped_file", client_id=ctx.client_id, file=file_path, reason=reason)
         return False
     return _track_edited_file(ctx, state_snapshot, settings, file_path, timestamp)

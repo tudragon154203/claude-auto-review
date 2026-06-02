@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
+from typing import Any, Callable, Optional
+
 from claude_auto_review.stop.orchestration.deps import (
     ReviewEvalDeps,
     StopFlowDependencies,
@@ -9,15 +12,30 @@ from claude_auto_review.stop.orchestration.deps import (
     build_default_eval_deps,
 )
 from claude_auto_review.stop.orchestration.pipeline.service import StopFlowService
+from claude_auto_review.stop.orchestration.types.context import RuntimeContext
 from claude_auto_review.stop.orchestration.types.protocols import ResponseEmitter
 from claude_auto_review.stop.response import StdoutResponseEmitter
-from claude_auto_review.state.store.writer import StateEventWriter as _ConcreteStateEventWriter
+
+
+@dataclass(frozen=True)
+class DependencyOverrides:
+    emitter: Optional[ResponseEmitter] = None
+    load_state_snapshot_fn: Optional[Callable] = None
+    get_unreviewed_files_fn: Optional[Callable] = None
+    consecutive_stop_blocks_fn: Optional[Callable] = None
+    classify_last_assistant_message_fn: Optional[Callable] = None
+    classifier_persist_factory: Optional[Callable] = None
+    resolve_pending_review_fn: Optional[Callable] = None
+    get_reviewer_prompt_script_fn: Optional[Callable] = None
+    log_event_fn: Optional[Callable] = None
+    finalize_review_stop_fn: Optional[Callable] = None
+    state_event_writer_factory: Optional[Callable] = None
 
 
 class StopDecisionEngine:
     def __init__(
         self,
-        ctx,
+        ctx: RuntimeContext,
         *,
         deps: StopFlowDependencies,
         eval_deps: ReviewEvalDeps,
@@ -39,35 +57,35 @@ class StopDecisionEngine:
 
 
 def build_decision_engine(
-    ctx,
+    ctx: RuntimeContext,
     *,
-    emitter: ResponseEmitter | None = None,
-    load_state_snapshot_fn=None,
-    get_unreviewed_files_fn=None,
-    consecutive_stop_blocks_fn=None,
-    classify_last_assistant_message_fn=None,
-    classifier_persist_factory=None,
-    resolve_pending_review_fn=None,
-    get_reviewer_prompt_script_fn=None,
-    log_event_fn=None,
-    finalize_review_stop_fn=None,
+    overrides: DependencyOverrides | None = None,
 ):
-    response_emitter = emitter or StdoutResponseEmitter()
+    overrides = DependencyOverrides() if overrides is None else overrides
+    response_emitter = overrides.emitter or StdoutResponseEmitter()
+
     deps = build_default_dependencies(
         emitter=response_emitter,
-        load_state_snapshot_fn=load_state_snapshot_fn,
-        get_unreviewed_files_fn=get_unreviewed_files_fn,
-        consecutive_stop_blocks_fn=consecutive_stop_blocks_fn,
-        classify_last_assistant_message_fn=classify_last_assistant_message_fn,
-        classifier_persist_factory=classifier_persist_factory,
-        resolve_pending_review_fn=resolve_pending_review_fn,
-        get_reviewer_prompt_script_fn=get_reviewer_prompt_script_fn,
-        log_event_fn=log_event_fn,
-        finalize_review_stop_fn=finalize_review_stop_fn,
+        load_state_snapshot_fn=overrides.load_state_snapshot_fn,
+        get_unreviewed_files_fn=overrides.get_unreviewed_files_fn,
+        consecutive_stop_blocks_fn=overrides.consecutive_stop_blocks_fn,
+        classify_last_assistant_message_fn=overrides.classify_last_assistant_message_fn,
+        classifier_persist_factory=overrides.classifier_persist_factory,
+        resolve_pending_review_fn=overrides.resolve_pending_review_fn,
+        get_reviewer_prompt_script_fn=overrides.get_reviewer_prompt_script_fn,
+        log_event_fn=overrides.log_event_fn,
+        finalize_review_stop_fn=overrides.finalize_review_stop_fn,
     )
+
+    writer_factory = overrides.state_event_writer_factory
+    if writer_factory is None:
+        from claude_auto_review.state.store.writer import StateEventWriter as _ConcreteStateEventWriter
+
+        writer_factory = _ConcreteStateEventWriter
+
     eval_deps = build_default_eval_deps(
         emitter=response_emitter,
-        state_event_writer_factory=_ConcreteStateEventWriter,
-        log_event_fn=log_event_fn,
+        state_event_writer_factory=writer_factory,
+        log_event_fn=overrides.log_event_fn,
     )
     return StopDecisionEngine(ctx, deps=deps, eval_deps=eval_deps)
