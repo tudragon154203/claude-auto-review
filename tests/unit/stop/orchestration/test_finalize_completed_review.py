@@ -53,7 +53,7 @@ class TestFinalizeCompletedReview(unittest.TestCase):
     def test_completed_no_remaining_returns_0(self, mock_plan_log, mock_classify, mock_apply, mock_covered):
         mock_classify.return_value.status = "complete_clean"
         emitter = _mock_emitter()
-        result = finalize_review_stop(_ctx(), self.resolution, deps=build_default_eval_deps(emitter=emitter))
+        result = finalize_review_stop(_ctx(), self.resolution, deps=build_default_eval_deps(emitter=emitter, state_event_writer_factory=MagicMock()))
         self.assertEqual(result, EXIT_STOP_APPROVED)
         emitter.approve.assert_called_once_with("Claude Auto Review: review r1 clean, all files covered")
         mock_plan_log.assert_any_call(
@@ -71,7 +71,7 @@ class TestFinalizeCompletedReview(unittest.TestCase):
     def test_completed_with_findings_returns_2(self, mock_classify, mock_block, mock_record, mock_covered):
         mock_classify.return_value.status = "complete_findings"
         emitter = _mock_emitter()
-        result = finalize_review_stop(_ctx(), self.resolution, deps=build_default_eval_deps(emitter=emitter))
+        result = finalize_review_stop(_ctx(), self.resolution, deps=build_default_eval_deps(emitter=emitter, state_event_writer_factory=MagicMock()))
         self.assertEqual(result, EXIT_REVIEW_FAILED)
         mock_block.assert_called_once()
         mock_record.assert_called_once()
@@ -97,7 +97,7 @@ class TestFinalizeCompletedReview(unittest.TestCase):
             )
             resolution = ReviewResolution(state=[], unreviewed=[], review=_mk_review("r1", "fake/r.md"))
             emitter = _mock_emitter()
-            result = finalize_review_stop(_ctx(project_root=project_root), resolution, deps=build_default_eval_deps(emitter=emitter))
+            result = finalize_review_stop(_ctx(project_root=project_root), resolution, deps=build_default_eval_deps(emitter=emitter, state_event_writer_factory=MagicMock()))
             self.assertEqual(result, EXIT_STOP_APPROVED)
             mock_block.assert_not_called()
             mock_apply.assert_called_once()
@@ -128,7 +128,7 @@ class TestFinalizeCompletedReview(unittest.TestCase):
             )
             resolution = ReviewResolution(state=[], unreviewed=[], review=_mk_review("r1", "fake/r.md"))
             emitter = _mock_emitter()
-            result = finalize_review_stop(_ctx(project_root=project_root), resolution, deps=build_default_eval_deps(emitter=emitter))
+            result = finalize_review_stop(_ctx(project_root=project_root), resolution, deps=build_default_eval_deps(emitter=emitter, state_event_writer_factory=MagicMock()))
             self.assertEqual(result, EXIT_REVIEW_FAILED)
             mock_record.assert_called_once()
             mock_block.assert_called_once()

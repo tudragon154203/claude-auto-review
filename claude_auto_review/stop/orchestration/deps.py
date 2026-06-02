@@ -32,7 +32,6 @@ from claude_auto_review.stop.orchestration.types.protocols import (
     UnreviewedFilesQuery,
 )
 from claude_auto_review.stop.orchestration.pipeline.stages import _build_classifier_result_persistor
-from claude_auto_review.stop.response import StdoutResponseEmitter
 
 
 @dataclass(frozen=True)
@@ -64,28 +63,18 @@ class StopFlowDependencies:
     finalize_review_stop: FinalizeReviewStop
 
 
-# --- Focused sub-deps for the review-eval pipeline ---
-# Each dataclass captures one narrow concern, replacing the previous
-# flat EvalDeps which lumped 7 unrelated fields together.
-
 @dataclass(frozen=True)
 class ReviewClassifierDeps:
-    """Review artifact classification."""
-
     classify_fn: ClassifyReviewArtifact
 
 
 @dataclass(frozen=True)
 class ReviewPlannerDeps:
-    """Planning a finalize action from a classified artifact state."""
-
     plan_for_artifact_state_fn: PlanForArtifactState
 
 
 @dataclass(frozen=True)
 class ReviewExecutorDeps:
-    """Executing a finalize plan and writing state."""
-
     apply_plan_fn: ApplyFinalizePlan
     state_event_writer_factory: Callable[[Path, str], StateEventWriterProtocol]
     emitter: ResponseEmitter
@@ -93,20 +82,12 @@ class ReviewExecutorDeps:
 
 @dataclass(frozen=True)
 class AutocompleteDeps:
-    """Attempting review autocomplete when no plan is available."""
-
     attempt_autocomplete_fn: AttemptReviewAutocomplete
     log_event_fn: EventLogger
 
 
 @dataclass(frozen=True)
 class ReviewEvalDeps:
-    """All deps required to run the review-eval pipeline.
-
-    Split into four focused sub-deps (ISP), each encapsulating a single
-    stage of the pipeline, so that callers only inject what they use.
-    """
-
     classifier: ReviewClassifierDeps
     planner: ReviewPlannerDeps
     executor: ReviewExecutorDeps
@@ -123,6 +104,7 @@ def _default_classifier_persist_factory(ctx):
 
 def build_default_dependencies(
     *,
+    emitter: ResponseEmitter,
     load_state_snapshot_fn=None,
     get_unreviewed_files_fn=None,
     consecutive_stop_blocks_fn=None,
@@ -131,7 +113,6 @@ def build_default_dependencies(
     resolve_pending_review_fn=None,
     get_reviewer_prompt_script_fn=None,
     log_event_fn=None,
-    emitter=None,
     finalize_review_stop_fn=None,
 ):
     deps = StopFlowDependencies(
@@ -155,7 +136,7 @@ def build_default_dependencies(
             get_reviewer_prompt_script=_resolve(get_reviewer_prompt_script, get_reviewer_prompt_script_fn),
         ),
         log_event=_resolve(log_event, log_event_fn),
-        emitter=emitter or StdoutResponseEmitter(),
+        emitter=emitter,
         finalize_review_stop=_resolve(finalize_review_stop, finalize_review_stop_fn),
     )
     return deps
@@ -163,13 +144,13 @@ def build_default_dependencies(
 
 def build_default_eval_deps(
     *,
+    emitter: ResponseEmitter,
+    state_event_writer_factory: Callable[[Path, str], StateEventWriterProtocol],
     classify_fn=None,
     plan_for_artifact_state_fn=None,
     apply_plan_fn=None,
     attempt_autocomplete_fn=None,
     log_event_fn=None,
-    state_event_writer_factory=None,
-    emitter=None,
 ):
     from claude_auto_review.stop.orchestration.finalize.autocomplete import attempt_review_autocomplete
     from claude_auto_review.stop.orchestration.finalize.outcomes import plan_for_artifact_state
@@ -177,8 +158,6 @@ def build_default_eval_deps(
     from claude_auto_review.stop.orchestration.finalize.review_artifact_evaluator import classify_review_artifact
 
     _log = _resolve(log_event, log_event_fn)
-    _writer = _resolve(_ConcreteStateEventWriter, state_event_writer_factory)
-    _emitter = emitter or StdoutResponseEmitter()
 
     return ReviewEvalDeps(
         classifier=ReviewClassifierDeps(
@@ -189,8 +168,8 @@ def build_default_eval_deps(
         ),
         executor=ReviewExecutorDeps(
             apply_plan_fn=_resolve(apply_finalize_plan_result, apply_plan_fn),
-            state_event_writer_factory=_writer,
-            emitter=_emitter,
+            state_event_writer_factory=state_event_writer_factory,
+            emitter=emitter,
         ),
         autocomplete=AutocompleteDeps(
             attempt_autocomplete_fn=_resolve(attempt_review_autocomplete, attempt_autocomplete_fn),

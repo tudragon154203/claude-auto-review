@@ -4,7 +4,7 @@ from collections.abc import Callable
 from typing import Any
 
 from claude_auto_review.stop.orchestration.types.context import ResponsePayload, RuntimeContext, StopDecision
-from claude_auto_review.stop.orchestration.decision_engine import StopDecisionEngine
+from claude_auto_review.stop.orchestration.decision_engine import StopDecisionEngine, build_decision_engine
 from claude_auto_review.stop.orchestration.types.resolution import StopDecisionKind
 from claude_auto_review.stop.response import ResponseEmitter, StdoutResponseEmitter
 
@@ -65,6 +65,6 @@ def dispatch_stop_decision(
 
 def run_stop_flow(ctx: RuntimeContext, *, emitter: ResponseEmitter | None = None) -> int:
     response_emitter = emitter or StdoutResponseEmitter()
-    engine = StopDecisionEngine(ctx, emitter=response_emitter)
+    engine = build_decision_engine(ctx, emitter=response_emitter)
     decision = engine.run()
     return dispatch_stop_decision(engine, decision, emitter=response_emitter)

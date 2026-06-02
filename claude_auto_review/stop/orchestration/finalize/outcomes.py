@@ -28,12 +28,21 @@ def blocked_result(action: FinalizeAction) -> FinalizeResult:
     return FinalizeResult(action=action, exit_code=2)
 
 
-_ARTIFACT_STATE_PLANS = {
-    "complete_clean": FinalizePlan(result=approved_result(), effect=FinalizeEffect.APPLY_COMPLETED_CLEAN_REVIEW),
-    "complete_findings": FinalizePlan(
-        result=blocked_result(FinalizeAction.BLOCKED_FINDINGS), effect=FinalizeEffect.RECORD_FINDINGS_BLOCK
-    ),
-}
+_ARTIFACT_STATE_PLANS: dict[str, FinalizePlan] = {}
+
+
+def register_artifact_plan(status_name: str, plan: FinalizePlan) -> None:
+    _ARTIFACT_STATE_PLANS[status_name] = plan
+
+
+register_artifact_plan(
+    "complete_clean",
+    FinalizePlan(result=approved_result(), effect=FinalizeEffect.APPLY_COMPLETED_CLEAN_REVIEW),
+)
+register_artifact_plan(
+    "complete_findings",
+    FinalizePlan(result=blocked_result(FinalizeAction.BLOCKED_FINDINGS), effect=FinalizeEffect.RECORD_FINDINGS_BLOCK),
+)
 
 
 def artifact_status_name(artifact_state) -> str | None:

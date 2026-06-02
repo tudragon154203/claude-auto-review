@@ -12,15 +12,24 @@ AutocompleteFn = Callable[
 ]
 
 _BACKEND_REGISTRY: dict[str, AutocompleteFn] = {}
+_DEFAULTS_REGISTERED = False
 
 
 def register_backend(name: str, fn: AutocompleteFn) -> None:
     _BACKEND_REGISTRY[name] = fn
 
 
-def _register_default_backends() -> None:
-    if _BACKEND_REGISTRY:
+def _reset_registry() -> None:
+    global _DEFAULTS_REGISTERED
+    _BACKEND_REGISTRY.clear()
+    _DEFAULTS_REGISTERED = False
+
+
+def _ensure_defaults_registered() -> None:
+    global _DEFAULTS_REGISTERED
+    if _DEFAULTS_REGISTERED:
         return
+    _DEFAULTS_REGISTERED = True
 
     from .codex import _attempt_codex_autocomplete
     from .claude import _attempt_claude_autocomplete
@@ -41,8 +50,9 @@ def attempt_stop_autocomplete(
     model=DEFAULT_REVIEWER_MODEL,
     backend="claude",
 ):
-    _register_default_backends()
+    _ensure_defaults_registered()
     fn = _BACKEND_REGISTRY.get(backend)
     if fn is None:
-        raise ValueError(f"Unsupported reviewer backend: {backend}")
+        available = ", ".join(sorted(_BACKEND_REGISTRY)) or "none"
+        raise ValueError(f"Unsupported reviewer backend: {backend} (available: {available})")
     return fn(ctx, review_id, review_path, prompt_file, user_prompt, reviewer_timeout_seconds, model)

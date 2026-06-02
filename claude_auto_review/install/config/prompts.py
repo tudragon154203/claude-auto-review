@@ -45,21 +45,12 @@ def _prompt_int(prompt: str, default: int) -> int:
         return value
 
 
-def _run_wizard(settings: PluginSettings) -> PluginSettings:
-    from claude_auto_review.install.config.apply import _apply_args
+def _validate_backend_choice(backend: str) -> None:
     from claude_auto_review.install.config.display import _check_backend_cli
-
-    print("Claude Auto Review setup wizard")
-    backend_default = settings.resolved_reviewer_backend()
-    backend = _prompt_choice("Reviewer backend", sorted(DEFAULT_REVIEWER_MODELS), backend_default)
     _check_backend_cli(backend)
-    normalized = _apply_args(
-        PluginSettings.from_mapping({**settings.to_mapping(), SETTING_REVIEWER_BACKEND: backend}),
-        argparse.Namespace(backend=backend, model=None, severity=None, max_stop_passes=None, non_interactive=False),
-    )
-    model = _prompt_text("Reviewer model", normalized.resolved_reviewer_model(backend=backend))
-    severity = _prompt_choice("Minimum blocking severity", SEVERITY_CHOICES, settings.minimum_blocking_severity)
-    max_stop_passes = _prompt_int("Max stop passes before circuit breaker", settings.max_stop_passes)
+
+
+def _apply_wizard_settings(settings: PluginSettings, *, backend: str, model: str, severity: str, max_stop_passes: int) -> PluginSettings:
     return PluginSettings.from_mapping(
         {
             **settings.to_mapping(),
@@ -69,3 +60,20 @@ def _run_wizard(settings: PluginSettings) -> PluginSettings:
             SETTING_MAX_STOP_PASSES: max_stop_passes,
         }
     )
+
+
+def _run_wizard(settings: PluginSettings) -> PluginSettings:
+    from claude_auto_review.install.config.apply import _apply_args
+
+    print("Claude Auto Review setup wizard")
+    backend_default = settings.resolved_reviewer_backend()
+    backend = _prompt_choice("Reviewer backend", sorted(DEFAULT_REVIEWER_MODELS), backend_default)
+    _validate_backend_choice(backend)
+    normalized = _apply_args(
+        PluginSettings.from_mapping({**settings.to_mapping(), SETTING_REVIEWER_BACKEND: backend}),
+        argparse.Namespace(backend=backend, model=None, severity=None, max_stop_passes=None, non_interactive=False),
+    )
+    model = _prompt_text("Reviewer model", normalized.resolved_reviewer_model(backend=backend))
+    severity = _prompt_choice("Minimum blocking severity", SEVERITY_CHOICES, settings.minimum_blocking_severity)
+    max_stop_passes = _prompt_int("Max stop passes before circuit breaker", settings.max_stop_passes)
+    return _apply_wizard_settings(settings, backend=backend, model=model, severity=severity, max_stop_passes=max_stop_passes)

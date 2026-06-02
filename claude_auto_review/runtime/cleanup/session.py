@@ -10,16 +10,18 @@ from claude_auto_review.runtime.client_dirs import get_client_runtime_dir, inval
 from claude_auto_review.runtime.context import resolve_client_id, resolve_project_root
 
 
-def cancel_runtime(project_root=None, client_id=""):
-    project_root = resolve_project_root(project_root)
+def cancel_client_runtime(project_root, client_id):
+    client_dir = get_client_runtime_dir(project_root, client_id)
     removed = []
-    if client_id:
-        client_dir = get_client_runtime_dir(project_root, client_id)
-        if _remove_tree(client_dir, project_root=project_root):
-            invalidate_client_runtime_dir_cache(project_root, client_id)
-            removed.append(client_dir)
-        return removed
+    if _remove_tree(client_dir, project_root=project_root):
+        invalidate_client_runtime_dir_cache(project_root, client_id)
+        removed.append(client_dir)
+    return removed
+
+
+def cancel_project_runtime(project_root):
     runtime = project_root / RUNTIME_DIR
+    removed = []
     if runtime.exists():
         for target in _iter_runtime_cleanup_targets(runtime):
             if _remove_tree(target, project_root=project_root):
@@ -29,12 +31,14 @@ def cancel_runtime(project_root=None, client_id=""):
     return removed
 
 
+def cancel_runtime(project_root=None, client_id=""):
+    project_root = resolve_project_root(project_root)
+    if client_id:
+        return cancel_client_runtime(project_root, client_id)
+    return cancel_project_runtime(project_root)
+
+
 def cancel_session(project_root=None, client_id=""):
     project_root = resolve_project_root(project_root)
     client_id = resolve_client_id(client_id)
-    client_dir = get_client_runtime_dir(project_root, client_id)
-    removed = []
-    if _remove_tree(client_dir, project_root=project_root):
-        invalidate_client_runtime_dir_cache(project_root, client_id)
-        removed.append(client_dir)
-    return removed
+    return cancel_client_runtime(project_root, client_id)

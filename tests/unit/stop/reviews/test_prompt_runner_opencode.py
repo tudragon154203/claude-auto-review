@@ -8,7 +8,9 @@ from unittest.mock import MagicMock, patch
 from claude_auto_review.stop.orchestration.types.context import RuntimeContext
 from claude_auto_review.stop.reviews.types.enums import AutocompleteStatus
 from claude_auto_review.stop.reviews.runners.dispatcher import (
-    _register_default_backends,
+    _BACKEND_REGISTRY,
+    _reset_registry,
+    _ensure_defaults_registered,
     attempt_stop_autocomplete,
 )
 from claude_auto_review.stop.reviews.runners.opencode import (
@@ -70,7 +72,8 @@ class TestOpencodeBackendRegistration(unittest.TestCase):
         from claude_auto_review.stop.reviews.runners.dispatcher import _BACKEND_REGISTRY
 
         _BACKEND_REGISTRY.clear()
-        _register_default_backends()
+        _reset_registry()
+        _ensure_defaults_registered()
         self.assertIn("opencode", _BACKEND_REGISTRY)
 
 
@@ -80,7 +83,8 @@ class TestOpencodeAutocomplete(unittest.TestCase):
         from claude_auto_review.stop.reviews.runners.dispatcher import _BACKEND_REGISTRY
 
         _BACKEND_REGISTRY.clear()
-        _register_default_backends()
+        _reset_registry()
+        _ensure_defaults_registered()
 
         result = _BACKEND_REGISTRY["opencode"](
             _ctx(), "rev-1", Path("/fake/review.md"), Path("/fake/prompt.md"),
@@ -93,7 +97,8 @@ class TestOpencodeAutocomplete(unittest.TestCase):
         from claude_auto_review.stop.reviews.runners.dispatcher import _BACKEND_REGISTRY
 
         _BACKEND_REGISTRY.clear()
-        _register_default_backends()
+        _reset_registry()
+        _ensure_defaults_registered()
 
         result = _BACKEND_REGISTRY["opencode"](
             _ctx(), "rev-1", Path("/fake/review.md"), Path("/fake/nonexistent-prompt.md"),
@@ -129,7 +134,8 @@ class TestOpencodeAutocomplete(unittest.TestCase):
         from claude_auto_review.stop.reviews.runners.dispatcher import _BACKEND_REGISTRY
 
         _BACKEND_REGISTRY.clear()
-        _register_default_backends()
+        _reset_registry()
+        _ensure_defaults_registered()
 
         result = _BACKEND_REGISTRY["opencode"](
             _ctx(), "rev-ok", review_path, prompt_file,
@@ -157,7 +163,8 @@ class TestOpencodeAutocomplete(unittest.TestCase):
         from claude_auto_review.stop.reviews.runners.dispatcher import _BACKEND_REGISTRY
 
         _BACKEND_REGISTRY.clear()
-        _register_default_backends()
+        _reset_registry()
+        _ensure_defaults_registered()
 
         result = _BACKEND_REGISTRY["opencode"](
             _ctx(), "rev-nz", Path("/fake/review.md"), prompt_file,
@@ -182,7 +189,8 @@ class TestOpencodeAutocomplete(unittest.TestCase):
         from claude_auto_review.stop.reviews.runners.dispatcher import _BACKEND_REGISTRY
 
         _BACKEND_REGISTRY.clear()
-        _register_default_backends()
+        _reset_registry()
+        _ensure_defaults_registered()
 
         result = _BACKEND_REGISTRY["opencode"](
             _ctx(), "rev-to", Path("/fake/review.md"), prompt_file,
@@ -206,7 +214,8 @@ class TestOpencodeAutocomplete(unittest.TestCase):
         from claude_auto_review.stop.reviews.runners.dispatcher import _BACKEND_REGISTRY
 
         _BACKEND_REGISTRY.clear()
-        _register_default_backends()
+        _reset_registry()
+        _ensure_defaults_registered()
 
         result = _BACKEND_REGISTRY["opencode"](
             _ctx(), "rev-err", Path("/fake/review.md"), prompt_file,
@@ -224,7 +233,8 @@ class TestOpencodeAutocomplete(unittest.TestCase):
         from claude_auto_review.stop.reviews.runners.dispatcher import _BACKEND_REGISTRY
 
         _BACKEND_REGISTRY.clear()
-        _register_default_backends()
+        _reset_registry()
+        _ensure_defaults_registered()
 
         result = _BACKEND_REGISTRY["opencode"](
             _ctx(), "rev-read-err", Path("/fake/review.md"), prompt_file,
@@ -244,7 +254,8 @@ class TestOpencodeAutocomplete(unittest.TestCase):
         from claude_auto_review.stop.reviews.runners.dispatcher import _BACKEND_REGISTRY
 
         _BACKEND_REGISTRY.clear()
-        _register_default_backends()
+        _reset_registry()
+        _ensure_defaults_registered()
 
         result = _BACKEND_REGISTRY["opencode"](
             _ctx(), "rev-empty", Path("/fake/review.md"), prompt_file,
@@ -344,7 +355,8 @@ class TestEmptyPromptFallback(unittest.TestCase):
         from claude_auto_review.stop.reviews.runners.dispatcher import _BACKEND_REGISTRY
 
         _BACKEND_REGISTRY.clear()
-        _register_default_backends()
+        _reset_registry()
+        _ensure_defaults_registered()
 
         result = _BACKEND_REGISTRY["opencode"](
             _ctx(), "rev-ep", review_path, prompt_file,
@@ -382,7 +394,8 @@ class TestMergedFileCleanup(unittest.TestCase):
         from claude_auto_review.stop.reviews.runners.dispatcher import _BACKEND_REGISTRY
 
         _BACKEND_REGISTRY.clear()
-        _register_default_backends()
+        _reset_registry()
+        _ensure_defaults_registered()
 
         _BACKEND_REGISTRY["opencode"](
             _ctx(), "rev-cl", review_path, prompt_file,
@@ -403,7 +416,8 @@ class TestMergedFileCleanup(unittest.TestCase):
         from claude_auto_review.stop.reviews.runners.dispatcher import _BACKEND_REGISTRY
 
         _BACKEND_REGISTRY.clear()
-        _register_default_backends()
+        _reset_registry()
+        _ensure_defaults_registered()
 
         result = _BACKEND_REGISTRY["opencode"](
             _ctx(), "rev-cl-to", Path("/fake/review.md"), prompt_file,

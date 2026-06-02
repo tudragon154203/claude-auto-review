@@ -50,6 +50,12 @@ SETTING_DESCRIPTIONS = {
 }
 
 
+def _resolved_descriptions(extra_descriptions: dict[str, str] | None = None) -> dict[str, str]:
+    if extra_descriptions:
+        return {**SETTING_DESCRIPTIONS, **extra_descriptions}
+    return SETTING_DESCRIPTIONS
+
+
 def _check_backend_cli(backend: str) -> None:
     found = shutil.which(backend)
     if found:
@@ -60,16 +66,29 @@ def _check_backend_cli(backend: str) -> None:
     print(f"    Install with: {hint}")
 
 
-def _print_advanced_settings(settings_path: Path, settings: PluginSettings) -> None:
+def _print_advanced_settings(
+    settings_path: Path,
+    settings: PluginSettings,
+    *,
+    extra_descriptions: dict[str, str] | None = None,
+) -> None:
+    descriptions = _resolved_descriptions(extra_descriptions)
     mapping = settings.to_mapping()
     print("- Other available settings in `.claude/settings.json` under `claude-auto-review`:")
     for key in ADVANCED_SETTING_KEYS:
         value = mapping.get(key, "")
-        print(f"  - {key}: {SETTING_DESCRIPTIONS.get(key, 'Advanced setting')} (current: {value!r})")
+        print(f"  - {key}: {descriptions.get(key, 'Advanced setting')} (current: {value!r})")
     print(f"- Full config location: {settings_path}")
 
 
-def _print_summary(project_root: Path, initialized_before: bool, settings_path: Path, settings: PluginSettings) -> None:
+def _print_summary(
+    project_root: Path,
+    initialized_before: bool,
+    settings_path: Path,
+    settings: PluginSettings,
+    *,
+    extra_descriptions: dict[str, str] | None = None,
+) -> None:
     runtime_dir = project_root / ".claude" / "claude-auto-review"
     print()
     print("Configuration saved.")
@@ -82,4 +101,4 @@ def _print_summary(project_root: Path, initialized_before: bool, settings_path: 
         f"minimumBlockingSeverity={settings.minimum_blocking_severity}, "
         f"maxStopPasses={settings.max_stop_passes}"
     )
-    _print_advanced_settings(settings_path, settings)
+    _print_advanced_settings(settings_path, settings, extra_descriptions=extra_descriptions)

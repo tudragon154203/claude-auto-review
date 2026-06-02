@@ -34,31 +34,36 @@ def _review_id_from_timestamp(timestamp):
 
 
 def resolve_review_paths(ctx: RuntimeContext, review_id: str) -> tuple[Path, Path]:
-    """Resolve the review file and prompt file paths for *review_id*."""
     return (
         client_reviews_dir(ctx.project_root, ctx.client_id) / f"review-{review_id}.md",
         client_run_dir(ctx.project_root, ctx.client_id) / f"review-{review_id}-prompt.md",
     )
 
 
-def build_review_prompt_content(ctx: RuntimeContext, unreviewed, settings, review_path: Path, *, review_id: str, timestamp: str, prompt_path: Path):
-    """Build prompt and review content strings. Pure assembly, no I/O."""
-    files = [entry.file for entry in unreviewed]
+def _load_rules_content(settings, project_root: Path) -> str | None:
+    content = read_if_exists(resolve_rules_file_path(project_root, settings))
+    return content if content else None
 
-    rules = read_if_exists(resolve_rules_file_path(ctx.project_root, settings))
-    diff = all_session_diffs(files, ctx.project_root, ctx.client_id)
 
-    reviewer_backend = settings.reviewer_backend
+def _resolve_reviewer_model(settings, backend: str) -> str:
     try:
-        reviewer_model = settings.resolved_reviewer_model(backend=reviewer_backend)
+        model: str = settings.resolved_reviewer_model(backend=backend)
+        return model
     except (ValueError, KeyError):
-        reviewer_model = settings.reviewer_model or ""
+        return settings.reviewer_model or ""
+
+
+def _build_review_contents(ctx: RuntimeContext, unreviewed, rules_content, settings, *, review_path: Path, review_id: str, timestamp: str, prompt_path: Path):
+    files = [entry.file for entry in unreviewed]
+    diff = all_session_diffs(files, ctx.project_root, ctx.client_id)
+    reviewer_backend = settings.reviewer_backend
+    reviewer_model = _resolve_reviewer_model(settings, reviewer_backend)
 
     prompt_content = build_prompt(
         review_id,
         timestamp,
         unreviewed,
-        rules,
+        rules_content,
         diff,
         review_path,
         reviewer_backend=reviewer_backend,
@@ -73,6 +78,14 @@ def build_review_prompt_content(ctx: RuntimeContext, unreviewed, settings, revie
         reviewer_model=reviewer_model,
     )
     return prompt_content, review_content, files
+
+
+def build_review_prompt_content(ctx: RuntimeContext, unreviewed, settings, review_path: Path, *, review_id: str, timestamp: str, prompt_path: Path):
+    rules = _load_rules_content(settings, ctx.project_root)
+    return _build_review_contents(
+        ctx, unreviewed, rules, settings,
+        review_path=review_path, review_id=review_id, timestamp=timestamp, prompt_path=prompt_path,
+    )
 
 
 def _write_text_file(path, content):
