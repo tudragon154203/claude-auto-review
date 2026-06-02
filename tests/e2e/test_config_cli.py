@@ -60,7 +60,7 @@ class EndToEndConfigCliTests(EndToEndTestCase):
         self.assertEqual(settings["claude-auto-review"]["reviewerModel"], "gpt-5.4-mini")
         self.assertEqual(settings["claude-auto-review"]["minimumBlockingSeverity"], "high")
         self.assertEqual(settings["claude-auto-review"]["maxStopPasses"], 8)
-        self.assertIn("Claude Auto Review setup wizard", result.stdout)
+        self.assertIn("setup wizard", result.stdout)
 
     def test_config_then_review_flow_still_works(self):
         project_root = self.temp_project()

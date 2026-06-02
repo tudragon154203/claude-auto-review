@@ -27,7 +27,7 @@ class TestCheckBackendCli(unittest.TestCase):
         with patch("sys.stdout", buf):
             config_cli._check_backend_cli("codex")
         output = buf.getvalue()
-        self.assertIn("[WARN] codex CLI not found", output)
+        self.assertIn("⚠ codex CLI not found", output)
         self.assertIn("npm install -g @openai/codex", output)
 
     @patch("claude_auto_review.install.config.display.shutil.which", return_value=None)
@@ -44,7 +44,7 @@ class TestCheckBackendCli(unittest.TestCase):
         with patch("sys.stdout", buf):
             config_cli._check_backend_cli("opencode")
         output = buf.getvalue()
-        self.assertIn("[WARN] opencode CLI not found", output)
+        self.assertIn("⚠ opencode CLI not found", output)
         self.assertIn("npm install -g opencode-ai", output)
 
     @patch("claude_auto_review.install.config.display.shutil.which", return_value="/usr/local/bin/opencode")
@@ -70,7 +70,7 @@ class TestCheckBackendCli(unittest.TestCase):
                  patch.object(config_cli, "_write_plugin_settings", return_value=settings_path), \
                  patch("sys.stdout", buf):
                 config_cli.main(["--backend", "codex", "--non-interactive"])
-            self.assertIn("[OK] codex CLI found", buf.getvalue())
+            self.assertIn("✓ codex CLI found", buf.getvalue())
 
 
 if __name__ == "__main__":

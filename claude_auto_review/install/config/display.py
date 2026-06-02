@@ -60,11 +60,11 @@ def _resolved_descriptions(extra_descriptions: dict[str, str] | None = None) -> 
 def _check_backend_cli(backend: str) -> None:
     found = shutil.which(backend)
     if found:
-        print(f"  [OK] {backend} CLI found: {found}")
+        print(f"   ✓ {backend} CLI found: {found}")
         return
     hint = _BACKEND_INSTALL_HINTS.get(backend, f"install the {backend} CLI")
-    print(f"  [WARN] {backend} CLI not found on PATH.")
-    print(f"    Install with: {hint}")
+    print(f"   ⚠ {backend} CLI not found on PATH.")
+    print(f"     Install with: {hint}")
 
 
 def _print_advanced_settings(
@@ -75,11 +75,11 @@ def _print_advanced_settings(
 ) -> None:
     descriptions = _resolved_descriptions(extra_descriptions)
     mapping = settings.to_mapping()
-    print("- Other available settings in `.claude/settings.json` under `claude-auto-review`:")
+    print(" ── Other settings " + "─" * 41)
     for key in ADVANCED_SETTING_KEYS:
         value = mapping.get(key, "")
-        print(f"  - {key}: {descriptions.get(key, 'Advanced setting')} (current: {value!r})")
-    print(f"- Full config location: {settings_path}")
+        print(f"   {key}: {descriptions.get(key, 'Advanced setting')} (current: {value!r})")
+    print(f" 📄 Full config location: {settings_path}")
 
 
 def _print_summary(
@@ -92,12 +92,12 @@ def _print_summary(
 ) -> None:
     runtime_dir = project_root / ".claude" / "claude-auto-review"
     print()
-    print("Configuration saved.")
-    print(f"- Setup: {'already initialized' if initialized_before else 'initialized now'}")
-    print(f"- Settings file: {settings_path}")
-    print(f"- Runtime directory: {runtime_dir}")
+    print("── Configuration saved " + "─" * 37)
+    print(f" ✓ Setup: {'already initialized' if initialized_before else 'initialized now'}")
+    print(f" 📄 Settings file: {settings_path}")
+    print(f" 📁 Runtime directory: {runtime_dir}")
     print(
-        f"- Important settings updated: reviewerBackend={settings.reviewer_backend}, "
+        f" ⚙  reviewerBackend={settings.reviewer_backend}, "
         f"reviewerModel={resolved_reviewer_model(settings)}, "
         f"minimumBlockingSeverity={settings.minimum_blocking_severity}, "
         f"maxStopPasses={settings.max_stop_passes}"

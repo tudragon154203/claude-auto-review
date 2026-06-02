@@ -126,8 +126,9 @@ class TestResolveFunctions(unittest.TestCase):
         for backend, expected in DEFAULT_REVIEWER_MODELS.items():
             self.assertEqual(resolve_reviewer_model(None, backend=backend), expected)
 
-    def test_resolve_reviewer_model_fallback_for_unknown_backend(self):
-        self.assertEqual(resolve_reviewer_model(None, backend="nonexistent"), DEFAULT_REVIEWER_MODELS["claude"])
+    def test_resolve_reviewer_model_raises_for_unknown_backend(self):
+        with self.assertRaises(ValueError):
+            resolve_reviewer_model(None, backend="nonexistent")
 
 
 if __name__ == "__main__":

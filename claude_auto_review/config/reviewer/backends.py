@@ -88,4 +88,6 @@ def resolve_reviewer_model(
     if reviewer_model is not None:
         return reviewer_model
     reg = registry or DEFAULT_REGISTRY
-    return reg.default_model(backend) if backend in reg else DEFAULT_REVIEWER_MODEL
+    if backend not in reg:
+        raise ValueError(f"Unknown reviewer backend: {backend!r}")
+    return reg.default_model(backend)
