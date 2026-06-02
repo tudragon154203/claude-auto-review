@@ -3,6 +3,7 @@ from __future__ import annotations
 import shutil
 from pathlib import Path
 
+from claude_auto_review.config.resolvers.reviewer import resolved_reviewer_model
 from claude_auto_review.config.settings.models import PluginSettings
 from claude_auto_review.config.utils.schema import (
     KNOWN_SETTING_KEYS,
@@ -97,7 +98,7 @@ def _print_summary(
     print(f"- Runtime directory: {runtime_dir}")
     print(
         f"- Important settings updated: reviewerBackend={settings.reviewer_backend}, "
-        f"reviewerModel={settings.resolved_reviewer_model()}, "
+        f"reviewerModel={resolved_reviewer_model(settings)}, "
         f"minimumBlockingSeverity={settings.minimum_blocking_severity}, "
         f"maxStopPasses={settings.max_stop_passes}"
     )

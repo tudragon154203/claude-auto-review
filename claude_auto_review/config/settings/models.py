@@ -64,12 +64,3 @@ class PluginSettings:
     def to_mapping(self) -> dict[str, Any]:
         return plugin_settings_mapping(self)
 
-    def resolved_reviewer_backend(self) -> str:
-        from claude_auto_review.config.resolvers.reviewer import resolved_reviewer_backend
-
-        return resolved_reviewer_backend(self)
-
-    def resolved_reviewer_model(self, *, backend: str | None = None) -> str:
-        from claude_auto_review.config.resolvers.reviewer import resolved_reviewer_model
-
-        return resolved_reviewer_model(self, backend=backend)

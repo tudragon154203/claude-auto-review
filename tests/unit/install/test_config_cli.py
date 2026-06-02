@@ -5,6 +5,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
+from claude_auto_review.config.resolvers.reviewer import resolved_reviewer_model
 from claude_auto_review.install.cli import config as config_cli
 
 
@@ -65,7 +66,7 @@ class TestConfigCli(unittest.TestCase):
         updated = config_cli._apply_args(settings, args)
 
         self.assertEqual(updated.reviewer_backend, "codex")
-        self.assertEqual(updated.resolved_reviewer_model(), "gpt-5.4-mini")
+        self.assertEqual(resolved_reviewer_model(updated), "gpt-5.4-mini")
         self.assertEqual(updated.minimum_blocking_severity, "high")
         self.assertEqual(updated.max_stop_passes, 7)
 
@@ -130,7 +131,7 @@ class TestConfigCli(unittest.TestCase):
             updated = config_cli._run_wizard(settings)
 
         self.assertEqual(updated.reviewer_backend, settings.reviewer_backend)
-        self.assertEqual(updated.resolved_reviewer_model(), settings.resolved_reviewer_model())
+        self.assertEqual(resolved_reviewer_model(updated), resolved_reviewer_model(settings))
         self.assertEqual(updated.minimum_blocking_severity, settings.minimum_blocking_severity)
         self.assertEqual(updated.max_stop_passes, settings.max_stop_passes)
 
@@ -302,6 +303,33 @@ class TestConfigCli(unittest.TestCase):
             saved = json.loads(settings_path.read_text(encoding="utf-8"))
             self.assertEqual(saved["claude-auto-review"]["reviewerBackend"], "codex")
             self.assertEqual(saved["claude-auto-review"]["reviewerModel"], "gpt-5.4-mini")
+
+    def test_wizard_shows_opencode_model_hint(self):
+        settings = config_cli.PluginSettings(reviewer_backend="opencode", reviewer_model="opencode/big-pickle")
+        stdout = io.StringIO()
+
+        with patch("builtins.input", side_effect=["", "", "", ""]), patch("sys.stdout", stdout):
+            config_cli._run_wizard(settings)
+
+        self.assertIn("enter 'default' or 'none'", stdout.getvalue())
+
+    def test_wizard_hides_model_hint_for_claude_backend(self):
+        settings = config_cli.PluginSettings(reviewer_backend="claude")
+        stdout = io.StringIO()
+
+        with patch("builtins.input", side_effect=["", "", "", ""]), patch("sys.stdout", stdout):
+            config_cli._run_wizard(settings)
+
+        self.assertNotIn("enter 'default' or 'none'", stdout.getvalue())
+
+    def test_wizard_hides_model_hint_for_codex_backend(self):
+        settings = config_cli.PluginSettings(reviewer_backend="codex")
+        stdout = io.StringIO()
+
+        with patch("builtins.input", side_effect=["", "", "", ""]), patch("sys.stdout", stdout):
+            config_cli._run_wizard(settings)
+
+        self.assertNotIn("enter 'default' or 'none'", stdout.getvalue())
 
     def test_negative_max_stop_passes_is_rejected(self):
         with self.assertRaises(SystemExit):

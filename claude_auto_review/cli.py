@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
-"""Single entry point for ``claude-auto-review`` CLI with subcommands."""
+"""Single entry point for ``claude-auto-review`` CLI with subcommands.
+
+Subcommands are registered via :func:`register_subcommand` (or the
+``SUBCOMMANDS`` built-in default table). Third-party integrations can
+register additional commands without modifying this file — the OCP
+extension point.
+"""
 
 from __future__ import annotations
 
@@ -8,7 +14,7 @@ import sys
 from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
 
-SUBCOMMANDS = {
+_BUILTIN_SUBCOMMANDS: dict[str, str] = {
     "config": "claude_auto_review.install.cli.config",
     "install": "claude_auto_review.install.cli.setup",
     "cancel": "claude_auto_review.install.cli.cancel",
@@ -16,6 +22,29 @@ SUBCOMMANDS = {
     "uninstall": "claude_auto_review.install.cli.uninstall",
     "update": "claude_auto_review.install.cli.update",
 }
+
+_BUILTIN_HELP: dict[str, str] = {
+    "config": "Guide setup and configure important project settings",
+    "install": "Set up the plugin in the current project",
+    "cancel": "Cancel the active review session",
+    "prompt": "Manually trigger review prompt generation",
+    "uninstall": "Remove plugin from current project",
+    "update": "Pull latest plugin checkout and refresh current project setup",
+}
+
+_SUBCOMMANDS: dict[str, str] = dict(_BUILTIN_SUBCOMMANDS)
+_HELP: dict[str, str] = dict(_BUILTIN_HELP)
+
+
+def register_subcommand(name: str, module_path: str, help_text: str = "") -> None:
+    """Register a CLI subcommand (OCP extension point).
+
+    Calling code can also rely on the Python entry-points group
+    ``claude_auto_review.subcommands`` for plugin discovery.
+    """
+    _SUBCOMMANDS[name] = module_path
+    if help_text:
+        _HELP[name] = help_text
 
 
 def _get_version():
@@ -30,12 +59,8 @@ def _print_help(exit_code=0):
     print(f"Usage: {self} <subcommand> [args]", file=sys.stderr)
     print(file=sys.stderr)
     print("Subcommands:", file=sys.stderr)
-    print("  config     Guide setup and configure important project settings", file=sys.stderr)
-    print("  install    Set up the plugin in the current project", file=sys.stderr)
-    print("  cancel     Cancel the active review session", file=sys.stderr)
-    print("  prompt     Manually trigger review prompt generation", file=sys.stderr)
-    print("  uninstall  Remove plugin from current project", file=sys.stderr)
-    print("  update     Pull latest plugin checkout and refresh current project setup", file=sys.stderr)
+    for name, desc in sorted(_HELP.items()):
+        print(f"  {name:<10} {desc}", file=sys.stderr)
     print("  help       Show this help message", file=sys.stderr)
     print("  version    Show version information", file=sys.stderr)
     return exit_code
@@ -50,20 +75,17 @@ def main():
         print(f"claude-auto-review version {_get_version()}")
         return 0
 
-    subcommand = arg
-
-    if subcommand == "help":
+    if arg == "help":
         return _print_help()
-    if subcommand == "version":
+    if arg == "version":
         print(f"claude-auto-review version {_get_version()}")
         return 0
 
-    module_path = SUBCOMMANDS.get(subcommand)
+    module_path = _SUBCOMMANDS.get(arg)
     if module_path is None:
-        print(f"Unknown subcommand: {subcommand}", file=sys.stderr)
+        print(f"Unknown subcommand: {arg}", file=sys.stderr)
         return _print_help(exit_code=1)
 
-    # Remove the subcommand arg so downstream sees clean argv
     sys.argv = [sys.argv[0]] + sys.argv[2:]
 
     mod = importlib.import_module(module_path)

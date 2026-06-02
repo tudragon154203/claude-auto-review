@@ -45,9 +45,10 @@ def normalize_and_write_review(
     return normalized_text
 
 
-def _process_review_result(ctx: RuntimeContext, result, review_path, review_id, backend):
+def _process_review_result(ctx: RuntimeContext, result, review_path, review_id, backend, *, log_event_fn=None):
+    _log = log_event_fn or log_event
     stdout_len = len(result.stdout) if result.stdout else 0
-    log_event(
+    _log(
         ctx.project_root,
         "stop_hook_reviewer_done",
         client_id=ctx.client_id,
@@ -59,7 +60,7 @@ def _process_review_result(ctx: RuntimeContext, result, review_path, review_id, 
     )
 
     if result.returncode != 0:
-        log_event(
+        _log(
             ctx.project_root,
             "stop_hook_reviewer_nonzero",
             client_id=ctx.client_id,
@@ -76,7 +77,7 @@ def _process_review_result(ctx: RuntimeContext, result, review_path, review_id, 
         )
 
     if not result.stdout.strip():
-        log_event(
+        _log(
             ctx.project_root,
             "stop_hook_reviewer_empty",
             client_id=ctx.client_id,
@@ -98,7 +99,7 @@ def _process_review_result(ctx: RuntimeContext, result, review_path, review_id, 
         client_id=ctx.client_id,
         minimum_blocking_severity=ctx.settings.minimum_blocking_severity,
     )
-    log_event(
+    _log(
         ctx.project_root,
         "stop_hook_reviewer_output_written",
         client_id=ctx.client_id,

@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable
 
+from claude_auto_review.config.resolvers.reviewer import resolved_reviewer_backend, resolved_reviewer_model
 from claude_auto_review.stop.feedback_format import build_review_completion_prompt
 from claude_auto_review.stop.orchestration.types.context import RuntimeContext
 from claude_auto_review.stop.reviews.types.enums import AutocompleteStatus
@@ -42,8 +43,8 @@ def attempt_review_autocomplete(
             prompt_file,
             user_prompt,
             reviewer_timeout_seconds=ctx.settings.reviewer_timeout_seconds,
-            model=ctx.settings.resolved_reviewer_model(backend=ctx.settings.resolved_reviewer_backend()),
-            backend=ctx.settings.resolved_reviewer_backend(),
+            model=resolved_reviewer_model(ctx.settings, backend=resolved_reviewer_backend(ctx.settings)),
+            backend=resolved_reviewer_backend(ctx.settings),
         )
         if not policy.should_retry(result.status, attempt):
             break

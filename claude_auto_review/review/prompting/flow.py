@@ -46,8 +46,9 @@ def _load_rules_content(settings, project_root: Path) -> str | None:
 
 
 def _resolve_reviewer_model(settings, backend: str) -> str:
+    from claude_auto_review.config.resolvers.reviewer import resolved_reviewer_model
     try:
-        model: str = settings.resolved_reviewer_model(backend=backend)
+        model: str = resolved_reviewer_model(settings, backend=backend)
         return model
     except (ValueError, KeyError):
         return settings.reviewer_model or ""

@@ -14,7 +14,7 @@ def _ctx(project_root=FAKE_ROOT, client_id="c"):
 class TestAutoCompleteOutputEdgeCases(unittest.TestCase):
     @patch("claude_auto_review.stop.reviews.types.result.log_event")
     @patch("claude_auto_review.stop.reviews.runners.cli.run_captured")
-    @patch("claude_auto_review.stop.reviews.runners.claude.shutil.which", return_value="/usr/bin/claude")
+    @patch("claude_auto_review.stop.reviews.runners.preamble.shutil.which", return_value="/usr/bin/claude")
     @patch("pathlib.Path.write_text")
     @patch("pathlib.Path.is_file", return_value=True)
     def test_non_empty_stdout_overwrites_review_file_even_without_verdict(
@@ -43,7 +43,7 @@ class TestAutoCompleteOutputEdgeCases(unittest.TestCase):
 
     @patch("claude_auto_review.stop.reviews.types.result.log_event")
     @patch("claude_auto_review.stop.reviews.runners.cli.run_captured")
-    @patch("claude_auto_review.stop.reviews.runners.claude.shutil.which", return_value="/usr/bin/claude")
+    @patch("claude_auto_review.stop.reviews.runners.preamble.shutil.which", return_value="/usr/bin/claude")
     @patch("pathlib.Path.write_text")
     @patch("pathlib.Path.is_file", return_value=True)
     def test_structured_review_without_verdict_is_persisted_as_is(
@@ -82,7 +82,7 @@ class TestAutoCompleteOutputEdgeCases(unittest.TestCase):
 
     @patch("claude_auto_review.stop.reviews.types.result.log_event")
     @patch("claude_auto_review.stop.reviews.runners.cli.run_captured")
-    @patch("claude_auto_review.stop.reviews.runners.codex.shutil.which", return_value="/usr/bin/codex")
+    @patch("claude_auto_review.stop.reviews.runners.preamble.shutil.which", return_value="/usr/bin/codex")
     @patch("pathlib.Path.write_text")
     @patch("pathlib.Path.unlink")
     @patch("pathlib.Path.read_bytes")

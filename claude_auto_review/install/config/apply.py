@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from claude_auto_review.config.resolvers.reviewer import resolved_reviewer_backend
 from claude_auto_review.config.settings.models import DEFAULT_REVIEWER_MODELS, PluginSettings
 from claude_auto_review.config.utils.schema import (
     SETTING_MAX_STOP_PASSES,
@@ -18,7 +19,7 @@ def _normalize_max_stop_passes(value: int) -> int:
 def _apply_args(settings: PluginSettings, args) -> PluginSettings:
     updated = settings.to_mapping()
     if args.backend:
-        previous_backend = settings.resolved_reviewer_backend()
+        previous_backend = resolved_reviewer_backend(settings)
         known_default_models = set(DEFAULT_REVIEWER_MODELS.values())
         previous_default_model = DEFAULT_REVIEWER_MODELS[previous_backend]
         updated[SETTING_REVIEWER_BACKEND] = args.backend

@@ -14,7 +14,7 @@ def _ctx(project_root=FAKE_ROOT, client_id="c"):
 
 class TestAutoCompleteCLI(unittest.TestCase):
     @patch("claude_auto_review.stop.reviews.runners.claude.log_event")
-    @patch("claude_auto_review.stop.reviews.runners.claude.shutil.which", return_value=None)
+    @patch("claude_auto_review.stop.reviews.runners.preamble.shutil.which", return_value=None)
     def test_claude_cli_not_found(self, mock_which, mock_log):
         result = attempt_stop_autocomplete(
             _ctx(),
@@ -27,7 +27,7 @@ class TestAutoCompleteCLI(unittest.TestCase):
         mock_log.assert_called_with(FAKE_ROOT, "stop_hook_reviewer_not_found", client_id="c", backend="claude")
 
     @patch("claude_auto_review.stop.reviews.runners.claude.log_event")
-    @patch("claude_auto_review.stop.reviews.runners.claude.shutil.which", return_value="/usr/bin/claude")
+    @patch("claude_auto_review.stop.reviews.runners.preamble.shutil.which", return_value="/usr/bin/claude")
     def test_prompt_file_not_found(self, mock_which, mock_log):
         result = attempt_stop_autocomplete(
             _ctx(),
@@ -46,7 +46,7 @@ class TestAutoCompleteCLI(unittest.TestCase):
         "claude_auto_review.stop.reviews.runners.cli.run_captured",
         side_effect=subprocess.TimeoutExpired(cmd="claude", timeout=600),
     )
-    @patch("claude_auto_review.stop.reviews.runners.claude.shutil.which", return_value="/usr/bin/claude")
+    @patch("claude_auto_review.stop.reviews.runners.preamble.shutil.which", return_value="/usr/bin/claude")
     @patch("pathlib.Path.is_file", return_value=True)
     def test_subprocess_timeout(self, mock_is_file, mock_which, mock_run, mock_log):
         result = attempt_stop_autocomplete(
@@ -63,7 +63,7 @@ class TestAutoCompleteCLI(unittest.TestCase):
 
     @patch("claude_auto_review.stop.reviews.runners.claude.log_event")
     @patch("claude_auto_review.stop.reviews.runners.cli.run_captured")
-    @patch("claude_auto_review.stop.reviews.runners.claude.shutil.which", return_value="/usr/bin/claude")
+    @patch("claude_auto_review.stop.reviews.runners.preamble.shutil.which", return_value="/usr/bin/claude")
     @patch("pathlib.Path.is_file", return_value=True)
     def test_passes_configured_timeout_to_subprocess(self, mock_is_file, mock_which, mock_run, mock_log):
         mock_run.return_value = MagicMock(returncode=1, stdout="", stderr="")
@@ -79,7 +79,7 @@ class TestAutoCompleteCLI(unittest.TestCase):
 
     @patch("claude_auto_review.stop.reviews.runners.claude.log_event")
     @patch("claude_auto_review.stop.reviews.runners.cli.run_captured")
-    @patch("claude_auto_review.stop.reviews.runners.claude.shutil.which", return_value="/usr/bin/claude")
+    @patch("claude_auto_review.stop.reviews.runners.preamble.shutil.which", return_value="/usr/bin/claude")
     @patch("pathlib.Path.is_file", return_value=True)
     def test_general_exception(self, mock_is_file, mock_which, mock_run, mock_log):
         mock_run.side_effect = OSError("boom")

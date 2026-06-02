@@ -53,7 +53,7 @@ class TestPromptRunnerCodex(unittest.TestCase):
         side_effect=lambda s, client_id=None, minimum_blocking_severity="medium": s,
     )
     @patch("claude_auto_review.stop.reviews.runners.cli.run_captured")
-    @patch("claude_auto_review.stop.reviews.runners.codex.shutil.which", return_value="/usr/bin/codex")
+    @patch("claude_auto_review.stop.reviews.runners.preamble.shutil.which", return_value="/usr/bin/codex")
     def test_attempt_stop_autocomplete_prefers_codex_last_message_file(self, mock_which, mock_run, _mock_norm):
         review_path = Path(tempfile.gettempdir()) / "review-last-message.md"
         prompt_file = Path(tempfile.gettempdir()) / "prompt-last-message.md"
@@ -93,7 +93,7 @@ class TestPromptRunnerCodex(unittest.TestCase):
         side_effect=lambda s, client_id=None, minimum_blocking_severity="medium": s,
     )
     @patch("claude_auto_review.stop.reviews.runners.cli.run_captured")
-    @patch("claude_auto_review.stop.reviews.runners.codex.shutil.which", return_value="/usr/bin/codex")
+    @patch("claude_auto_review.stop.reviews.runners.preamble.shutil.which", return_value="/usr/bin/codex")
     def test_attempt_stop_autocomplete_uses_codex_backend(self, mock_which, mock_run, _mock_norm):
         review_path = Path(tempfile.gettempdir()) / "review.md"
         prompt_file = Path(tempfile.gettempdir()) / "prompt.md"
@@ -127,7 +127,7 @@ class TestPromptRunnerCodex(unittest.TestCase):
         side_effect=lambda s, client_id=None, minimum_blocking_severity="medium": s,
     )
     @patch("claude_auto_review.stop.reviews.runners.cli.run_captured")
-    @patch("claude_auto_review.stop.reviews.runners.claude.shutil.which", return_value="/usr/bin/claude")
+    @patch("claude_auto_review.stop.reviews.runners.preamble.shutil.which", return_value="/usr/bin/claude")
     def test_attempt_stop_autocomplete_uses_claude_backend(self, mock_which, mock_run, _mock_norm):
         review_path = Path(tempfile.gettempdir()) / "review-claude.md"
         prompt_file = Path(tempfile.gettempdir()) / "prompt-claude.md"

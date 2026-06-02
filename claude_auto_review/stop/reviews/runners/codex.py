@@ -1,17 +1,19 @@
 from __future__ import annotations
 
-import shutil
 import subprocess
 import tempfile
 from pathlib import Path
 
 from claude_auto_review.runtime.events import log_event
-
+from claude_auto_review.stop.reviews.runners.args import _build_codex_review_args
 from claude_auto_review.stop.reviews.runners.cli import run_review_cli
 from claude_auto_review.stop.reviews.runners.codex_output import _extract_codex_final_message
-from claude_auto_review.stop.reviews.runners.args import _build_codex_review_args
-from claude_auto_review.stop.reviews.types.result import AutocompleteResult, _process_review_result
+from claude_auto_review.stop.reviews.runners.preamble import (
+    handle_subprocess_errors,
+    resolve_cli_or_fail,
+)
 from claude_auto_review.stop.reviews.types.enums import AutocompleteStatus
+from claude_auto_review.stop.reviews.types.result import AutocompleteResult, _process_review_result
 
 
 def _read_text_with_bom_fallback(path: Path) -> str:
@@ -32,50 +34,39 @@ def _attempt_codex_autocomplete(
     user_prompt,
     reviewer_timeout_seconds,
     model,
+    *,
+    log_event_fn=None,
 ):
-    codex_cli = shutil.which("codex")
-    if not codex_cli:
-        log_event(ctx.project_root, "stop_hook_reviewer_not_found", client_id=ctx.client_id, backend="codex")
-        return AutocompleteResult(status=AutocompleteStatus.CLI_NOT_FOUND)
-    if not prompt_file.is_file():
-        log_event(ctx.project_root, "stop_hook_prompt_not_found", client_id=ctx.client_id, path=str(prompt_file))
-        return AutocompleteResult(status=AutocompleteStatus.PROMPT_NOT_FOUND)
+    _log = log_event_fn or log_event
+    codex_cli, failure = resolve_cli_or_fail(ctx, "codex", prompt_file, log_event_fn=_log)
+    if failure is not None:
+        return failure
 
     output_file = None
     args = _build_codex_review_args(model)
     prompt_content = prompt_file.read_text(encoding="utf-8") if prompt_file.is_file() else ""
     full_input = f"{prompt_content}\n\n{user_prompt}" if prompt_content else user_prompt
-    try:
-        with tempfile.NamedTemporaryFile(
-            mode="w",
-            encoding="utf-8",
-            suffix="-codex-last-message.md",
-            delete=False,
-        ) as temp_output:
-            output_file = Path(temp_output.name)
-        args = [*args[:-1], "--output-last-message", str(output_file), args[-1]]
-        cli_result = run_review_cli(
-            codex_cli,
-            args,
-            cwd=ctx.project_root,
-            timeout=reviewer_timeout_seconds,
-            input_text=full_input,
-        )
-    except subprocess.TimeoutExpired:
-        log_event(
-            ctx.project_root, "stop_hook_reviewer_timeout", client_id=ctx.client_id, reviewId=review_id, backend="codex"
-        )
-        return AutocompleteResult(status=AutocompleteStatus.TIMEOUT)
-    except (OSError, ValueError, subprocess.SubprocessError) as e:
-        log_event(
-            ctx.project_root,
-            "stop_hook_reviewer_error",
-            client_id=ctx.client_id,
-            reviewId=review_id,
-            backend="codex",
-            error=str(e),
-        )
-        return AutocompleteResult(status=AutocompleteStatus.ERROR, stderr=str(e))
+    with handle_subprocess_errors(ctx, review_id, "codex", _log) as build_result:
+        try:
+            with tempfile.NamedTemporaryFile(
+                mode="w",
+                encoding="utf-8",
+                suffix="-codex-last-message.md",
+                delete=False,
+            ) as temp_output:
+                output_file = Path(temp_output.name)
+            args = [*args[:-1], "--output-last-message", str(output_file), args[-1]]
+            cli_result = run_review_cli(
+                codex_cli,
+                args,
+                cwd=ctx.project_root,
+                timeout=reviewer_timeout_seconds,
+                input_text=full_input,
+            )
+        except subprocess.TimeoutExpired:
+            return build_result(AutocompleteStatus.TIMEOUT)
+        except (OSError, ValueError, subprocess.SubprocessError) as e:
+            return build_result(AutocompleteStatus.ERROR, stderr=str(e))
 
     file_output = ""
     if output_file is not None and output_file.is_file():
@@ -92,7 +83,7 @@ def _attempt_codex_autocomplete(
             stderr=cli_result.stderr,
         )
     try:
-        return _process_review_result(ctx, cli_result, review_path, review_id, "codex")
+        return _process_review_result(ctx, cli_result, review_path, review_id, "codex", log_event_fn=_log)
     finally:
         if output_file is not None:
             output_file.unlink(missing_ok=True)

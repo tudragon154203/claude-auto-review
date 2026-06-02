@@ -78,7 +78,7 @@ class TestOpencodeBackendRegistration(unittest.TestCase):
 
 
 class TestOpencodeAutocomplete(unittest.TestCase):
-    @patch("claude_auto_review.stop.reviews.runners.opencode.shutil.which", return_value=None)
+    @patch("claude_auto_review.stop.reviews.runners.preamble.shutil.which", return_value=None)
     def test_cli_not_found(self, mock_which):
         from claude_auto_review.stop.reviews.runners.dispatcher import _BACKEND_REGISTRY
 
@@ -92,7 +92,7 @@ class TestOpencodeAutocomplete(unittest.TestCase):
         )
         self.assertEqual(result.status, AutocompleteStatus.CLI_NOT_FOUND)
 
-    @patch("claude_auto_review.stop.reviews.runners.opencode.shutil.which", return_value="/usr/bin/opencode")
+    @patch("claude_auto_review.stop.reviews.runners.preamble.shutil.which", return_value="/usr/bin/opencode")
     def test_prompt_not_found(self, mock_which):
         from claude_auto_review.stop.reviews.runners.dispatcher import _BACKEND_REGISTRY
 
@@ -111,7 +111,7 @@ class TestOpencodeAutocomplete(unittest.TestCase):
         side_effect=lambda s, client_id=None, minimum_blocking_severity="medium": s,
     )
     @patch("claude_auto_review.stop.reviews.runners.cli.run_captured")
-    @patch("claude_auto_review.stop.reviews.runners.opencode.shutil.which", return_value="/usr/bin/opencode")
+    @patch("claude_auto_review.stop.reviews.runners.preamble.shutil.which", return_value="/usr/bin/opencode")
     def test_output_written_on_success(self, mock_which, mock_run, _mock_norm):
         captured_merged = {}
 
@@ -152,7 +152,7 @@ class TestOpencodeAutocomplete(unittest.TestCase):
         self.assertEqual(captured_merged["path"].parent, prompt_file.parent)
 
     @patch("claude_auto_review.stop.reviews.runners.cli.run_captured")
-    @patch("claude_auto_review.stop.reviews.runners.opencode.shutil.which", return_value="/usr/bin/opencode")
+    @patch("claude_auto_review.stop.reviews.runners.preamble.shutil.which", return_value="/usr/bin/opencode")
     def test_nonzero_returncode(self, mock_which, mock_run):
         prompt_file = Path(tempfile.gettempdir()) / "prompt-opencode-nonzero.md"
         prompt_file.write_text("system", encoding="utf-8")
@@ -175,7 +175,7 @@ class TestOpencodeAutocomplete(unittest.TestCase):
         self.assertEqual(result.returncode, 1)
 
     @patch(
-        "claude_auto_review.stop.reviews.runners.opencode.shutil.which",
+        "claude_auto_review.stop.reviews.runners.preamble.shutil.which",
         return_value="/usr/bin/opencode",
     )
     @patch(
@@ -200,7 +200,7 @@ class TestOpencodeAutocomplete(unittest.TestCase):
         self.assertEqual(result.status, AutocompleteStatus.TIMEOUT)
 
     @patch(
-        "claude_auto_review.stop.reviews.runners.opencode.shutil.which",
+        "claude_auto_review.stop.reviews.runners.preamble.shutil.which",
         return_value="/usr/bin/opencode",
     )
     @patch(
@@ -224,7 +224,7 @@ class TestOpencodeAutocomplete(unittest.TestCase):
 
         self.assertEqual(result.status, AutocompleteStatus.ERROR)
 
-    @patch("claude_auto_review.stop.reviews.runners.opencode.shutil.which", return_value="/usr/bin/opencode")
+    @patch("claude_auto_review.stop.reviews.runners.preamble.shutil.which", return_value="/usr/bin/opencode")
     def test_prompt_file_read_error(self, mock_which):
         prompt_file = MagicMock(spec=Path)
         prompt_file.is_file.return_value = True
@@ -245,7 +245,7 @@ class TestOpencodeAutocomplete(unittest.TestCase):
         self.assertIn("access denied", result.stderr)
 
     @patch("claude_auto_review.stop.reviews.runners.cli.run_captured")
-    @patch("claude_auto_review.stop.reviews.runners.opencode.shutil.which", return_value="/usr/bin/opencode")
+    @patch("claude_auto_review.stop.reviews.runners.preamble.shutil.which", return_value="/usr/bin/opencode")
     def test_empty_stdout(self, mock_which, mock_run):
         prompt_file = Path(tempfile.gettempdir()) / "prompt-opencode-empty.md"
         prompt_file.write_text("system", encoding="utf-8")
@@ -269,7 +269,7 @@ class TestOpencodeAutocomplete(unittest.TestCase):
         side_effect=lambda s, client_id=None, minimum_blocking_severity="medium": s,
     )
     @patch("claude_auto_review.stop.reviews.runners.cli.run_captured")
-    @patch("claude_auto_review.stop.reviews.runners.opencode.shutil.which", return_value="/usr/bin/opencode")
+    @patch("claude_auto_review.stop.reviews.runners.preamble.shutil.which", return_value="/usr/bin/opencode")
     def test_dispatch_via_attempt_stop_autocomplete(self, mock_which, mock_run, _mock_norm):
         review_path = Path(tempfile.gettempdir()) / "review-opencode-dispatch.md"
         prompt_file = Path(tempfile.gettempdir()) / "prompt-opencode-dispatch.md"
@@ -334,7 +334,7 @@ class TestEmptyPromptFallback(unittest.TestCase):
         side_effect=lambda s, client_id=None, minimum_blocking_severity="medium": s,
     )
     @patch("claude_auto_review.stop.reviews.runners.cli.run_captured")
-    @patch("claude_auto_review.stop.reviews.runners.opencode.shutil.which", return_value="/usr/bin/opencode")
+    @patch("claude_auto_review.stop.reviews.runners.preamble.shutil.which", return_value="/usr/bin/opencode")
     def test_empty_prompt_file_uses_user_prompt_only(self, mock_which, mock_run, _mock_norm):
         captured_merged = {}
 
@@ -375,7 +375,7 @@ class TestMergedFileCleanup(unittest.TestCase):
         side_effect=lambda s, client_id=None, minimum_blocking_severity="medium": s,
     )
     @patch("claude_auto_review.stop.reviews.runners.cli.run_captured")
-    @patch("claude_auto_review.stop.reviews.runners.opencode.shutil.which", return_value="/usr/bin/opencode")
+    @patch("claude_auto_review.stop.reviews.runners.preamble.shutil.which", return_value="/usr/bin/opencode")
     def test_merged_file_cleaned_up_on_success(self, mock_which, mock_run, _mock_norm):
         merged_path_ref = [None]
 
@@ -404,7 +404,7 @@ class TestMergedFileCleanup(unittest.TestCase):
 
         self.assertFalse(merged_path_ref[0].exists(), "Merged file should be cleaned up after success")
 
-    @patch("claude_auto_review.stop.reviews.runners.opencode.shutil.which", return_value="/usr/bin/opencode")
+    @patch("claude_auto_review.stop.reviews.runners.preamble.shutil.which", return_value="/usr/bin/opencode")
     @patch(
         "claude_auto_review.stop.reviews.runners.cli.run_captured",
         side_effect=subprocess.TimeoutExpired(cmd="opencode", timeout=60),

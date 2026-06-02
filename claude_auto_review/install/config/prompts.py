@@ -66,14 +66,17 @@ def _run_wizard(settings: PluginSettings) -> PluginSettings:
     from claude_auto_review.install.config.apply import _apply_args
 
     print("Claude Auto Review setup wizard")
-    backend_default = settings.resolved_reviewer_backend()
+    from claude_auto_review.config.resolvers.reviewer import resolved_reviewer_backend, resolved_reviewer_model
+    backend_default = resolved_reviewer_backend(settings)
     backend = _prompt_choice("Reviewer backend", sorted(DEFAULT_REVIEWER_MODELS), backend_default)
     _validate_backend_choice(backend)
     normalized = _apply_args(
         PluginSettings.from_mapping({**settings.to_mapping(), SETTING_REVIEWER_BACKEND: backend}),
         argparse.Namespace(backend=backend, model=None, severity=None, max_stop_passes=None, non_interactive=False),
     )
-    model = _prompt_text("Reviewer model", normalized.resolved_reviewer_model(backend=backend))
+    if backend == "opencode":
+        print("OpenCode: enter 'default' or 'none' to defer to opencode's own configured model.")
+    model = _prompt_text("Reviewer model", resolved_reviewer_model(normalized, backend=backend))
     severity = _prompt_choice("Minimum blocking severity", SEVERITY_CHOICES, settings.minimum_blocking_severity)
     max_stop_passes = _prompt_int("Max stop passes before circuit breaker", settings.max_stop_passes)
     return _apply_wizard_settings(settings, backend=backend, model=model, severity=severity, max_stop_passes=max_stop_passes)
