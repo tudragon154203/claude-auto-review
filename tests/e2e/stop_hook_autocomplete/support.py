@@ -77,7 +77,7 @@ class StopHookAutocompleteTestCase(EndToEndTestCase):
         run_dir = client_dir(project_root) / "run"
         cli_args = json.loads((run_dir / "codex-cli-args.json").read_text(encoding="utf-8"))
         self.assertEqual(cli_args[:5], ["exec", "--skip-git-repo-check", "--sandbox", "read-only", "--model"])
-        self.assertEqual(cli_args[5], "gpt-5.3-codex")
+        self.assertEqual(cli_args[5], "gpt-5.4-mini")
         self.assertIn("--output-last-message", cli_args)
         self.assertEqual(cli_args[-1], "-")
 

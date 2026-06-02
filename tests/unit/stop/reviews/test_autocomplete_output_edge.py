@@ -110,7 +110,7 @@ class TestAutoCompleteOutputEdgeCases(unittest.TestCase):
             prompt_file=Path("/fake/prompt.md"),
             user_prompt="finish",
             backend="codex",
-            model="gpt-5.3-codex",
+            model="gpt-5.4-mini",
         )
 
         self.assertTrue(result.output_written)

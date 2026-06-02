@@ -65,7 +65,7 @@ class TestConfigCli(unittest.TestCase):
         updated = config_cli._apply_args(settings, args)
 
         self.assertEqual(updated.reviewer_backend, "codex")
-        self.assertEqual(updated.resolved_reviewer_model(), "gpt-5.3-codex")
+        self.assertEqual(updated.resolved_reviewer_model(), "gpt-5.4-mini")
         self.assertEqual(updated.minimum_blocking_severity, "high")
         self.assertEqual(updated.max_stop_passes, 7)
 
@@ -85,10 +85,10 @@ class TestConfigCli(unittest.TestCase):
         updated = config_cli._apply_args(settings, args)
 
         self.assertEqual(updated.reviewer_backend, "codex")
-        self.assertEqual(updated.reviewer_model, "gpt-5.3-codex")
+        self.assertEqual(updated.reviewer_model, "gpt-5.4-mini")
 
     def test_apply_args_switches_codex_default_back_to_claude_default(self):
-        settings = config_cli.PluginSettings(reviewer_backend="claude", reviewer_model="gpt-5.3-codex")
+        settings = config_cli.PluginSettings(reviewer_backend="claude", reviewer_model="gpt-5.4-mini")
         args = config_cli._build_parser().parse_args(["--backend", "claude", "--non-interactive"])
 
         updated = config_cli._apply_args(settings, args)
@@ -97,7 +97,7 @@ class TestConfigCli(unittest.TestCase):
         self.assertEqual(updated.reviewer_model, "claude-sonnet-4-6")
 
     def test_wizard_uses_claude_default_model_for_claude_backend(self):
-        settings = config_cli.PluginSettings(reviewer_backend="codex", reviewer_model="gpt-5.3-codex")
+        settings = config_cli.PluginSettings(reviewer_backend="codex", reviewer_model="gpt-5.4-mini")
         prompts = []
 
         def fake_input(prompt):
@@ -200,7 +200,7 @@ class TestConfigCli(unittest.TestCase):
             saved = json.loads(settings_path.read_text(encoding="utf-8"))
             plugin_settings = saved["claude-auto-review"]
             self.assertEqual(plugin_settings["reviewerBackend"], "codex")
-            self.assertEqual(plugin_settings["reviewerModel"], "gpt-5.3-codex")
+            self.assertEqual(plugin_settings["reviewerModel"], "gpt-5.4-mini")
             self.assertEqual(plugin_settings["minimumBlockingSeverity"], "high")
             self.assertEqual(plugin_settings["maxStopPasses"], 7)
             self.assertEqual(saved["other"], {"keep": True})
@@ -301,7 +301,7 @@ class TestConfigCli(unittest.TestCase):
             self.assertEqual(result, 0)
             saved = json.loads(settings_path.read_text(encoding="utf-8"))
             self.assertEqual(saved["claude-auto-review"]["reviewerBackend"], "codex")
-            self.assertEqual(saved["claude-auto-review"]["reviewerModel"], "gpt-5.3-codex")
+            self.assertEqual(saved["claude-auto-review"]["reviewerModel"], "gpt-5.4-mini")
 
     def test_negative_max_stop_passes_is_rejected(self):
         with self.assertRaises(SystemExit):

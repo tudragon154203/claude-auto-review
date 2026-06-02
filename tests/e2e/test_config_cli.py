@@ -36,7 +36,7 @@ class EndToEndConfigCliTests(EndToEndTestCase):
         self.assertTrue((project_root / ".claude" / "claude-auto-review" / "agents" / "reviewer.md").exists())
         settings = json.loads((project_root / ".claude" / "settings.json").read_text(encoding="utf-8"))
         self.assertEqual(settings["claude-auto-review"]["reviewerBackend"], "codex")
-        self.assertEqual(settings["claude-auto-review"]["reviewerModel"], "gpt-5.3-codex")
+        self.assertEqual(settings["claude-auto-review"]["reviewerModel"], "gpt-5.4-mini")
         self.assertEqual(settings["claude-auto-review"]["minimumBlockingSeverity"], "high")
         self.assertEqual(settings["claude-auto-review"]["maxStopPasses"], 7)
         self.assertIn("Full config location", result.stdout)
@@ -47,7 +47,7 @@ class EndToEndConfigCliTests(EndToEndTestCase):
         result = subprocess.run(
             [sys.executable, "-m", "claude_auto_review.cli", "config"],
             cwd=project_root,
-            input="codex\ngpt-5.3-codex\nhigh\n8\n",
+            input="codex\ngpt-5.4-mini\nhigh\n8\n",
             capture_output=True,
             text=True,
             encoding="utf-8",
@@ -57,7 +57,7 @@ class EndToEndConfigCliTests(EndToEndTestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         settings = json.loads((project_root / ".claude" / "settings.json").read_text(encoding="utf-8"))
         self.assertEqual(settings["claude-auto-review"]["reviewerBackend"], "codex")
-        self.assertEqual(settings["claude-auto-review"]["reviewerModel"], "gpt-5.3-codex")
+        self.assertEqual(settings["claude-auto-review"]["reviewerModel"], "gpt-5.4-mini")
         self.assertEqual(settings["claude-auto-review"]["minimumBlockingSeverity"], "high")
         self.assertEqual(settings["claude-auto-review"]["maxStopPasses"], 8)
         self.assertIn("Claude Auto Review setup wizard", result.stdout)

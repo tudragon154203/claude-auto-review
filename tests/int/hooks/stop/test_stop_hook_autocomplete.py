@@ -91,7 +91,7 @@ class TestStopHookAutocomplete(HookTestCase, unittest.TestCase):
             cli_args[:5],
             ["exec", "--skip-git-repo-check", "--sandbox", "read-only", "--model"],
         )
-        self.assertEqual(cli_args[5], "gpt-5.3-codex")
+        self.assertEqual(cli_args[5], "gpt-5.4-mini")
         self.assertEqual(cli_args[-1], "-")
         self.assertIn("--output-last-message", cli_args)
         stdin_text = (run_dir / "codex-cli-stdin.txt").read_text(encoding="utf-8")

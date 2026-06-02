@@ -65,4 +65,4 @@ See the [OpenCode documentation](https://opencode.ai) for supported providers an
 | Prompt delivery | System prompt file + CLI arg | Stdin | Merged prompt file via `--file` |
 | Model selection | `--model` flag | `--model` flag | opencode config |
 | Permissions | `--allowedTools` whitelist | `--sandbox read-only` | `--pure` (no plugins) |
-| Default model | `claude-sonnet-4-6` | `gpt-5.3-codex` | `opencode/big-pickle` |
+| Default model | `claude-sonnet-4-6` | `gpt-5.4-mini` | `opencode/big-pickle` |

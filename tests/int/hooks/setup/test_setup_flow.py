@@ -125,7 +125,7 @@ class TestSetupFlow(HookTestCase, unittest.TestCase):
         self.assertTrue((project_root / ".claude" / "claude-auto-review" / "review-rules.md").exists())
         settings = json.loads((project_root / ".claude" / "settings.json").read_text(encoding="utf-8"))
         self.assertEqual(settings["claude-auto-review"]["reviewerBackend"], "codex")
-        self.assertEqual(settings["claude-auto-review"]["reviewerModel"], "gpt-5.3-codex")
+        self.assertEqual(settings["claude-auto-review"]["reviewerModel"], "gpt-5.4-mini")
         self.assertEqual(settings["claude-auto-review"]["minimumBlockingSeverity"], "high")
         self.assertEqual(settings["claude-auto-review"]["maxStopPasses"], 7)
         self.assertIn("Full config location", result.stdout)
