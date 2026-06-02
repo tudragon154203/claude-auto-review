@@ -105,7 +105,7 @@ class TestReviewerBackendSetting(unittest.TestCase):
     def test_get_reviewer_model_defaults_for_opencode_backend(self):
         self.assertEqual(
             PluginSettings.from_mapping({"reviewerBackend": "opencode"}).resolved_reviewer_model(),
-            "default",
+            "opencode/big-pickle",
         )
 
 

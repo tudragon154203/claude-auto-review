@@ -39,7 +39,7 @@ SETTING_DESCRIPTIONS = {
     "minimumBlockingSeverity": "Minimum severity that blocks stopping",
     "pendingReviewTimeoutHours": "Expire stale pending reviews after N hours",
     "reviewerBackend": "Reviewer CLI backend",
-    "reviewerModel": "Reviewer model name for the selected backend",
+    "reviewerModel": "Reviewer model name for the selected backend (use 'default' to let opencode pick its configured model)",
     "reviewerTimeoutSeconds": "Reviewer subprocess timeout in seconds",
     "reviewFeedbackMaxChars": "Maximum characters shown in stop feedback",
     "lastAssistantMessageClassifierEnabled": "Enable last assistant message classifier",

@@ -3,7 +3,7 @@ from __future__ import annotations
 DEFAULT_REVIEWER_BACKEND = "claude"
 DEFAULT_CLAUDE_REVIEWER_MODEL = "claude-sonnet-4-6"
 DEFAULT_CODEX_REVIEWER_MODEL = "gpt-5.4-mini"
-DEFAULT_OPENCODE_REVIEWER_MODEL = "default"
+DEFAULT_OPENCODE_REVIEWER_MODEL = "opencode/big-pickle"
 
 _REVIEWER_BACKEND_REGISTRY: dict[str, str] = {
     "claude": DEFAULT_CLAUDE_REVIEWER_MODEL,
