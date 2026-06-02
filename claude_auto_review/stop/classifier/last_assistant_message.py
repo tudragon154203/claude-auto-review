@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import os
 import time
-from typing import Callable
+from typing import Callable, Mapping
 
 from claude_auto_review.stop.classifier.client import call_classifier_api, sanitize_base_url
 from claude_auto_review.stop.classifier.enums import ClassifierReason, ClassifierStatus
@@ -10,8 +10,10 @@ from claude_auto_review.stop.classifier.extraction import extract_last_assistant
 from claude_auto_review.stop.classifier.models import AssistantMessageClassificationResult, result_factory
 from claude_auto_review.stop.orchestration.types.context import RuntimeContext
 
+URLOpener = Callable[..., object]
 
-def _validate_classifier_env(env: dict) -> tuple[str, str]:
+
+def _validate_classifier_env(env: Mapping[str, str]) -> tuple[str, str]:
     base_url = sanitize_base_url(env.get("ANTHROPIC_BASE_URL", ""))
     api_key = env.get("ANTHROPIC_API_KEY", "")
     return base_url, api_key
@@ -22,13 +24,13 @@ def _extract_message_text(ctx: RuntimeContext) -> str | None:
     return message_text if message_text else None
 
 
-def _validate_env_and_call_api(
+def _call_classifier_api(
     message_text: str,
     message_chars: int,
-    env: dict,
+    env: Mapping[str, str],
     ctx: RuntimeContext,
     *,
-    urlopen=None,
+    urlopen: URLOpener | None = None,
     started_at: float,
 ) -> AssistantMessageClassificationResult:
     base_url, api_key = _validate_classifier_env(env)
@@ -53,8 +55,8 @@ def _validate_env_and_call_api(
 
 def classify_last_assistant_message(
     ctx: RuntimeContext,
-    env=None,
-    urlopen=None,
+    env: Mapping[str, str] | None = None,
+    urlopen: URLOpener | None = None,
     *,
     persist: Callable | None = None,
 ) -> AssistantMessageClassificationResult | None:
@@ -71,7 +73,7 @@ def classify_last_assistant_message(
         return result  # type: ignore[no-any-return]
 
     env = os.environ if env is None else env
-    result = _validate_env_and_call_api(
+    result = _call_classifier_api(
         message_text, len(message_text), env, ctx, urlopen=urlopen, started_at=started_at
     )
     if persist is not None:
