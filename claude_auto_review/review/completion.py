@@ -10,7 +10,7 @@ from claude_auto_review.state.records.edit import StopBlockedRecord
 from claude_auto_review.state.records.file import ReviewFileRecord
 from claude_auto_review.state.records.review import ReviewCompletedRecord, ReviewMetadata
 from claude_auto_review.state.records.events import StateEvent
-from claude_auto_review.state.store.read import load_state, load_state_snapshot
+from claude_auto_review.state.store.read import load_state_snapshot
 from claude_auto_review.state.store.queries import get_unreviewed_files as get_unreviewed_files
 from claude_auto_review.state.store.write import append_state_event, mark_files_reviewed
 from claude_auto_review.timestamps import duration_seconds, format_duration
@@ -121,7 +121,7 @@ def record_completed_review(
     5. Mark file hashes as reviewed
     """
     validated_entries = _validate_entries(covered_entries)
-    state_before = load_state(project_root, client_id)
+    state_before = list(load_state_snapshot(project_root, client_id).events)
     timestamp = local_now_iso()
 
     _append_review_started(project_root, client_id, review_id)

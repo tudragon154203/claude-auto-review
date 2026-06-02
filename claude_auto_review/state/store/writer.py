@@ -1,50 +1,42 @@
+"""Thin typed wrapper satisfying StateEventWriterProtocol.
+
+Delegates all I/O to the canonical write.py free functions.
+"""
+
 from __future__ import annotations
 
-import json
 from dataclasses import dataclass
 from pathlib import Path
 
-from claude_auto_review.runtime.client_dirs import client_state_path
-from claude_auto_review.runtime.setup import ensure_client_runtime
+from claude_auto_review.runtime.context import resolve_client_id, resolve_project_root
 from claude_auto_review.state.records.edit import EditRecord
 from claude_auto_review.state.records.events import StateEvent
-from claude_auto_review.state.records.review import ReviewMetadata
-from claude_auto_review.timestamps import local_now_iso
+from claude_auto_review.state.store.write import (
+    append_review_started,
+    append_state_event,
+    mark_files_reviewed,
+)
 
 
 @dataclass(frozen=True)
 class StateEventWriter:
+    """Write-only facade for a single client's JSONL state file."""
+
     project_root: Path
     client_id: str
 
-    def append(self, event: StateEvent):
-        ensure_client_runtime(self.project_root, self.client_id)
-        state_file = client_state_path(self.project_root, self.client_id)
-        state_file = Path(state_file)
-        state_file.parent.mkdir(parents=True, exist_ok=True)
-        with state_file.open("a", encoding="utf-8", newline="\n") as file_handle:
-            file_handle.write(json.dumps(event.to_dict(), separators=(",", ":"), default=str) + "\n")
-
-    def append_review_started(self, entries: list[EditRecord], review_id: str, review_path: str):
-        self.append(
-            ReviewMetadata(
-                timestamp=local_now_iso(),
-                reviewId=review_id,
-                reviewPath=review_path,
-                files=[],
-                clientId=self.client_id,
-            )
+    @classmethod
+    def for_client(cls, project_root=None, client_id=None) -> StateEventWriter:
+        return cls(
+            project_root=resolve_project_root(project_root),
+            client_id=resolve_client_id(client_id),
         )
 
-    def append_marked_reviewed(self, entries: list[EditRecord], review_id: str, timestamp: str):
-        for entry in entries:
-            self.append(
-                EditRecord(
-                    timestamp=timestamp,
-                    file=entry.file,
-                    hash=entry.hash,
-                    reviewed=True,
-                    reviewId=review_id,
-                )
-            )
+    def append(self, event: StateEvent) -> None:
+        append_state_event(event, self.project_root, client_id=self.client_id)
 
+    def append_review_started(self, entries: list[EditRecord], review_id: str, review_path: str) -> None:
+        append_review_started(entries, review_id, review_path, self.project_root, client_id=self.client_id)
+
+    def append_marked_reviewed(self, entries: list[EditRecord], review_id: str, timestamp: str) -> None:
+        mark_files_reviewed(entries, review_id, self.project_root, client_id=self.client_id, timestamp=timestamp)

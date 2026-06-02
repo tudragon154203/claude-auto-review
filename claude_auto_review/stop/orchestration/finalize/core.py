@@ -22,6 +22,26 @@ if TYPE_CHECKING:
     from claude_auto_review.stop.orchestration.deps import ReviewEvalDeps
 
 
+def _validate_reviewer_backend(ctx: RuntimeContext, *, log_event_fn) -> tuple[FinalizeResult, ResponsePayload] | None:
+    try:
+        ctx.settings.resolved_reviewer_backend()
+        return None
+    except ValueError as error:
+        log_event_fn(
+            ctx.project_root,
+            "stop_hook_invalid_reviewer_backend",
+            client_id=ctx.client_id,
+            error=str(error),
+        )
+        return plan_for_invalid_settings().result, _invalid_backend_payload(error)
+
+
+def _run_eval_orchestration(ctx, review_id, review_path, prompt_file, covered_entries, unreviewed, *, deps):
+    return orchestrate_review_eval(  # type: ignore[no-any-return]
+        ctx, review_id, review_path, prompt_file, covered_entries, unreviewed, deps=deps
+    )
+
+
 def finalize_review_stop_result(
     ctx: RuntimeContext, resolution: ReviewResolution, *, deps: ReviewEvalDeps
 ) -> tuple[FinalizeResult, ResponsePayload | None]:
@@ -33,28 +53,16 @@ def finalize_review_stop_result(
     review_id = review.reviewId
     review_path = Path(ctx.project_root) / review.reviewPath
     prompt_file = _review_prompt_path(ctx, review_id)
-    try:
-        ctx.settings.resolved_reviewer_backend()
-    except ValueError as error:
-        deps.autocomplete.log_event_fn(
-            ctx.project_root,
-            "stop_hook_invalid_reviewer_backend",
-            client_id=ctx.client_id,
-            error=str(error),
-        )
-        return plan_for_invalid_settings().result, _invalid_backend_payload(error)
 
-    eval_result = orchestrate_review_eval(
-        ctx,
-        review_id,
-        review_path,
-        prompt_file,
-        covered_entries,
-        unreviewed,
-        deps=deps,
+    invalid = _validate_reviewer_backend(ctx, log_event_fn=deps.autocomplete.log_event_fn)
+    if invalid is not None:
+        return invalid
+
+    eval_result = _run_eval_orchestration(
+        ctx, review_id, review_path, prompt_file, covered_entries, unreviewed, deps=deps
     )
     if eval_result is not None:
-        return eval_result  # type: ignore[no-any-return]
+        return eval_result
 
     writer = deps.executor.state_event_writer_factory(ctx.project_root, ctx.client_id)
     block_pending_review(

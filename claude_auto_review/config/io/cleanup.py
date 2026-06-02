@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-import json
+import copy
 
 from claude_auto_review.runtime.hook_identity import command_targets_plugin
 
@@ -12,6 +12,44 @@ def remove_plugin_settings(settings: dict) -> bool:
         return False
     del settings["claude-auto-review"]
     return True
+
+
+def _is_plugin_entry(entry: dict) -> bool:
+    command = entry.get("command", "")
+    return bool(command_targets_plugin(command))
+
+
+def _filter_hook_entries(entries: list) -> tuple[list, bool]:
+    """Return (kept_entries, was_modified)."""
+    filtered: list = []
+    modified = False
+    for entry in entries:
+        if not isinstance(entry, dict):
+            filtered.append(entry)
+            continue
+
+        nested_hooks = entry.get("hooks")
+        if not isinstance(nested_hooks, list):
+            if _is_plugin_entry(entry):
+                modified = True
+            else:
+                filtered.append(entry)
+            continue
+
+        kept_hooks = [h for h in nested_hooks if not (isinstance(h, dict) and _is_plugin_entry(h))]
+        if len(kept_hooks) < len(nested_hooks):
+            if kept_hooks:
+                updated = dict(entry)
+                updated["hooks"] = kept_hooks
+                filtered.append(updated)
+                modified = True
+            else:
+                modified = True
+        else:
+            filtered.append(entry)
+
+    return filtered, modified
+
 
 
 def remove_plugin_hooks(settings: dict) -> bool:
@@ -28,43 +66,7 @@ def remove_plugin_hooks(settings: dict) -> bool:
         entries = hooks[hook_type]
         if not isinstance(entries, list):
             continue
-
-        filtered = []
-        entry_modified = False
-        for entry in entries:
-            if not isinstance(entry, dict):
-                filtered.append(entry)
-                continue
-
-            nested_hooks = entry.get("hooks")
-            if not isinstance(nested_hooks, list):
-                command = entry.get("command", "")
-                if command_targets_plugin(command):
-                    modified = True
-                else:
-                    filtered.append(entry)
-                continue
-
-            kept_hooks = []
-            hook_modified = False
-            for hook in nested_hooks:
-                command = hook.get("command", "") if isinstance(hook, dict) else ""
-                if command_targets_plugin(command):
-                    hook_modified = True
-                else:
-                    kept_hooks.append(hook)
-
-            if hook_modified:
-                if kept_hooks:
-                    updated_entry = dict(entry)
-                    updated_entry["hooks"] = kept_hooks
-                    filtered.append(updated_entry)
-                    entry_modified = True
-                else:
-                    modified = True
-            else:
-                filtered.append(entry)
-
+        filtered, entry_modified = _filter_hook_entries(entries)
         if filtered:
             hooks[hook_type] = filtered
             if entry_modified:
@@ -81,7 +83,7 @@ def remove_plugin_hooks(settings: dict) -> bool:
 
 def uninstall_settings_document(settings: dict) -> dict:
     """Return a copy of *settings* with plugin hooks and plugin keys removed."""
-    settings = json.loads(json.dumps(settings))
+    settings = copy.deepcopy(settings)
     remove_plugin_hooks(settings)
     remove_plugin_settings(settings)
     return settings

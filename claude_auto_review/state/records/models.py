@@ -1,13 +1,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Protocol
-
-from claude_auto_review.state.records.file import (
-    ReviewFileRecord,
-    _coerce_review_file_entries,
-    _parse_review_file_entries,
-)
 
 
 @dataclass(frozen=True)
@@ -25,26 +18,3 @@ class FileHash:
 
     def __str__(self) -> str:
         return self.value
-
-
-class StateEntry(Protocol):
-    """Protocol shared by append-only state entries."""
-
-    timestamp: str
-    type: str
-
-
-class EditEntry(Protocol):
-    """State entry carrying a file/hash pair."""
-
-    timestamp: str
-    file: str
-    hash: str
-
-
-class ReviewEntry(Protocol):
-    """State entry carrying review metadata."""
-
-    timestamp: str
-    reviewId: str
-    files: list[ReviewFileRecord]

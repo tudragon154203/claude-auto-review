@@ -4,40 +4,37 @@ from collections.abc import Mapping
 from dataclasses import dataclass, field
 from typing import Any
 
+from claude_auto_review.config.constants.severity import DEFAULT_MINIMUM_BLOCKING_SEVERITY
+from claude_auto_review.config.constants.defaults import DEFAULT_RULES_FILE
 from claude_auto_review.config.reviewer.backends import (
-    DEFAULT_CLAUDE_REVIEWER_MODEL as DEFAULT_CLAUDE_REVIEWER_MODEL,
-    DEFAULT_CODEX_REVIEWER_MODEL as DEFAULT_CODEX_REVIEWER_MODEL,
-    DEFAULT_OPENCODE_REVIEWER_MODEL as DEFAULT_OPENCODE_REVIEWER_MODEL,
-    DEFAULT_REVIEWER_BACKEND as DEFAULT_REVIEWER_BACKEND,
-    DEFAULT_REVIEWER_MODEL as DEFAULT_REVIEWER_MODEL,
-    DEFAULT_REVIEWER_MODELS as DEFAULT_REVIEWER_MODELS,
-    REVIEWER_BACKENDS as REVIEWER_BACKENDS,
-    resolve_reviewer_backend,
-    resolve_reviewer_model,
+    DEFAULT_CLAUDE_REVIEWER_MODEL,
+    DEFAULT_CODEX_REVIEWER_MODEL,
+    DEFAULT_REVIEWER_BACKEND,
+    DEFAULT_REVIEWER_MODELS,
+    DEFAULT_REVIEWER_MODEL,
+    REVIEWER_BACKENDS,
+)
+from claude_auto_review.config.constants.defaults import (
+    DEFAULT_CLASSIFIER_MODEL,
+    DEFAULT_TIMEOUT_SECONDS,
+)
+from claude_auto_review.config.settings.serialization import (
+    plugin_settings_kwargs,
+    plugin_settings_mapping,
 )
 
 __all__ = [
     "PluginSettings",
     "DEFAULT_CLAUDE_REVIEWER_MODEL",
+    "DEFAULT_CLASSIFIER_MODEL",
     "DEFAULT_CODEX_REVIEWER_MODEL",
-    "DEFAULT_OPENCODE_REVIEWER_MODEL",
+    "DEFAULT_MINIMUM_BLOCKING_SEVERITY",
     "DEFAULT_REVIEWER_BACKEND",
-    "DEFAULT_REVIEWER_MODEL",
     "DEFAULT_REVIEWER_MODELS",
+    "DEFAULT_REVIEWER_MODEL",
+    "DEFAULT_TIMEOUT_SECONDS",
     "REVIEWER_BACKENDS",
-    "resolve_reviewer_backend",
-    "resolve_reviewer_model",
 ]
-from claude_auto_review.config.settings.serialization import (
-    DEFAULT_CLASSIFIER_MODEL,
-    DEFAULT_TIMEOUT_SECONDS,
-    plugin_settings_kwargs,
-    plugin_settings_mapping,
-)
-from claude_auto_review.config.constants.severity import (
-    DEFAULT_MINIMUM_BLOCKING_SEVERITY,
-)
-from claude_auto_review.config.constants.defaults import DEFAULT_RULES_FILE
 
 
 @dataclass(frozen=True)
@@ -68,7 +65,11 @@ class PluginSettings:
         return plugin_settings_mapping(self)
 
     def resolved_reviewer_backend(self) -> str:
-        return resolve_reviewer_backend(self.reviewer_backend)
+        from claude_auto_review.config.resolvers.reviewer import resolved_reviewer_backend
+
+        return resolved_reviewer_backend(self)
 
     def resolved_reviewer_model(self, *, backend: str | None = None) -> str:
-        return resolve_reviewer_model(self.reviewer_model, backend=backend or self.resolved_reviewer_backend())
+        from claude_auto_review.config.resolvers.reviewer import resolved_reviewer_model
+
+        return resolved_reviewer_model(self, backend=backend)

@@ -60,8 +60,11 @@ class TestPromptRunner(unittest.TestCase):
         self.assertIn("stderr text", emitter.block.call_args.args[1])
 
     @patch("claude_auto_review.stop.reviews.prompt.runner.get_unreviewed_files", return_value=[{"file": "a.ts"}])
-    @patch("claude_auto_review.stop.reviews.prompt.runner.load_state", return_value=[{"type": "edit"}])
-    def test_reload_client_state_returns_state_and_unreviewed(self, mock_load_state, mock_get_unreviewed):
+    @patch("claude_auto_review.stop.reviews.prompt.runner.load_state_snapshot")
+    def test_reload_client_state_returns_state_and_unreviewed(self, mock_load_snapshot, mock_get_unreviewed):
+        mock_snapshot = MagicMock()
+        mock_snapshot.events = [{"type": "edit"}]
+        mock_load_snapshot.return_value = mock_snapshot
         state, unreviewed = _reload_client_state(_ctx())
         self.assertEqual(state, [{"type": "edit"}])
         self.assertEqual(unreviewed, [{"file": "a.ts"}])

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from claude_auto_review.config.constants.defaults import (
     DEFAULT_CLASSIFIER_MODEL,
@@ -11,6 +11,9 @@ from claude_auto_review.config.constants.defaults import (
 from claude_auto_review.config.constants.severity import coerce_minimum_blocking_severity
 from claude_auto_review.config.reviewer.backends import DEFAULT_REVIEWER_BACKEND, resolve_reviewer_model
 from claude_auto_review.config.utils.coercion import coerce_bool, coerce_extensions, coerce_float, coerce_int
+
+if TYPE_CHECKING:
+    from claude_auto_review.config.settings.models import PluginSettings
 from claude_auto_review.config.utils.schema import (
     KNOWN_SETTING_KEYS,
     SETTING_CLASSIFIER_ENABLED,
@@ -58,7 +61,7 @@ def plugin_settings_kwargs(mapping: Mapping[str, Any] | None) -> dict[str, Any]:
     }
 
 
-def plugin_settings_mapping(settings) -> dict[str, Any]:
+def plugin_settings_mapping(settings: PluginSettings) -> dict[str, Any]:
     return {
         SETTING_ENABLED: settings.enabled,
         SETTING_RULES_FILE: settings.rules_file,

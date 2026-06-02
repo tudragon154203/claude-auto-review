@@ -1,11 +1,26 @@
 import unittest
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 from claude_auto_review.review.completion import apply_completed_review
 from claude_auto_review.timestamps import format_duration
 from claude_auto_review.state.records.edit import EditRecord, StopBlockedRecord
 from claude_auto_review.state.records.review import ReviewCompletedRecord, ReviewMetadata
 from tests.support_paths import FAKE_ROOT
+
+
+def _mock_snapshot(events):
+    snap = MagicMock()
+    snap.events = events
+    return snap
+
+
+_REVIEW_META = ReviewMetadata(
+    timestamp="2026-05-11T23:17:39+07:00",
+    reviewId="rid",
+    reviewPath="/fake/r.md",
+    files=[],
+    clientId="cid",
+)
 
 
 class TestFormatDuration(unittest.TestCase):
@@ -23,19 +38,8 @@ class TestCompletion(unittest.TestCase):
         return_value=[EditRecord(timestamp="t", file="still.ts", hash="abc")],
     )
     @patch(
-        "claude_auto_review.review.completion.load_state",
-        side_effect=[
-            [
-                ReviewMetadata(
-                    timestamp="2026-05-11T23:17:39+07:00",
-                    reviewId="rid",
-                    reviewPath="/fake/r.md",
-                    files=[],
-                    clientId="cid",
-                )
-            ],
-            [],
-        ],
+        "claude_auto_review.review.completion.load_state_snapshot",
+        side_effect=[_mock_snapshot([_REVIEW_META]), _mock_snapshot([])],
     )
     def test_apply_completed_review_with_remaining_files(self, mock_load, mock_unreviewed, mock_append, mock_mark):
         remaining = apply_completed_review(FAKE_ROOT, "cid", "rid", [])
@@ -59,19 +63,8 @@ class TestCompletion(unittest.TestCase):
     @patch("claude_auto_review.review.completion.append_state_event")
     @patch("claude_auto_review.review.completion.get_unreviewed_files", return_value=[])
     @patch(
-        "claude_auto_review.review.completion.load_state",
-        side_effect=[
-            [
-                ReviewMetadata(
-                    timestamp="2026-05-11T23:17:39+07:00",
-                    reviewId="rid",
-                    reviewPath="/fake/r.md",
-                    files=[],
-                    clientId="cid",
-                )
-            ],
-            [],
-        ],
+        "claude_auto_review.review.completion.load_state_snapshot",
+        side_effect=[_mock_snapshot([_REVIEW_META]), _mock_snapshot([])],
     )
     def test_apply_completed_review_with_no_remaining_files(self, mock_load, mock_unreviewed, mock_append, mock_mark):
         remaining = apply_completed_review(FAKE_ROOT, "cid", "rid", [])
@@ -82,19 +75,8 @@ class TestCompletion(unittest.TestCase):
     @patch("claude_auto_review.review.completion.append_state_event")
     @patch("claude_auto_review.review.completion.get_unreviewed_files", return_value=[])
     @patch(
-        "claude_auto_review.review.completion.load_state",
-        side_effect=[
-            [
-                ReviewMetadata(
-                    timestamp="2026-05-11T23:17:39+07:00",
-                    reviewId="rid",
-                    reviewPath="/fake/r.md",
-                    files=[],
-                    clientId="cid",
-                )
-            ],
-            [],
-        ],
+        "claude_auto_review.review.completion.load_state_snapshot",
+        side_effect=[_mock_snapshot([_REVIEW_META]), _mock_snapshot([])],
     )
     def test_apply_completed_review_raises_on_missing_hash(self, mock_load, mock_unreviewed, mock_append, mock_mark):
         with self.assertRaises(ValueError):

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable
 
@@ -9,6 +10,18 @@ from claude_auto_review.stop.reviews.types.enums import AutocompleteStatus
 from claude_auto_review.stop.reviews.runners.dispatcher import attempt_stop_autocomplete
 
 
+@dataclass(frozen=True)
+class RetryPolicy:
+    max_attempts: int = 2
+    retryable_statuses: tuple[AutocompleteStatus, ...] = (AutocompleteStatus.EMPTY_STDOUT,)
+
+    def should_retry(self, status: AutocompleteStatus, attempt: int) -> bool:
+        return attempt < self.max_attempts - 1 and status in self.retryable_statuses
+
+
+DEFAULT_RETRY_POLICY = RetryPolicy()
+
+
 def attempt_review_autocomplete(
     ctx: RuntimeContext,
     review_id: str,
@@ -16,10 +29,12 @@ def attempt_review_autocomplete(
     prompt_file: Path,
     *,
     log_event_fn: Callable[..., Any] | None = None,
+    retry_policy: RetryPolicy | None = None,
 ) -> Any:
+    policy = retry_policy or DEFAULT_RETRY_POLICY
     user_prompt = build_review_completion_prompt(review_path)
     result = None
-    for attempt in range(2):
+    for attempt in range(policy.max_attempts):
         result = attempt_stop_autocomplete(
             ctx,
             review_id,
@@ -30,8 +45,8 @@ def attempt_review_autocomplete(
             model=ctx.settings.resolved_reviewer_model(backend=ctx.settings.resolved_reviewer_backend()),
             backend=ctx.settings.resolved_reviewer_backend(),
         )
-        if result.status != AutocompleteStatus.EMPTY_STDOUT:
+        if not policy.should_retry(result.status, attempt):
             break
-        if attempt == 0 and log_event_fn:
+        if log_event_fn:
             log_event_fn(ctx.project_root, "stop_hook_reviewer_retry", client_id=ctx.client_id, reviewId=review_id)
     return result

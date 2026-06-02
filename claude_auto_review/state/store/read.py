@@ -6,12 +6,10 @@ live in claude_auto_review/state/store/queries.py.
 
 from __future__ import annotations
 
-import hashlib
 import json
 from pathlib import Path
 from typing import Any
 
-from claude_auto_review.paths.uri_utils import normalize_relative_path
 from claude_auto_review.runtime.context import resolve_client_id, resolve_project_root
 from claude_auto_review.state.records.events import StateEvent
 from claude_auto_review.state.snapshots.snapshot import StateSnapshot
@@ -64,17 +62,10 @@ def load_state_snapshot(project_root: str | Path | None = None, client_id: str |
     return StateSnapshot.from_events(_load_state_events(state_file))
 
 
-def get_file_hash(file_path: str | Path, project_root: str | Path | None = None) -> str | None:
-    project_root = resolve_project_root(project_root)
-    relative = normalize_relative_path(file_path, project_root)
-    if not relative:
-        return None
-    full_path = project_root / relative
-    if not full_path.is_file():
-        return None
-    return hashlib.sha256(full_path.read_bytes()).hexdigest()[:8]
-
-
 def load_state(project_root: str | Path | None = None, client_id: str | None = None) -> list[StateEvent]:
+    """Convenience: return the event list from a state snapshot."""
     return list(load_state_snapshot(project_root, client_id).events)
+
+
+
 

@@ -7,21 +7,8 @@ from typing import Any
 from claude_auto_review.paths.path_utils import get_state_path, local_now_iso
 from claude_auto_review.runtime.client_dirs import get_existing_client_runtime_dir
 from claude_auto_review.runtime.context import resolve_project_root
+from claude_auto_review.runtime.serialization import json_safe
 from claude_auto_review.state.store.write import write_jsonl_line
-
-
-def _json_safe(value: Any) -> Any:
-    if isinstance(value, Path):
-        return str(value)
-    if isinstance(value, Exception):
-        return str(value)
-    if isinstance(value, dict):
-        return {str(key): _json_safe(item) for key, item in value.items()}
-    if isinstance(value, list | tuple):
-        return [_json_safe(item) for item in value]
-    if isinstance(value, set):
-        return sorted((_json_safe(item) for item in value), key=repr)
-    return value
 
 
 @dataclass(frozen=True)
@@ -36,7 +23,7 @@ class EventSink:
         entry: dict[str, Any] = {"timestamp": local_now_iso(), "type": event_type}
         if client_id:
             entry["clientId"] = client_id
-        entry.update(_json_safe(kwargs))
+        entry.update(json_safe(kwargs))
         return entry
 
     def write_entry(self, entry: dict[str, Any], *, client_id: str | None = None) -> bool:

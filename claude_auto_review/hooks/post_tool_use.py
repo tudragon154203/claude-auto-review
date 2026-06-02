@@ -12,11 +12,12 @@ from claude_auto_review.runtime.events import log_event
 from claude_auto_review.state.extraction.hook_input import extract_file_paths_from_hook_input
 from claude_auto_review.state.records.edit import EditRecord
 from claude_auto_review.state.store.queries import was_hash_reviewed
-from claude_auto_review.state.store.read import get_file_hash
-from claude_auto_review.state.tracker import StateTracker
+from claude_auto_review.state.hashing import get_file_hash
+from claude_auto_review.state.store.read import load_state_snapshot
+from claude_auto_review.state.store.write import append_state_event
 
 
-def _process_single_edit(ctx, tracker, state_snapshot, settings, file_path, timestamp):
+def _process_single_edit(ctx, state_snapshot, settings, file_path, timestamp):
     """Process one candidate file: skip, track deletion, or track edit. Returns True if tracked."""
     project_root = ctx.project_root
     client_id = ctx.client_id
@@ -28,14 +29,16 @@ def _process_single_edit(ctx, tracker, state_snapshot, settings, file_path, time
 
     file_hash = get_file_hash(file_path, project_root)
     if not file_hash:
-        tracker.track_edit(
+        append_state_event(
             EditRecord(
                 timestamp=timestamp,
                 file=file_path,
                 hash=DELETED_FILE_HASH,
                 reviewed=False,
                 deleted=True,
-            )
+            ),
+            project_root,
+            client_id=client_id,
         )
         log_event(
             project_root,
@@ -49,13 +52,15 @@ def _process_single_edit(ctx, tracker, state_snapshot, settings, file_path, time
 
     capture_session_snapshot(file_path, project_root, client_id)
     reviewed = was_hash_reviewed(state_snapshot, file_path, file_hash)
-    tracker.track_edit(
+    append_state_event(
         EditRecord(
             timestamp=timestamp,
             file=file_path,
             hash=file_hash,
             reviewed=reviewed,
-        )
+        ),
+        project_root,
+        client_id=client_id,
     )
     log_event(project_root, "file_tracked", client_id=client_id, file=file_path, hash=file_hash, reviewed=reviewed)
     return True
@@ -66,12 +71,11 @@ def _run_post_tool_use(ctx):
     client_id = ctx.client_id
     settings = ctx.settings
     payload = ctx.payload
-    tracker = StateTracker(project_root=project_root, client_id=client_id)
     if not settings.enabled:
         log_event(project_root, "post_tool_use_disabled", client_id=client_id)
         return 0
 
-    state_snapshot = tracker.load()
+    state_snapshot = load_state_snapshot(project_root, client_id)
     timestamp = local_now_iso()
 
     for candidate in extract_file_paths_from_hook_input(payload, project_root=project_root):
@@ -79,7 +83,7 @@ def _run_post_tool_use(ctx):
         if not file_path:
             log_event(project_root, "post_tool_use_ignored_path", client_id=client_id, path=candidate)
             continue
-        _process_single_edit(ctx, tracker, state_snapshot, settings, file_path, timestamp)
+        _process_single_edit(ctx, state_snapshot, settings, file_path, timestamp)
     return 0
 
 

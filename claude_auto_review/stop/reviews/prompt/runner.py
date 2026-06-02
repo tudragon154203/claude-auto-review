@@ -9,7 +9,7 @@ from claude_auto_review.runtime.client_dirs import client_run_dir
 from claude_auto_review.runtime.events import log_event
 from claude_auto_review.runtime.process import run_captured
 from claude_auto_review.state.store.queries import get_unreviewed_files
-from claude_auto_review.state.store.read import load_state
+from claude_auto_review.state.store.read import load_state_snapshot
 from claude_auto_review.stop.orchestration.types.context import RuntimeContext
 
 
@@ -36,7 +36,7 @@ def _review_prompt_path(ctx: RuntimeContext, review_id: str) -> Path:
 
 
 def _reload_client_state(ctx: RuntimeContext):
-    state = load_state(ctx.project_root, ctx.client_id)
+    state = list(load_state_snapshot(ctx.project_root, ctx.client_id).events)
     return state, get_unreviewed_files(state)
 
 

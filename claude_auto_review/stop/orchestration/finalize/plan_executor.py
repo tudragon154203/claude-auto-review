@@ -30,15 +30,33 @@ def _apply_completed_clean_review_result(
     return plan_for_partial_review().result, _partial_review_payload(review_id, len(remaining))
 
 
+def _record_findings_block(
+    ctx: RuntimeContext,
+    plan: Any,
+    review_id: str,
+    review_path: Path,
+    covered_entries: list[Any],
+    unreviewed: list[Any],
+    *,
+    state_event_writer: StateEventWriterProtocol,
+    emitter: ResponseEmitter,
+) -> tuple[FinalizeResult, ResponsePayload | None]:
+    record_completed_review(ctx.project_root, ctx.client_id, review_id, covered_entries)
+    findings_result = block_completed_review_findings(ctx, review_id, review_path, unreviewed, emitter=emitter)
+    state_event_writer.append(findings_result.state_record)
+    return plan.result, None
+
+
+_EFFECT_DISPATCH = {
+    FinalizeEffect.APPLY_COMPLETED_CLEAN_REVIEW: lambda ctx, plan, review_id, review_path, covered_entries, unreviewed, **kw: _apply_completed_clean_review_result(ctx, review_id, covered_entries),
+    FinalizeEffect.RECORD_FINDINGS_BLOCK: lambda ctx, plan, review_id, review_path, covered_entries, unreviewed, **kw: _record_findings_block(ctx, plan, review_id, review_path, covered_entries, unreviewed, **kw),
+}
+
+
 def apply_finalize_plan_result(
     ctx: RuntimeContext, plan: Any, review_id: str, review_path: Path, covered_entries: list[Any], unreviewed: list[Any], *, state_event_writer: StateEventWriterProtocol, emitter: ResponseEmitter | None = None
 ) -> tuple[FinalizeResult, ResponsePayload | None]:
-    if plan.effect == FinalizeEffect.APPLY_COMPLETED_CLEAN_REVIEW:
-        return _apply_completed_clean_review_result(ctx, review_id, covered_entries)
-    if plan.effect == FinalizeEffect.RECORD_FINDINGS_BLOCK:
-        assert emitter is not None
-        record_completed_review(ctx.project_root, ctx.client_id, review_id, covered_entries)
-        findings_result = block_completed_review_findings(ctx, review_id, review_path, unreviewed, emitter=emitter)
-        state_event_writer.append(findings_result.state_record)
-        return plan.result, None
-    raise ValueError(f"Unsupported finalize plan effect: {plan.effect}")
+    handler = _EFFECT_DISPATCH.get(plan.effect)
+    if handler is None:
+        raise ValueError(f"Unsupported finalize plan effect: {plan.effect}")
+    return handler(ctx, plan, review_id, review_path, covered_entries, unreviewed, state_event_writer=state_event_writer, emitter=emitter)

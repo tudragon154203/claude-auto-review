@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from claude_auto_review.state.records.edit import EditRecord
+from claude_auto_review.state.records.edit import EditRecord, StopBlockedRecord
 from claude_auto_review.state.records.review import ReviewMetadata
 from claude_auto_review.state.records.events import StateEvent
 
@@ -12,7 +12,7 @@ def consecutive_stop_block_count(entries: list[StateEvent]) -> int:
             continue
         if isinstance(entry, EditRecord) and not entry.reviewed:
             continue
-        if getattr(entry, "type", None) == "stop_blocked":
+        if isinstance(entry, StopBlockedRecord):
             count += 1
             continue
         break
