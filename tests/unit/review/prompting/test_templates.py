@@ -39,7 +39,8 @@ class TestPromptTemplates(unittest.TestCase):
         )
         self.assertIn("Complete the review in a single response.", result)
         self.assertIn(
-            'If you record one or more findings under "## Findings", you MUST NOT use a clean verdict.', result
+            "Otherwise write verbatim: `Findings present. Claude must address all findings before stopping.`",
+            result,
         )
         self.assertNotIn("/tmp/review-123.md", result)
 
