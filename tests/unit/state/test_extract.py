@@ -1,8 +1,7 @@
 import unittest
 
 from claude_auto_review.state.extraction.hook_input import extract_file_paths_from_hook_input
-from claude_auto_review.state.records.file import ReviewFileRecord
-from claude_auto_review.state.records.serialization import serialize_review_file_entries
+from claude_auto_review.state.records.file import ReviewFileRecord, serialize_review_file_entries
 from tests.unit.state.support import StateTestCase
 
 

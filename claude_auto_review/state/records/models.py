@@ -4,10 +4,9 @@ from dataclasses import dataclass
 from typing import Protocol
 
 from claude_auto_review.state.records.file import (
-    ReviewFileRecord as ReviewFileRecord,
-    _coerce_review_file_entries as _coerce_review_file_entries,
-    _parse_review_file_entries as _parse_review_file_entries,
-    serialize_review_file_entries as serialize_review_file_entries,
+    ReviewFileRecord,
+    _coerce_review_file_entries,
+    _parse_review_file_entries,
 )
 
 

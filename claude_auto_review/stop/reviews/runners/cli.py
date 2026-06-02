@@ -1,8 +1,6 @@
 from __future__ import annotations
 
-from claude_auto_review.runtime import process as _process_mod
-
-run_captured = _process_mod.run_captured
+from claude_auto_review.runtime.process import run_captured
 
 
 def run_review_cli(cli_path, args, *, cwd, timeout, input_text=None):
