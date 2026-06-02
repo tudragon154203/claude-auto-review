@@ -181,6 +181,29 @@ class TestSessionEndHook(HookTestCase, unittest.TestCase):
         self.assertEqual(result.returncode, 0)
         self.assertFalse(client_dir(project_root, "payload-session").exists())
 
+    def test_skips_cleanup_when_disabled_in_settings(self):
+        """SessionEnd does not remove client data when enabled is false."""
+        project_root = self.temp_project()
+        (project_root / "src").mkdir(parents=True, exist_ok=True)
+        (project_root / "src" / "app.ts").write_text("export const value = 1;\n", encoding="utf-8")
+        # Track file while plugin is enabled
+        self.run_python("hooks/post_tool_use.py", project_root, json.dumps({"tool_input": {"file_path": "src/app.ts"}}))
+        cdir = find_client_dir(project_root, "test-session")
+        self.assertIsNotNone(cdir)
+        self.assertTrue(cdir.exists())
+        # Now disable and run session_end
+        (project_root / ".claude" / "settings.json").write_text(
+            json.dumps({"claude-auto-review": {"enabled": False}}),
+            encoding="utf-8",
+        )
+        result = self.run_python("hooks/session_end.py", project_root)
+        self.assertEqual(result.returncode, 0)
+        self.assertTrue(cdir.exists(), "client dir should not be removed when plugin is disabled")
+        log_path = get_state_path(project_root)
+        log_content = log_path.read_text(encoding="utf-8")
+        self.assertIn("session_end_disabled", log_content)
+        self.assertNotIn("session_end_cleanup", log_content)
+
     def test_session_end_non_dict_payload_falls_back_to_env_session(self):
         project_root = self.temp_project()
         ensure_client_runtime(project_root, "env-session")

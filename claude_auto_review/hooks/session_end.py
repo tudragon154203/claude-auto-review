@@ -13,6 +13,9 @@ from claude_auto_review.runtime.pending_cleanup import cleanup_expired_pending_r
 def _run_session_end(ctx):
     project_root = ctx.project_root
     client_id = ctx.client_id
+    if not ctx.settings.enabled:
+        log_event(project_root, "session_end_disabled", client_id=client_id)
+        return 0
     expired_removed = cleanup_expired_pending_reviews(project_root, client_id=client_id)
     stale_removed = cleanup_stale_clients(project_root)
     removed = cancel_session(project_root, client_id=client_id)
