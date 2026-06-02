@@ -38,8 +38,24 @@ def is_placeholder_review_content(content: str | None) -> bool:
     return any(marker in text for marker in placeholder_markers)
 
 
+def _looks_like_review_document(content: str) -> bool:
+    """A non-empty review must carry at least one review-structure marker.
+
+    A stray stderr leak, a codex fallback string, or any other unstructured
+    short output that happens to bypass the placeholder markers must not be
+    treated as a completed review. Without this guard, `is_completed_review_content`
+    classifies any non-placeholder text — including 25 bytes of codex noise —
+    as findings-bearing and the stop hook blocks on garbage.
+    """
+    return ("## Verdict" in content) or ("## Findings" in content)
+
+
 def is_completed_review_content(content: str | None) -> bool:
-    return not is_placeholder_review_content(content)
+    if is_placeholder_review_content(content):
+        return False
+    if not content or not content.strip():
+        return False
+    return _looks_like_review_document(content)
 
 
 def is_review_complete_verdict(verdict: str | None) -> bool:
