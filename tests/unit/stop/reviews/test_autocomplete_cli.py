@@ -13,60 +13,63 @@ def _ctx(project_root=FAKE_ROOT, client_id="c"):
 
 
 class TestAutoCompleteCLI(unittest.TestCase):
-    @patch("claude_auto_review.stop.reviews.runners.claude.log_event")
     @patch("claude_auto_review.stop.reviews.runners.preamble.shutil.which", return_value=None)
-    def test_claude_cli_not_found(self, mock_which, mock_log):
+    def test_claude_cli_not_found(self, mock_which):
+        mock_log = MagicMock()
         result = attempt_stop_autocomplete(
             _ctx(),
             review_id="r",
             review_path=Path("/fake/review.md"),
             prompt_file=Path("/fake/prompt.md"),
             user_prompt="finish",
+            log_event_fn=mock_log,
         )
-        self.assertFalse(result)
+        self.assertNotEqual(result.status, "output_written")
         mock_log.assert_called_with(FAKE_ROOT, "stop_hook_reviewer_not_found", client_id="c", backend="claude")
 
-    @patch("claude_auto_review.stop.reviews.runners.claude.log_event")
     @patch("claude_auto_review.stop.reviews.runners.preamble.shutil.which", return_value="/usr/bin/claude")
-    def test_prompt_file_not_found(self, mock_which, mock_log):
+    def test_prompt_file_not_found(self, mock_which):
+        mock_log = MagicMock()
         result = attempt_stop_autocomplete(
             _ctx(),
             review_id="r",
             review_path=Path("/fake/review.md"),
             prompt_file=Path("/nonexistent.md"),
             user_prompt="finish",
+            log_event_fn=mock_log,
         )
-        self.assertFalse(result)
+        self.assertNotEqual(result.status, "output_written")
         mock_log.assert_called_with(
             FAKE_ROOT, "stop_hook_prompt_not_found", client_id="c", path=str(Path("/nonexistent.md"))
         )
 
-    @patch("claude_auto_review.stop.reviews.runners.claude.log_event")
     @patch(
         "claude_auto_review.stop.reviews.runners.cli.run_captured",
         side_effect=subprocess.TimeoutExpired(cmd="claude", timeout=600),
     )
     @patch("claude_auto_review.stop.reviews.runners.preamble.shutil.which", return_value="/usr/bin/claude")
     @patch("pathlib.Path.is_file", return_value=True)
-    def test_subprocess_timeout(self, mock_is_file, mock_which, mock_run, mock_log):
+    def test_subprocess_timeout(self, mock_is_file, mock_which, mock_run):
+        mock_log = MagicMock()
         result = attempt_stop_autocomplete(
             _ctx(),
             review_id="r",
             review_path=Path("/fake/review.md"),
             prompt_file=Path("/fake/prompt.md"),
             user_prompt="finish",
+            log_event_fn=mock_log,
         )
-        self.assertFalse(result)
+        self.assertNotEqual(result.status, "output_written")
         mock_log.assert_called_with(
             FAKE_ROOT, "stop_hook_reviewer_timeout", client_id="c", reviewId="r", backend="claude"
         )
 
-    @patch("claude_auto_review.stop.reviews.runners.claude.log_event")
     @patch("claude_auto_review.stop.reviews.runners.cli.run_captured")
     @patch("claude_auto_review.stop.reviews.runners.preamble.shutil.which", return_value="/usr/bin/claude")
     @patch("pathlib.Path.is_file", return_value=True)
-    def test_passes_configured_timeout_to_subprocess(self, mock_is_file, mock_which, mock_run, mock_log):
+    def test_passes_configured_timeout_to_subprocess(self, mock_is_file, mock_which, mock_run):
         mock_run.return_value = MagicMock(returncode=1, stdout="", stderr="")
+        mock_log = MagicMock()
         attempt_stop_autocomplete(
             _ctx(),
             review_id="r",
@@ -74,23 +77,25 @@ class TestAutoCompleteCLI(unittest.TestCase):
             prompt_file=Path("/fake/prompt.md"),
             user_prompt="finish",
             reviewer_timeout_seconds=42,
+            log_event_fn=mock_log,
         )
         self.assertEqual(mock_run.call_args.kwargs["timeout"], 42.0)
 
-    @patch("claude_auto_review.stop.reviews.runners.claude.log_event")
     @patch("claude_auto_review.stop.reviews.runners.cli.run_captured")
     @patch("claude_auto_review.stop.reviews.runners.preamble.shutil.which", return_value="/usr/bin/claude")
     @patch("pathlib.Path.is_file", return_value=True)
-    def test_general_exception(self, mock_is_file, mock_which, mock_run, mock_log):
+    def test_general_exception(self, mock_is_file, mock_which, mock_run):
         mock_run.side_effect = OSError("boom")
+        mock_log = MagicMock()
         result = attempt_stop_autocomplete(
             _ctx(),
             review_id="r",
             review_path=Path("/fake/review.md"),
             prompt_file=Path("/fake/prompt.md"),
             user_prompt="finish",
+            log_event_fn=mock_log,
         )
-        self.assertFalse(result)
+        self.assertNotEqual(result.status, "output_written")
         mock_log.assert_called_with(
             FAKE_ROOT, "stop_hook_reviewer_error", client_id="c", error="boom", backend="claude", reviewId="r"
         )

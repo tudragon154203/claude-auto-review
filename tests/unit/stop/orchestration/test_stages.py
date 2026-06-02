@@ -3,11 +3,11 @@ from types import SimpleNamespace
 from unittest.mock import MagicMock
 
 from tests.support_paths import FAKE_ROOT
-from claude_auto_review.config.settings.models import PluginSettings
+from claude_auto_review.config.settings.models import ClassifierSettings, CoreSettings, FlowSettings, PluginSettings
 from claude_auto_review.state.records.edit import EditRecord
 from claude_auto_review.state.snapshots.snapshot import StateSnapshot
 from claude_auto_review.stop.classifier.enums import ClassifierStatus
-from claude_auto_review.stop.orchestration.types.context import RuntimeContext
+from claude_auto_review.stop.orchestration.types.context import RuntimeContext, TerminalDetails
 from claude_auto_review.stop.orchestration.types.resolution import StopDecisionKind, TerminalResolution
 from claude_auto_review.stop.orchestration.pipeline.stages import (
     _build_classifier_result_persistor,
@@ -27,7 +27,7 @@ def _ctx(**kwargs):
         client_id=kwargs.get("client_id", "client-1"),
         settings=kwargs.get(
             "settings",
-            PluginSettings(enabled=True, pending_review_timeout_hours=1, max_stop_passes=5),
+            PluginSettings(core=CoreSettings(enabled=True), flow=FlowSettings(pending_review_timeout_hours=1, max_stop_passes=5)),
         ),
     )
 
@@ -48,7 +48,7 @@ class TestRunEnabledStage(unittest.TestCase):
 
     def test_disabled_returns_allow_decision(self):
         log_fn = MagicMock()
-        result = run_enabled_stage(_ctx(settings=PluginSettings(enabled=False)), log_event_fn=log_fn)
+        result = run_enabled_stage(_ctx(settings=PluginSettings(core=CoreSettings(enabled=False))), log_event_fn=log_fn)
         self.assertEqual(result.kind, StopDecisionKind.ALLOW)
         self.assertEqual(result.reason, StopAllowReason.DISABLED)
         log_fn.assert_called_once()
@@ -86,7 +86,7 @@ class TestCircuitBreakerStage(unittest.TestCase):
 
     def test_returns_allow_at_limit(self):
         result = run_circuit_breaker_stage(
-            _ctx(settings=PluginSettings(enabled=True, pending_review_timeout_hours=1, max_stop_passes=2)),
+            _ctx(settings=PluginSettings(core=CoreSettings(enabled=True), flow=FlowSettings(pending_review_timeout_hours=1, max_stop_passes=2))),
             _snapshot(),
             consecutive_stop_blocks_fn=MagicMock(return_value=2),
         )
@@ -97,7 +97,7 @@ class TestCircuitBreakerStage(unittest.TestCase):
 class TestClassifierStage(unittest.TestCase):
     def test_returns_none_when_disabled(self):
         ctx = _ctx(
-            settings=PluginSettings(enabled=True, last_assistant_message_classifier_enabled=False)
+            settings=PluginSettings(core=CoreSettings(enabled=True), classifier=ClassifierSettings(last_assistant_message_classifier_enabled=False))
         )
         result = run_classifier_stage(ctx, classify_last_assistant_message_fn=MagicMock())
         self.assertIsNone(result)
@@ -126,7 +126,7 @@ class TestClassifierStage(unittest.TestCase):
     def test_build_classifier_result_persistor_appends_state_entry(self):
         writer = MagicMock()
         writer_factory = MagicMock(return_value=writer)
-        ctx = _ctx(settings=PluginSettings(enabled=True, debug=True))
+        ctx = _ctx(settings=PluginSettings(core=CoreSettings(enabled=True, debug=True)))
         persistor = _build_classifier_result_persistor(ctx, writer_factory=writer_factory)
         result = MagicMock()
         result.as_state_entry.return_value = "entry-1"
@@ -159,7 +159,7 @@ class TestPendingStage(unittest.TestCase):
             get_reviewer_prompt_script_fn=MagicMock(return_value="reviewer.py"),
         )
         self.assertEqual(result.kind, StopDecisionKind.TERMINAL)
-        self.assertEqual(result.details, {"exit_code": 2})
+        self.assertEqual(result.details, TerminalDetails(exit_code=2))
 
 
 if __name__ == "__main__":

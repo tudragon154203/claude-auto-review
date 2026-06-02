@@ -40,8 +40,8 @@ def _call_classifier_api(
     if not api_key:
         return result_factory(ClassifierStatus.ERROR, ClassifierReason.MISSING_API_KEY, started_at, message_chars, base_url=base_url)  # type: ignore[no-any-return]
 
-    timeout_seconds = ctx.settings.last_assistant_message_classifier_timeout_seconds
-    model = ctx.settings.classifier_model
+    timeout_seconds = ctx.settings.classifier.last_assistant_message_classifier_timeout_seconds
+    model = ctx.settings.classifier.classifier_model
     return call_classifier_api(  # type: ignore[no-any-return]
         message_text,
         base_url,
@@ -60,7 +60,7 @@ def classify_last_assistant_message(
     *,
     persist: Callable | None = None,
 ) -> AssistantMessageClassificationResult | None:
-    if not ctx.settings.last_assistant_message_classifier_enabled:
+    if not ctx.settings.classifier.last_assistant_message_classifier_enabled:
         return None
 
     started_at = time.monotonic()

@@ -2,11 +2,11 @@ import unittest
 from unittest.mock import MagicMock
 
 from tests.support_paths import FAKE_ROOT
-from claude_auto_review.config.settings.models import PluginSettings
+from claude_auto_review.config.settings.models import CoreSettings, FlowSettings, PluginSettings
 from claude_auto_review.state.records.edit import EditRecord
 from claude_auto_review.state.records.review import ReviewMetadata
 from claude_auto_review.state.snapshots.snapshot import StateSnapshot
-from claude_auto_review.stop.orchestration.types.context import RuntimeContext
+from claude_auto_review.stop.orchestration.types.context import RuntimeContext, TerminalDetails
 from claude_auto_review.stop.orchestration.deps import (
     ClassifierDeps,
     ReviewDeps,
@@ -23,7 +23,7 @@ def _ctx(**kwargs):
         client_id=kwargs.get("client_id", "c1"),
         settings=kwargs.get(
             "settings",
-            PluginSettings(enabled=True, pending_review_timeout_hours=1, max_stop_passes=5),
+            PluginSettings(core=CoreSettings(enabled=True), flow=FlowSettings(pending_review_timeout_hours=1, max_stop_passes=5)),
         ),
     )
 
@@ -67,7 +67,7 @@ def _deps(**overrides):
 
 class TestStopFlowService(unittest.TestCase):
     def test_service_allows_when_disabled(self):
-        service = StopFlowService(_ctx(settings=PluginSettings(enabled=False)), deps=_deps())
+        service = StopFlowService(_ctx(settings=PluginSettings(core=CoreSettings(enabled=False))), deps=_deps())
         decision = service.run()
         self.assertEqual(decision.kind, StopDecisionKind.ALLOW)
         self.assertEqual(decision.reason, "disabled")
@@ -76,7 +76,7 @@ class TestStopFlowService(unittest.TestCase):
         service = StopFlowService(_ctx(), deps=_deps())
         decision = service.run()
         self.assertEqual(decision.kind, StopDecisionKind.TERMINAL)
-        self.assertEqual(decision.details, {"exit_code": 2})
+        self.assertEqual(decision.details, TerminalDetails(exit_code=2))
 
     def test_service_returns_finalize_resolution(self):
         resolution = ReviewResolution(
@@ -97,7 +97,7 @@ class TestStopFlowService(unittest.TestCase):
         service = StopFlowService(_ctx(), deps=_deps(review=review))
         decision = service.run()
         self.assertEqual(decision.kind, StopDecisionKind.FINALIZE)
-        self.assertIs(decision.details["resolution"], resolution)
+        self.assertIs(decision.details.resolution, resolution)
 
 
 if __name__ == "__main__":

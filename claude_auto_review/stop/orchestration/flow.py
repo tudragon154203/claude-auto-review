@@ -3,7 +3,13 @@ from __future__ import annotations
 from collections.abc import Callable
 from typing import Any
 
-from claude_auto_review.stop.orchestration.types.context import ResponsePayload, RuntimeContext, StopDecision
+from claude_auto_review.stop.orchestration.types.context import (
+    FinalizeDetails,
+    ResponsePayload,
+    RuntimeContext,
+    StopDecision,
+    TerminalDetails,
+)
 from claude_auto_review.stop.orchestration.decision_engine import DependencyOverrides, StopDecisionEngine, build_decision_engine
 from claude_auto_review.stop.orchestration.types.resolution import StopDecisionKind
 from claude_auto_review.stop.response import ResponseEmitter, StdoutResponseEmitter
@@ -31,13 +37,15 @@ def _handle_allow(engine: StopDecisionEngine, decision: StopDecision, emitter: R
 
 
 def _handle_terminal(engine: StopDecisionEngine, decision: StopDecision, emitter: ResponseEmitter) -> int:
-    details: dict[str, Any] = decision.details or {}
-    return int(details["exit_code"])
+    details = decision.details
+    assert isinstance(details, TerminalDetails)
+    return details.exit_code
 
 
 def _handle_finalize(engine: StopDecisionEngine, decision: StopDecision, emitter: ResponseEmitter) -> int:
-    details: dict[str, Any] = decision.details or {}
-    return int(engine.finalize(details["resolution"]))
+    details = decision.details
+    assert isinstance(details, FinalizeDetails)
+    return int(engine.finalize(details.resolution))
 
 
 _HANDLER_REGISTRY: dict[StopDecisionKind, StopHandler] = {

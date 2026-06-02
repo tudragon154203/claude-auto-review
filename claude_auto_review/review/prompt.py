@@ -162,7 +162,7 @@ def _run_review_prompt(project_root, client_id, deps: _ModuleAttributeDeps | Non
     _ensure_review_environment(project_root, client_id, deps)
 
     settings = _resolve_settings(project_root, deps)
-    if not settings.enabled:
+    if not settings.core.enabled:
         return _handle_disabled(project_root, client_id)
 
     unreviewed = _query_unreviewed(project_root, client_id, deps)

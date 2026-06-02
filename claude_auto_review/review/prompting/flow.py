@@ -51,13 +51,13 @@ def _resolve_reviewer_model(settings, backend: str) -> str:
         model: str = resolved_reviewer_model(settings, backend=backend)
         return model
     except (ValueError, KeyError):
-        return settings.reviewer_model or ""
+        return settings.reviewer.reviewer_model or ""
 
 
 def _build_review_contents(ctx: RuntimeContext, unreviewed, rules_content, settings, *, review_path: Path, review_id: str, timestamp: str, prompt_path: Path):
     files = [entry.file for entry in unreviewed]
     diff = all_session_diffs(files, ctx.project_root, ctx.client_id)
-    reviewer_backend = settings.reviewer_backend
+    reviewer_backend = settings.reviewer.reviewer_backend
     reviewer_model = _resolve_reviewer_model(settings, reviewer_backend)
 
     prompt_content = build_prompt(

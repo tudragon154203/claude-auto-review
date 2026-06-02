@@ -8,6 +8,10 @@ from claude_auto_review.stop.orchestration.flow import (
     _handle_terminal,
     dispatch_stop_decision,
 )
+from claude_auto_review.stop.orchestration.types.context import (
+    FinalizeDetails,
+    TerminalDetails,
+)
 from claude_auto_review.stop.orchestration.types.resolution import StopDecisionKind
 from claude_auto_review.stop.reviews.types.enums import StopAllowReason
 
@@ -23,19 +27,19 @@ class TestFlowDispatch(unittest.TestCase):
 
     def test_handle_terminal_returns_exit_code(self):
         engine = SimpleNamespace()
-        decision = SimpleNamespace(details={"exit_code": 2})
+        decision = SimpleNamespace(details=TerminalDetails(exit_code=2))
         self.assertEqual(_handle_terminal(engine, decision, MagicMock()), 2)
 
     def test_handle_finalize_forwards_resolution(self):
         emitter = MagicMock()
         engine = SimpleNamespace(finalize=lambda resolution: (3 if resolution == "r1" else 1))
-        decision = SimpleNamespace(details={"resolution": "r1"})
+        decision = SimpleNamespace(details=FinalizeDetails(resolution="r1"))
         self.assertEqual(_handle_finalize(engine, decision, emitter), 3)
 
     def test_dispatch_stop_decision_routes_by_kind(self):
         engine = SimpleNamespace(finalize=lambda resolution: 7)
         emitter = MagicMock()
-        decision = SimpleNamespace(kind=StopDecisionKind.FINALIZE, details={"resolution": "done"})
+        decision = SimpleNamespace(kind=StopDecisionKind.FINALIZE, details=FinalizeDetails(resolution="done"))
         self.assertEqual(dispatch_stop_decision(engine, decision, emitter=emitter), 7)
 
 

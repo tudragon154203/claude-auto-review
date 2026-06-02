@@ -28,7 +28,7 @@ def prepare_findings_block(ctx, review_id, review_path, unreviewed):
         review_path,
         review_feedback_max_chars(ctx.settings),
         project_root=ctx.project_root,
-        minimum_blocking_severity=ctx.settings.minimum_blocking_severity,
+        minimum_blocking_severity=ctx.settings.flow.minimum_blocking_severity,
     )
     record = StopBlockedRecord(
         timestamp=local_now_iso(),

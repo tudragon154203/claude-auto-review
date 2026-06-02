@@ -6,7 +6,7 @@ from tests.support_paths import FAKE_ROOT
 from claude_auto_review.state.records.review import ReviewMetadata
 from unittest.mock import patch
 
-from claude_auto_review.config.settings.models import PluginSettings
+from claude_auto_review.config.settings.models import ClassifierSettings, CoreSettings, FlowSettings, PluginSettings
 from claude_auto_review.state.records.edit import EditRecord
 from claude_auto_review.state.snapshots.snapshot import StateSnapshot
 from claude_auto_review.stop.orchestration.types.context import RuntimeContext
@@ -26,7 +26,7 @@ def _ctx(**overrides):
         client_id=overrides.get("client_id", "sid"),
         settings=overrides.get(
             "settings",
-            PluginSettings(enabled=True, pending_review_timeout_hours=1, max_stop_passes=5),
+            PluginSettings(core=CoreSettings(enabled=True), flow=FlowSettings(pending_review_timeout_hours=1, max_stop_passes=5)),
         ),
         payload=overrides.get("payload", {}),
     )
@@ -40,7 +40,7 @@ class TestFlowFinalize(unittest.TestCase):
         mock_state,
         mock_log,
     ):
-        result = run_stop_flow(_ctx(settings=PluginSettings(enabled=False, pending_review_timeout_hours=1, max_stop_passes=5)))
+        result = run_stop_flow(_ctx(settings=PluginSettings(core=CoreSettings(enabled=False), flow=FlowSettings(pending_review_timeout_hours=1, max_stop_passes=5))))
 
         self.assertEqual(result, 0)
         mock_log.assert_called_once_with(FAKE_ROOT, "stop_disabled", client_id="sid")
@@ -66,10 +66,9 @@ class TestFlowFinalize(unittest.TestCase):
         result = run_stop_flow(
             _ctx(
                 settings=PluginSettings(
-                    enabled=True,
-                    pending_review_timeout_hours=1,
-                    max_stop_passes=5,
-                    last_assistant_message_classifier_enabled=True,
+                    core=CoreSettings(enabled=True),
+                    flow=FlowSettings(pending_review_timeout_hours=1, max_stop_passes=5),
+                    classifier=ClassifierSettings(last_assistant_message_classifier_enabled=True),
                 ),
                 payload={"session_id": "sid", "last_assistant_message": "done"},
             )

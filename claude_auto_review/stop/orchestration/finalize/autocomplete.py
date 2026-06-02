@@ -42,9 +42,10 @@ def attempt_review_autocomplete(
             review_path,
             prompt_file,
             user_prompt,
-            reviewer_timeout_seconds=ctx.settings.reviewer_timeout_seconds,
+            reviewer_timeout_seconds=ctx.settings.reviewer.reviewer_timeout_seconds,
             model=resolved_reviewer_model(ctx.settings, backend=resolved_reviewer_backend(ctx.settings)),
             backend=resolved_reviewer_backend(ctx.settings),
+            log_event_fn=log_event_fn,
         )
         if not policy.should_retry(result.status, attempt):
             break

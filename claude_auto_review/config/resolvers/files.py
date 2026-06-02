@@ -15,8 +15,8 @@ def should_skip_file(file_path, settings: PluginSettings | None = None):
     if is_runtime_relative_path(file_path):
         return True
     ext = Path(file_path).suffix.lstrip(".").lower()
-    include_extensions = _normalize_extensions(settings.include_extensions)
-    skip_extensions = _normalize_extensions(settings.skip_extensions)
+    include_extensions = _normalize_extensions(settings.filters.include_extensions)
+    skip_extensions = _normalize_extensions(settings.filters.skip_extensions)
     if include_extensions and ext not in include_extensions:
         return True
     return bool(ext and ext in skip_extensions)

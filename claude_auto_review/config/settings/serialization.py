@@ -3,81 +3,61 @@ from __future__ import annotations
 from collections.abc import Mapping
 from typing import TYPE_CHECKING, Any
 
-from claude_auto_review.config.constants.defaults import (
-    DEFAULT_CLASSIFIER_MODEL,
-    DEFAULT_RULES_FILE,
-    DEFAULT_TIMEOUT_SECONDS,
-)
-from claude_auto_review.config.constants.severity import coerce_minimum_blocking_severity
-from claude_auto_review.config.reviewer.backends import DEFAULT_REVIEWER_BACKEND, resolve_reviewer_model
-from claude_auto_review.config.utils.coercion import coerce_bool, coerce_extensions, coerce_float, coerce_int
+from claude_auto_review.config.reviewer.backends import resolve_reviewer_model
+from claude_auto_review.config.utils.schema import SETTING_SPECS, KNOWN_SETTING_KEYS, SETTING_REVIEWER_MODEL
 
 if TYPE_CHECKING:
     from claude_auto_review.config.settings.models import PluginSettings
-from claude_auto_review.config.utils.schema import (
-    KNOWN_SETTING_KEYS,
-    SETTING_CLASSIFIER_ENABLED,
-    SETTING_CLASSIFIER_MODEL,
-    SETTING_CLASSIFIER_TIMEOUT,
-    SETTING_DEBUG,
-    SETTING_ENABLED,
-    SETTING_FEEDBACK_MAX_CHARS,
-    SETTING_INCLUDE_EXTS,
-    SETTING_MAX_STOP_PASSES,
-    SETTING_MINIMUM_BLOCKING_SEVERITY,
-    SETTING_PENDING_TIMEOUT,
-    SETTING_REVIEWER_BACKEND,
-    SETTING_REVIEWER_MODEL,
-    SETTING_REVIEWER_TIMEOUT,
-    SETTING_RULES_FILE,
-    SETTING_SKIP_EXTS,
-    SETTING_STALE_CLIENT_TIMEOUT,
-)
+
 
 def plugin_settings_kwargs(mapping: Mapping[str, Any] | None) -> dict[str, Any]:
     data = dict(mapping) if isinstance(mapping, Mapping) else {}
     extras = {key: value for key, value in data.items() if key not in KNOWN_SETTING_KEYS}
-    reviewer_model = data.get(SETTING_REVIEWER_MODEL)
+    groups: dict[str, dict[str, Any]] = {
+        "core": {},
+        "reviewer": {},
+        "classifier": {},
+        "filters": {},
+        "flow": {},
+    }
+    for spec in SETTING_SPECS:
+        raw = data.get(spec.json_key)
+        if spec.coerce_fn is not None:
+            value = spec.coerce_fn(raw)
+        elif raw is not None:
+            value = raw
+        elif spec.default is not None:
+            value = spec.default
+        else:
+            continue
+        group = spec.group
+        groups[group][spec.field_name] = value
+    from claude_auto_review.config.settings.models import (
+        ClassifierSettings,
+        CoreSettings,
+        FilterSettings,
+        FlowSettings,
+        ReviewerSettings,
+    )
     return {
-        "enabled": coerce_bool(data.get(SETTING_ENABLED), True),
-        "rules_file": str(data.get(SETTING_RULES_FILE, DEFAULT_RULES_FILE)),
-        "include_extensions": coerce_extensions(data.get(SETTING_INCLUDE_EXTS)),
-        "skip_extensions": coerce_extensions(data.get(SETTING_SKIP_EXTS)),
-        "max_stop_passes": coerce_int(data.get(SETTING_MAX_STOP_PASSES), 5),
-        "minimum_blocking_severity": coerce_minimum_blocking_severity(data.get(SETTING_MINIMUM_BLOCKING_SEVERITY)),
-        "pending_review_timeout_hours": coerce_float(data.get(SETTING_PENDING_TIMEOUT), 1),
-        "reviewer_backend": str(data.get(SETTING_REVIEWER_BACKEND, DEFAULT_REVIEWER_BACKEND)).lower(),
-        "reviewer_model": None if reviewer_model in (None, "") else str(reviewer_model),
-        "reviewer_timeout_seconds": coerce_int(data.get(SETTING_REVIEWER_TIMEOUT), 600),
-        "review_feedback_max_chars": max(0, coerce_int(data.get(SETTING_FEEDBACK_MAX_CHARS), 9000)),
-        "last_assistant_message_classifier_enabled": coerce_bool(data.get(SETTING_CLASSIFIER_ENABLED), True),
-        "last_assistant_message_classifier_timeout_seconds": coerce_float(
-            data.get(SETTING_CLASSIFIER_TIMEOUT), DEFAULT_TIMEOUT_SECONDS
-        ),
-        "classifier_model": str(data.get(SETTING_CLASSIFIER_MODEL, DEFAULT_CLASSIFIER_MODEL)),
-        "stale_client_timeout_hours": coerce_float(data.get(SETTING_STALE_CLIENT_TIMEOUT), 48),
-        "debug": coerce_bool(data.get(SETTING_DEBUG), True),
+        "core": CoreSettings(**groups["core"]),
+        "reviewer": ReviewerSettings(**groups["reviewer"]),
+        "classifier": ClassifierSettings(**groups["classifier"]),
+        "filters": FilterSettings(**groups["filters"]),
+        "flow": FlowSettings(**groups["flow"]),
         "extras": extras,
     }
 
 
 def plugin_settings_mapping(settings: PluginSettings) -> dict[str, Any]:
-    return {
-        SETTING_ENABLED: settings.enabled,
-        SETTING_RULES_FILE: settings.rules_file,
-        SETTING_INCLUDE_EXTS: list(settings.include_extensions),
-        SETTING_SKIP_EXTS: list(settings.skip_extensions),
-        SETTING_REVIEWER_BACKEND: settings.reviewer_backend,
-        SETTING_REVIEWER_MODEL: resolve_reviewer_model(settings.reviewer_model, backend=settings.reviewer_backend),
-        SETTING_REVIEWER_TIMEOUT: settings.reviewer_timeout_seconds,
-        SETTING_FEEDBACK_MAX_CHARS: settings.review_feedback_max_chars,
-        SETTING_MAX_STOP_PASSES: settings.max_stop_passes,
-        SETTING_MINIMUM_BLOCKING_SEVERITY: settings.minimum_blocking_severity,
-        SETTING_PENDING_TIMEOUT: settings.pending_review_timeout_hours,
-        SETTING_CLASSIFIER_ENABLED: settings.last_assistant_message_classifier_enabled,
-        SETTING_CLASSIFIER_MODEL: settings.classifier_model,
-        SETTING_CLASSIFIER_TIMEOUT: settings.last_assistant_message_classifier_timeout_seconds,
-        SETTING_STALE_CLIENT_TIMEOUT: settings.stale_client_timeout_hours,
-        SETTING_DEBUG: settings.debug,
-        **settings.extras,
-    }
+    result: dict[str, Any] = {}
+    for spec in SETTING_SPECS:
+        sub = getattr(settings, spec.group)
+        value = getattr(sub, spec.field_name)
+        if spec.to_mapping_transform is not None:
+            value = spec.to_mapping_transform(value)
+        if spec.json_key == SETTING_REVIEWER_MODEL:
+            value = resolve_reviewer_model(value, backend=settings.reviewer.reviewer_backend)
+        result[spec.json_key] = value
+    result.update(settings.extras)
+    return result

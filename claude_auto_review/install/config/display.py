@@ -97,9 +97,9 @@ def _print_summary(
     print(f" 📄 Settings file: {settings_path}")
     print(f" 📁 Runtime directory: {runtime_dir}")
     print(
-        f" ⚙  reviewerBackend={settings.reviewer_backend}, "
+        f" ⚙  reviewerBackend={settings.reviewer.reviewer_backend}, "
         f"reviewerModel={resolved_reviewer_model(settings)}, "
-        f"minimumBlockingSeverity={settings.minimum_blocking_severity}, "
-        f"maxStopPasses={settings.max_stop_passes}"
+        f"minimumBlockingSeverity={settings.flow.minimum_blocking_severity}, "
+        f"maxStopPasses={settings.flow.max_stop_passes}"
     )
     _print_advanced_settings(settings_path, settings, extra_descriptions=extra_descriptions)

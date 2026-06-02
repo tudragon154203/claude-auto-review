@@ -3,7 +3,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
-from claude_auto_review.runtime.events import log_event
+from claude_auto_review.runtime.events import log_event as _default_log_event
+from collections.abc import Callable
+
 from claude_auto_review.state.reviews.normalization import normalize_review_verdict_content
 from claude_auto_review.stop.orchestration.types.context import RuntimeContext
 from claude_auto_review.stop.reviews.types.enums import AutocompleteStatus
@@ -20,8 +22,6 @@ class AutocompleteResult:
     def output_written(self):
         return self.status == AutocompleteStatus.OUTPUT_WRITTEN
 
-    def __bool__(self):
-        return self.output_written
 
 
 def normalize_and_write_review(
@@ -45,8 +45,8 @@ def normalize_and_write_review(
     return normalized_text
 
 
-def _process_review_result(ctx: RuntimeContext, result, review_path, review_id, backend, *, log_event_fn=None):
-    _log = log_event_fn or log_event
+def _process_review_result(ctx: RuntimeContext, result, review_path, review_id, backend, *, log_event_fn) -> AutocompleteResult:
+    _log = log_event_fn
     stdout_len = len(result.stdout) if result.stdout else 0
     _log(
         ctx.project_root,
@@ -97,7 +97,7 @@ def _process_review_result(ctx: RuntimeContext, result, review_path, review_id, 
         result.stdout,
         Path(review_path),
         client_id=ctx.client_id,
-        minimum_blocking_severity=ctx.settings.minimum_blocking_severity,
+        minimum_blocking_severity=ctx.settings.flow.minimum_blocking_severity,
     )
     _log(
         ctx.project_root,

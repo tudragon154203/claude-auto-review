@@ -4,7 +4,7 @@ from unittest.mock import patch
 
 from tests.support_paths import FAKE_ROOT
 
-from claude_auto_review.config.settings.models import PluginSettings
+from claude_auto_review.config.settings.models import ClassifierSettings, CoreSettings, FlowSettings, PluginSettings
 from claude_auto_review.state.records.edit import EditRecord, StopBlockedRecord
 from claude_auto_review.state.snapshots.snapshot import StateSnapshot
 from claude_auto_review.stop.orchestration.types.context import RuntimeContext
@@ -25,7 +25,7 @@ def _ctx(**overrides):
         client_id=overrides.get("client_id", "sid"),
         settings=overrides.get(
             "settings",
-            PluginSettings(enabled=True, pending_review_timeout_hours=1, max_stop_passes=5),
+            PluginSettings(core=CoreSettings(enabled=True), flow=FlowSettings(pending_review_timeout_hours=1, max_stop_passes=5)),
         ),
         payload=overrides.get("payload", {}),
     )
@@ -44,10 +44,9 @@ class TestFlowClassifier(unittest.TestCase):
         result = run_stop_flow(
             _ctx(
                 settings=PluginSettings(
-                    enabled=True,
-                    pending_review_timeout_hours=1,
-                    max_stop_passes=5,
-                    last_assistant_message_classifier_enabled=True,
+                    core=CoreSettings(enabled=True),
+                    flow=FlowSettings(pending_review_timeout_hours=1, max_stop_passes=5),
+                    classifier=ClassifierSettings(last_assistant_message_classifier_enabled=True),
                 ),
                 payload={"session_id": "sid", "last_assistant_message": "done"},
             )
@@ -79,10 +78,9 @@ class TestFlowClassifier(unittest.TestCase):
         result = run_stop_flow(
             _ctx(
                 settings=PluginSettings(
-                    enabled=True,
-                    pending_review_timeout_hours=1,
-                    max_stop_passes=5,
-                    last_assistant_message_classifier_enabled=True,
+                    core=CoreSettings(enabled=True),
+                    flow=FlowSettings(pending_review_timeout_hours=1, max_stop_passes=5),
+                    classifier=ClassifierSettings(last_assistant_message_classifier_enabled=True),
                 ),
                 payload={"session_id": "sid", "last_assistant_message": "done"},
             )
@@ -106,10 +104,9 @@ class TestFlowClassifier(unittest.TestCase):
         result = run_stop_flow(
             _ctx(
                 settings=PluginSettings(
-                    enabled=True,
-                    pending_review_timeout_hours=1,
-                    max_stop_passes=5,
-                    last_assistant_message_classifier_enabled=True,
+                    core=CoreSettings(enabled=True),
+                    flow=FlowSettings(pending_review_timeout_hours=1, max_stop_passes=5),
+                    classifier=ClassifierSettings(last_assistant_message_classifier_enabled=True),
                 ),
                 payload={"session_id": "sid", "last_assistant_message": "done"},
             )
@@ -132,10 +129,9 @@ class TestFlowClassifier(unittest.TestCase):
         result = run_stop_flow(
             _ctx(
                 settings=PluginSettings(
-                    enabled=True,
-                    pending_review_timeout_hours=1,
-                    max_stop_passes=5,
-                    last_assistant_message_classifier_enabled=True,
+                    core=CoreSettings(enabled=True),
+                    flow=FlowSettings(pending_review_timeout_hours=1, max_stop_passes=5),
+                    classifier=ClassifierSettings(last_assistant_message_classifier_enabled=True),
                 ),
                 payload={"session_id": "sid", "last_assistant_message": "done"},
             )
@@ -158,10 +154,9 @@ class TestFlowClassifier(unittest.TestCase):
         result = run_stop_flow(
             _ctx(
                 settings=PluginSettings(
-                    enabled=True,
-                    pending_review_timeout_hours=1,
-                    max_stop_passes=5,
-                    last_assistant_message_classifier_enabled=False,
+                    core=CoreSettings(enabled=True),
+                    flow=FlowSettings(pending_review_timeout_hours=1, max_stop_passes=5),
+                    classifier=ClassifierSettings(last_assistant_message_classifier_enabled=False),
                 ),
                 payload={"session_id": "sid", "last_assistant_message": "done"},
             )

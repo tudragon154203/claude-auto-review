@@ -59,7 +59,7 @@ def cleanup_expired_pending_reviews(project_root=None, client_id=""):
 
     records = read_jsonl_state_records(state_path)
     latest_statuses = _collect_pending_reviews(records)
-    predicate = _build_prune_predicate(latest_statuses, settings.pending_review_timeout_hours)
+    predicate = _build_prune_predicate(latest_statuses, settings.flow.pending_review_timeout_hours)
     removed = _execute_prune(state_path, records, predicate, project_root=project_root, client_id=client_id)
 
     if removed > 0:

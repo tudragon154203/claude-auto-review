@@ -3,7 +3,7 @@ import json
 import unittest
 from urllib import error
 
-from claude_auto_review.config.settings.models import PluginSettings
+from claude_auto_review.config.settings.models import ClassifierSettings, CoreSettings, PluginSettings
 from claude_auto_review.state.store.read import load_state
 from claude_auto_review.state.store.writer import StateEventWriter
 from claude_auto_review.stop.classifier.last_assistant_message import (
@@ -41,7 +41,7 @@ def _make_persist(ctx):
     writer = StateEventWriter(project_root=ctx.project_root, client_id=ctx.client_id)
 
     def persist(result):
-        writer.append(result.as_state_entry(include_debug=ctx.settings.debug))
+        writer.append(result.as_state_entry(include_debug=ctx.settings.core.debug))
 
     return persist
 
@@ -50,7 +50,7 @@ class TestLastAssistantMessageErrors(StateTestCase, unittest.TestCase):
     def setUp(self):
         self.project_root = self.temp_project()
         self.client_id = "classifier-client"
-        self.settings = PluginSettings(last_assistant_message_classifier_enabled=True)
+        self.settings = PluginSettings(classifier=ClassifierSettings(last_assistant_message_classifier_enabled=True))
         self.env = {
             "ANTHROPIC_BASE_URL": "http://127.0.0.1:13456",
             "ANTHROPIC_API_KEY": "top-secret",
@@ -61,7 +61,7 @@ class TestLastAssistantMessageErrors(StateTestCase, unittest.TestCase):
             _make_ctx(
                 self.project_root,
                 {"last_assistant_message": "Ship it."},
-                PluginSettings(last_assistant_message_classifier_enabled=False),
+                PluginSettings(classifier=ClassifierSettings(last_assistant_message_classifier_enabled=False)),
             ),
             env=self.env,
             urlopen=lambda req, timeout: _FakeResponse({"content": [{"text": "complete"}]}),
@@ -97,8 +97,8 @@ class TestLastAssistantMessageErrors(StateTestCase, unittest.TestCase):
             self.project_root,
             {"last_assistant_message": "Message"},
             PluginSettings(
-                last_assistant_message_classifier_enabled=True,
-                debug=False,
+                classifier=ClassifierSettings(last_assistant_message_classifier_enabled=True),
+                core=CoreSettings(debug=False),
             ),
         )
         classify_last_assistant_message(

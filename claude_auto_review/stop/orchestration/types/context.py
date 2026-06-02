@@ -18,10 +18,35 @@ class RuntimeContext:
 
 
 @dataclass(frozen=True)
+class TerminalDetails:
+    exit_code: int = 2
+
+
+@dataclass(frozen=True)
+class FinalizeDetails:
+    resolution: Any
+
+
+@dataclass(frozen=True)
+class CircuitBreakerDetails:
+    block_count: int
+    max_passes: int
+
+
+@dataclass(frozen=True)
+class ClassifierDetails:
+    classifier_status: Any
+    classifier_reason: Any
+
+
+StopDetails = TerminalDetails | FinalizeDetails | CircuitBreakerDetails | ClassifierDetails
+
+
+@dataclass(frozen=True)
 class StopDecision:
     kind: StopDecisionKind
     reason: StopAllowReason | None = None
-    details: dict[str, Any] | None = None
+    details: StopDetails | None = None
 
 
 @dataclass(frozen=True)

@@ -2,7 +2,7 @@ import unittest
 from unittest.mock import MagicMock, patch
 
 from tests.support_paths import FAKE_ROOT
-from claude_auto_review.config.settings.models import PluginSettings
+from claude_auto_review.config.settings.models import CoreSettings, FlowSettings, PluginSettings
 from claude_auto_review.stop.orchestration.types.context import RuntimeContext
 from claude_auto_review.stop.orchestration.decision_engine import DependencyOverrides, StopDecisionEngine, build_decision_engine
 from claude_auto_review.stop.orchestration.types.resolution import StopDecisionKind, TerminalResolution
@@ -14,7 +14,7 @@ def _ctx(**kwargs):
         client_id=kwargs.get("client_id", "c1"),
         settings=kwargs.get(
             "settings",
-            PluginSettings(enabled=True, pending_review_timeout_hours=1, max_stop_passes=5),
+            PluginSettings(core=CoreSettings(enabled=True), flow=FlowSettings(pending_review_timeout_hours=1, max_stop_passes=5)),
         ),
         payload=kwargs.get("payload", {}),
     )

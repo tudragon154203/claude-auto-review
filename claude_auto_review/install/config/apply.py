@@ -24,9 +24,9 @@ def _apply_args(settings: PluginSettings, args) -> PluginSettings:
         previous_default_model = DEFAULT_REVIEWER_MODELS[previous_backend]
         updated[SETTING_REVIEWER_BACKEND] = args.backend
         if not args.model and (
-            settings.reviewer_model is None
-            or settings.reviewer_model == previous_default_model
-            or settings.reviewer_model in known_default_models
+            settings.reviewer.reviewer_model is None
+            or settings.reviewer.reviewer_model == previous_default_model
+            or settings.reviewer.reviewer_model in known_default_models
         ):
             updated[SETTING_REVIEWER_MODEL] = DEFAULT_REVIEWER_MODELS[args.backend]
     if args.model:

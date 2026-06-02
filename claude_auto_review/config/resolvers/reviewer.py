@@ -6,8 +6,8 @@ from claude_auto_review.config.reviewer.backends import resolve_reviewer_backend
 
 
 def resolved_reviewer_backend(settings) -> str:
-    return resolve_reviewer_backend(settings.reviewer_backend)
+    return resolve_reviewer_backend(settings.reviewer.reviewer_backend)
 
 
 def resolved_reviewer_model(settings, *, backend: str | None = None) -> str:
-    return resolve_reviewer_model(settings.reviewer_model, backend=backend or resolved_reviewer_backend(settings))
+    return resolve_reviewer_model(settings.reviewer.reviewer_model, backend=backend or resolved_reviewer_backend(settings))

@@ -73,7 +73,7 @@ def cleanup_stale_clients(project_root=None):
     """Remove client directories that have not seen any activity for a while."""
     project_root = resolve_project_root(project_root)
     settings = load_settings(project_root)
-    timeout_hours = settings.stale_client_timeout_hours
+    timeout_hours = settings.flow.stale_client_timeout_hours
 
     clients_dir = project_root / CLIENTS_DIR
     if not clients_dir.is_dir():

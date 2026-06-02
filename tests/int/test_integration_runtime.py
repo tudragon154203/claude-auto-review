@@ -4,7 +4,7 @@ from datetime import datetime
 from pathlib import Path
 
 from claude_auto_review.config.io.settings_file import load_settings
-from claude_auto_review.config.settings.models import DEFAULT_TIMEOUT_SECONDS, PluginSettings
+from claude_auto_review.config.settings.models import DEFAULT_TIMEOUT_SECONDS, ClassifierSettings, PluginSettings
 from claude_auto_review.paths.path_utils import get_state_path
 from claude_auto_review.runtime.cleanup.session import cancel_runtime
 from claude_auto_review.runtime.client_dirs import client_state_path
@@ -67,8 +67,8 @@ class IntegrationRuntimeTests(IntegrationTestCase):
 
         ensure_project_settings(project_root)
         settings = load_settings(project_root)
-        self.assertTrue(settings.enabled)
-        self.assertEqual(settings.minimum_blocking_severity, "medium")
+        self.assertTrue(settings.core.enabled)
+        self.assertEqual(settings.flow.minimum_blocking_severity, "medium")
 
         settings_file = project_root / ".claude" / "settings.json"
         settings_file.write_text(
@@ -86,12 +86,12 @@ class IntegrationRuntimeTests(IntegrationTestCase):
 
         ensure_project_settings(project_root)
         settings = load_settings(project_root)
-        self.assertFalse(settings.enabled)
+        self.assertFalse(settings.core.enabled)
         self.assertEqual(settings.extras["customKey"], "value")
-        self.assertEqual(settings.minimum_blocking_severity, "high")
-        self.assertEqual(settings.reviewer_timeout_seconds, 600)
-        self.assertTrue(settings.last_assistant_message_classifier_enabled)
-        self.assertEqual(settings.last_assistant_message_classifier_timeout_seconds, DEFAULT_TIMEOUT_SECONDS)
+        self.assertEqual(settings.flow.minimum_blocking_severity, "high")
+        self.assertEqual(settings.reviewer.reviewer_timeout_seconds, 600)
+        self.assertTrue(settings.classifier.last_assistant_message_classifier_enabled)
+        self.assertEqual(settings.classifier.last_assistant_message_classifier_timeout_seconds, DEFAULT_TIMEOUT_SECONDS)
 
     def test_classifier_appends_separate_state_entry_and_log(self):
         project_root = self.temp_project()
@@ -102,8 +102,10 @@ class IntegrationRuntimeTests(IntegrationTestCase):
             project_root=project_root,
             client_id=client_id,
             settings=PluginSettings(
-                last_assistant_message_classifier_enabled=True,
-                last_assistant_message_classifier_timeout_seconds=10,
+                classifier=ClassifierSettings(
+                    last_assistant_message_classifier_enabled=True,
+                    last_assistant_message_classifier_timeout_seconds=10,
+                ),
             ),
             payload={"last_assistant_message": "Final answer."},
         )
@@ -111,7 +113,7 @@ class IntegrationRuntimeTests(IntegrationTestCase):
 
         def _persist(result):
             StateEventWriter(project_root=project_root, client_id=client_id).append(
-                result.as_state_entry(include_debug=ctx.settings.debug)
+                result.as_state_entry(include_debug=ctx.settings.core.debug)
             )
 
         result = classify_last_assistant_message(

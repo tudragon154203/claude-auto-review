@@ -7,6 +7,7 @@ from unittest.mock import MagicMock, patch
 
 from claude_auto_review.stop.orchestration.types.context import RuntimeContext
 from claude_auto_review.stop.reviews.types.enums import AutocompleteStatus
+from claude_auto_review.stop.reviews.types.request import ReviewRequest
 from claude_auto_review.stop.reviews.runners.dispatcher import (
     _BACKEND_REGISTRY,
     _reset_registry,
@@ -86,9 +87,11 @@ class TestOpencodeAutocomplete(unittest.TestCase):
         _reset_registry()
         _ensure_defaults_registered()
 
-        result = _BACKEND_REGISTRY["opencode"](
+        result = attempt_stop_autocomplete(
             _ctx(), "rev-1", Path("/fake/review.md"), Path("/fake/prompt.md"),
             "user prompt", 60, "model",
+            backend="opencode",
+            log_event_fn=MagicMock(),
         )
         self.assertEqual(result.status, AutocompleteStatus.CLI_NOT_FOUND)
 
@@ -100,9 +103,11 @@ class TestOpencodeAutocomplete(unittest.TestCase):
         _reset_registry()
         _ensure_defaults_registered()
 
-        result = _BACKEND_REGISTRY["opencode"](
+        result = attempt_stop_autocomplete(
             _ctx(), "rev-1", Path("/fake/review.md"), Path("/fake/nonexistent-prompt.md"),
             "user prompt", 60, "model",
+            backend="opencode",
+            log_event_fn=MagicMock(),
         )
         self.assertEqual(result.status, AutocompleteStatus.PROMPT_NOT_FOUND)
 
@@ -137,9 +142,11 @@ class TestOpencodeAutocomplete(unittest.TestCase):
         _reset_registry()
         _ensure_defaults_registered()
 
-        result = _BACKEND_REGISTRY["opencode"](
+        result = attempt_stop_autocomplete(
             _ctx(), "rev-ok", review_path, prompt_file,
             "user prompt", 60, "claude-sonnet-4-6",
+            backend="opencode",
+            log_event_fn=MagicMock(),
         )
 
         self.assertEqual(result.status, AutocompleteStatus.OUTPUT_WRITTEN)
@@ -166,9 +173,11 @@ class TestOpencodeAutocomplete(unittest.TestCase):
         _reset_registry()
         _ensure_defaults_registered()
 
-        result = _BACKEND_REGISTRY["opencode"](
+        result = attempt_stop_autocomplete(
             _ctx(), "rev-nz", Path("/fake/review.md"), prompt_file,
             "user prompt", 60, "model",
+            backend="opencode",
+            log_event_fn=MagicMock(),
         )
 
         self.assertEqual(result.status, AutocompleteStatus.NONZERO)
@@ -192,9 +201,11 @@ class TestOpencodeAutocomplete(unittest.TestCase):
         _reset_registry()
         _ensure_defaults_registered()
 
-        result = _BACKEND_REGISTRY["opencode"](
+        result = attempt_stop_autocomplete(
             _ctx(), "rev-to", Path("/fake/review.md"), prompt_file,
             "user prompt", 60, "model",
+            backend="opencode",
+            log_event_fn=MagicMock(),
         )
 
         self.assertEqual(result.status, AutocompleteStatus.TIMEOUT)
@@ -217,9 +228,11 @@ class TestOpencodeAutocomplete(unittest.TestCase):
         _reset_registry()
         _ensure_defaults_registered()
 
-        result = _BACKEND_REGISTRY["opencode"](
+        result = attempt_stop_autocomplete(
             _ctx(), "rev-err", Path("/fake/review.md"), prompt_file,
             "user prompt", 60, "model",
+            backend="opencode",
+            log_event_fn=MagicMock(),
         )
 
         self.assertEqual(result.status, AutocompleteStatus.ERROR)
@@ -236,9 +249,11 @@ class TestOpencodeAutocomplete(unittest.TestCase):
         _reset_registry()
         _ensure_defaults_registered()
 
-        result = _BACKEND_REGISTRY["opencode"](
+        result = attempt_stop_autocomplete(
             _ctx(), "rev-read-err", Path("/fake/review.md"), prompt_file,
             "user prompt", 60, "model",
+            backend="opencode",
+            log_event_fn=MagicMock(),
         )
 
         self.assertEqual(result.status, AutocompleteStatus.ERROR)
@@ -257,9 +272,11 @@ class TestOpencodeAutocomplete(unittest.TestCase):
         _reset_registry()
         _ensure_defaults_registered()
 
-        result = _BACKEND_REGISTRY["opencode"](
+        result = attempt_stop_autocomplete(
             _ctx(), "rev-empty", Path("/fake/review.md"), prompt_file,
             "user prompt", 60, "model",
+            backend="opencode",
+            log_event_fn=MagicMock(),
         )
 
         self.assertEqual(result.status, AutocompleteStatus.EMPTY_STDOUT)
@@ -358,9 +375,11 @@ class TestEmptyPromptFallback(unittest.TestCase):
         _reset_registry()
         _ensure_defaults_registered()
 
-        result = _BACKEND_REGISTRY["opencode"](
+        result = attempt_stop_autocomplete(
             _ctx(), "rev-ep", review_path, prompt_file,
             "standalone user prompt", 60, "model",
+            backend="opencode",
+            log_event_fn=MagicMock(),
         )
 
         self.assertEqual(result.status, AutocompleteStatus.OUTPUT_WRITTEN)
@@ -397,9 +416,11 @@ class TestMergedFileCleanup(unittest.TestCase):
         _reset_registry()
         _ensure_defaults_registered()
 
-        _BACKEND_REGISTRY["opencode"](
+        attempt_stop_autocomplete(
             _ctx(), "rev-cl", review_path, prompt_file,
             "user", 60, "model",
+            backend="opencode",
+            log_event_fn=MagicMock(),
         )
 
         self.assertFalse(merged_path_ref[0].exists(), "Merged file should be cleaned up after success")
@@ -419,9 +440,11 @@ class TestMergedFileCleanup(unittest.TestCase):
         _reset_registry()
         _ensure_defaults_registered()
 
-        result = _BACKEND_REGISTRY["opencode"](
+        result = attempt_stop_autocomplete(
             _ctx(), "rev-cl-to", Path("/fake/review.md"), prompt_file,
             "user", 60, "model",
+            backend="opencode",
+            log_event_fn=MagicMock(),
         )
 
         self.assertEqual(result.status, AutocompleteStatus.TIMEOUT)

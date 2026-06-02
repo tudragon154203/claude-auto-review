@@ -26,7 +26,7 @@ def build_review_completion_prompt(review_path):
 
 
 def review_feedback_max_chars(settings):
-    return settings.review_feedback_max_chars
+    return settings.reviewer.review_feedback_max_chars
 
 
 def _minimum_blocking_severity_message(minimum_blocking_severity=None):

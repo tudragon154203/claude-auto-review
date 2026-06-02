@@ -2,7 +2,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-from claude_auto_review.config.settings.models import PluginSettings
+from claude_auto_review.config.settings.models import CoreSettings, FlowSettings, PluginSettings
 from claude_auto_review.stop.orchestration.types.context import RuntimeContext
 from claude_auto_review.stop.orchestration.finalize.outcomes import FinalizeEffect
 from claude_auto_review.stop.orchestration.finalize.plan_executor import (
@@ -18,7 +18,7 @@ def _ctx(**kwargs):
         project_root=kwargs.get("project_root", FAKE_ROOT),
         client_id=kwargs.get("client_id", "sid"),
         settings=kwargs.get(
-            "settings", PluginSettings(enabled=True, pending_review_timeout_hours=1, max_stop_passes=5)
+            "settings", PluginSettings(core=CoreSettings(enabled=True), flow=FlowSettings(pending_review_timeout_hours=1, max_stop_passes=5))
         ),
         payload=kwargs.get("payload", {}),
     )

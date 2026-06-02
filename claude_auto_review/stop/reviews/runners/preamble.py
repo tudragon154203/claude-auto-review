@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import shutil
 import subprocess
+from contextlib import AbstractContextManager
 from pathlib import Path
 from typing import Any, Callable
 
@@ -15,6 +16,7 @@ from claude_auto_review.stop.reviews.types.enums import AutocompleteStatus
 from claude_auto_review.stop.reviews.types.result import AutocompleteResult
 
 LogEventFn = Callable[..., Any]
+_BuildFn = Callable[..., AutocompleteResult]
 
 
 def resolve_cli_or_fail(
@@ -54,7 +56,7 @@ def handle_subprocess_errors(
     review_id: str,
     backend_name: str,
     log_event_fn: LogEventFn,
-):
+) -> AbstractContextManager[_BuildFn]:
     """Return a context manager that translates subprocess failures into AutocompleteResult.
 
     Usage::
@@ -69,7 +71,7 @@ def handle_subprocess_errors(
     """
 
     class _Handler:
-        def __enter__(self):
+        def __enter__(self) -> _BuildFn:
             return self._build
 
         def __exit__(self, exc_type, exc, tb):

@@ -87,6 +87,6 @@ def _run_wizard(settings: PluginSettings) -> PluginSettings:
     if backend == "opencode":
         print(" ℹ  OpenCode: enter 'default' or 'none' to defer to opencode's own configured model.")
     model = _prompt_text("Reviewer model", resolved_reviewer_model(normalized, backend=backend))
-    severity = _prompt_choice("Minimum blocking severity", SEVERITY_CHOICES, settings.minimum_blocking_severity)
-    max_stop_passes = _prompt_int("Max stop passes before circuit breaker", settings.max_stop_passes)
+    severity = _prompt_choice("Minimum blocking severity", SEVERITY_CHOICES, settings.flow.minimum_blocking_severity)
+    max_stop_passes = _prompt_int("Max stop passes before circuit breaker", settings.flow.max_stop_passes)
     return _apply_wizard_settings(settings, backend=backend, model=model, severity=severity, max_stop_passes=max_stop_passes)

@@ -24,7 +24,7 @@ if TYPE_CHECKING:
 def _classify_artifact(ctx: RuntimeContext, review_path: Path, deps: ReviewEvalDeps):
     return deps.classifier.classify_fn(
         review_path,
-        minimum_blocking_severity=ctx.settings.minimum_blocking_severity,
+        minimum_blocking_severity=ctx.settings.flow.minimum_blocking_severity,
         client_id=ctx.client_id,
     )
 

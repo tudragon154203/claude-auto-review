@@ -20,7 +20,7 @@ class TestBuildHookRuntimeContext(StateTestCase, unittest.TestCase):
 
         self.assertEqual(ctx.project_root, project_root)
         self.assertEqual(ctx.client_id, "session-1")
-        self.assertFalse(ctx.settings.enabled)
+        self.assertFalse(ctx.settings.core.enabled)
         self.assertEqual(ctx.payload["session_id"], "session-1")
         self.assertTrue((project_root / ".claude" / "claude-auto-review" / "clients").exists())
 

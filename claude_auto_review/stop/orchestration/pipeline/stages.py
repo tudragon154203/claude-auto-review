@@ -10,7 +10,14 @@ from collections.abc import Callable
 from typing import Any
 
 from claude_auto_review.stop.classifier.enums import ClassifierStatus
-from claude_auto_review.stop.orchestration.types.context import RuntimeContext, StopDecision
+from claude_auto_review.stop.orchestration.types.context import (
+    CircuitBreakerDetails,
+    ClassifierDetails,
+    FinalizeDetails,
+    RuntimeContext,
+    StopDecision,
+    TerminalDetails,
+)
 from claude_auto_review.stop.orchestration.types.protocols import (
     EventLogger,
     LastAssistantMessageClassifier,
@@ -28,7 +35,7 @@ ClassifierPersistFactory = Callable[[RuntimeContext], Callable[[Any], None]]
 
 
 def run_enabled_stage(ctx: RuntimeContext, *, log_event_fn: EventLogger) -> StopDecision | None:
-    if ctx.settings.enabled:
+    if ctx.settings.core.enabled:
         return None
     log_event_fn(ctx.project_root, "stop_disabled", client_id=ctx.client_id)
     return StopDecision(kind=StopDecisionKind.ALLOW, reason=StopAllowReason.DISABLED)
@@ -59,12 +66,12 @@ def run_circuit_breaker_stage(
     consecutive_stop_blocks_fn: StopBlockCounter,
 ) -> StopDecision | None:
     block_count = consecutive_stop_blocks_fn(state_snapshot)
-    if block_count < ctx.settings.max_stop_passes:
+    if block_count < ctx.settings.flow.max_stop_passes:
         return None
     return StopDecision(
         kind=StopDecisionKind.ALLOW,
         reason=StopAllowReason.CIRCUIT_BREAKER,
-        details={"block_count": block_count, "max_passes": ctx.settings.max_stop_passes},
+        details=CircuitBreakerDetails(block_count=block_count, max_passes=ctx.settings.flow.max_stop_passes),
     )
 
 
@@ -76,7 +83,7 @@ def _build_classifier_result_persistor(
     writer = writer_factory(ctx.project_root, ctx.client_id)
 
     def _persist(result: Any) -> None:
-        writer.append(result.as_state_entry(include_debug=ctx.settings.debug))
+        writer.append(result.as_state_entry(include_debug=ctx.settings.core.debug))
 
     return _persist
 
@@ -87,7 +94,7 @@ def run_classifier_stage(
     classify_last_assistant_message_fn: LastAssistantMessageClassifier,
     classifier_persist_factory: ClassifierPersistFactory | None = None,
 ) -> StopDecision | None:
-    if not ctx.settings.last_assistant_message_classifier_enabled:
+    if not ctx.settings.classifier.last_assistant_message_classifier_enabled:
         return None
 
     persist = classifier_persist_factory(ctx) if classifier_persist_factory is not None else None
@@ -98,7 +105,7 @@ def run_classifier_stage(
     return StopDecision(
         kind=StopDecisionKind.ALLOW,
         reason=StopAllowReason.CLASSIFIER_INCOMPLETE,
-        details={"classifier_status": result.status, "classifier_reason": result.reason},
+        details=ClassifierDetails(classifier_status=result.status, classifier_reason=result.reason),
     )
 
 
@@ -121,10 +128,10 @@ def run_pending_stage(
         ctx,
         state,
         unreviewed,
-        ctx.settings.pending_review_timeout_hours,
+        ctx.settings.flow.pending_review_timeout_hours,
         get_reviewer_prompt_script_fn(),
         **kwargs,
     )
     if isinstance(resolution, TerminalResolution):
-        return StopDecision(kind=StopDecisionKind.TERMINAL, details={"exit_code": resolution.exit_code})
-    return StopDecision(kind=StopDecisionKind.FINALIZE, details={"resolution": resolution})
+        return StopDecision(kind=StopDecisionKind.TERMINAL, details=TerminalDetails(exit_code=resolution.exit_code))
+    return StopDecision(kind=StopDecisionKind.FINALIZE, details=FinalizeDetails(resolution=resolution))

@@ -3,7 +3,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from claude_auto_review.config.settings.models import PluginSettings
+from claude_auto_review.config.settings.models import FilterSettings, PluginSettings
 from claude_auto_review.review.prompting.flow import (
     _review_id_from_timestamp,
     create_review_prompt_files,
@@ -47,7 +47,7 @@ class TestReviewPromptFlow(unittest.TestCase):
             ctx = RuntimeContext(
                 project_root=project_root,
                 client_id=client_id,
-                settings=PluginSettings(rules_file=str(review_rules)),
+                settings=PluginSettings(filters=FilterSettings(rules_file=str(review_rules))),
             )
             artifacts = create_review_prompt_files(
                 ctx,

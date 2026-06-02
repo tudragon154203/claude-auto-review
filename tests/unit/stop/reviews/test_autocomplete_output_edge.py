@@ -12,14 +12,14 @@ def _ctx(project_root=FAKE_ROOT, client_id="c"):
 
 
 class TestAutoCompleteOutputEdgeCases(unittest.TestCase):
-    @patch("claude_auto_review.stop.reviews.types.result.log_event")
     @patch("claude_auto_review.stop.reviews.runners.cli.run_captured")
     @patch("claude_auto_review.stop.reviews.runners.preamble.shutil.which", return_value="/usr/bin/claude")
     @patch("pathlib.Path.write_text")
     @patch("pathlib.Path.is_file", return_value=True)
     def test_non_empty_stdout_overwrites_review_file_even_without_verdict(
-        self, mock_is_file, mock_write_text, mock_which, mock_run, mock_log
+        self, mock_is_file, mock_write_text, mock_which, mock_run
     ):
+        mock_log = MagicMock()
         mock_run.return_value = MagicMock(
             returncode=0,
             stdout="I need to inspect more files before I can finish this review.\n",
@@ -32,6 +32,7 @@ class TestAutoCompleteOutputEdgeCases(unittest.TestCase):
             review_path=Path("/fake/review.md"),
             prompt_file=Path("/fake/prompt.md"),
             user_prompt="finish",
+            log_event_fn=mock_log,
         )
 
         self.assertTrue(result.output_written)
@@ -41,14 +42,14 @@ class TestAutoCompleteOutputEdgeCases(unittest.TestCase):
             newline="\n",
         )
 
-    @patch("claude_auto_review.stop.reviews.types.result.log_event")
     @patch("claude_auto_review.stop.reviews.runners.cli.run_captured")
     @patch("claude_auto_review.stop.reviews.runners.preamble.shutil.which", return_value="/usr/bin/claude")
     @patch("pathlib.Path.write_text")
     @patch("pathlib.Path.is_file", return_value=True)
     def test_structured_review_without_verdict_is_persisted_as_is(
-        self, mock_is_file, mock_write_text, mock_which, mock_run, mock_log
+        self, mock_is_file, mock_write_text, mock_which, mock_run
     ):
+        mock_log = MagicMock()
         mock_run.return_value = MagicMock(
             returncode=0,
             stdout=(
@@ -67,6 +68,7 @@ class TestAutoCompleteOutputEdgeCases(unittest.TestCase):
             review_path=Path("/fake/review.md"),
             prompt_file=Path("/fake/prompt.md"),
             user_prompt="finish",
+            log_event_fn=mock_log,
         )
 
         self.assertTrue(result.output_written)
@@ -80,7 +82,6 @@ class TestAutoCompleteOutputEdgeCases(unittest.TestCase):
             newline="\n",
         )
 
-    @patch("claude_auto_review.stop.reviews.types.result.log_event")
     @patch("claude_auto_review.stop.reviews.runners.cli.run_captured")
     @patch("claude_auto_review.stop.reviews.runners.preamble.shutil.which", return_value="/usr/bin/codex")
     @patch("pathlib.Path.write_text")
@@ -97,8 +98,8 @@ class TestAutoCompleteOutputEdgeCases(unittest.TestCase):
         mock_write_text,
         mock_which,
         mock_run,
-        mock_log,
     ):
+        mock_log = MagicMock()
         mock_run.return_value = MagicMock(returncode=0, stdout="", stderr="")
         expected = "# Review rev-1\n\n## Verdict\nClean - no issues found. Claude may stop."
         mock_read_bytes.return_value = expected.encode("utf-16")
@@ -111,6 +112,7 @@ class TestAutoCompleteOutputEdgeCases(unittest.TestCase):
             user_prompt="finish",
             backend="codex",
             model="gpt-5.4-mini",
+            log_event_fn=mock_log,
         )
 
         self.assertTrue(result.output_written)

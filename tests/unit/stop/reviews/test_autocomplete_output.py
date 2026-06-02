@@ -12,12 +12,12 @@ def _ctx(project_root=FAKE_ROOT, client_id="c"):
 
 
 class TestAutoCompleteOutput(unittest.TestCase):
-    @patch("claude_auto_review.stop.reviews.types.result.log_event")
     @patch("claude_auto_review.stop.reviews.runners.cli.run_captured")
     @patch("claude_auto_review.stop.reviews.runners.preamble.shutil.which", return_value="/usr/bin/claude")
     @patch("pathlib.Path.write_text")
     @patch("pathlib.Path.is_file", return_value=True)
-    def test_successful_completion_writes_output(self, mock_is_file, mock_write_text, mock_which, mock_run, mock_log):
+    def test_successful_completion_writes_output(self, mock_is_file, mock_write_text, mock_which, mock_run):
+        mock_log = MagicMock()
         mock_run.return_value = MagicMock(returncode=0, stdout="## Verdict\nClean", stderr="")
         result = attempt_stop_autocomplete(
             _ctx(),
@@ -25,18 +25,19 @@ class TestAutoCompleteOutput(unittest.TestCase):
             review_path=Path("/fake/review.md"),
             prompt_file=Path("/fake/prompt.md"),
             user_prompt="finish",
+            log_event_fn=mock_log,
         )
-        self.assertTrue(result)
+        self.assertTrue(result.output_written)
         self.assertEqual(result.status, "output_written")
 
-    @patch("claude_auto_review.stop.reviews.types.result.log_event")
     @patch("claude_auto_review.stop.reviews.runners.cli.run_captured")
     @patch("claude_auto_review.stop.reviews.runners.preamble.shutil.which", return_value="/usr/bin/claude")
     @patch("pathlib.Path.write_text")
     @patch("pathlib.Path.is_file", return_value=True)
     def test_contradictory_clean_verdict_with_blocking_findings_does_not_complete(
-        self, mock_is_file, mock_write_text, mock_which, mock_run, mock_log
+        self, mock_is_file, mock_write_text, mock_which, mock_run
     ):
+        mock_log = MagicMock()
         mock_run.return_value = MagicMock(
             returncode=0,
             stdout=(
@@ -54,6 +55,7 @@ class TestAutoCompleteOutput(unittest.TestCase):
             review_path=Path("/fake/review.md"),
             prompt_file=Path("/fake/prompt.md"),
             user_prompt="finish",
+            log_event_fn=mock_log,
         )
         self.assertTrue(result.output_written)
         self.assertIn(
@@ -61,14 +63,14 @@ class TestAutoCompleteOutput(unittest.TestCase):
             mock_write_text.call_args.args[0],
         )
 
-    @patch("claude_auto_review.stop.reviews.types.result.log_event")
     @patch("claude_auto_review.stop.reviews.runners.cli.run_captured")
     @patch("claude_auto_review.stop.reviews.runners.preamble.shutil.which", return_value="/usr/bin/claude")
     @patch("pathlib.Path.write_text")
     @patch("pathlib.Path.is_file", return_value=True)
     def test_clean_verdict_with_low_findings_kept_as_clean(
-        self, mock_is_file, mock_write_text, mock_which, mock_run, mock_log
+        self, mock_is_file, mock_write_text, mock_which, mock_run
     ):
+        mock_log = MagicMock()
         mock_run.return_value = MagicMock(
             returncode=0,
             stdout=(
@@ -86,6 +88,7 @@ class TestAutoCompleteOutput(unittest.TestCase):
             review_path=Path("/fake/review.md"),
             prompt_file=Path("/fake/prompt.md"),
             user_prompt="finish",
+            log_event_fn=mock_log,
         )
         self.assertTrue(result.output_written)
         self.assertNotIn(
@@ -97,14 +100,14 @@ class TestAutoCompleteOutput(unittest.TestCase):
             mock_write_text.call_args.args[0],
         )
 
-    @patch("claude_auto_review.stop.reviews.types.result.log_event")
     @patch("claude_auto_review.stop.reviews.runners.cli.run_captured")
     @patch("claude_auto_review.stop.reviews.runners.preamble.shutil.which", return_value="/usr/bin/claude")
     @patch("pathlib.Path.write_text")
     @patch("pathlib.Path.is_file", return_value=True)
     def test_completion_with_remaining_is_left_to_finalization(
-        self, mock_is_file, mock_write_text, mock_which, mock_run, mock_log
+        self, mock_is_file, mock_write_text, mock_which, mock_run
     ):
+        mock_log = MagicMock()
         mock_run.return_value = MagicMock(returncode=0, stdout="## Verdict\nClean", stderr="")
         result = attempt_stop_autocomplete(
             _ctx(),
@@ -112,6 +115,7 @@ class TestAutoCompleteOutput(unittest.TestCase):
             review_path=Path("/fake/review.md"),
             prompt_file=Path("/fake/prompt.md"),
             user_prompt="finish",
+            log_event_fn=mock_log,
         )
         self.assertTrue(result.output_written)
 
