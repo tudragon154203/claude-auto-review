@@ -1,4 +1,4 @@
-from claude_auto_review.paths.path_utils import local_now_iso
+from claude_auto_review.timestamps import local_now_iso
 from claude_auto_review.review.completion import apply_completed_review
 from claude_auto_review.runtime.setup import ensure_client_runtime
 from claude_auto_review.state.records.edit import EditRecord, StopBlockedRecord

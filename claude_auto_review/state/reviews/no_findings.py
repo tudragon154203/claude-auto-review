@@ -95,7 +95,3 @@ def is_no_findings_line(line: str) -> bool:
             return True
         return bool(_NO_FINDINGS_VERB_RE.search(remainder))
     return False
-
-
-# Compatibility alias — some internal callers reference the underscore-prefixed name.
-_is_no_findings_line = is_no_findings_line

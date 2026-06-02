@@ -38,8 +38,3 @@ def real_opencode_cli_available():
     if os.environ.get("_REAL_OPENCODE", "").strip() != "1":
         return False
     return shutil.which("opencode") is not None
-
-
-def real_cli_available():
-    """Backward-compatible alias for the real Claude CLI gate."""
-    return real_claude_cli_available()

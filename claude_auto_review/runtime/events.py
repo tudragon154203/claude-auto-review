@@ -4,7 +4,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from claude_auto_review.paths.path_utils import get_state_path, local_now_iso
+from claude_auto_review.paths.path_utils import get_state_path
+from claude_auto_review.timestamps import local_now_iso
 from claude_auto_review.runtime.client_dirs import get_existing_client_runtime_dir
 from claude_auto_review.runtime.context import resolve_project_root
 from claude_auto_review.runtime.serialization import json_safe

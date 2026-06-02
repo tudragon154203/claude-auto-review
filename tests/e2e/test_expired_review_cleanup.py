@@ -6,7 +6,7 @@ import unittest
 from datetime import datetime, timedelta
 from pathlib import Path
 
-from claude_auto_review.paths.path_utils import local_now_iso
+from claude_auto_review.timestamps import local_now_iso
 from claude_auto_review.runtime.client_dirs import client_state_path
 from tests.e2e.support import EndToEndTestCase
 

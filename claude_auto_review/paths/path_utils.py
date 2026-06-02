@@ -9,8 +9,6 @@ CLIENTS_DIR = RUNTIME_DIR / "clients"
 DELETED_FILE_HASH = "__deleted__"
 FILE_URI_PREFIX = "file://"
 
-from claude_auto_review.timestamps import local_now_iso as local_now_iso  # noqa: E402
-
 
 def get_project_root():
     return Path(os.environ.get("CLAUDE_PROJECT_DIR", os.getcwd())).resolve()

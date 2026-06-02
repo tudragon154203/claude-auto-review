@@ -4,7 +4,8 @@ import unittest.mock as mock
 from pathlib import Path
 
 from claude_auto_review.runtime.client_dirs import get_client_id
-from claude_auto_review.paths.path_utils import get_project_root, local_now_iso
+from claude_auto_review.paths.path_utils import get_project_root
+from claude_auto_review.timestamps import local_now_iso
 
 from tests.unit.state.support import StateTestCase
 

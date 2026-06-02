@@ -3,7 +3,8 @@ import unittest
 from claude_auto_review.state.records.edit import EditRecord
 from claude_auto_review.state.records.file import ReviewFileRecord
 from claude_auto_review.state.records.review import ReviewMetadata
-from claude_auto_review.stop.reviews.selection.matching import find_pending_review_for_files, get_entries_covered_by_review
+from claude_auto_review.stop.reviews.selection.matching import get_entries_covered_by_review
+from claude_auto_review.state.reviews.matching import best_pending_review_exactly_matching_entries
 
 
 def _mk_edit(file: str, hash: str, reviewed: bool = False) -> EditRecord:
@@ -22,7 +23,7 @@ def _mk_review(reviewId: str, status: str, files: list, timestamp: str = "2026-0
 
 
 class TestSelection(unittest.TestCase):
-    def test_find_pending_review_for_files_returns_best_match(self):
+    def test_best_pending_review_exactly_matching_entries_returns_best_match(self):
         state = [
             _mk_review(
                 "best",
@@ -39,12 +40,12 @@ class TestSelection(unittest.TestCase):
         ]
         entries = [_mk_edit("a.ts", "1"), _mk_edit("b.ts", "2")]
 
-        best = find_pending_review_for_files(state, entries, project_root=None)
+        best = best_pending_review_exactly_matching_entries(state, entries, project_root=None)
 
         self.assertIsNotNone(best)
         self.assertEqual(best.reviewId, "best")
 
-    def test_find_pending_review_for_files_rejects_partial_stale_match(self):
+    def test_best_pending_review_exactly_matching_entries_rejects_partial_stale_match(self):
         state = [
             _mk_review(
                 "stale",
@@ -55,11 +56,11 @@ class TestSelection(unittest.TestCase):
         ]
         entries = [_mk_edit("a.ts", "new-a"), _mk_edit("b.ts", "b")]
 
-        best = find_pending_review_for_files(state, entries, project_root=None)
+        best = best_pending_review_exactly_matching_entries(state, entries, project_root=None)
 
         self.assertIsNone(best)
 
-    def test_find_pending_review_for_files_rejects_superset_stale_match(self):
+    def test_best_pending_review_exactly_matching_entries_rejects_superset_stale_match(self):
         state = [
             _mk_review(
                 "stale",
@@ -70,7 +71,7 @@ class TestSelection(unittest.TestCase):
         ]
         entries = [_mk_edit("a.ts", "a")]
 
-        best = find_pending_review_for_files(state, entries, project_root=None)
+        best = best_pending_review_exactly_matching_entries(state, entries, project_root=None)
 
         self.assertIsNone(best)
 

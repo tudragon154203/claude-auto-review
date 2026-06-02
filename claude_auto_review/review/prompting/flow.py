@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from claude_auto_review.config.resolvers.rules import resolve_rules_file_path
-from claude_auto_review.paths.path_utils import local_now_iso
+from claude_auto_review.timestamps import local_now_iso
 from claude_auto_review.review.prompting.diff_mode import all_session_diffs
 from claude_auto_review.review.prompting.generation import (
     build_prompt,

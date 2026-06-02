@@ -5,7 +5,8 @@ import sys
 
 from claude_auto_review.config.resolvers.files import should_skip_file
 from claude_auto_review.hooks.common import run_hook
-from claude_auto_review.paths.path_utils import DELETED_FILE_HASH, local_now_iso
+from claude_auto_review.paths.path_utils import DELETED_FILE_HASH
+from claude_auto_review.timestamps import local_now_iso
 from claude_auto_review.paths.uri_utils import normalize_relative_path
 from claude_auto_review.review.prompting.diff_mode import capture_session_snapshot
 from claude_auto_review.runtime.events import log_event

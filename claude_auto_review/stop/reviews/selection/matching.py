@@ -7,16 +7,6 @@ from claude_auto_review.state.reviews.matching_hash import review_file_hash_pair
 from claude_auto_review.state.snapshots.snapshot import StateSnapshot
 
 
-def find_pending_review_for_files(state, unreviewed_entries, project_root, timeout_hours=0):
-    """Find the newest pending review whose file/hash set exactly matches the current unreviewed set."""
-    return best_pending_review_exactly_matching_entries(
-        state,
-        unreviewed_entries,
-        project_root=project_root,
-        timeout_hours=timeout_hours,
-    )
-
-
 def get_entries_covered_by_review(review_entry: ReviewMetadata, state_entries=None, latest_by_file=None):
     review_files = review_file_hash_pairs(review_entry)
     result = []

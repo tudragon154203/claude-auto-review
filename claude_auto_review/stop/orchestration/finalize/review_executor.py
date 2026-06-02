@@ -21,7 +21,7 @@ from claude_auto_review.stop.orchestration.response_actions import (
     approve_no_unreviewed_after_review,
     fail_review,
 )
-from claude_auto_review.stop.reviews.selection.matching import find_pending_review_for_files
+from claude_auto_review.state.reviews.matching import best_pending_review_exactly_matching_entries
 from claude_auto_review.stop.response import ResponseEmitter
 
 
@@ -34,7 +34,7 @@ def resolve_prompted_review(
         approve_no_unreviewed_after_review(ctx, emitter=emitter, log_event_fn=log_event_fn)
         return TerminalResolution(exit_code=0)
 
-    review = find_pending_review_for_files(state, unreviewed, ctx.project_root, timeout_hours)
+    review = best_pending_review_exactly_matching_entries(state, unreviewed, ctx.project_root, timeout_hours)
     if not review:
         _block_review_prompt_failure(files_str, result, emitter=emitter)
         return TerminalResolution(exit_code=EXIT_REVIEW_FAILED)

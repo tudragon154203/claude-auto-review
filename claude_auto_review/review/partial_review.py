@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from claude_auto_review.paths.path_utils import local_now_iso
+from claude_auto_review.timestamps import local_now_iso
 from claude_auto_review.state.records.edit import EditRecord, StopBlockedRecord
 from claude_auto_review.state.store.queries import get_unreviewed_files
 from claude_auto_review.state.store.read import load_state_snapshot

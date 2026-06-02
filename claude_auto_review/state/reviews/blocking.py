@@ -5,7 +5,7 @@ import re
 
 from claude_auto_review.config.settings.models import DEFAULT_MINIMUM_BLOCKING_SEVERITY
 from claude_auto_review.state.reviews.detection import has_review_findings
-from claude_auto_review.state.reviews.no_findings import _CONTRADICTION_RE, _is_no_findings_line
+from claude_auto_review.state.reviews.no_findings import _CONTRADICTION_RE, is_no_findings_line
 from claude_auto_review.state.reviews.parsing import parse_review_findings
 from claude_auto_review.state.reviews.severity import severity_rank
 
@@ -59,7 +59,7 @@ def has_blocking_review_findings(
             # fall back to the full-doc re-evaluation (which would otherwise
             # re-introduce the "confirmed always blocks" behaviour for any
             # unparsed prose block that merely contains the word "confirmed").
-            if _is_no_findings_line(finding.raw_text):
+            if is_no_findings_line(finding.raw_text):
                 continue
             # Canonical fields but no severity = ambiguous state: treat as not
             # blocking unless the prose itself is explicitly a finding (contradiction,

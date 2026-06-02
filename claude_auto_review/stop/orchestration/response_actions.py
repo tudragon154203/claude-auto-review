@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Any, Callable
 
 from claude_auto_review.config.constants.exit_codes import EXIT_REVIEW_FAILED
-from claude_auto_review.paths.path_utils import local_now_iso
+from claude_auto_review.timestamps import local_now_iso
 from claude_auto_review.state.records.edit import StopBlockedRecord
 from claude_auto_review.stop.feedback_format import build_unreviewed_files_string
 from claude_auto_review.stop.orchestration.types.context import RuntimeContext
