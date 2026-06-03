@@ -17,6 +17,7 @@ from claude_auto_review.stop.orchestration.finalize.pending import resolve_pendi
 from claude_auto_review.stop.orchestration.types.protocols import (
     ApplyFinalizePlan,
     AttemptReviewAutocomplete,
+    AutocompleteDeps,
     ClassifierPersistFactory,
     ClassifyReviewArtifact,
     EventLogger,
@@ -25,12 +26,23 @@ from claude_auto_review.stop.orchestration.types.protocols import (
     PendingReviewResolver,
     PlanForArtifactState,
     ResponseEmitter,
+    ReviewClassifierDeps,
+    ReviewEvalDeps,
+    ReviewExecutorDeps,
+    ReviewPlannerDeps,
     ReviewerPromptScriptProvider,
     StateEventWriterProtocol,
     StateLoader,
     StopBlockCounter,
     UnreviewedFilesQuery,
 )
+from claude_auto_review.stop.orchestration.types.context import (
+    CircuitBreakerDetails,
+    ClassifierDetails,
+    FinalizeDetails,
+    RuntimeContext,
+)
+from claude_auto_review.stop.orchestration.types.resolution import ReviewResolution, TerminalResolution
 from claude_auto_review.stop.orchestration.pipeline.stages import _build_classifier_result_persistor
 
 
@@ -63,39 +75,20 @@ class StopFlowDependencies:
     finalize_review_stop: FinalizeReviewStop
 
 
-@dataclass(frozen=True)
-class ReviewClassifierDeps:
-    classify_fn: ClassifyReviewArtifact
-
-
-@dataclass(frozen=True)
-class ReviewPlannerDeps:
-    plan_for_artifact_state_fn: PlanForArtifactState
-
-
-@dataclass(frozen=True)
-class ReviewExecutorDeps:
-    apply_plan_fn: ApplyFinalizePlan
-    state_event_writer_factory: Callable[[Path, str], StateEventWriterProtocol]
-    emitter: ResponseEmitter
-
-
-@dataclass(frozen=True)
-class AutocompleteDeps:
-    attempt_autocomplete_fn: AttemptReviewAutocomplete
-    log_event_fn: EventLogger
-
-
-@dataclass(frozen=True)
-class ReviewEvalDeps:
-    classifier: ReviewClassifierDeps
-    planner: ReviewPlannerDeps
-    executor: ReviewExecutorDeps
-    autocomplete: AutocompleteDeps
-
-
 def _resolve(default, override):
-    return default if override is None else override
+    return override if override is not None else default
+
+
+def _default_eval_fns():
+    """Resolve default functions for review eval deps.
+
+    Imports are deferred to allow test patching at source modules.
+    """
+    from claude_auto_review.stop.orchestration.finalize.autocomplete import attempt_review_autocomplete
+    from claude_auto_review.stop.orchestration.finalize.outcomes import plan_for_artifact_state
+    from claude_auto_review.stop.orchestration.finalize.plan_executor import apply_finalize_plan_result
+    from claude_auto_review.stop.orchestration.finalize.review_artifact_evaluator import classify_review_artifact
+    return classify_review_artifact, plan_for_artifact_state, apply_finalize_plan_result, attempt_review_autocomplete
 
 
 def _default_classifier_persist_factory(ctx):
@@ -152,27 +145,24 @@ def build_default_eval_deps(
     attempt_autocomplete_fn=None,
     log_event_fn=None,
 ):
-    from claude_auto_review.stop.orchestration.finalize.autocomplete import attempt_review_autocomplete
-    from claude_auto_review.stop.orchestration.finalize.outcomes import plan_for_artifact_state
-    from claude_auto_review.stop.orchestration.finalize.plan_executor import apply_finalize_plan_result
-    from claude_auto_review.stop.orchestration.finalize.review_artifact_evaluator import classify_review_artifact
-
+    defaults = _default_eval_fns()
+    _classify_fn, _plan_fn, _apply_fn, _attempt_fn = defaults
     _log = _resolve(log_event, log_event_fn)
 
     return ReviewEvalDeps(
         classifier=ReviewClassifierDeps(
-            classify_fn=_resolve(classify_review_artifact, classify_fn),
+            classify_fn=_resolve(_classify_fn, classify_fn),
         ),
         planner=ReviewPlannerDeps(
-            plan_for_artifact_state_fn=_resolve(plan_for_artifact_state, plan_for_artifact_state_fn),
+            plan_for_artifact_state_fn=_resolve(_plan_fn, plan_for_artifact_state_fn),
         ),
         executor=ReviewExecutorDeps(
-            apply_plan_fn=_resolve(apply_finalize_plan_result, apply_plan_fn),
+            apply_plan_fn=_resolve(_apply_fn, apply_plan_fn),
             state_event_writer_factory=state_event_writer_factory,
             emitter=emitter,
         ),
         autocomplete=AutocompleteDeps(
-            attempt_autocomplete_fn=_resolve(attempt_review_autocomplete, attempt_autocomplete_fn),
+            attempt_autocomplete_fn=_resolve(_attempt_fn, attempt_autocomplete_fn),
             log_event_fn=_log,
         ),
     )

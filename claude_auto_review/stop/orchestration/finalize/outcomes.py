@@ -29,20 +29,26 @@ def blocked_result(action: FinalizeAction) -> FinalizeResult:
 
 
 _ARTIFACT_STATE_PLANS: dict[str, FinalizePlan] = {}
+_DEFAULTS_REGISTERED = False
 
 
 def register_artifact_plan(status_name: str, plan: FinalizePlan) -> None:
     _ARTIFACT_STATE_PLANS[status_name] = plan
 
 
-register_artifact_plan(
-    "complete_clean",
-    FinalizePlan(result=approved_result(), effect=FinalizeEffect.APPLY_COMPLETED_CLEAN_REVIEW),
-)
-register_artifact_plan(
-    "complete_findings",
-    FinalizePlan(result=blocked_result(FinalizeAction.BLOCKED_FINDINGS), effect=FinalizeEffect.RECORD_FINDINGS_BLOCK),
-)
+def _ensure_defaults_registered() -> None:
+    global _DEFAULTS_REGISTERED
+    if _DEFAULTS_REGISTERED:
+        return
+    _DEFAULTS_REGISTERED = True
+    register_artifact_plan(
+        "complete_clean",
+        FinalizePlan(result=approved_result(), effect=FinalizeEffect.APPLY_COMPLETED_CLEAN_REVIEW),
+    )
+    register_artifact_plan(
+        "complete_findings",
+        FinalizePlan(result=blocked_result(FinalizeAction.BLOCKED_FINDINGS), effect=FinalizeEffect.RECORD_FINDINGS_BLOCK),
+    )
 
 
 def artifact_status_name(artifact_state) -> str | None:
@@ -53,6 +59,7 @@ def artifact_status_name(artifact_state) -> str | None:
 
 
 def plan_for_artifact_state(artifact_state):
+    _ensure_defaults_registered()
     return _ARTIFACT_STATE_PLANS.get(artifact_status_name(artifact_state))
 
 

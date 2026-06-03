@@ -28,7 +28,7 @@ from claude_auto_review.stop.orchestration.types.protocols import (
     StopBlockCounter,
     UnreviewedFilesQuery,
 )
-from claude_auto_review.stop.orchestration.types.resolution import StopDecisionKind, TerminalResolution
+from claude_auto_review.stop.orchestration.types.resolution import ReviewResolution, StopDecisionKind, TerminalResolution
 from claude_auto_review.stop.reviews.types.enums import StopAllowReason
 
 ClassifierPersistFactory = Callable[[RuntimeContext], Callable[[Any], None]]
@@ -134,4 +134,5 @@ def run_pending_stage(
     )
     if isinstance(resolution, TerminalResolution):
         return StopDecision(kind=StopDecisionKind.TERMINAL, details=TerminalDetails(exit_code=resolution.exit_code))
+    assert isinstance(resolution, ReviewResolution)
     return StopDecision(kind=StopDecisionKind.FINALIZE, details=FinalizeDetails(resolution=resolution))

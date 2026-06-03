@@ -53,6 +53,28 @@ def _call_classifier_api(
     )
 
 
+def should_classify(ctx: RuntimeContext) -> bool:
+    """Check if the last assistant message classifier is enabled."""
+    return bool(ctx.settings.classifier.last_assistant_message_classifier_enabled)
+
+
+def _perform_classification(
+    message_text: str,
+    env: Mapping[str, str],
+    ctx: RuntimeContext,
+    started_at: float,
+    *,
+    urlopen: URLOpener | None = None,
+    persist: Callable | None = None,
+) -> AssistantMessageClassificationResult:
+    result = _call_classifier_api(
+        message_text, len(message_text), env, ctx, urlopen=urlopen, started_at=started_at
+    )
+    if persist is not None:
+        persist(result)
+    return result
+
+
 def classify_last_assistant_message(
     ctx: RuntimeContext,
     env: Mapping[str, str] | None = None,
@@ -60,7 +82,7 @@ def classify_last_assistant_message(
     *,
     persist: Callable | None = None,
 ) -> AssistantMessageClassificationResult | None:
-    if not ctx.settings.classifier.last_assistant_message_classifier_enabled:
+    if not should_classify(ctx):
         return None
 
     started_at = time.monotonic()
@@ -73,9 +95,6 @@ def classify_last_assistant_message(
         return result  # type: ignore[no-any-return]
 
     env = os.environ if env is None else env
-    result = _call_classifier_api(
-        message_text, len(message_text), env, ctx, urlopen=urlopen, started_at=started_at
+    return _perform_classification(
+        message_text, env, ctx, started_at, urlopen=urlopen, persist=persist
     )
-    if persist is not None:
-        persist(result)
-    return result  # type: ignore[no-any-return]

@@ -43,9 +43,7 @@ def _run_eval_orchestration(ctx, review_id, review_path, prompt_file, covered_en
     )
 
 
-def finalize_review_stop_result(
-    ctx: RuntimeContext, resolution: ReviewResolution, *, deps: ReviewEvalDeps
-) -> tuple[FinalizeResult, ResponsePayload | None]:
+def _prepare_review_data(ctx: RuntimeContext, resolution: ReviewResolution):
     state = resolution.state
     unreviewed = resolution.unreviewed
     review = resolution.review
@@ -54,6 +52,22 @@ def finalize_review_stop_result(
     review_id = review.reviewId
     review_path = Path(ctx.project_root) / review.reviewPath
     prompt_file = _review_prompt_path(ctx, review_id)
+    return review_id, review_path, prompt_file, covered_entries, unreviewed
+
+
+def _block_and_return_pending(ctx, review_id, review_path, prompt_file, unreviewed, *, deps: ReviewEvalDeps) -> tuple[FinalizeResult, None]:
+    writer = deps.executor.state_event_writer_factory(ctx.project_root, ctx.client_id)
+    block_pending_review(
+        ctx, review_id, review_path, prompt_file, unreviewed,
+        emitter=deps.executor.emitter, state_event_writer=writer,
+    )
+    return plan_for_pending_review().result, None
+
+
+def finalize_review_stop_result(
+    ctx: RuntimeContext, resolution: ReviewResolution, *, deps: ReviewEvalDeps
+) -> tuple[FinalizeResult, ResponsePayload | None]:
+    review_id, review_path, prompt_file, covered_entries, unreviewed = _prepare_review_data(ctx, resolution)
 
     invalid = _validate_reviewer_backend(ctx, log_event_fn=deps.autocomplete.log_event_fn)
     if invalid is not None:
@@ -65,12 +79,7 @@ def finalize_review_stop_result(
     if eval_result is not None:
         return eval_result
 
-    writer = deps.executor.state_event_writer_factory(ctx.project_root, ctx.client_id)
-    block_pending_review(
-        ctx, review_id, review_path, prompt_file, unreviewed,
-        emitter=deps.executor.emitter, state_event_writer=writer
-    )
-    return plan_for_pending_review().result, None
+    return _block_and_return_pending(ctx, review_id, review_path, prompt_file, unreviewed, deps=deps)
 
 
 def finalize_review_stop(ctx: RuntimeContext, resolution: ReviewResolution, *, deps: ReviewEvalDeps) -> int:

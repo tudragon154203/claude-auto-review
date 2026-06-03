@@ -48,15 +48,22 @@ def _handle_finalize(engine: StopDecisionEngine, decision: StopDecision, emitter
     return int(engine.finalize(details.resolution))
 
 
-_HANDLER_REGISTRY: dict[StopDecisionKind, StopHandler] = {
-    StopDecisionKind.ALLOW: _handle_allow,
-    StopDecisionKind.TERMINAL: _handle_terminal,
-    StopDecisionKind.FINALIZE: _handle_finalize,
-}
+_HANDLER_REGISTRY: dict[StopDecisionKind, StopHandler] = {}
+_DEFAULTS_REGISTERED = False
 
 
 def register_stop_handler(kind: StopDecisionKind, handler: StopHandler) -> None:
     _HANDLER_REGISTRY[kind] = handler
+
+
+def _ensure_defaults_registered() -> None:
+    global _DEFAULTS_REGISTERED
+    if _DEFAULTS_REGISTERED:
+        return
+    _DEFAULTS_REGISTERED = True
+    register_stop_handler(StopDecisionKind.ALLOW, _handle_allow)
+    register_stop_handler(StopDecisionKind.TERMINAL, _handle_terminal)
+    register_stop_handler(StopDecisionKind.FINALIZE, _handle_finalize)
 
 
 def dispatch_stop_decision(
@@ -65,6 +72,7 @@ def dispatch_stop_decision(
     *,
     emitter: ResponseEmitter,
 ) -> int:
+    _ensure_defaults_registered()
     handler = _HANDLER_REGISTRY.get(decision.kind)
     if handler is None:
         raise ValueError(f"Unhandled stop decision kind: {decision.kind}")

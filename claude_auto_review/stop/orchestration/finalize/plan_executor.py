@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
@@ -47,10 +48,31 @@ def _record_findings_block(
     return plan.result, None
 
 
-_EFFECT_DISPATCH = {
-    FinalizeEffect.APPLY_COMPLETED_CLEAN_REVIEW: lambda ctx, plan, review_id, review_path, covered_entries, unreviewed, **kw: _apply_completed_clean_review_result(ctx, review_id, covered_entries),
-    FinalizeEffect.RECORD_FINDINGS_BLOCK: lambda ctx, plan, review_id, review_path, covered_entries, unreviewed, **kw: _record_findings_block(ctx, plan, review_id, review_path, covered_entries, unreviewed, **kw),
+def _handle_apply_completed_clean_review(
+    ctx: RuntimeContext, plan: Any, review_id: str, review_path: Path, covered_entries: list[Any], unreviewed: list[Any], *, state_event_writer: StateEventWriterProtocol, emitter: ResponseEmitter | None = None, **kw: Any
+) -> tuple[FinalizeResult, ResponsePayload]:
+    return _apply_completed_clean_review_result(ctx, review_id, covered_entries)
+
+
+def _handle_record_findings_block(
+    ctx: RuntimeContext, plan: Any, review_id: str, review_path: Path, covered_entries: list[Any], unreviewed: list[Any], *, state_event_writer: StateEventWriterProtocol, emitter: ResponseEmitter | None = None, **kw: Any
+) -> tuple[FinalizeResult, ResponsePayload | None]:
+    assert emitter is not None, "emitter required for RECORD_FINDINGS_BLOCK"
+    return _record_findings_block(ctx, plan, review_id, review_path, covered_entries, unreviewed, state_event_writer=state_event_writer, emitter=emitter)
+
+
+_EFFECT_DISPATCH: dict[FinalizeEffect, Callable[..., tuple[FinalizeResult, ResponsePayload | None]]] = {
+    FinalizeEffect.APPLY_COMPLETED_CLEAN_REVIEW: _handle_apply_completed_clean_review,
+    FinalizeEffect.RECORD_FINDINGS_BLOCK: _handle_record_findings_block,
 }
+
+
+def register_finalize_effect_handler(
+    effect: FinalizeEffect,
+    handler: Callable[..., tuple[FinalizeResult, ResponsePayload | None]],
+) -> None:
+    """Register a custom finalize effect handler."""
+    _EFFECT_DISPATCH[effect] = handler
 
 
 def apply_finalize_plan_result(

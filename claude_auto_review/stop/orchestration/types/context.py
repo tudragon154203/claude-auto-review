@@ -2,11 +2,14 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from claude_auto_review.config.settings.models import PluginSettings
 from claude_auto_review.stop.orchestration.types.resolution import StopDecisionKind
 from claude_auto_review.stop.reviews.types.enums import StopAllowReason
+
+if TYPE_CHECKING:
+    from claude_auto_review.stop.orchestration.types.resolution import ReviewResolution
 
 
 @dataclass(frozen=True)
@@ -24,7 +27,7 @@ class TerminalDetails:
 
 @dataclass(frozen=True)
 class FinalizeDetails:
-    resolution: Any
+    resolution: ReviewResolution
 
 
 @dataclass(frozen=True)

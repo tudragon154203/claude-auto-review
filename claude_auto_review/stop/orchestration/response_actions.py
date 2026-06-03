@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
+from pathlib import Path
 from typing import Any, Callable
 
 from claude_auto_review.config.constants.exit_codes import EXIT_REVIEW_FAILED
@@ -65,27 +67,44 @@ def approve_no_unreviewed_after_review(ctx: RuntimeContext, *, emitter: Response
     emitter.approve("Claude Auto Review: stop approved (no_unreviewed_files_after_review)")
 
 
-def block_pending_review(ctx: RuntimeContext, review_id, review_path, prompt_path, unreviewed, *, emitter: ResponseEmitter, state_event_writer: StateEventWriterProtocol):
+@dataclass(frozen=True)
+class PendingReviewBlockResult:
+    system_message: str
+    feedback: str
+    state_record: StopBlockedRecord
+
+
+def prepare_pending_review_block(
+    ctx: RuntimeContext,
+    review_id: str,
+    review_path: Path,
+    prompt_path: Path,
+    unreviewed: list[Any],
+) -> PendingReviewBlockResult:
+    """Prepare messages and state record for a pending review block without I/O."""
     files_str = build_unreviewed_files_string(unreviewed)
     review_path_rel = _display_path(review_path, ctx.project_root)
     prompt_path_rel = _display_path(prompt_path, ctx.project_root)
-    emitter.block(
-        f"Claude Auto Review: Review {review_id} created for {files_str}.",
-        (
-            f"Review file created at:\n  {review_path_rel}\n\n"
-            "This file is only a placeholder until the review is completed.\n\n"
-            f"Complete the review from:\n  {prompt_path_rel}\n\n"
-            "Then write the findings into the review file and set each finding verdict "
-            "(Confirmed, Skipped). Once the review verdict is no longer Pending, "
-            "stopping will be allowed."
-        ),
+    system_message = f"Claude Auto Review: Review {review_id} created for {files_str}."
+    feedback = (
+        f"Review file created at:\n  {review_path_rel}\n\n"
+        "This file is only a placeholder until the review is completed.\n\n"
+        f"Complete the review from:\n  {prompt_path_rel}\n\n"
+        "Then write the findings into the review file and set each finding verdict "
+        "(Confirmed, Skipped). Once the review verdict is no longer Pending, "
+        "stopping will be allowed."
     )
-    state_event_writer.append(
-        StopBlockedRecord(
-            timestamp=local_now_iso(),
-            reason="review_pending",
-            files=[entry.file for entry in unreviewed],
-        )
+    record = StopBlockedRecord(
+        timestamp=local_now_iso(),
+        reason="review_pending",
+        files=[entry.file for entry in unreviewed],
     )
+    return PendingReviewBlockResult(system_message=system_message, feedback=feedback, state_record=record)
+
+
+def block_pending_review(ctx: RuntimeContext, review_id, review_path, prompt_path, unreviewed, *, emitter: ResponseEmitter, state_event_writer: StateEventWriterProtocol):
+    result = prepare_pending_review_block(ctx, review_id, review_path, prompt_path, unreviewed)
+    emitter.block(result.system_message, result.feedback)
+    state_event_writer.append(result.state_record)
     return 2
 

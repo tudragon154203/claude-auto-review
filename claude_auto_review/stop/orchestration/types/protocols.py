@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable, Protocol, runtime_checkable
 
@@ -80,7 +81,7 @@ class EventLogger(Protocol):
 
 @runtime_checkable
 class FinalizeReviewStop(Protocol):
-    def __call__(self, ctx: RuntimeContext, resolution: ReviewResolution, *, deps: Any) -> int: ...
+    def __call__(self, ctx: RuntimeContext, resolution: ReviewResolution, *, deps: ReviewEvalDeps) -> int: ...
 
 
 @runtime_checkable
@@ -136,3 +137,34 @@ class AttemptReviewAutocomplete(Protocol):
         *,
         log_event_fn: Callable[..., Any] | None = None,
     ) -> Any: ...
+
+
+@dataclass(frozen=True)
+class ReviewClassifierDeps:
+    classify_fn: ClassifyReviewArtifact
+
+
+@dataclass(frozen=True)
+class ReviewPlannerDeps:
+    plan_for_artifact_state_fn: PlanForArtifactState
+
+
+@dataclass(frozen=True)
+class ReviewExecutorDeps:
+    apply_plan_fn: ApplyFinalizePlan
+    state_event_writer_factory: Callable[[Path, str], StateEventWriterProtocol]
+    emitter: ResponseEmitter
+
+
+@dataclass(frozen=True)
+class AutocompleteDeps:
+    attempt_autocomplete_fn: AttemptReviewAutocomplete
+    log_event_fn: EventLogger
+
+
+@dataclass(frozen=True)
+class ReviewEvalDeps:
+    classifier: ReviewClassifierDeps
+    planner: ReviewPlannerDeps
+    executor: ReviewExecutorDeps
+    autocomplete: AutocompleteDeps

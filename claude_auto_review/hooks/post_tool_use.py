@@ -77,6 +77,42 @@ def _process_single_edit(ctx, state_snapshot, settings, file_path, timestamp, *,
     return _track_edited_file(ctx, state_snapshot, settings, file_path, timestamp, get_file_hash=get_file_hash, capture_snapshot=capture_snapshot, was_hash_reviewed=was_hash_reviewed, append_state_event=append_state_event, log_event_fn=log_event_fn)
 
 
+def _load_state_and_timestamp(ctx, *, load_state_snapshot, now):
+    state_snapshot = load_state_snapshot(ctx.project_root, ctx.client_id)
+    timestamp = now()
+    return state_snapshot, timestamp
+
+
+def _process_path_candidate(
+    ctx,
+    state_snapshot,
+    settings,
+    timestamp,
+    candidate,
+    *,
+    normalize_path,
+    should_skip_file,
+    get_file_hash,
+    capture_snapshot,
+    was_hash_reviewed,
+    append_state_event,
+    log_event_fn,
+):
+    file_path = normalize_path(candidate, ctx.project_root)
+    if not file_path:
+        log_event_fn(ctx.project_root, "post_tool_use_ignored_path", client_id=ctx.client_id, path=candidate)
+        return False
+    return _process_single_edit(
+        ctx, state_snapshot, settings, file_path, timestamp,
+        should_skip_file=should_skip_file,
+        get_file_hash=get_file_hash,
+        capture_snapshot=capture_snapshot,
+        was_hash_reviewed=was_hash_reviewed,
+        append_state_event=append_state_event,
+        log_event_fn=log_event_fn,
+    )
+
+
 def _run_post_tool_use(
     ctx,
     *,
@@ -99,16 +135,14 @@ def _run_post_tool_use(
         log_event_fn(project_root, "post_tool_use_disabled", client_id=client_id)
         return 0
 
-    state_snapshot = load_state_snapshot(project_root, client_id)
-    timestamp = now()
+    state_snapshot, timestamp = _load_state_and_timestamp(
+        ctx, load_state_snapshot=load_state_snapshot, now=now
+    )
 
     for candidate in extract_file_paths(payload, project_root=project_root):
-        file_path = normalize_path(candidate, project_root)
-        if not file_path:
-            log_event_fn(project_root, "post_tool_use_ignored_path", client_id=client_id, path=candidate)
-            continue
-        _process_single_edit(
-            ctx, state_snapshot, settings, file_path, timestamp,
+        _process_path_candidate(
+            ctx, state_snapshot, settings, timestamp, candidate,
+            normalize_path=normalize_path,
             should_skip_file=should_skip_file,
             get_file_hash=get_file_hash,
             capture_snapshot=capture_snapshot,
