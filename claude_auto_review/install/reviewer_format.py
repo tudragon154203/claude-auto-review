@@ -48,14 +48,8 @@ def _strip_leading_bold(value: str) -> tuple[str, bool]:
     return (stripped.strip("*").strip(), changed)
 
 
-def analyze_reviewer(text: str) -> tuple[str, list[str], bool]:
-    """Normalize reviewer.md finding examples to parser-compatible format without writing to disk.
-
-    Returns (repaired_text, warnings, was_modified).
-    """
-    if not text.strip():
-        return text, ["reviewer.md is empty — skipping format consistency check"], False
-
+def _normalize_findings(text: str) -> str:
+    """Normalize finding bullet/field formatting to parser-compatible form."""
     lines = text.splitlines(keepends=True)
     new_lines: list[str] = []
     in_finding = False
@@ -83,7 +77,7 @@ def analyze_reviewer(text: str) -> tuple[str, list[str], bool]:
                 raw_value = m_field.group(3)
                 canonical = _normalize_field_name(raw_name)
                 if canonical == "severity":
-                    mapped, changed = _normalize_severity(raw_value)
+                    mapped, _changed = _normalize_severity(raw_value)
                     value_out = mapped if mapped is not None else raw_value.strip()
                 else:
                     value_out, _ = _strip_leading_bold(raw_value)
@@ -95,18 +89,21 @@ def analyze_reviewer(text: str) -> tuple[str, list[str], bool]:
         else:
             new_lines.append(line)
 
-    repaired = "".join(new_lines)
+    return "".join(new_lines)
 
+
+def _check_field_warnings(text: str) -> list[str]:
+    """Check for missing or invalid Severity fields in confirmed findings."""
     warnings: list[str] = []
-    for m in _CHECK_RE.finditer(repaired):
+    for m in _CHECK_RE.finditer(text):
         verdict = m.group(1).lower()
         title = m.group(2).strip()
         if title.startswith("**") or title.startswith("<") or title.startswith("title"):
             continue
         if verdict == "skipped":
             continue
-        line_no = repaired[:m.start()].count("\n") + 1
-        after = repaired[m.end():]
+        line_no = text[:m.start()].count("\n") + 1
+        after = text[m.end():]
         field_lines: list[tuple[str, str]] = []
         for ln in after.splitlines():
             s = ln.rstrip()
@@ -125,7 +122,19 @@ def analyze_reviewer(text: str) -> tuple[str, list[str], bool]:
                 f"reviewer.md:{line_no} — unrecognized Severity value '{sv}' "
                 f"(expected one of: {', '.join(sorted(_VALID_SEVERITIES))})"
             )
+    return warnings
 
+
+def analyze_reviewer(text: str) -> tuple[str, list[str], bool]:
+    """Normalize reviewer.md finding examples to parser-compatible format without writing to disk.
+
+    Returns (repaired_text, warnings, was_modified).
+    """
+    if not text.strip():
+        return text, ["reviewer.md is empty — skipping format consistency check"], False
+
+    repaired = _normalize_findings(text)
+    warnings = _check_field_warnings(repaired)
     return repaired, warnings, repaired != text
 
 

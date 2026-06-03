@@ -63,20 +63,11 @@ def _has_canonical_confirmed_finding(findings: str) -> bool:
     return block_is_finding(current_verdict, current_lines, has_canonical_fields)
 
 
-def has_review_findings(content: str | None) -> bool:
-    findings = extract_review_findings_text(content)
-    if not findings:
-        return False
-    if _has_canonical_confirmed_finding(findings):
-        return True
-
-    lines = findings.splitlines()
-    if any(_FINDING_HEADING.match(line.strip()) for line in lines if line.strip()):
-        return True
-
-    meaningful_lines = []
+def _extract_meaningful_lines(findings: str) -> list[str]:
+    """Filter out structural and noise lines, returning only meaningful content."""
+    meaningful_lines: list[str] = []
     skipping_notes = False
-    for line in lines:
+    for line in findings.splitlines():
         stripped = line.strip()
         if not stripped or stripped == "```":
             continue
@@ -91,6 +82,18 @@ def has_review_findings(content: str | None) -> bool:
             else:
                 continue
         meaningful_lines.append(line)
+    return meaningful_lines
+
+
+def _check_heading_pattern(findings: str) -> bool | None:
+    """Return True if numbered/bracketed finding headings are present."""
+    if any(_FINDING_HEADING.match(line.strip()) for line in findings.splitlines() if line.strip()):
+        return True
+    return None
+
+
+def _check_meaningful_lines(meaningful_lines: list[str]) -> bool:
+    """Check meaningful lines for definitive no-findings prefixes or remaining content."""
     if not meaningful_lines:
         return False
     first = meaningful_lines[0]
@@ -101,3 +104,18 @@ def has_review_findings(content: str | None) -> bool:
                 return False
             break
     return not all(is_no_findings_line(line) for line in meaningful_lines)
+
+
+def has_review_findings(content: str | None) -> bool:
+    findings = extract_review_findings_text(content)
+    if not findings:
+        return False
+    if _has_canonical_confirmed_finding(findings):
+        return True
+
+    result = _check_heading_pattern(findings)
+    if result is not None:
+        return result
+
+    meaningful = _extract_meaningful_lines(findings)
+    return _check_meaningful_lines(meaningful)
