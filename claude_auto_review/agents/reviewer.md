@@ -76,3 +76,11 @@ If `## Findings` is empty, use the clean verdict. Only use the clean verdict whe
 - Do not nitpick names unless they violate rules.
 - Prefer actionable findings with clear user impact.
 - All findings, regardless severity, must be addressed before stopping.
+
+## Output Discipline
+
+- Start output with the `# Review` heading. No text before it.
+- Do not emit planning, reasoning, or progress updates.
+- Do not wrap output in a code fence or markdown block.
+- Do not add any text after `## Verdict`.
+- Be terse. Every line must be a finding, metadata field, or verdict line.

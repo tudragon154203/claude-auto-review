@@ -17,11 +17,13 @@ def build_unreviewed_files_string(unreviewed_entries):
 def build_review_completion_prompt(review_path):
     return (
         f"Complete the review at {review_path}. "
-        "Return only the final markdown review to stdout. "
-        "Do not output planning notes, progress updates, or next-step narration. "
-        "Read each file, evaluate findings, set verdicts "
-        "(Confirmed/Skipped), and write the final review "
-        "with a non-Pending Verdict."
+        "Output ONLY the final review markdown to stdout, starting with the '# Review' heading. "
+        "Do not emit any text before the '# Review' heading — no planning notes, reasoning steps, "
+        "progress updates, or introductory sentences. "
+        "Do not wrap the output in a code fence or markdown block. "
+        "Do not add any text after '## Verdict'. "
+        "Read each file, evaluate findings, set verdicts (Confirmed/Skipped), "
+        "and write the final review with a non-Pending Verdict."
     )
 
 

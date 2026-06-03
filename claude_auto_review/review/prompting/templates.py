@@ -6,9 +6,9 @@ You must review the changed files before stopping. Use the reviewer agent behavi
 
 ## Review Output
 
-Output only the final review markdown to stdout. It will be captured and saved to the review file. Do not emit progress updates, planning notes, or any text before or after the final markdown review. You do not have Write or Edit tools.
+Output ONLY the final review markdown to stdout, starting with the `# Review` heading. Do not emit any text before the heading — no planning notes, reasoning, progress updates, or introductory sentences. Do not wrap the output in a code fence or markdown block. Do not add any text after `## Verdict`. You do not have Write or Edit tools.
 
-Use this exact structure. The review is parsed by a regex-based parser. Any deviation from this format causes findings to be lost.
+The review is parsed by a regex-based parser. Any text outside the structure below causes findings to be lost. Use this exact structure:
 
 ```markdown
 # Review {review_id} - {readable_timestamp}
@@ -17,7 +17,7 @@ Use this exact structure. The review is parsed by a regex-based parser. Any devi
 Backend: {reviewer_backend} | Model: {reviewer_model}
 
 ## Files Reviewed
-{file_list}
+<list each file on its own line>
 
 ## Findings
 - Confirmed: <title>

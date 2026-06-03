@@ -32,9 +32,9 @@ class TestPromptTemplates(unittest.TestCase):
         self.assertIn("The diff below contains only changes made during this Claude Code session", result)
         self.assertIn("```diff\n-old\n+new\n```", result)
         self.assertNotIn("## Current File Snapshots", result)
-        self.assertIn("Output only the final review markdown to stdout.", result)
+        self.assertIn("Output ONLY the final review markdown to stdout", result)
         self.assertIn(
-            "Do not emit progress updates, planning notes, or any text before or after the final markdown review.",
+            "Do not emit any text before the heading — no planning notes, reasoning, progress updates, or introductory sentences.",
             result,
         )
         self.assertIn("Complete the review in a single response.", result)
