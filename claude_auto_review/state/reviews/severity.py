@@ -24,8 +24,10 @@ def _normalize_severity(value: str | None) -> str | None:
     return _UNRECOGNIZED_SEVERITY
 
 
-def severity_rank(value: str) -> int | None:
+def severity_rank(value: str, *, default_rank: int | None = None) -> int | None:
     if value == _UNRECOGNIZED_SEVERITY:
+        if default_rank is not None:
+            return default_rank
         from claude_auto_review.config.constants.severity import DEFAULT_MINIMUM_BLOCKING_SEVERITY
 
         return SEVERITY_RANKS.get(DEFAULT_MINIMUM_BLOCKING_SEVERITY, 2)

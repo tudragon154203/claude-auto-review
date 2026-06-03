@@ -42,6 +42,7 @@ def has_blocking_review_findings(
     threshold = severity_rank(minimum_blocking_severity) if minimum_blocking_severity else None
     if threshold is None:
         threshold = severity_rank(DEFAULT_MINIMUM_BLOCKING_SEVERITY)
+    default_rank = severity_rank(DEFAULT_MINIMUM_BLOCKING_SEVERITY)
 
     findings = parse_review_findings(content)
     if not findings:
@@ -77,7 +78,7 @@ def has_blocking_review_findings(
             # Any other severity=None case (badge/field headline, prose block) is
             # treated as a real blocking finding.
             return True
-        finding_rank = severity_rank(finding.severity)
+        finding_rank = severity_rank(finding.severity, default_rank=default_rank)
         if threshold is None or finding_rank is None or finding_rank >= threshold:
             return True
     return False

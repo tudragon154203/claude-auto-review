@@ -30,7 +30,10 @@ class TestApplyCompletedCleanReviewResult(unittest.TestCase):
     def test_no_remaining_returns_approved(self, mock_apply, mock_log):
         mock_apply.return_value = []
         ctx = _ctx()
-        result, payload = _apply_completed_clean_review_result(ctx, "r1", [])
+        result, payload = _apply_completed_clean_review_result(
+            ctx, MagicMock(), "r1", Path("/review.md"), [], [],
+            state_event_writer=MagicMock(), emitter=MagicMock(),
+        )
         self.assertEqual(result.action, FinalizeAction.APPROVED)
         self.assertEqual(result.exit_code, 0)
         self.assertIsNotNone(payload)
@@ -40,7 +43,10 @@ class TestApplyCompletedCleanReviewResult(unittest.TestCase):
     def test_remaining_returns_partial_review(self, mock_apply):
         mock_apply.return_value = ["file1.ts"]
         ctx = _ctx()
-        result, payload = _apply_completed_clean_review_result(ctx, "r1", [])
+        result, payload = _apply_completed_clean_review_result(
+            ctx, MagicMock(), "r1", Path("/review.md"), [], [],
+            state_event_writer=MagicMock(), emitter=MagicMock(),
+        )
         self.assertEqual(result.action, FinalizeAction.BLOCKED_PARTIAL_REVIEW)
         self.assertEqual(result.exit_code, 2)
 
