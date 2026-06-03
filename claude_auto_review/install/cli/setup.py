@@ -16,27 +16,43 @@ from claude_auto_review.runtime.events import log_event
 from claude_auto_review.runtime.setup import ensure_project_settings, ensure_runtime
 
 
-def main():
-    project_root = get_project_root()
-    plugin_root = get_plugin_root()
-    runtime = ensure_runtime(project_root)
-    ensure_project_settings(project_root)
-    runtime_scripts = runtime["base_dir"] / "scripts"
+def _ensure_runtime_dirs(runtime):
     runtime_agents = runtime["base_dir"] / "agents"
     runtime_agents.mkdir(parents=True, exist_ok=True)
+    return runtime_agents
 
+
+def _check_and_warn_reviewer(plugin_root):
     repaired_text, consistency_warnings, was_repaired = check_and_repair_reviewer(plugin_root)
     for warning in consistency_warnings:
         print(f"[WARNING] {warning}", file=sys.stderr)
     if was_repaired:
-        print("[WARNING] reviewer.md was auto-repaired for parser consistency. "
-              "Review the runtime copy at .claude/claude-auto-review/agents/reviewer.md.", file=sys.stderr)
+        print(
+            "[WARNING] reviewer.md was auto-repaired for parser consistency. "
+            "Review the runtime copy at .claude/claude-auto-review/agents/reviewer.md.",
+            file=sys.stderr,
+        )
+    return was_repaired, repaired_text
 
+
+def _sync_agents_to_runtime(runtime_scripts, runtime_agents, plugin_root, was_repaired, repaired_text):
     write_runtime_shims(runtime_scripts, plugin_root)
     if was_repaired and repaired_text is not None:
         (runtime_agents / "reviewer.md").write_text(repaired_text, encoding="utf-8")
     else:
         copy_if_changed(plugin_root / "agents" / "reviewer.md", runtime_agents / "reviewer.md")
+
+
+def main():
+    project_root = get_project_root()
+    runtime = ensure_runtime(project_root)
+    ensure_project_settings(project_root)
+
+    runtime_agents = _ensure_runtime_dirs(runtime)
+    runtime_scripts = runtime["base_dir"] / "scripts"
+
+    was_repaired, repaired_text = _check_and_warn_reviewer(get_plugin_root())
+    _sync_agents_to_runtime(runtime_scripts, runtime_agents, get_plugin_root(), was_repaired, repaired_text)
 
     ensure_gitignore_entries(
         project_root / ".gitignore",

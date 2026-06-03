@@ -111,35 +111,43 @@ def _path_command_targets(tokens, project_root=None):
     return [target] if target else []
 
 
-_HANDLER_TABLE: dict[str, Callable] = {}
+_HANDLER_TABLE: dict[str, tuple[Callable, bool]] = {}  # command → (handler, needs_project_root)
 
 
-def register_handler(command_name: str, handler: Callable) -> None:
+def register_handler(command_name: str, handler: Callable, *, needs_project_root: bool = False) -> None:
     """Register or replace a handler for a shell command name.
 
     This is the OCP extension point — new commands can be added
-    without modifying the built-in registry.
+    without modifying the built-in registry.  Pass needs_project_root=True
+    when the handler calls _looks_like_directory_destination.
     """
-    _HANDLER_TABLE[command_name] = handler
+    _HANDLER_TABLE[command_name] = (handler, needs_project_root)
 
 
 def _register_all():
     for cmd in SHELL_MULTI_ARG_COMMANDS:
-        _HANDLER_TABLE[cmd] = _multi_arg_targets
-    _HANDLER_TABLE[SHELL_DELETE_PS] = _multi_arg_targets
+        _HANDLER_TABLE[cmd] = (_multi_arg_targets, False)
+    _HANDLER_TABLE[SHELL_DELETE_PS] = (_multi_arg_targets, False)
     for cmd in SHELL_MOVE_COMMANDS:
-        _HANDLER_TABLE[cmd] = _move_targets
+        _HANDLER_TABLE[cmd] = (_move_targets, True)
     for cmd in SHELL_COPY_COMMANDS:
-        _HANDLER_TABLE[cmd] = _copy_targets
-    _HANDLER_TABLE["git"] = _git_move_targets
+        _HANDLER_TABLE[cmd] = (_copy_targets, False)
+    _HANDLER_TABLE["git"] = (_git_move_targets, True)
     for cmd in SHELL_WRITE_COMMANDS:
-        _HANDLER_TABLE[cmd] = _write_targets
+        _HANDLER_TABLE[cmd] = (_write_targets, False)
     for cmd in SHELL_PATH_COMMANDS:
-        _HANDLER_TABLE[cmd] = _path_command_targets
+        _HANDLER_TABLE[cmd] = (_path_command_targets, False)
 
 
 _register_all()
 
 
 def handler_for_command(command_name):
-    return _HANDLER_TABLE.get(command_name)
+    entry = _HANDLER_TABLE.get(command_name)
+    return entry[0] if entry else None
+
+
+def handler_needs_project_root(command_name) -> bool:
+    """Return whether the handler for command_name requires project_root for correct resolution."""
+    entry = _HANDLER_TABLE.get(command_name)
+    return entry[1] if entry else False

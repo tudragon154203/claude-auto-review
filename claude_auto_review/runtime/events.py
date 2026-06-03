@@ -83,17 +83,22 @@ class EntryWriter:
 
 @dataclass(frozen=True)
 class EventSink:
-    project_root: Path
+    entry_builder: EntryBuilder
+    entry_writer: EntryWriter
 
     @classmethod
     def for_project(cls, project_root: str | Path) -> EventSink:
-        return cls(project_root=resolve_project_root(project_root))
+        project_root = resolve_project_root(project_root)
+        return cls(
+            entry_builder=EntryBuilder(project_root=project_root),
+            entry_writer=EntryWriter(project_root=project_root),
+        )
 
     def build_entry(self, event_type: str, client_id: str | None = None, **kwargs: Any) -> dict[str, Any]:
-        return EntryBuilder(project_root=self.project_root).build(event_type, client_id=client_id, **kwargs)
+        return self.entry_builder.build(event_type, client_id=client_id, **kwargs)
 
     def write_entry(self, entry: dict[str, Any], *, client_id: str | None = None) -> bool:
-        return EntryWriter(project_root=self.project_root).write(entry, client_id=client_id)
+        return self.entry_writer.write(entry, client_id=client_id)
 
     def log(self, event_type: str, *, client_id: str | None = None, **kwargs: Any) -> bool:
         try:
@@ -105,19 +110,14 @@ class EventSink:
 
 @dataclass(frozen=True)
 class EventLogger:
-    """Lightweight interface for callers that only need to log events.
-
-    Delegates to EventSink to avoid duplicating the build/write pipeline.
-    """
-
-    project_root: Path
+    sink: EventSink
 
     @classmethod
     def for_project(cls, project_root: str | Path) -> EventLogger:
-        return cls(project_root=resolve_project_root(project_root))
+        return cls(sink=EventSink.for_project(project_root))
 
     def log(self, event_type: str, *, client_id: str | None = None, **kwargs: Any) -> bool:
-        return EventSink(project_root=self.project_root).log(event_type, client_id=client_id, **kwargs)
+        return self.sink.log(event_type, client_id=client_id, **kwargs)
 
 
 def log_event(project_root: str | Path, event_type: str, client_id: str | None = None, **kwargs: Any) -> bool:

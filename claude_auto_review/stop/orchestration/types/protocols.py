@@ -13,6 +13,7 @@ from claude_auto_review.stop.classifier.models import AssistantMessageClassifica
 from claude_auto_review.stop.orchestration.types.context import ResponsePayload, RuntimeContext
 from claude_auto_review.stop.orchestration.finalize.outcomes import FinalizePlan
 from claude_auto_review.stop.orchestration.types.resolution import FinalizeResult, ReviewResolution
+from claude_auto_review.stop.orchestration.finalize.retry import RetryPolicy
 from claude_auto_review.stop.orchestration.finalize.review_artifact_evaluator import ReviewArtifactState
 from claude_auto_review.stop.response import ResponseEmitter
 
@@ -136,6 +137,7 @@ class AttemptReviewAutocomplete(Protocol):
         prompt_file: Path,
         *,
         log_event_fn: Callable[..., Any] | None = None,
+        retry_policy: RetryPolicy | None = None,
     ) -> Any: ...
 
 

@@ -8,7 +8,23 @@ into the module-level _PARSER_REGISTRY, which parsing.py consumes.
 from __future__ import annotations
 
 from collections.abc import Callable
-from typing import Any
+from typing import Any, Protocol, runtime_checkable
+
+
+# --- Shared protocol for all state event types ---
+
+@runtime_checkable
+class StateEventProtocol(Protocol):
+    """Structural interface for all state-event record types.
+
+    Documents the shared interface that StateEvent union members must
+    implement, replacing implicit duck-typing with a named contract.
+    """
+
+    def to_dict(self) -> dict[str, Any]: ...
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> StateEventProtocol: ...
+
 
 # --- Import concrete types ---
 

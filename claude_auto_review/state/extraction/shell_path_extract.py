@@ -8,9 +8,8 @@ from claude_auto_review.paths.shell_parsing import (
     wrapper_nested_command,
 )
 from claude_auto_review.state.extraction.shell_handlers import (
-    _git_move_targets,
-    _move_targets,
     handler_for_command,
+    handler_needs_project_root,
 )
 
 
@@ -34,17 +33,7 @@ def _extract_paths_from_shell_command(command, project_root=None):
         if handler is None:
             continue
 
-        file_op_names = {
-            "remove-item", "rm", "del",
-            "mv", "move", "move-item", "ren", "rename", "rename-item", "rni",
-            "cp", "copy", "copy-item",
-            "git", "cat", "echo", "printf",
-            "tee", "set-content", "out-file", "touch", "new-item",
-        }
-        if command_name not in file_op_names:
-            continue
-
-        if handler in (_move_targets, _git_move_targets):
+        if handler_needs_project_root(command_name):
             paths.extend(handler(tokens, project_root=project_root))
         else:
             paths.extend(handler(tokens))

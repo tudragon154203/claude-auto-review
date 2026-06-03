@@ -1,23 +1,13 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable
 
 from claude_auto_review.config.resolvers.reviewer import resolved_reviewer_backend, resolved_reviewer_model
 from claude_auto_review.stop.feedback_format import build_review_completion_prompt
+from claude_auto_review.stop.orchestration.finalize.retry import RetryPolicy
 from claude_auto_review.stop.orchestration.types.context import RuntimeContext
-from claude_auto_review.stop.reviews.types.enums import AutocompleteStatus
 from claude_auto_review.stop.reviews.runners.dispatcher import attempt_stop_autocomplete
-
-
-@dataclass(frozen=True)
-class RetryPolicy:
-    max_attempts: int = 2
-    retryable_statuses: tuple[AutocompleteStatus, ...] = (AutocompleteStatus.EMPTY_STDOUT,)
-
-    def should_retry(self, status: AutocompleteStatus, attempt: int) -> bool:
-        return attempt < self.max_attempts - 1 and status in self.retryable_statuses
 
 
 DEFAULT_RETRY_POLICY = RetryPolicy()
