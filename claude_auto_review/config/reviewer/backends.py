@@ -1,8 +1,8 @@
 """Reviewer backend registry with injectable default registry.
 
 `BackendRegistry` is the DIP-friendly abstraction that callers can inject
-or extend. The module-level ``DEFAULT_REGISTRY`` keeps backward
-compatibility for code that still uses the global mutable state.
+or extend. The module-level ``DEFAULT_REGISTRY`` is the shared default
+instance; pass an explicit ``registry=`` to functions to override.
 """
 
 from __future__ import annotations
@@ -62,14 +62,6 @@ DEFAULT_REGISTRY: BackendRegistry = _default_backend_registry()
 DEFAULT_REVIEWER_MODELS = DEFAULT_REGISTRY.as_mapping()
 REVIEWER_BACKENDS = DEFAULT_REGISTRY.names()
 DEFAULT_REVIEWER_MODEL = DEFAULT_REVIEWER_MODELS[DEFAULT_REVIEWER_BACKEND]
-
-
-def register_reviewer_backend(name: str, default_model: str) -> None:
-    """Register a backend on the default registry (OCP extension point)."""
-    global DEFAULT_REGISTRY, DEFAULT_REVIEWER_MODELS, REVIEWER_BACKENDS
-    DEFAULT_REGISTRY = DEFAULT_REGISTRY.register(name, default_model)
-    DEFAULT_REVIEWER_MODELS = DEFAULT_REGISTRY.as_mapping()
-    REVIEWER_BACKENDS = DEFAULT_REGISTRY.names()
 
 
 def resolve_reviewer_backend(reviewer_backend: str, *, registry: BackendRegistry | None = None) -> str:

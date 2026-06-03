@@ -6,14 +6,7 @@ from typing import Any
 
 from claude_auto_review.config.constants.severity import DEFAULT_MINIMUM_BLOCKING_SEVERITY
 from claude_auto_review.config.constants.defaults import DEFAULT_RULES_FILE
-from claude_auto_review.config.reviewer.backends import (
-    DEFAULT_CLAUDE_REVIEWER_MODEL,
-    DEFAULT_CODEX_REVIEWER_MODEL,
-    DEFAULT_REVIEWER_BACKEND,
-    DEFAULT_REVIEWER_MODELS,
-    DEFAULT_REVIEWER_MODEL,
-    REVIEWER_BACKENDS,
-)
+from claude_auto_review.config.reviewer.backends import DEFAULT_REVIEWER_BACKEND
 from claude_auto_review.config.constants.defaults import (
     DEFAULT_CLASSIFIER_MODEL,
     DEFAULT_TIMEOUT_SECONDS,
@@ -30,15 +23,10 @@ __all__ = [
     "FlowSettings",
     "PluginSettings",
     "ReviewerSettings",
-    "DEFAULT_CLAUDE_REVIEWER_MODEL",
     "DEFAULT_CLASSIFIER_MODEL",
-    "DEFAULT_CODEX_REVIEWER_MODEL",
     "DEFAULT_MINIMUM_BLOCKING_SEVERITY",
     "DEFAULT_REVIEWER_BACKEND",
-    "DEFAULT_REVIEWER_MODELS",
-    "DEFAULT_REVIEWER_MODEL",
     "DEFAULT_TIMEOUT_SECONDS",
-    "REVIEWER_BACKENDS",
 ]
 
 

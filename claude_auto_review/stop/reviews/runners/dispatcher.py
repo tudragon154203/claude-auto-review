@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Callable, Protocol, Any
 
-from claude_auto_review.config.settings.models import DEFAULT_REVIEWER_MODEL
+from claude_auto_review.config.reviewer.backends import DEFAULT_REVIEWER_MODEL
 from claude_auto_review.runtime.events import log_event
 from claude_auto_review.stop.orchestration.types.context import RuntimeContext
 from claude_auto_review.stop.reviews.types.request import ReviewRequest

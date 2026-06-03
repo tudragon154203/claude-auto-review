@@ -1,18 +1,16 @@
 import unittest
 
-from claude_auto_review.config.settings.models import (
+from claude_auto_review.config.settings.models import PluginSettings
+from claude_auto_review.config.reviewer.backends import (
     DEFAULT_CLAUDE_REVIEWER_MODEL,
     DEFAULT_CODEX_REVIEWER_MODEL,
     DEFAULT_REVIEWER_BACKEND,
-    REVIEWER_BACKENDS,
-    PluginSettings,
-)
-from claude_auto_review.config.resolvers.reviewer import resolved_reviewer_backend, resolved_reviewer_model
-from claude_auto_review.config.reviewer.backends import (
     DEFAULT_REVIEWER_MODELS,
+    REVIEWER_BACKENDS,
     resolve_reviewer_backend,
     resolve_reviewer_model,
 )
+from claude_auto_review.config.resolvers.reviewer import resolved_reviewer_backend, resolved_reviewer_model
 
 
 class TestReviewerBackendSetting(unittest.TestCase):

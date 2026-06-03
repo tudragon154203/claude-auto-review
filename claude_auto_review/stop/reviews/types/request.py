@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from claude_auto_review.config.settings.models import DEFAULT_REVIEWER_MODEL
+from claude_auto_review.config.reviewer.backends import DEFAULT_REVIEWER_MODEL
 from claude_auto_review.stop.orchestration.types.context import RuntimeContext
 
 

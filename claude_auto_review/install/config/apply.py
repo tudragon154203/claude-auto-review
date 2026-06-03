@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 from claude_auto_review.config.resolvers.reviewer import resolved_reviewer_backend
-from claude_auto_review.config.settings.models import DEFAULT_REVIEWER_MODELS, PluginSettings
+from claude_auto_review.config.reviewer.backends import DEFAULT_REVIEWER_MODELS
+from claude_auto_review.config.settings.models import PluginSettings
 from claude_auto_review.config.utils.schema import (
     SETTING_MAX_STOP_PASSES,
     SETTING_MINIMUM_BLOCKING_SEVERITY,

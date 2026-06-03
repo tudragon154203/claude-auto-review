@@ -34,20 +34,6 @@ from claude_auto_review.state.store.read import load_state_snapshot
 from claude_auto_review.state.store.write import append_review_started
 from claude_auto_review.stop.orchestration.types.context import RuntimeContext
 
-# Module-level aliases preserved so tests can patch collaborators via
-# ``claude_auto_review.review.prompt.<name>``.
-ensure_client_runtime = ensure_client_runtime
-write_project_script_shim = write_project_script_shim
-load_settings = load_settings
-load_state_snapshot = load_state_snapshot
-get_unreviewed_files = get_unreviewed_files
-create_review_prompt_files = create_review_prompt_files
-append_review_started = append_review_started
-log_event = log_event
-log_failure = log_failure
-get_client_id = get_client_id
-get_project_root = get_project_root
-
 
 @dataclass(frozen=True)
 class _ModuleAttributeDeps:
