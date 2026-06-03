@@ -25,6 +25,9 @@ def _apply_completed_clean_review_result(
     state_event_writer: StateEventWriterProtocol,
     emitter: ResponseEmitter,
 ) -> tuple[FinalizeResult, ResponsePayload]:
+    # plan, review_path, unreviewed, state_event_writer, emitter are accepted
+    # to satisfy the uniform handler signature; only ctx, review_id, covered_entries are used.
+    _ = plan, review_path, unreviewed, state_event_writer, emitter
     remaining = apply_completed_review(ctx.project_root, ctx.client_id, review_id, covered_entries)
     if not remaining:
         log_event(
@@ -45,6 +48,7 @@ def _record_findings_block(
     review_path: Path,
     covered_entries: list[Any],
     unreviewed: list[Any],
+    *,
     state_event_writer: StateEventWriterProtocol,
     emitter: ResponseEmitter,
 ) -> tuple[FinalizeResult, None]:
