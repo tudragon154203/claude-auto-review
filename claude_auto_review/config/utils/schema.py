@@ -5,8 +5,8 @@ from typing import Any, Callable
 
 from claude_auto_review.config.constants.defaults import (
     DEFAULT_CLASSIFIER_MODEL,
+    DEFAULT_CLASSIFIER_TIMEOUT_SECONDS,
     DEFAULT_RULES_FILE,
-    DEFAULT_TIMEOUT_SECONDS,
 )
 from claude_auto_review.config.constants.severity import coerce_minimum_blocking_severity
 from claude_auto_review.config.reviewer.backends import DEFAULT_REVIEWER_BACKEND
@@ -56,7 +56,7 @@ SETTING_SPECS: tuple[SettingSpec, ...] = (
     SettingSpec(SETTING_FEEDBACK_MAX_CHARS, "review_feedback_max_chars", group="reviewer", coerce_fn=lambda v: max(0, coerce_int(v, 9000))),
     # Classifier
     SettingSpec(SETTING_CLASSIFIER_ENABLED, "last_assistant_message_classifier_enabled", group="classifier", coerce_fn=lambda v: coerce_bool(v, True)),
-    SettingSpec(SETTING_CLASSIFIER_TIMEOUT, "last_assistant_message_classifier_timeout_seconds", group="classifier", coerce_fn=lambda v: coerce_float(v, DEFAULT_TIMEOUT_SECONDS)),
+    SettingSpec(SETTING_CLASSIFIER_TIMEOUT, "last_assistant_message_classifier_timeout_seconds", group="classifier", coerce_fn=lambda v: coerce_float(v, DEFAULT_CLASSIFIER_TIMEOUT_SECONDS)),
     SettingSpec(SETTING_CLASSIFIER_MODEL, "classifier_model", group="classifier", coerce_fn=lambda v: str(v or DEFAULT_CLASSIFIER_MODEL)),
     # Filters
     SettingSpec(SETTING_RULES_FILE, "rules_file", group="filters", default=DEFAULT_RULES_FILE),

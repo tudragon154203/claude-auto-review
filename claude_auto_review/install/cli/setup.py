@@ -11,7 +11,7 @@ if __name__ == "__main__":
 
 from claude_auto_review.install.installer import copy_if_changed, ensure_gitignore_entries, write_runtime_shims
 from claude_auto_review.install.reviewer_format import check_and_repair_reviewer
-from claude_auto_review.paths.path_utils import get_plugin_root, get_project_root
+from claude_auto_review.paths.path_utils import ProjectContext
 from claude_auto_review.runtime.events import log_event
 from claude_auto_review.runtime.setup import ensure_project_settings, ensure_runtime
 
@@ -44,15 +44,15 @@ def _sync_agents_to_runtime(runtime_scripts, runtime_agents, plugin_root, was_re
 
 
 def main():
-    project_root = get_project_root()
+    project_root = ProjectContext.from_environment().project_root
     runtime = ensure_runtime(project_root)
     ensure_project_settings(project_root)
 
     runtime_agents = _ensure_runtime_dirs(runtime)
     runtime_scripts = runtime["base_dir"] / "scripts"
 
-    was_repaired, repaired_text = _check_and_warn_reviewer(get_plugin_root())
-    _sync_agents_to_runtime(runtime_scripts, runtime_agents, get_plugin_root(), was_repaired, repaired_text)
+    was_repaired, repaired_text = _check_and_warn_reviewer(ProjectContext.from_environment().plugin_root)
+    _sync_agents_to_runtime(runtime_scripts, runtime_agents, ProjectContext.from_environment().plugin_root, was_repaired, repaired_text)
 
     ensure_gitignore_entries(
         project_root / ".gitignore",

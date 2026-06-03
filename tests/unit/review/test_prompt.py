@@ -1,6 +1,6 @@
 import sys
 import unittest
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 from pathlib import Path
 
 from claude_auto_review.config.settings.models import CoreSettings, PluginSettings
@@ -80,11 +80,11 @@ class TestReviewPrompt(unittest.TestCase):
 
     @patch("claude_auto_review.review.prompt._log_failure")
     @patch("claude_auto_review.review.prompt.get_client_id", return_value="c1")
-    @patch("claude_auto_review.review.prompt.get_project_root", return_value=Path("/fake/project"))
+    @patch("claude_auto_review.paths.path_utils.ProjectContext.from_environment", return_value=MagicMock(project_root=Path("/fake/project"), plugin_root=Path("/fake/plugin")))
     @patch("claude_auto_review.review.prompt.ensure_client_runtime")
     @patch("claude_auto_review.review.prompt.write_project_script_shim")
     @patch("claude_auto_review.review.prompt.load_settings", side_effect=RuntimeError("boom"))
-    def test_main_catches_exception_and_logs(self, mock_settings, mock_shim, mock_ensure, mock_root, mock_client_id, mock_fail):
+    def test_main_catches_exception_and_logs(self, mock_settings, mock_shim, mock_ensure, mock_ctx, mock_client_id, mock_fail):
         result = main()
         self.assertEqual(result, 1)
         mock_fail.assert_called_once()

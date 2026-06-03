@@ -5,7 +5,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-from claude_auto_review.paths.path_utils import get_plugin_root, get_project_root
+from claude_auto_review.paths.path_utils import ProjectContext
 from claude_auto_review.runtime.events import log_event
 
 
@@ -19,7 +19,7 @@ def _run_git(args, cwd):
 
 
 def _git_checkout_root(plugin_root=None):
-    plugin_root = Path(plugin_root or get_plugin_root()).resolve()
+    plugin_root = Path(plugin_root or ProjectContext.from_environment().plugin_root).resolve()
     result = _run_git(["rev-parse", "--show-toplevel"], plugin_root)
     if result.returncode != 0:
         return None, result
@@ -44,7 +44,7 @@ def _rerun_setup(project_root):
 
 
 def main():
-    project_root = get_project_root()
+    project_root = ProjectContext.from_environment().project_root
     checkout_root, probe = _git_checkout_root()
     if checkout_root is None:
         _print_completed_process(probe)

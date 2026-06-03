@@ -7,10 +7,7 @@ from typing import Any
 from claude_auto_review.config.constants.severity import DEFAULT_MINIMUM_BLOCKING_SEVERITY
 from claude_auto_review.config.constants.defaults import DEFAULT_RULES_FILE
 from claude_auto_review.config.reviewer.backends import DEFAULT_REVIEWER_BACKEND
-from claude_auto_review.config.constants.defaults import (
-    DEFAULT_CLASSIFIER_MODEL,
-    DEFAULT_TIMEOUT_SECONDS,
-)
+from claude_auto_review.config.constants.defaults import DEFAULT_CLASSIFIER_MODEL, DEFAULT_CLASSIFIER_TIMEOUT_SECONDS
 from claude_auto_review.config.settings.serialization import (
     plugin_settings_kwargs,
     plugin_settings_mapping,
@@ -34,7 +31,7 @@ class ReviewerSettings:
 @dataclass(frozen=True)
 class ClassifierSettings:
     last_assistant_message_classifier_enabled: bool = True
-    last_assistant_message_classifier_timeout_seconds: float = DEFAULT_TIMEOUT_SECONDS
+    last_assistant_message_classifier_timeout_seconds: float = DEFAULT_CLASSIFIER_TIMEOUT_SECONDS
     classifier_model: str = DEFAULT_CLASSIFIER_MODEL
 
 

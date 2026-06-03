@@ -1,7 +1,7 @@
 import unittest
 from pathlib import Path
 from subprocess import CompletedProcess
-from unittest.mock import ANY, patch
+from unittest.mock import ANY, MagicMock, patch
 
 from claude_auto_review.install.cli.update import main
 
@@ -13,9 +13,9 @@ def _result(args=None, returncode=0, stdout="", stderr=""):
 class TestUpdateCli(unittest.TestCase):
     @patch("claude_auto_review.install.cli.update.log_event")
     @patch("claude_auto_review.install.cli.update.subprocess.run")
-    @patch("claude_auto_review.install.cli.update.get_project_root", return_value=Path("/project"))
-    @patch("claude_auto_review.install.cli.update.get_plugin_root", return_value=Path("/repo/claude_auto_review"))
-    def test_update_pulls_checkout_and_reruns_setup(self, mock_plugin_root, mock_project_root, mock_run, mock_log):
+    @patch("claude_auto_review.paths.path_utils.ProjectContext.from_environment")
+    def test_update_pulls_checkout_and_reruns_setup(self, mock_ctx, mock_run, mock_log):
+        mock_ctx.return_value = MagicMock(project_root=Path("/project"), plugin_root=Path("/repo/claude_auto_review"))
         mock_run.side_effect = [
             _result(stdout="/repo\n"),
             _result(stdout="Already up to date.\n"),
@@ -36,9 +36,9 @@ class TestUpdateCli(unittest.TestCase):
 
     @patch("claude_auto_review.install.cli.update.log_event")
     @patch("claude_auto_review.install.cli.update.subprocess.run")
-    @patch("claude_auto_review.install.cli.update.get_project_root", return_value=Path("/project"))
-    @patch("claude_auto_review.install.cli.update.get_plugin_root", return_value=Path("/site/claude_auto_review"))
-    def test_update_requires_git_checkout(self, mock_plugin_root, mock_project_root, mock_run, mock_log):
+    @patch("claude_auto_review.paths.path_utils.ProjectContext.from_environment")
+    def test_update_requires_git_checkout(self, mock_ctx, mock_run, mock_log):
+        mock_ctx.return_value = MagicMock(project_root=Path("/project"), plugin_root=Path("/site/claude_auto_review"))
         mock_run.return_value = _result(returncode=128, stderr="not a git repository\n")
 
         with patch("builtins.print") as mock_print:

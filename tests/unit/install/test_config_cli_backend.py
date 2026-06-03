@@ -3,7 +3,7 @@ import json
 import tempfile
 import unittest
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 from claude_auto_review.install.cli import config as config_cli
 
@@ -65,7 +65,7 @@ class TestCheckBackendCli(unittest.TestCase):
                 json.dumps({"claude-auto-review": {"enabled": True}}), encoding="utf-8"
             )
             buf = io.StringIO()
-            with patch.object(config_cli, "get_project_root", return_value=Path(tmp)), \
+            with patch("claude_auto_review.paths.path_utils.ProjectContext.from_environment", return_value=MagicMock(project_root=Path(tmp))), \
                  patch.object(config_cli, "_is_initialized", return_value=True), \
                  patch.object(config_cli, "_write_plugin_settings", return_value=settings_path), \
                  patch("sys.stdout", buf):

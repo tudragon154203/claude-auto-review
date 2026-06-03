@@ -3,7 +3,7 @@ import unittest
 
 from claude_auto_review.config.resolvers.files import should_skip_file
 from claude_auto_review.config.io.settings_file import load_settings
-from claude_auto_review.config.constants.defaults import DEFAULT_TIMEOUT_SECONDS
+from claude_auto_review.config.constants.defaults import DEFAULT_CLASSIFIER_TIMEOUT_SECONDS
 from claude_auto_review.config.settings.models import FilterSettings, PluginSettings
 from claude_auto_review.config.resolvers.rules import resolve_rules_file_path
 from tests.unit.state.support import StateTestCase
@@ -19,7 +19,7 @@ class TestSettingsLoader(StateTestCase, unittest.TestCase):
         self.assertEqual(result.reviewer.review_feedback_max_chars, 9000)
         self.assertEqual(result.flow.minimum_blocking_severity, "medium")
         self.assertTrue(result.classifier.last_assistant_message_classifier_enabled)
-        self.assertEqual(result.classifier.last_assistant_message_classifier_timeout_seconds, DEFAULT_TIMEOUT_SECONDS)
+        self.assertEqual(result.classifier.last_assistant_message_classifier_timeout_seconds, DEFAULT_CLASSIFIER_TIMEOUT_SECONDS)
 
     def test_load_settings_merges_project_settings(self):
         project_root = self.temp_project()

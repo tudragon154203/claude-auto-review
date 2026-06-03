@@ -4,7 +4,7 @@ from datetime import datetime
 from pathlib import Path
 
 from claude_auto_review.config.io.settings_file import load_settings
-from claude_auto_review.config.constants.defaults import DEFAULT_TIMEOUT_SECONDS
+from claude_auto_review.config.constants.defaults import DEFAULT_CLASSIFIER_TIMEOUT_SECONDS
 from claude_auto_review.config.settings.models import ClassifierSettings, PluginSettings
 from claude_auto_review.paths.path_utils import get_state_path
 from claude_auto_review.runtime.cleanup.session import cancel_runtime
@@ -92,7 +92,7 @@ class IntegrationRuntimeTests(IntegrationTestCase):
         self.assertEqual(settings.flow.minimum_blocking_severity, "high")
         self.assertEqual(settings.reviewer.reviewer_timeout_seconds, 600)
         self.assertTrue(settings.classifier.last_assistant_message_classifier_enabled)
-        self.assertEqual(settings.classifier.last_assistant_message_classifier_timeout_seconds, DEFAULT_TIMEOUT_SECONDS)
+        self.assertEqual(settings.classifier.last_assistant_message_classifier_timeout_seconds, DEFAULT_CLASSIFIER_TIMEOUT_SECONDS)
 
     def test_classifier_appends_separate_state_entry_and_log(self):
         project_root = self.temp_project()

@@ -1,9 +1,7 @@
 """Path constants and resolvers.
 
-`ProjectContext` is the DIP-friendly abstraction for callers that need to
-resolve the project root explicitly. Existing ``get_project_root()`` and
-``get_plugin_root()`` still read implicit environment / filesystem state
-for backward compatibility, but new code should prefer `ProjectContext`.
+Use ``ProjectContext.from_environment()`` or ``ProjectContext.for_project_root()``
+to resolve project and plugin roots.
 """
 
 from __future__ import annotations
@@ -56,29 +54,6 @@ class ProjectContext:
         return self.plugin_root / "review" / "prompt.py"
 
 
-def get_project_root():
-    return ProjectContext.from_environment().project_root
-
-
-def get_plugin_root():
-    """Return the ``claude_auto_review`` package directory."""
-    return Path(__file__).resolve().parent.parent
-
-
-def get_reviewer_prompt_script():
-    return get_plugin_root() / "review" / "prompt.py"
-
-
-def _project_root_path(project_root=None):
-    if project_root is None:
-        return get_project_root()
-    return Path(project_root).resolve()
-
-
-def _runtime_dir_path(project_root=None):
-    return _project_root_path(project_root) / RUNTIME_DIR
-
-
 def is_runtime_relative_path(file_path):
     if not file_path:
         return False
@@ -90,5 +65,7 @@ def is_runtime_relative_path(file_path):
     return bool(relative.parts)
 
 
-def get_state_path(project_root=None):
-    return _runtime_dir_path(project_root) / STATE_RELATIVE_PATH.name
+def get_state_path(project_root: Path | str | None = None) -> Path:
+    """Return the path to the runtime state directory."""
+    ctx = ProjectContext.from_environment() if project_root is None else ProjectContext.for_project_root(project_root)
+    return ctx.project_root / RUNTIME_DIR / STATE_RELATIVE_PATH.name

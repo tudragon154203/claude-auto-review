@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable
 
-from claude_auto_review.paths.path_utils import get_reviewer_prompt_script
+from claude_auto_review.paths.path_utils import ProjectContext
 from claude_auto_review.runtime.events import log_event
 from claude_auto_review.state.store.queries import consecutive_stop_blocks, get_unreviewed_files
 from claude_auto_review.state.store.read import load_state_snapshot
@@ -104,6 +104,10 @@ def _default_eval_fns():
 from claude_auto_review.stop.orchestration.pipeline.stages import _build_classifier_result_persistor
 
 
+def _default_reviewer_prompt_script():
+    return ProjectContext.from_environment().plugin_root / "review" / "prompt.py"
+
+
 def _default_classifier_persist_factory(ctx):
     return _build_classifier_result_persistor(ctx, writer_factory=lambda p, c: _ConcreteStateEventWriter(p, c))
 
@@ -131,7 +135,7 @@ def build_default_dependencies(
         ),
         review=ReviewDeps(
             resolve_pending_review=_resolve_overrides_field(resolve_pending_review, overrides.resolve_pending_review_fn),
-            get_reviewer_prompt_script=_resolve_overrides_field(get_reviewer_prompt_script, overrides.get_reviewer_prompt_script_fn),
+            get_reviewer_prompt_script=_resolve_overrides_field(_default_reviewer_prompt_script, overrides.get_reviewer_prompt_script_fn),
         ),
         log_event=_resolve_overrides_field(log_event, overrides.log_event_fn),
         emitter=emitter,

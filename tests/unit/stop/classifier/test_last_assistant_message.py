@@ -6,9 +6,7 @@ from claude_auto_review.config.settings.models import ClassifierSettings, Plugin
 from claude_auto_review.stop.classifier.last_assistant_message import (
     classify_last_assistant_message,
 )
-from claude_auto_review.stop.classifier.models import (
-    DEFAULT_TIMEOUT_SECONDS,
-)
+from claude_auto_review.config.constants.defaults import DEFAULT_CLASSIFIER_TIMEOUT_SECONDS
 from claude_auto_review.stop.orchestration.types.context import RuntimeContext
 from tests.unit.state.support import StateTestCase
 
@@ -34,7 +32,7 @@ class TestLastAssistantMessageClassifier(StateTestCase, unittest.TestCase):
         self.settings = PluginSettings(
             classifier=ClassifierSettings(
                 last_assistant_message_classifier_enabled=True,
-                last_assistant_message_classifier_timeout_seconds=DEFAULT_TIMEOUT_SECONDS,
+                last_assistant_message_classifier_timeout_seconds=DEFAULT_CLASSIFIER_TIMEOUT_SECONDS,
             ),
         )
         self.env = {
@@ -68,7 +66,7 @@ class TestLastAssistantMessageClassifier(StateTestCase, unittest.TestCase):
 
         self.assertEqual(result.status, "complete")
         self.assertEqual(seen["url"], "http://127.0.0.1:13456/v1/messages")
-        self.assertEqual(seen["timeout"], DEFAULT_TIMEOUT_SECONDS)
+        self.assertEqual(seen["timeout"], DEFAULT_CLASSIFIER_TIMEOUT_SECONDS)
         headers_lower = {k.lower(): v for k, v in seen["headers"].items()}
         self.assertEqual(headers_lower["anthropic-version"], "2023-06-01")
         self.assertEqual(headers_lower["x-api-key"], "top-secret")
@@ -100,7 +98,7 @@ class TestLastAssistantMessageClassifier(StateTestCase, unittest.TestCase):
             urlopen=fake_urlopen,
         )
         self.assertEqual(result.status, "complete")
-        self.assertEqual(seen["timeout"], DEFAULT_TIMEOUT_SECONDS)
+        self.assertEqual(seen["timeout"], DEFAULT_CLASSIFIER_TIMEOUT_SECONDS)
 
     def test_accepts_exact_labels(self):
         for label in ("complete", "incomplete", "unknown"):

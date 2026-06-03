@@ -49,11 +49,11 @@ class TestUninstall(unittest.TestCase):
         # Everything removed -> "hooks" itself should be removed from settings if empty
         self.assertNotIn("hooks", settings)
 
-    @patch("claude_auto_review.install.cli.uninstall.get_project_root")
+    @patch("claude_auto_review.paths.path_utils.ProjectContext.from_environment")
     @patch("claude_auto_review.install.cli.uninstall.log_event")
     @patch("claude_auto_review.install.cli.uninstall.ensure_gitignore_entries")
-    def test_main_uninstall_full(self, mock_gitignore, mock_log, mock_get_root):
-        mock_get_root.return_value = self.project_root
+    def test_main_uninstall_full(self, mock_gitignore, mock_log, mock_ctx):
+        mock_ctx.return_value = MagicMock(project_root=self.project_root)
 
         # Setup .claude/settings.json
         claude_dir = self.project_root / ".claude"

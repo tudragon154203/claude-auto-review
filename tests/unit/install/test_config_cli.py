@@ -3,7 +3,7 @@ import json
 import tempfile
 import unittest
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 from claude_auto_review.config.resolvers.reviewer import resolved_reviewer_model
 from claude_auto_review.config.settings.models import PluginSettings, ReviewerSettings
@@ -189,7 +189,7 @@ class TestConfigCli(unittest.TestCase):
                 return settings_path
 
             stdout = io.StringIO()
-            with patch("claude_auto_review.install.cli.config.get_project_root", return_value=project_root), patch(
+            with patch("claude_auto_review.paths.path_utils.ProjectContext.from_environment", return_value=MagicMock(project_root=project_root)), patch(
                 "claude_auto_review.install.config.io.ensure_runtime", side_effect=fake_runtime
             ), patch(
                 "claude_auto_review.install.config.io._settings_path", side_effect=fake_project_settings
@@ -223,7 +223,7 @@ class TestConfigCli(unittest.TestCase):
                 encoding="utf-8",
             )
 
-            with patch("claude_auto_review.install.cli.config.get_project_root", return_value=project_root), patch(
+            with patch("claude_auto_review.paths.path_utils.ProjectContext.from_environment", return_value=MagicMock(project_root=project_root)), patch(
                 "claude_auto_review.install.cli.config._run_wizard"
             ) as mock_wizard, patch("claude_auto_review.install.cli.config.log_event"):
                 result = config_cli.main(["--non-interactive"])
@@ -245,7 +245,7 @@ class TestConfigCli(unittest.TestCase):
             )
 
             stdout = io.StringIO()
-            with patch("claude_auto_review.install.cli.config.get_project_root", return_value=project_root), patch(
+            with patch("claude_auto_review.paths.path_utils.ProjectContext.from_environment", return_value=MagicMock(project_root=project_root)), patch(
                 "builtins.input", side_effect=["", "", "", ""]
             ), patch("claude_auto_review.install.cli.config.log_event"), patch("sys.stdout", stdout):
                 result = config_cli.main([])
@@ -272,7 +272,7 @@ class TestConfigCli(unittest.TestCase):
                 encoding="utf-8",
             )
 
-            with patch("claude_auto_review.install.cli.config.get_project_root", return_value=project_root), patch(
+            with patch("claude_auto_review.paths.path_utils.ProjectContext.from_environment", return_value=MagicMock(project_root=project_root)), patch(
                 "claude_auto_review.install.cli.config.log_event"
             ):
                 result = config_cli.main(["--backend", "codex", "--non-interactive"])
@@ -295,7 +295,7 @@ class TestConfigCli(unittest.TestCase):
                 encoding="utf-8",
             )
 
-            with patch("claude_auto_review.install.cli.config.get_project_root", return_value=project_root), patch(
+            with patch("claude_auto_review.paths.path_utils.ProjectContext.from_environment", return_value=MagicMock(project_root=project_root)), patch(
                 "builtins.input", side_effect=["", "", "", ""]
             ), patch("claude_auto_review.install.cli.config.log_event"):
                 result = config_cli.main(["--backend", "codex"])

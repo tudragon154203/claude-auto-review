@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from claude_auto_review.paths.path_utils import get_project_root
+from claude_auto_review.paths.path_utils import ProjectContext
 from claude_auto_review.runtime.client_dirs import get_client_id
 
 
@@ -29,7 +29,7 @@ _CLIENT_ID_CACHE = _ClientIdCache()
 
 
 def resolve_project_root(project_root=None) -> Path:
-    return Path(project_root or get_project_root())
+    return Path(project_root or ProjectContext.from_environment().project_root)
 
 
 def resolve_client_id(client_id="") -> str:

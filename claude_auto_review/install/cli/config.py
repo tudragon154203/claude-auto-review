@@ -20,7 +20,7 @@ from claude_auto_review.install.config.display import (
     _print_advanced_settings,
     _print_summary,
 )
-from claude_auto_review.paths.path_utils import get_project_root
+from claude_auto_review.paths.path_utils import ProjectContext
 from claude_auto_review.runtime.events import log_event
 
 
@@ -50,7 +50,7 @@ def main(argv=None):
     except ValueError as error:
         parser.error(str(error))
 
-    project_root = get_project_root()
+    project_root = ProjectContext.from_environment().project_root
     initialized_before = _is_initialized(project_root)
     if not initialized_before:
         _ensure_initialized(project_root)

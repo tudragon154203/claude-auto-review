@@ -1,5 +1,5 @@
 import unittest
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 from tests.support_paths import FAKE_ROOT
 
@@ -10,8 +10,9 @@ class TestCancelCli(unittest.TestCase):
     @patch("claude_auto_review.install.cli.cancel.log_event")
     @patch("claude_auto_review.install.cli.cancel.cancel_runtime", return_value=[FAKE_ROOT / "a", FAKE_ROOT / "b"])
     @patch("claude_auto_review.install.cli.cancel.get_client_id", return_value="test-client")
-    @patch("claude_auto_review.install.cli.cancel.get_project_root", return_value=FAKE_ROOT / "project")
-    def test_main_removes_and_prints(self, mock_root, mock_client_id, mock_cancel, mock_log):
+    @patch("claude_auto_review.paths.path_utils.ProjectContext.from_environment")
+    def test_main_removes_and_prints(self, mock_ctx, mock_client_id, mock_cancel, mock_log):
+        mock_ctx.return_value = MagicMock(project_root=FAKE_ROOT / "project")
         with patch("builtins.print") as mock_print:
             result = main()
         self.assertEqual(result, 0)
@@ -23,8 +24,9 @@ class TestCancelCli(unittest.TestCase):
     @patch("claude_auto_review.install.cli.cancel.log_event")
     @patch("claude_auto_review.install.cli.cancel.cancel_runtime", return_value=[])
     @patch("claude_auto_review.install.cli.cancel.get_client_id", return_value="no-client")
-    @patch("claude_auto_review.install.cli.cancel.get_project_root", return_value=FAKE_ROOT / "project")
-    def test_main_prints_noop_when_no_runtime(self, mock_root, mock_client_id, mock_cancel, mock_log):
+    @patch("claude_auto_review.paths.path_utils.ProjectContext.from_environment")
+    def test_main_prints_noop_when_no_runtime(self, mock_ctx, mock_client_id, mock_cancel, mock_log):
+        mock_ctx.return_value = MagicMock(project_root=FAKE_ROOT / "project")
         with patch("builtins.print") as mock_print:
             result = main()
         self.assertEqual(result, 0)

@@ -6,7 +6,7 @@ import socket
 from datetime import datetime
 from pathlib import Path
 
-from claude_auto_review.paths.path_utils import CLIENTS_DIR, _project_root_path
+from claude_auto_review.paths.path_utils import CLIENTS_DIR
 
 _CLIENT_RUNTIME_DIR_PATTERN = re.compile(r"^client-(\d{8}-\d{6})_(.+)$")
 _CLIENT_RUNTIME_DIR_CACHE: dict[tuple[str, str], Path] = {}
@@ -75,7 +75,7 @@ def _find_existing_client_runtime_dir(project_root: Path, client_id: str) -> Pat
 
 
 def get_existing_client_runtime_dir(project_root: Path, client_id: str) -> Path | None:
-    project_root = _project_root_path(project_root)
+    project_root = Path(project_root).resolve()
     if _CLIENT_RUNTIME_DIR_PATTERN.match(client_id):
         direct = project_root / CLIENTS_DIR / client_id
         if direct.exists() and direct.is_dir():
@@ -85,7 +85,7 @@ def get_existing_client_runtime_dir(project_root: Path, client_id: str) -> Path 
 
 
 def get_client_runtime_dir(project_root: Path, client_id: str) -> Path:
-    project_root = _project_root_path(project_root)
+    project_root = Path(project_root).resolve()
     cache_key = _client_runtime_dir_cache_key(project_root, client_id)
     cached = _cached_client_runtime_dir(cache_key)
     if cached is not None:
@@ -105,7 +105,7 @@ def get_client_runtime_dir(project_root: Path, client_id: str) -> Path:
 
 
 def invalidate_client_runtime_dir_cache(project_root: Path, client_id: str):
-    project_root = _project_root_path(project_root)
+    project_root = Path(project_root).resolve()
     _clear_client_runtime_dir_cache_entries(project_root, client_id)
 
 

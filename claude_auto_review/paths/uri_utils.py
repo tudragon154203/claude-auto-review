@@ -4,7 +4,7 @@ import os
 from pathlib import Path
 from urllib.parse import unquote, urlsplit
 
-from claude_auto_review.paths.path_utils import FILE_URI_PREFIX, _project_root_path
+from claude_auto_review.paths.path_utils import FILE_URI_PREFIX, ProjectContext
 
 
 def _normalize_file_uri(file_path: str) -> str:
@@ -27,7 +27,7 @@ def normalize_relative_path(file_path, project_root=None):
     if not file_path:
         return None
     file_path = _normalize_file_uri(os.fspath(file_path))
-    project_root = _project_root_path(project_root)
+    project_root = ProjectContext.from_environment().project_root if project_root is None else Path(project_root)
     candidate = Path(file_path)
     resolved = candidate.resolve() if candidate.is_absolute() else (project_root / candidate).resolve()
     try:

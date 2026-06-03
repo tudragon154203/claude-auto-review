@@ -1,6 +1,6 @@
 import json
 import unittest
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 from claude_auto_review.runtime.hook_context import build_hook_runtime_context
 from tests.unit.state.support import StateTestCase
@@ -15,7 +15,7 @@ class TestBuildHookRuntimeContext(StateTestCase, unittest.TestCase):
             encoding="utf-8",
         )
 
-        with patch("claude_auto_review.runtime.hook_context.get_project_root", return_value=project_root):
+        with patch("claude_auto_review.runtime.hook_context.ProjectContext.from_environment", return_value=MagicMock(project_root=project_root, plugin_root=project_root)):
             ctx = build_hook_runtime_context(json.dumps({"session_id": "session-1"}))
 
         self.assertEqual(ctx.project_root, project_root)
@@ -27,7 +27,7 @@ class TestBuildHookRuntimeContext(StateTestCase, unittest.TestCase):
     def test_build_hook_runtime_context_can_skip_client_creation(self):
         project_root = self.temp_project()
 
-        with patch("claude_auto_review.runtime.hook_context.get_project_root", return_value=project_root):
+        with patch("claude_auto_review.runtime.hook_context.ProjectContext.from_environment", return_value=MagicMock(project_root=project_root, plugin_root=project_root)):
             ctx = build_hook_runtime_context(json.dumps({"session_id": "session-1"}), ensure_client=False)
 
         self.assertEqual(ctx.client_id, "session-1")

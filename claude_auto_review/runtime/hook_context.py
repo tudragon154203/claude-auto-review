@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Any, Protocol, runtime_checkable
 
 from claude_auto_review.config.io.settings_file import load_settings
-from claude_auto_review.paths.path_utils import get_project_root
+from claude_auto_review.paths.path_utils import ProjectContext
 from claude_auto_review.runtime.client_dirs import get_client_id
 from claude_auto_review.runtime.payload import get_payload_session_id, read_json_payload
 from claude_auto_review.runtime.setup import ensure_client_runtime
@@ -24,7 +24,7 @@ class HookContextFactory(Protocol):
 @dataclass(frozen=True)
 class DefaultHookContextFactory:
     def project_root(self) -> str:
-        return str(get_project_root())
+        return str(ProjectContext.from_environment().project_root)
 
     def client_id(self, payload: Any) -> str:
         return get_client_id(get_payload_session_id(payload))

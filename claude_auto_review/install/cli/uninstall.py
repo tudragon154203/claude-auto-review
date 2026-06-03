@@ -20,14 +20,14 @@ from claude_auto_review.config.io.cleanup import remove_plugin_hooks as _remove_
 from claude_auto_review.config.io.cleanup import remove_plugin_settings as _remove_plugin_settings  # noqa: F811, E501
 from claude_auto_review.config.io.settings_file import _load_settings_document, _settings_path
 from claude_auto_review.install.installer import ensure_gitignore_entries
-from claude_auto_review.paths.path_utils import get_project_root
+from claude_auto_review.paths.path_utils import ProjectContext
 from claude_auto_review.runtime.events import log_event
 
 GITIGNORE_ENTRY = ".claude/claude-auto-review/"
 
 
 def main():
-    project_root = get_project_root()
+    project_root = ProjectContext.from_environment().project_root
     runtime_dir = project_root / ".claude" / "claude-auto-review"
     removed = []
 
