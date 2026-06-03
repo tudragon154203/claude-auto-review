@@ -1,13 +1,18 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 
 from claude_auto_review.review.completion import apply_completed_review, record_completed_review
 from claude_auto_review.runtime.events import log_event
 from claude_auto_review.stop.feedback import block_completed_review_findings
 from claude_auto_review.stop.orchestration.types.context import ResponsePayload, RuntimeContext
-from claude_auto_review.stop.orchestration.finalize.outcomes import FinalizeEffect, FinalizePlan, approved_result, plan_for_partial_review
+from claude_auto_review.stop.orchestration.finalize.outcomes import (
+    FinalizeEffect,
+    FinalizePlan,
+    approved_result,
+    plan_for_partial_review,
+)
 from claude_auto_review.stop.orchestration.types.resolution import FinalizeAction, FinalizeResult
 from claude_auto_review.stop.orchestration.finalize.payloads import _approve_payload, _partial_review_payload
 from claude_auto_review.stop.orchestration.types.protocols import StateEventWriterProtocol
@@ -16,18 +21,9 @@ from claude_auto_review.stop.response import ResponseEmitter
 
 def _apply_completed_clean_review_result(
     ctx: RuntimeContext,
-    plan: FinalizePlan,
     review_id: str,
-    review_path: Path,
     covered_entries: list[Any],
-    unreviewed: list[Any],
-    *,
-    state_event_writer: StateEventWriterProtocol,
-    emitter: ResponseEmitter,
 ) -> tuple[FinalizeResult, ResponsePayload]:
-    # plan, review_path, unreviewed, state_event_writer, emitter are accepted
-    # to satisfy the uniform handler signature; only ctx, review_id, covered_entries are used.
-    _ = plan, review_path, unreviewed, state_event_writer, emitter
     remaining = apply_completed_review(ctx.project_root, ctx.client_id, review_id, covered_entries)
     if not remaining:
         log_event(
@@ -60,17 +56,6 @@ def _record_findings_block(
     return plan.result, None
 
 
-_EFFECT_HANDLERS: dict[FinalizeEffect, Callable[..., tuple[FinalizeResult, ResponsePayload | None]]] = {}
-
-
-def _register_effects():
-    _EFFECT_HANDLERS[FinalizeEffect.APPLY_COMPLETED_CLEAN_REVIEW] = _apply_completed_clean_review_result
-    _EFFECT_HANDLERS[FinalizeEffect.RECORD_FINDINGS_BLOCK] = _record_findings_block
-
-
-_register_effects()
-
-
 def apply_finalize_plan_result(
     ctx: RuntimeContext,
     plan: FinalizePlan,
@@ -82,8 +67,11 @@ def apply_finalize_plan_result(
     state_event_writer: StateEventWriterProtocol,
     emitter: ResponseEmitter,
 ) -> tuple[FinalizeResult, ResponsePayload | None]:
-    handler = _EFFECT_HANDLERS.get(plan.effect)
-    if handler is None:
-        raise ValueError(f"Unsupported finalize plan effect: {plan.effect}")
-    result: tuple[FinalizeResult, ResponsePayload | None] = handler(ctx, plan, review_id, review_path, covered_entries, unreviewed, state_event_writer=state_event_writer, emitter=emitter)
-    return result
+    if plan.effect == FinalizeEffect.APPLY_COMPLETED_CLEAN_REVIEW:
+        return _apply_completed_clean_review_result(ctx, review_id, covered_entries)
+    if plan.effect == FinalizeEffect.RECORD_FINDINGS_BLOCK:
+        return _record_findings_block(
+            ctx, plan, review_id, review_path, covered_entries, unreviewed,
+            state_event_writer=state_event_writer, emitter=emitter,
+        )
+    raise ValueError(f"Unsupported finalize plan effect: {plan.effect}")
