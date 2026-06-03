@@ -10,7 +10,7 @@ from claude_auto_review.config.settings.models import PluginSettings
 from claude_auto_review.state.records.edit import EditRecord
 from claude_auto_review.state.records.review import ReviewMetadata
 from claude_auto_review.stop.orchestration.types.context import RuntimeContext
-from claude_auto_review.stop.orchestration.deps import build_default_eval_deps
+from claude_auto_review.stop.orchestration.deps import DependencyOverrides, build_default_eval_deps
 from claude_auto_review.stop.orchestration.finalize.core import finalize_review_stop
 from claude_auto_review.stop.orchestration.types.resolution import ReviewResolution
 
@@ -52,7 +52,7 @@ class TestFinalizeEdgeCases(unittest.TestCase):
     def test_missing_review_file_blocks(self, mock_block_pending, mock_covered):
         mock_classify = MagicMock(side_effect=[MagicMock(status="pending"), MagicMock(status="pending")])
         emitter = _mock_emitter()
-        result = finalize_review_stop(_ctx(), self.resolution, deps=build_default_eval_deps(emitter=emitter, state_event_writer_factory=MagicMock(), classify_fn=mock_classify))
+        result = finalize_review_stop(_ctx(), self.resolution, deps=build_default_eval_deps(DependencyOverrides(state_event_writer_factory=MagicMock(), eval_classify_fn=mock_classify), emitter=emitter))
         self.assertEqual(result, EXIT_REVIEW_FAILED)
 
     @patch("claude_auto_review.stop.orchestration.finalize.core.get_entries_covered_by_review", return_value=[])
@@ -64,7 +64,7 @@ class TestFinalizeEdgeCases(unittest.TestCase):
         result = finalize_review_stop(
             _ctx(settings=PluginSettings.from_mapping({"reviewerBackend": "codyx"})),
             self.resolution,
-            deps=build_default_eval_deps(emitter=emitter, state_event_writer_factory=MagicMock(), log_event_fn=mock_log),
+            deps=build_default_eval_deps(DependencyOverrides(state_event_writer_factory=MagicMock(), log_event_fn=mock_log), emitter=emitter),
         )
         self.assertEqual(result, EXIT_REVIEW_FAILED)
         emitter.block.assert_called_once_with(
@@ -97,7 +97,7 @@ class TestFinalizeEdgeCases(unittest.TestCase):
         mock_log = MagicMock()
         result = finalize_review_stop(
             _ctx(), self.resolution,
-            deps=build_default_eval_deps(emitter=emitter, state_event_writer_factory=MagicMock(), log_event_fn=mock_log, classify_fn=mock_classify),
+            deps=build_default_eval_deps(DependencyOverrides(state_event_writer_factory=MagicMock(), log_event_fn=mock_log, eval_classify_fn=mock_classify), emitter=emitter),
         )
         self.assertEqual(result, EXIT_REVIEW_FAILED)
         mock_log.assert_any_call(
@@ -131,7 +131,7 @@ class TestFinalizeEdgeCases(unittest.TestCase):
             mock_apply.return_value = [EditRecord(timestamp="t", file="still.ts", hash="abc")]
             resolution = ReviewResolution(state=[], unreviewed=[], review=_mk_review("r1", "fake/r.md"))
             emitter = _mock_emitter()
-            result = finalize_review_stop(_ctx(project_root=project_root), resolution, deps=build_default_eval_deps(emitter=emitter, state_event_writer_factory=MagicMock()))
+            result = finalize_review_stop(_ctx(project_root=project_root), resolution, deps=build_default_eval_deps(DependencyOverrides(state_event_writer_factory=MagicMock()), emitter=emitter))
             self.assertEqual(result, EXIT_REVIEW_FAILED)
             emitter.block.assert_called_once()
 

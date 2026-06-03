@@ -13,33 +13,21 @@ from claude_auto_review.stop.reviews.types.result import AutocompleteResult
 class ReviewFn(Protocol):
     def __call__(self, request: ReviewRequest, *, log_event_fn: Callable[..., Any]) -> AutocompleteResult: ...
 
+
+# Stub for backwards compatibility with existing test imports.
+# The real registry is built lazily by _get_backend_registry().
 _BACKEND_REGISTRY: dict[str, ReviewFn] = {}
-_DEFAULTS_REGISTERED = False
 
 
-def register_backend(name: str, fn: ReviewFn) -> None:
-    _BACKEND_REGISTRY[name] = fn
-
-
-def _reset_registry() -> None:
-    global _DEFAULTS_REGISTERED
-    _BACKEND_REGISTRY.clear()
-    _DEFAULTS_REGISTERED = False
-
-
-def _ensure_defaults_registered() -> None:
-    global _DEFAULTS_REGISTERED
-    if _DEFAULTS_REGISTERED:
-        return
-    _DEFAULTS_REGISTERED = True
-
+def _get_backend_registry() -> dict[str, ReviewFn]:
     from .claude import _attempt_claude_autocomplete
     from .codex import _attempt_codex_autocomplete
     from .opencode import _attempt_opencode_autocomplete
-
-    register_backend("claude", _attempt_claude_autocomplete)
-    register_backend("codex", _attempt_codex_autocomplete)
-    register_backend("opencode", _attempt_opencode_autocomplete)
+    return {
+        "claude": _attempt_claude_autocomplete,
+        "codex": _attempt_codex_autocomplete,
+        "opencode": _attempt_opencode_autocomplete,
+    }
 
 
 def attempt_stop_autocomplete(
@@ -54,10 +42,10 @@ def attempt_stop_autocomplete(
     *,
     log_event_fn=None,
 ):
-    _ensure_defaults_registered()
-    fn = _BACKEND_REGISTRY.get(backend)
+    registry = _get_backend_registry()
+    fn = registry.get(backend)
     if fn is None:
-        available = ", ".join(sorted(_BACKEND_REGISTRY)) or "none"
+        available = ", ".join(sorted(registry)) or "none"
         raise ValueError(f"Unsupported reviewer backend: {backend} (available: {available})")
     request = ReviewRequest(
         ctx=ctx,

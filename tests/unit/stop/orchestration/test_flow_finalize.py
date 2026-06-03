@@ -1,11 +1,10 @@
 import unittest
 from types import SimpleNamespace
+from unittest.mock import patch, MagicMock
 
 from tests.support_paths import FAKE_ROOT
 
 from claude_auto_review.state.records.review import ReviewMetadata
-from unittest.mock import patch
-
 from claude_auto_review.config.settings.models import ClassifierSettings, CoreSettings, FlowSettings, PluginSettings
 from claude_auto_review.state.records.edit import EditRecord
 from claude_auto_review.state.snapshots.snapshot import StateSnapshot

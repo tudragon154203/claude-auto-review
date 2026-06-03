@@ -7,7 +7,7 @@ from claude_auto_review.config.constants.exit_codes import EXIT_REVIEW_FAILED, E
 from claude_auto_review.config.settings.models import PluginSettings
 from claude_auto_review.state.records.review import ReviewMetadata
 from claude_auto_review.stop.orchestration.types.context import RuntimeContext
-from claude_auto_review.stop.orchestration.deps import build_default_eval_deps
+from claude_auto_review.stop.orchestration.deps import DependencyOverrides, build_default_eval_deps
 from claude_auto_review.stop.orchestration.finalize.core import finalize_review_stop
 from claude_auto_review.stop.orchestration.types.resolution import FinalizeAction, ReviewResolution
 
@@ -59,7 +59,7 @@ class TestFinalizePendingReview(unittest.TestCase):
             MagicMock(status="complete_clean"),
         ]
         mock_prompt.return_value = "Complete the review"
-        result = finalize_review_stop(_ctx(), self.resolution, deps=build_default_eval_deps(emitter=self.emitter, state_event_writer_factory=MagicMock()))
+        result = finalize_review_stop(_ctx(), self.resolution, deps=build_default_eval_deps(DependencyOverrides(state_event_writer_factory=MagicMock()), emitter=self.emitter))
         self.assertEqual(result, EXIT_STOP_APPROVED)
         self.emitter.approve.assert_called_once_with("Claude Auto Review: review r1 clean, all files covered")
         mock_plan_log.assert_any_call(
@@ -82,7 +82,7 @@ class TestFinalizePendingReview(unittest.TestCase):
             MagicMock(status="pending"),
             MagicMock(status="complete_clean"),
         ]
-        result = finalize_review_stop(_ctx(), self.resolution, deps=build_default_eval_deps(emitter=self.emitter, state_event_writer_factory=MagicMock()))
+        result = finalize_review_stop(_ctx(), self.resolution, deps=build_default_eval_deps(DependencyOverrides(state_event_writer_factory=MagicMock()), emitter=self.emitter))
         self.assertEqual(result, EXIT_STOP_APPROVED)
         mock_apply.assert_called_once()
         self.emitter.approve.assert_called_once_with("Claude Auto Review: review r1 clean, all files covered")
@@ -100,7 +100,7 @@ class TestFinalizePendingReview(unittest.TestCase):
             MagicMock(status="pending"),
             MagicMock(status="complete_findings"),
         ]
-        result = finalize_review_stop(_ctx(), self.resolution, deps=build_default_eval_deps(emitter=self.emitter, state_event_writer_factory=MagicMock()))
+        result = finalize_review_stop(_ctx(), self.resolution, deps=build_default_eval_deps(DependencyOverrides(state_event_writer_factory=MagicMock()), emitter=self.emitter))
         self.assertEqual(result, EXIT_REVIEW_FAILED)
         mock_block.assert_called_once()
         mock_record.assert_called_once()
@@ -112,7 +112,7 @@ class TestFinalizePendingReview(unittest.TestCase):
     @patch("claude_auto_review.stop.orchestration.finalize.review_artifact_evaluator.classify_review_artifact")
     def test_autocomplete_returns_2_on_pending(self, mock_classify, mock_auto, mock_prompt, mock_block_pending, mock_covered):
         mock_classify.side_effect = [MagicMock(status="pending"), MagicMock(status="pending")]
-        result = finalize_review_stop(_ctx(), self.resolution, deps=build_default_eval_deps(emitter=self.emitter, state_event_writer_factory=MagicMock()))
+        result = finalize_review_stop(_ctx(), self.resolution, deps=build_default_eval_deps(DependencyOverrides(state_event_writer_factory=MagicMock()), emitter=self.emitter))
         self.assertEqual(result, EXIT_REVIEW_FAILED)
 
     @patch("claude_auto_review.stop.orchestration.finalize.core.get_entries_covered_by_review", return_value=[])
@@ -128,7 +128,7 @@ class TestFinalizePendingReview(unittest.TestCase):
             MagicMock(status="pending"),
             MagicMock(status="complete_findings"),
         ]
-        result = finalize_review_stop(_ctx(), self.resolution, deps=build_default_eval_deps(emitter=self.emitter, state_event_writer_factory=MagicMock()))
+        result = finalize_review_stop(_ctx(), self.resolution, deps=build_default_eval_deps(DependencyOverrides(state_event_writer_factory=MagicMock()), emitter=self.emitter))
         self.assertEqual(result, EXIT_REVIEW_FAILED)
         mock_block.assert_called_once()
 
@@ -140,7 +140,7 @@ class TestFinalizePendingReview(unittest.TestCase):
     def test_pending_review_blocks(self, mock_classify, mock_auto, mock_prompt, mock_block_pending, mock_covered):
         mock_classify.side_effect = [MagicMock(status="pending"), MagicMock(status="pending")]
         mock_block_pending.return_value = 2
-        result = finalize_review_stop(_ctx(), self.resolution, deps=build_default_eval_deps(emitter=self.emitter, state_event_writer_factory=MagicMock()))
+        result = finalize_review_stop(_ctx(), self.resolution, deps=build_default_eval_deps(DependencyOverrides(state_event_writer_factory=MagicMock()), emitter=self.emitter))
         self.assertEqual(result, EXIT_REVIEW_FAILED)
         mock_block_pending.assert_called_once()
 

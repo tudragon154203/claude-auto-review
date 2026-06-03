@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-from typing import Any
 
+from claude_auto_review.stop.orchestration.deps import DependencyOverrides
+from claude_auto_review.stop.orchestration.decision_engine import StopDecisionEngine, build_decision_engine
 from claude_auto_review.stop.orchestration.types.context import (
     FinalizeDetails,
     ResponsePayload,
@@ -10,7 +11,6 @@ from claude_auto_review.stop.orchestration.types.context import (
     StopDecision,
     TerminalDetails,
 )
-from claude_auto_review.stop.orchestration.decision_engine import DependencyOverrides, StopDecisionEngine, build_decision_engine
 from claude_auto_review.stop.orchestration.types.resolution import StopDecisionKind
 from claude_auto_review.stop.response import ResponseEmitter, StdoutResponseEmitter
 
@@ -48,22 +48,11 @@ def _handle_finalize(engine: StopDecisionEngine, decision: StopDecision, emitter
     return int(engine.finalize(details.resolution))
 
 
-_HANDLER_REGISTRY: dict[StopDecisionKind, StopHandler] = {}
-_DEFAULTS_REGISTERED = False
-
-
-def register_stop_handler(kind: StopDecisionKind, handler: StopHandler) -> None:
-    _HANDLER_REGISTRY[kind] = handler
-
-
-def _ensure_defaults_registered() -> None:
-    global _DEFAULTS_REGISTERED
-    if _DEFAULTS_REGISTERED:
-        return
-    _DEFAULTS_REGISTERED = True
-    register_stop_handler(StopDecisionKind.ALLOW, _handle_allow)
-    register_stop_handler(StopDecisionKind.TERMINAL, _handle_terminal)
-    register_stop_handler(StopDecisionKind.FINALIZE, _handle_finalize)
+_STOP_HANDLERS: dict[StopDecisionKind, StopHandler] = {
+    StopDecisionKind.ALLOW: _handle_allow,
+    StopDecisionKind.TERMINAL: _handle_terminal,
+    StopDecisionKind.FINALIZE: _handle_finalize,
+}
 
 
 def dispatch_stop_decision(
@@ -72,8 +61,7 @@ def dispatch_stop_decision(
     *,
     emitter: ResponseEmitter,
 ) -> int:
-    _ensure_defaults_registered()
-    handler = _HANDLER_REGISTRY.get(decision.kind)
+    handler = _STOP_HANDLERS.get(decision.kind)
     if handler is None:
         raise ValueError(f"Unhandled stop decision kind: {decision.kind}")
     return handler(engine, decision, emitter)

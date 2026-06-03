@@ -46,15 +46,13 @@ class TestApplyCompletedCleanReviewResult(unittest.TestCase):
 
 
 class TestApplyFinalizePlanResult(unittest.TestCase):
-    @patch("claude_auto_review.stop.orchestration.finalize.plan_executor._apply_completed_clean_review_result")
-    def test_apply_completed_clean_review_effect(self, mock_apply_clean):
-        expected = (FinalizeResult(action=FinalizeAction.APPROVED, exit_code=0), MagicMock())
-        mock_apply_clean.return_value = expected
+    def test_apply_completed_clean_review_effect(self):
         plan = MagicMock(effect=FinalizeEffect.APPLY_COMPLETED_CLEAN_REVIEW)
         ctx = _ctx()
         writer = MagicMock()
-        result = apply_finalize_plan_result(ctx, plan, "r1", Path("/review.md"), [], [], state_event_writer=writer)
-        self.assertEqual(result, expected)
+        result, payload = apply_finalize_plan_result(ctx, plan, "r1", Path("/review.md"), [], [], state_event_writer=writer, emitter=MagicMock())
+        self.assertEqual(result.action, FinalizeAction.APPROVED)
+        self.assertIsNotNone(payload)
 
     @patch("claude_auto_review.stop.orchestration.finalize.plan_executor.block_completed_review_findings")
     @patch("claude_auto_review.stop.orchestration.finalize.plan_executor.record_completed_review")
@@ -81,7 +79,7 @@ class TestApplyFinalizePlanResult(unittest.TestCase):
         ctx = _ctx()
         writer = MagicMock()
         with self.assertRaises(ValueError):
-            apply_finalize_plan_result(ctx, plan, "r1", Path("/review.md"), [], [], state_event_writer=writer)
+            apply_finalize_plan_result(ctx, plan, "r1", Path("/review.md"), [], [], state_event_writer=writer, emitter=MagicMock())
 
 
 if __name__ == "__main__":

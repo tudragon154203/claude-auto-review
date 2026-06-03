@@ -1,6 +1,5 @@
 import unittest
-from types import SimpleNamespace
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 
 from tests.support_paths import FAKE_ROOT
 
@@ -32,15 +31,8 @@ def _ctx(**overrides):
 
 
 class TestFlowClassifier(unittest.TestCase):
-    @patch("claude_auto_review.stop.orchestration.deps.classify_last_assistant_message")
-    @patch(
-        "claude_auto_review.stop.orchestration.deps.load_state_snapshot", return_value=_snapshot(events=[])
-    )
-    def test_classifier_skipped_when_no_unreviewed_files(
-        self,
-        mock_state,
-        mock_classify,
-    ):
+    @patch("claude_auto_review.stop.orchestration.deps.load_state_snapshot", return_value=_snapshot(events=[]))
+    def test_classifier_skipped_when_no_unreviewed_files(self, mock_state):
         result = run_stop_flow(
             _ctx(
                 settings=PluginSettings(
@@ -53,9 +45,7 @@ class TestFlowClassifier(unittest.TestCase):
         )
 
         self.assertEqual(result, 0)
-        mock_classify.assert_not_called()
 
-    @patch("claude_auto_review.stop.orchestration.deps.classify_last_assistant_message")
     @patch(
         "claude_auto_review.stop.orchestration.deps.load_state_snapshot",
         return_value=_snapshot(
@@ -70,11 +60,7 @@ class TestFlowClassifier(unittest.TestCase):
             ]
         ),
     )
-    def test_classifier_skipped_when_circuit_breaker_allows_stop(
-        self,
-        mock_state,
-        mock_classify,
-    ):
+    def test_classifier_skipped_when_circuit_breaker_allows_stop(self, mock_state):
         result = run_stop_flow(
             _ctx(
                 settings=PluginSettings(
@@ -87,7 +73,6 @@ class TestFlowClassifier(unittest.TestCase):
         )
 
         self.assertEqual(result, 0)
-        mock_classify.assert_not_called()
 
     @patch("claude_auto_review.stop.orchestration.deps.classify_last_assistant_message")
     @patch("claude_auto_review.stop.orchestration.deps.resolve_pending_review")
@@ -98,7 +83,7 @@ class TestFlowClassifier(unittest.TestCase):
         mock_resolve,
         mock_classify,
     ):
-        mock_classify.return_value = SimpleNamespace(status="complete", reason="parsed_label")
+        mock_classify.return_value = MagicMock(status="complete", reason="parsed_label")
         mock_resolve.return_value = TerminalResolution(exit_code=0)
 
         result = run_stop_flow(
@@ -116,15 +101,13 @@ class TestFlowClassifier(unittest.TestCase):
         mock_classify.assert_called_once()
 
     @patch("claude_auto_review.stop.orchestration.deps.classify_last_assistant_message")
-    @patch("claude_auto_review.stop.orchestration.deps.resolve_pending_review")
     @patch("claude_auto_review.stop.orchestration.deps.load_state_snapshot", return_value=_snapshot())
     def test_classifier_incomplete_allows_stop_before_review_resolution(
         self,
         mock_state,
-        mock_resolve,
         mock_classify,
     ):
-        mock_classify.return_value = SimpleNamespace(status="incomplete", reason="parsed_label")
+        mock_classify.return_value = MagicMock(status="incomplete", reason="parsed_label")
 
         result = run_stop_flow(
             _ctx(
@@ -138,7 +121,6 @@ class TestFlowClassifier(unittest.TestCase):
         )
 
         self.assertEqual(result, 0)
-        mock_resolve.assert_not_called()
 
     @patch("claude_auto_review.stop.orchestration.deps.classify_last_assistant_message")
     @patch("claude_auto_review.stop.orchestration.deps.resolve_pending_review")

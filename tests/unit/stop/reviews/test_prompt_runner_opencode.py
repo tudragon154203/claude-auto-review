@@ -8,12 +8,7 @@ from unittest.mock import MagicMock, patch
 from claude_auto_review.stop.orchestration.types.context import RuntimeContext
 from claude_auto_review.stop.reviews.types.enums import AutocompleteStatus
 from claude_auto_review.stop.reviews.types.request import ReviewRequest
-from claude_auto_review.stop.reviews.runners.dispatcher import (
-    _BACKEND_REGISTRY,
-    _reset_registry,
-    _ensure_defaults_registered,
-    attempt_stop_autocomplete,
-)
+from claude_auto_review.stop.reviews.runners.dispatcher import attempt_stop_autocomplete
 from claude_auto_review.stop.reviews.runners.opencode import (
     _SAFE_RE,
     _write_merged_prompt,
@@ -68,25 +63,9 @@ class TestBuildOpencodeReviewArgs(unittest.TestCase):
             self.assertLessEqual(len(arg), 100, f"Arg too long for CLI: {arg[:60]}...")
 
 
-class TestOpencodeBackendRegistration(unittest.TestCase):
-    def test_opencode_registered_after_defaults(self):
-        from claude_auto_review.stop.reviews.runners.dispatcher import _BACKEND_REGISTRY
-
-        _BACKEND_REGISTRY.clear()
-        _reset_registry()
-        _ensure_defaults_registered()
-        self.assertIn("opencode", _BACKEND_REGISTRY)
-
-
 class TestOpencodeAutocomplete(unittest.TestCase):
     @patch("claude_auto_review.stop.reviews.runners.preamble.shutil.which", return_value=None)
     def test_cli_not_found(self, mock_which):
-        from claude_auto_review.stop.reviews.runners.dispatcher import _BACKEND_REGISTRY
-
-        _BACKEND_REGISTRY.clear()
-        _reset_registry()
-        _ensure_defaults_registered()
-
         result = attempt_stop_autocomplete(
             _ctx(), "rev-1", Path("/fake/review.md"), Path("/fake/prompt.md"),
             "user prompt", 60, "model",
@@ -97,12 +76,6 @@ class TestOpencodeAutocomplete(unittest.TestCase):
 
     @patch("claude_auto_review.stop.reviews.runners.preamble.shutil.which", return_value="/usr/bin/opencode")
     def test_prompt_not_found(self, mock_which):
-        from claude_auto_review.stop.reviews.runners.dispatcher import _BACKEND_REGISTRY
-
-        _BACKEND_REGISTRY.clear()
-        _reset_registry()
-        _ensure_defaults_registered()
-
         result = attempt_stop_autocomplete(
             _ctx(), "rev-1", Path("/fake/review.md"), Path("/fake/nonexistent-prompt.md"),
             "user prompt", 60, "model",
@@ -132,6 +105,42 @@ class TestOpencodeAutocomplete(unittest.TestCase):
 
         mock_run.side_effect = _capture_run
 
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmpdir = Path(tmpdir)
+            review_path = tmpdir / "review.md"
+            prompt_path = tmpdir / "prompt.md"
+            review_path.write_text("## Verdict\nClean - no issues found.\n", encoding="utf-8")
+            prompt_path.write_text("prompt", encoding="utf-8")
+            result = attempt_stop_autocomplete(
+                _ctx(), "rev-1", review_path, prompt_path,
+                "user prompt", 60, "model",
+                backend="opencode",
+                log_event_fn=MagicMock(),
+            )
+            self.assertEqual(result.status, AutocompleteStatus.OUTPUT_WRITTEN)
+            self.assertIn("content", captured_merged)
+
+    @patch(
+        "claude_auto_review.stop.reviews.types.result.normalize_review_verdict_content",
+        side_effect=lambda s, client_id=None, minimum_blocking_severity="medium": s,
+    )
+    @patch("claude_auto_review.stop.reviews.runners.cli.run_captured")
+    @patch("claude_auto_review.stop.reviews.runners.preamble.shutil.which", return_value="/usr/bin/opencode")
+    def test_output_written_on_success(self, mock_which, mock_run, _mock_norm):
+        captured_merged = {}
+
+        def _capture_run(*args, **kwargs):
+            cmd_list = args[0]
+            if "--file" in cmd_list:
+                idx = cmd_list.index("--file")
+                p = Path(cmd_list[idx + 1])
+                if p.exists():
+                    captured_merged["content"] = p.read_text(encoding="utf-8")
+                    captured_merged["path"] = p
+            return MagicMock(stdout="Clean - no issues found.", stderr="", returncode=0)
+
+        mock_run.side_effect = _capture_run
+
         review_path = Path(tempfile.gettempdir()) / "review-opencode-ok.md"
         prompt_file = Path(tempfile.gettempdir()) / "prompt-opencode-ok.md"
         prompt_file.write_text("system prompt", encoding="utf-8")
@@ -139,9 +148,7 @@ class TestOpencodeAutocomplete(unittest.TestCase):
         from claude_auto_review.stop.reviews.runners.dispatcher import _BACKEND_REGISTRY
 
         _BACKEND_REGISTRY.clear()
-        _reset_registry()
-        _ensure_defaults_registered()
-
+        
         result = attempt_stop_autocomplete(
             _ctx(), "rev-ok", review_path, prompt_file,
             "user prompt", 60, "claude-sonnet-4-6",
@@ -170,9 +177,7 @@ class TestOpencodeAutocomplete(unittest.TestCase):
         from claude_auto_review.stop.reviews.runners.dispatcher import _BACKEND_REGISTRY
 
         _BACKEND_REGISTRY.clear()
-        _reset_registry()
-        _ensure_defaults_registered()
-
+        
         result = attempt_stop_autocomplete(
             _ctx(), "rev-nz", Path("/fake/review.md"), prompt_file,
             "user prompt", 60, "model",
@@ -198,9 +203,7 @@ class TestOpencodeAutocomplete(unittest.TestCase):
         from claude_auto_review.stop.reviews.runners.dispatcher import _BACKEND_REGISTRY
 
         _BACKEND_REGISTRY.clear()
-        _reset_registry()
-        _ensure_defaults_registered()
-
+        
         result = attempt_stop_autocomplete(
             _ctx(), "rev-to", Path("/fake/review.md"), prompt_file,
             "user prompt", 60, "model",
@@ -225,9 +228,7 @@ class TestOpencodeAutocomplete(unittest.TestCase):
         from claude_auto_review.stop.reviews.runners.dispatcher import _BACKEND_REGISTRY
 
         _BACKEND_REGISTRY.clear()
-        _reset_registry()
-        _ensure_defaults_registered()
-
+        
         result = attempt_stop_autocomplete(
             _ctx(), "rev-err", Path("/fake/review.md"), prompt_file,
             "user prompt", 60, "model",
@@ -246,9 +247,7 @@ class TestOpencodeAutocomplete(unittest.TestCase):
         from claude_auto_review.stop.reviews.runners.dispatcher import _BACKEND_REGISTRY
 
         _BACKEND_REGISTRY.clear()
-        _reset_registry()
-        _ensure_defaults_registered()
-
+        
         result = attempt_stop_autocomplete(
             _ctx(), "rev-read-err", Path("/fake/review.md"), prompt_file,
             "user prompt", 60, "model",
@@ -269,9 +268,7 @@ class TestOpencodeAutocomplete(unittest.TestCase):
         from claude_auto_review.stop.reviews.runners.dispatcher import _BACKEND_REGISTRY
 
         _BACKEND_REGISTRY.clear()
-        _reset_registry()
-        _ensure_defaults_registered()
-
+        
         result = attempt_stop_autocomplete(
             _ctx(), "rev-empty", Path("/fake/review.md"), prompt_file,
             "user prompt", 60, "model",
@@ -372,9 +369,7 @@ class TestEmptyPromptFallback(unittest.TestCase):
         from claude_auto_review.stop.reviews.runners.dispatcher import _BACKEND_REGISTRY
 
         _BACKEND_REGISTRY.clear()
-        _reset_registry()
-        _ensure_defaults_registered()
-
+        
         result = attempt_stop_autocomplete(
             _ctx(), "rev-ep", review_path, prompt_file,
             "standalone user prompt", 60, "model",
@@ -413,9 +408,7 @@ class TestMergedFileCleanup(unittest.TestCase):
         from claude_auto_review.stop.reviews.runners.dispatcher import _BACKEND_REGISTRY
 
         _BACKEND_REGISTRY.clear()
-        _reset_registry()
-        _ensure_defaults_registered()
-
+        
         attempt_stop_autocomplete(
             _ctx(), "rev-cl", review_path, prompt_file,
             "user", 60, "model",
@@ -437,9 +430,7 @@ class TestMergedFileCleanup(unittest.TestCase):
         from claude_auto_review.stop.reviews.runners.dispatcher import _BACKEND_REGISTRY
 
         _BACKEND_REGISTRY.clear()
-        _reset_registry()
-        _ensure_defaults_registered()
-
+        
         result = attempt_stop_autocomplete(
             _ctx(), "rev-cl-to", Path("/fake/review.md"), prompt_file,
             "user", 60, "model",
