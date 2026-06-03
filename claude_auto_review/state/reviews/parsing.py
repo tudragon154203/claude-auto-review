@@ -53,9 +53,6 @@ def _legacy_heading_severity(line: str) -> tuple[str | None, str | None]:
     return None, None
 
 
-def _extract_heading_severity(line: str) -> tuple[str | None, str | None]:
-    return _legacy_heading_severity(line)
-
 
 def _parse_finding_block(block: str) -> ReviewFinding:
     severity = None

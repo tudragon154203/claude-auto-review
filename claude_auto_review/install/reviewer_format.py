@@ -4,13 +4,6 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-_FIELD_ALIASES = {
-    "fix": "suggestion",
-    "impact": "rationale",
-    "priority": "severity",
-    "category": "rule",
-}
-
 _SEVERITY_MAP = {
     "critical": "critical", "severe": "critical", "blocker": "critical",
     "high": "high", "major": "high", "important": "high", "significant": "high",
@@ -36,10 +29,6 @@ def _normalize_severity(value: str) -> tuple[str | None, bool]:
         canonical = _SEVERITY_MAP.get(lowered_clean)
     return (canonical, canonical is not None and canonical != lowered.strip())
 
-
-def _normalize_field_name(raw: str) -> str:
-    key = raw.strip().lower().rstrip(":")
-    return _FIELD_ALIASES.get(key, key)
 
 
 def _strip_leading_bold(value: str) -> tuple[str, bool]:
@@ -75,7 +64,9 @@ def _normalize_findings(text: str) -> str:
                 indent_raw = stripped[: len(stripped) - len(stripped.lstrip())]
                 raw_name = m_field.group(2)
                 raw_value = m_field.group(3)
-                canonical = _normalize_field_name(raw_name)
+                key = raw_name.strip().lower().rstrip(":")
+                aliases = {"fix": "suggestion", "impact": "rationale", "priority": "severity", "category": "rule"}
+                canonical = aliases.get(key, key)
                 if canonical == "severity":
                     mapped, _changed = _normalize_severity(raw_value)
                     value_out = mapped if mapped is not None else raw_value.strip()
