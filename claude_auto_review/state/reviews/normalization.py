@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from claude_auto_review.config.settings.models import DEFAULT_MINIMUM_BLOCKING_SEVERITY
+from claude_auto_review.config.constants.severity import DEFAULT_MINIMUM_BLOCKING_SEVERITY
 from claude_auto_review.runtime.events import log_event
 from claude_auto_review.state.reviews.blocking import has_blocking_review_findings
 from claude_auto_review.state.reviews.completion import (

@@ -3,7 +3,8 @@ import unittest
 
 from claude_auto_review.config.resolvers.files import should_skip_file
 from claude_auto_review.config.io.settings_file import load_settings
-from claude_auto_review.config.settings.models import DEFAULT_TIMEOUT_SECONDS, FilterSettings, PluginSettings
+from claude_auto_review.config.constants.defaults import DEFAULT_TIMEOUT_SECONDS
+from claude_auto_review.config.settings.models import FilterSettings, PluginSettings
 from claude_auto_review.config.resolvers.rules import resolve_rules_file_path
 from tests.unit.state.support import StateTestCase
 

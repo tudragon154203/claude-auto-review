@@ -90,7 +90,7 @@ class TestOpencodeAutocomplete(unittest.TestCase):
     )
     @patch("claude_auto_review.stop.reviews.runners.cli.run_captured")
     @patch("claude_auto_review.stop.reviews.runners.preamble.shutil.which", return_value="/usr/bin/opencode")
-    def test_output_written_on_success(self, mock_which, mock_run, _mock_norm):
+    def test_output_written_on_success_uses_tmpdir_context(self, mock_which, mock_run, _mock_norm):
         captured_merged = {}
 
         def _capture_run(*args, **kwargs):
@@ -145,10 +145,6 @@ class TestOpencodeAutocomplete(unittest.TestCase):
         prompt_file = Path(tempfile.gettempdir()) / "prompt-opencode-ok.md"
         prompt_file.write_text("system prompt", encoding="utf-8")
 
-        from claude_auto_review.stop.reviews.runners.dispatcher import _BACKEND_REGISTRY
-
-        _BACKEND_REGISTRY.clear()
-        
         result = attempt_stop_autocomplete(
             _ctx(), "rev-ok", review_path, prompt_file,
             "user prompt", 60, "claude-sonnet-4-6",
@@ -174,10 +170,6 @@ class TestOpencodeAutocomplete(unittest.TestCase):
             stdout="error output", stderr="some error", returncode=1,
         )
 
-        from claude_auto_review.stop.reviews.runners.dispatcher import _BACKEND_REGISTRY
-
-        _BACKEND_REGISTRY.clear()
-        
         result = attempt_stop_autocomplete(
             _ctx(), "rev-nz", Path("/fake/review.md"), prompt_file,
             "user prompt", 60, "model",
@@ -200,10 +192,6 @@ class TestOpencodeAutocomplete(unittest.TestCase):
         prompt_file = Path(tempfile.gettempdir()) / "prompt-opencode-timeout.md"
         prompt_file.write_text("system", encoding="utf-8")
 
-        from claude_auto_review.stop.reviews.runners.dispatcher import _BACKEND_REGISTRY
-
-        _BACKEND_REGISTRY.clear()
-        
         result = attempt_stop_autocomplete(
             _ctx(), "rev-to", Path("/fake/review.md"), prompt_file,
             "user prompt", 60, "model",
@@ -225,10 +213,6 @@ class TestOpencodeAutocomplete(unittest.TestCase):
         prompt_file = Path(tempfile.gettempdir()) / "prompt-opencode-err.md"
         prompt_file.write_text("system", encoding="utf-8")
 
-        from claude_auto_review.stop.reviews.runners.dispatcher import _BACKEND_REGISTRY
-
-        _BACKEND_REGISTRY.clear()
-        
         result = attempt_stop_autocomplete(
             _ctx(), "rev-err", Path("/fake/review.md"), prompt_file,
             "user prompt", 60, "model",
@@ -244,10 +228,6 @@ class TestOpencodeAutocomplete(unittest.TestCase):
         prompt_file.is_file.return_value = True
         prompt_file.read_text.side_effect = PermissionError("access denied")
 
-        from claude_auto_review.stop.reviews.runners.dispatcher import _BACKEND_REGISTRY
-
-        _BACKEND_REGISTRY.clear()
-        
         result = attempt_stop_autocomplete(
             _ctx(), "rev-read-err", Path("/fake/review.md"), prompt_file,
             "user prompt", 60, "model",
@@ -265,10 +245,6 @@ class TestOpencodeAutocomplete(unittest.TestCase):
         prompt_file.write_text("system", encoding="utf-8")
         mock_run.return_value = MagicMock(stdout="   ", stderr="", returncode=0)
 
-        from claude_auto_review.stop.reviews.runners.dispatcher import _BACKEND_REGISTRY
-
-        _BACKEND_REGISTRY.clear()
-        
         result = attempt_stop_autocomplete(
             _ctx(), "rev-empty", Path("/fake/review.md"), prompt_file,
             "user prompt", 60, "model",
@@ -366,10 +342,6 @@ class TestEmptyPromptFallback(unittest.TestCase):
         prompt_file = Path(tempfile.gettempdir()) / "prompt-opencode-empty-prompt.md"
         prompt_file.write_text("", encoding="utf-8")
 
-        from claude_auto_review.stop.reviews.runners.dispatcher import _BACKEND_REGISTRY
-
-        _BACKEND_REGISTRY.clear()
-        
         result = attempt_stop_autocomplete(
             _ctx(), "rev-ep", review_path, prompt_file,
             "standalone user prompt", 60, "model",
@@ -405,10 +377,6 @@ class TestMergedFileCleanup(unittest.TestCase):
         prompt_file = Path(tempfile.gettempdir()) / "prompt-opencode-cleanup.md"
         prompt_file.write_text("sys", encoding="utf-8")
 
-        from claude_auto_review.stop.reviews.runners.dispatcher import _BACKEND_REGISTRY
-
-        _BACKEND_REGISTRY.clear()
-        
         attempt_stop_autocomplete(
             _ctx(), "rev-cl", review_path, prompt_file,
             "user", 60, "model",
@@ -427,10 +395,6 @@ class TestMergedFileCleanup(unittest.TestCase):
         prompt_file = Path(tempfile.gettempdir()) / "prompt-opencode-cleanup-to.md"
         prompt_file.write_text("sys", encoding="utf-8")
 
-        from claude_auto_review.stop.reviews.runners.dispatcher import _BACKEND_REGISTRY
-
-        _BACKEND_REGISTRY.clear()
-        
         result = attempt_stop_autocomplete(
             _ctx(), "rev-cl-to", Path("/fake/review.md"), prompt_file,
             "user", 60, "model",

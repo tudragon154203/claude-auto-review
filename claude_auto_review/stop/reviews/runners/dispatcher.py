@@ -14,11 +14,6 @@ class ReviewFn(Protocol):
     def __call__(self, request: ReviewRequest, *, log_event_fn: Callable[..., Any]) -> AutocompleteResult: ...
 
 
-# Stub for backwards compatibility with existing test imports.
-# The real registry is built lazily by _get_backend_registry().
-_BACKEND_REGISTRY: dict[str, ReviewFn] = {}
-
-
 def _get_backend_registry() -> dict[str, ReviewFn]:
     from .claude import _attempt_claude_autocomplete
     from .codex import _attempt_codex_autocomplete

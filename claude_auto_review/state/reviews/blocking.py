@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 import re
 
-from claude_auto_review.config.settings.models import DEFAULT_MINIMUM_BLOCKING_SEVERITY
+from claude_auto_review.config.constants.severity import DEFAULT_MINIMUM_BLOCKING_SEVERITY
 from claude_auto_review.state.reviews.detection import has_review_findings
 from claude_auto_review.state.reviews.no_findings import _CONTRADICTION_RE, is_no_findings_line
 from claude_auto_review.state.reviews.parsing import parse_review_findings

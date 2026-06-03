@@ -1,7 +1,8 @@
 import json
 import unittest
 
-from claude_auto_review.config.settings.models import DEFAULT_CLASSIFIER_MODEL, ClassifierSettings, PluginSettings
+from claude_auto_review.config.constants.defaults import DEFAULT_CLASSIFIER_MODEL
+from claude_auto_review.config.settings.models import ClassifierSettings, PluginSettings
 from claude_auto_review.stop.classifier.last_assistant_message import (
     classify_last_assistant_message,
 )

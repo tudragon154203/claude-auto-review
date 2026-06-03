@@ -1,7 +1,7 @@
 import json
 import unittest
 
-from claude_auto_review.config.settings.models import DEFAULT_CLASSIFIER_MODEL
+from claude_auto_review.config.constants.defaults import DEFAULT_CLASSIFIER_MODEL
 from tests.int.hooks.support import HookTestCase
 from tests.support_classifier_server import start_classifier_server
 from tests.support_paths import client_dir

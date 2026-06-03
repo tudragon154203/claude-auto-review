@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
 
-from claude_auto_review.config.settings.models import DEFAULT_MINIMUM_BLOCKING_SEVERITY
+from claude_auto_review.config.constants.severity import DEFAULT_MINIMUM_BLOCKING_SEVERITY
 from claude_auto_review.state.reviews.completion import (
     is_completed_review_content,
     is_review_clean_verdict,

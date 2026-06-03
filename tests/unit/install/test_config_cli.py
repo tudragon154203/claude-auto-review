@@ -6,6 +6,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from claude_auto_review.config.resolvers.reviewer import resolved_reviewer_model
+from claude_auto_review.config.settings.models import PluginSettings, ReviewerSettings
 from claude_auto_review.install.cli import config as config_cli
 
 
@@ -58,7 +59,7 @@ class TestConfigCli(unittest.TestCase):
             self.assertTrue(config_cli._is_initialized(project_root))
 
     def test_apply_args_updates_selected_fields(self):
-        settings = config_cli.PluginSettings()
+        settings = PluginSettings()
         args = config_cli._build_parser().parse_args(
             ["--backend", "codex", "--severity", "high", "--max-stop-passes", "7", "--non-interactive"]
         )
@@ -71,7 +72,7 @@ class TestConfigCli(unittest.TestCase):
         self.assertEqual(updated.flow.max_stop_passes, 7)
 
     def test_apply_args_keeps_explicit_model_when_backend_changes(self):
-        settings = config_cli.PluginSettings(reviewer=config_cli.ReviewerSettings(reviewer_model="custom-model"))
+        settings = PluginSettings(reviewer=ReviewerSettings(reviewer_model="custom-model"))
         args = config_cli._build_parser().parse_args(["--backend", "codex", "--non-interactive"])
 
         updated = config_cli._apply_args(settings, args)
@@ -80,7 +81,7 @@ class TestConfigCli(unittest.TestCase):
         self.assertEqual(updated.reviewer.reviewer_model, "custom-model")
 
     def test_apply_args_replaces_old_backend_default_model(self):
-        settings = config_cli.PluginSettings(reviewer=config_cli.ReviewerSettings(reviewer_backend="claude", reviewer_model="claude-sonnet-4-6"))
+        settings = PluginSettings(reviewer=ReviewerSettings(reviewer_backend="claude", reviewer_model="claude-sonnet-4-6"))
         args = config_cli._build_parser().parse_args(["--backend", "codex", "--non-interactive"])
 
         updated = config_cli._apply_args(settings, args)
@@ -89,7 +90,7 @@ class TestConfigCli(unittest.TestCase):
         self.assertEqual(updated.reviewer.reviewer_model, "gpt-5.4-mini")
 
     def test_apply_args_switches_codex_default_back_to_claude_default(self):
-        settings = config_cli.PluginSettings(reviewer=config_cli.ReviewerSettings(reviewer_backend="claude", reviewer_model="gpt-5.4-mini"))
+        settings = PluginSettings(reviewer=ReviewerSettings(reviewer_backend="claude", reviewer_model="gpt-5.4-mini"))
         args = config_cli._build_parser().parse_args(["--backend", "claude", "--non-interactive"])
 
         updated = config_cli._apply_args(settings, args)
@@ -98,7 +99,7 @@ class TestConfigCli(unittest.TestCase):
         self.assertEqual(updated.reviewer.reviewer_model, "claude-sonnet-4-6")
 
     def test_wizard_uses_claude_default_model_for_claude_backend(self):
-        settings = config_cli.PluginSettings(reviewer=config_cli.ReviewerSettings(reviewer_backend="codex", reviewer_model="gpt-5.4-mini"))
+        settings = PluginSettings(reviewer=ReviewerSettings(reviewer_backend="codex", reviewer_model="gpt-5.4-mini"))
         prompts = []
 
         def fake_input(prompt):
@@ -113,7 +114,7 @@ class TestConfigCli(unittest.TestCase):
         self.assertTrue(any("Reviewer model (claude-sonnet-4-6)" in prompt for prompt in prompts))
 
     def test_wizard_prompts_for_important_settings_only(self):
-        settings = config_cli.PluginSettings()
+        settings = PluginSettings()
         answers = iter(["codex", "my-model", "high", "8"])
 
         with patch("builtins.input", side_effect=lambda _: next(answers)):
@@ -125,7 +126,7 @@ class TestConfigCli(unittest.TestCase):
         self.assertEqual(updated.flow.max_stop_passes, 8)
 
     def test_wizard_accepts_defaults_on_empty_answers(self):
-        settings = config_cli.PluginSettings()
+        settings = PluginSettings()
 
         with patch("builtins.input", side_effect=["", "", "", ""]):
             updated = config_cli._run_wizard(settings)
@@ -305,7 +306,7 @@ class TestConfigCli(unittest.TestCase):
             self.assertEqual(saved["claude-auto-review"]["reviewerModel"], "gpt-5.4-mini")
 
     def test_wizard_shows_opencode_model_hint(self):
-        settings = config_cli.PluginSettings(reviewer=config_cli.ReviewerSettings(reviewer_backend="opencode", reviewer_model="opencode/big-pickle"))
+        settings = PluginSettings(reviewer=ReviewerSettings(reviewer_backend="opencode", reviewer_model="opencode/big-pickle"))
         stdout = io.StringIO()
 
         with patch("builtins.input", side_effect=["", "", "", ""]), patch("sys.stdout", stdout):
@@ -314,7 +315,7 @@ class TestConfigCli(unittest.TestCase):
         self.assertIn("enter 'default' or 'none'", stdout.getvalue())
 
     def test_wizard_hides_model_hint_for_claude_backend(self):
-        settings = config_cli.PluginSettings(reviewer=config_cli.ReviewerSettings(reviewer_backend="claude"))
+        settings = PluginSettings(reviewer=ReviewerSettings(reviewer_backend="claude"))
         stdout = io.StringIO()
 
         with patch("builtins.input", side_effect=["", "", "", ""]), patch("sys.stdout", stdout):
@@ -323,7 +324,7 @@ class TestConfigCli(unittest.TestCase):
         self.assertNotIn("enter 'default' or 'none'", stdout.getvalue())
 
     def test_wizard_hides_model_hint_for_codex_backend(self):
-        settings = config_cli.PluginSettings(reviewer=config_cli.ReviewerSettings(reviewer_backend="codex"))
+        settings = PluginSettings(reviewer=ReviewerSettings(reviewer_backend="codex"))
         stdout = io.StringIO()
 
         with patch("builtins.input", side_effect=["", "", "", ""]), patch("sys.stdout", stdout):

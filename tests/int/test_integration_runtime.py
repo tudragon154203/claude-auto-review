@@ -4,7 +4,8 @@ from datetime import datetime
 from pathlib import Path
 
 from claude_auto_review.config.io.settings_file import load_settings
-from claude_auto_review.config.settings.models import DEFAULT_TIMEOUT_SECONDS, ClassifierSettings, PluginSettings
+from claude_auto_review.config.constants.defaults import DEFAULT_TIMEOUT_SECONDS
+from claude_auto_review.config.settings.models import ClassifierSettings, PluginSettings
 from claude_auto_review.paths.path_utils import get_state_path
 from claude_auto_review.runtime.cleanup.session import cancel_runtime
 from claude_auto_review.runtime.client_dirs import client_state_path
