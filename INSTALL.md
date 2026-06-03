@@ -2,15 +2,18 @@
 
 ## CLI Commands
 
-| Command                          | Description                               |
-| -------------------------------- | ----------------------------------------- |
-| `claude-auto-review config`    | Guided setup and important config wizard  |
-| `claude-auto-review install`   | Set up the plugin in the current project  |
-| `claude-auto-review cancel`    | Cancel the active review session          |
-| `claude-auto-review prompt`    | Manually trigger review prompt generation |
-| `claude-auto-review uninstall` | Remove plugin from current project        |
+| Command                          | Description                                      |
+| -------------------------------- | ------------------------------------------------ |
+| `claude-auto-review config`    | Guided setup and important config wizard         |
+| `claude-auto-review install`   | Set up the plugin in the current project         |
+| `claude-auto-review cancel`    | Cancel the active review session                 |
+| `claude-auto-review prompt`    | Manually trigger review prompt generation        |
+| `claude-auto-review uninstall` | Remove plugin from current project               |
+| `claude-auto-review update`    | Pull latest plugin checkout and refresh setup    |
+| `claude-auto-review help`      | Show help message                                |
+| `claude-auto-review version`   | Show version information                         |
 
-`car` is an alias for `claude-auto-review`, so the same commands also work as `car config`, `car install`, `car cancel`, `car prompt`, and `car uninstall`.
+`car` is an alias for `claude-auto-review`, so the same commands also work as `car config`, `car install`, etc.
 
 ## Guided Config
 

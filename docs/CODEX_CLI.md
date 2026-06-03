@@ -93,7 +93,7 @@ The review runner now supports both backends through the `reviewerBackend` setti
 {
   "claude-auto-review": {
     "reviewerBackend": "codex",
-    "reviewerModel": "gpt-5"
+    "reviewerModel": "gpt-5.4-mini"
   }
 }
 ```
