@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import argparse
 
+from claude_auto_review.config.constants.severity import MINIMUM_BLOCKING_SEVERITIES
 from claude_auto_review.config.reviewer.backends import DEFAULT_REVIEWER_MODELS
+from claude_auto_review.state.reviews.severity import SEVERITY_RANKS
 from claude_auto_review.config.settings.models import PluginSettings
 from claude_auto_review.config.utils.schema import (
     SETTING_MAX_STOP_PASSES,
@@ -11,7 +13,7 @@ from claude_auto_review.config.utils.schema import (
     SETTING_REVIEWER_MODEL,
 )
 
-SEVERITY_CHOICES = ["info", "low", "medium", "high", "critical"]
+SEVERITY_CHOICES = sorted(MINIMUM_BLOCKING_SEVERITIES, key=lambda s: SEVERITY_RANKS.get(s, 99))
 
 _TERMINAL_WIDTH = 60
 

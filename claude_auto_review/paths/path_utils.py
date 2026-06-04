@@ -10,9 +10,11 @@ import os
 from dataclasses import dataclass
 from pathlib import Path
 
-STATE_RELATIVE_PATH = Path(".claude") / "claude-auto-review" / "state.jsonl"
-RUNTIME_DIR = Path(".claude") / "claude-auto-review"
+RUNTIME_DIR_STR = ".claude/claude-auto-review"
+STATE_RELATIVE_PATH = Path(RUNTIME_DIR_STR) / "state.jsonl"
+RUNTIME_DIR = Path(RUNTIME_DIR_STR)
 CLIENTS_DIR = RUNTIME_DIR / "clients"
+GITIGNORE_ENTRY = f"{RUNTIME_DIR_STR}/"
 DELETED_FILE_HASH = "__deleted__"
 FILE_URI_PREFIX = "file://"
 

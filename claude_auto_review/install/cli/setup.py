@@ -11,7 +11,7 @@ if __name__ == "__main__":
 
 from claude_auto_review.install.installer import copy_if_changed, ensure_gitignore_entries, write_runtime_shims
 from claude_auto_review.install.reviewer_format import check_and_repair_reviewer
-from claude_auto_review.paths.path_utils import ProjectContext
+from claude_auto_review.paths.path_utils import GITIGNORE_ENTRY, RUNTIME_DIR_STR, ProjectContext
 from claude_auto_review.runtime.events import log_event
 from claude_auto_review.runtime.setup import ensure_project_settings, ensure_runtime
 
@@ -29,7 +29,7 @@ def _check_and_warn_reviewer(plugin_root):
     if was_repaired:
         print(
             "[WARNING] reviewer.md was auto-repaired for parser consistency. "
-            "Review the runtime copy at .claude/claude-auto-review/agents/reviewer.md.",
+            f"Review the runtime copy at {RUNTIME_DIR_STR}/agents/reviewer.md.",
             file=sys.stderr,
         )
     return was_repaired, repaired_text
@@ -56,12 +56,12 @@ def main():
 
     ensure_gitignore_entries(
         project_root / ".gitignore",
-        [".claude/claude-auto-review/"],
+        [GITIGNORE_ENTRY],
         remove_entries=[
-            ".claude/claude-auto-review/clients/*/run/",
-            ".claude/claude-auto-review/clients/*/reviews/",
-            ".claude/claude-auto-review/scripts/",
-            ".claude/claude-auto-review/agents/",
+            f"{RUNTIME_DIR_STR}/clients/*/run/",
+            f"{RUNTIME_DIR_STR}/clients/*/reviews/",
+            f"{RUNTIME_DIR_STR}/scripts/",
+            f"{RUNTIME_DIR_STR}/agents/",
         ],
     )
 

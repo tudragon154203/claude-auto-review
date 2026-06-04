@@ -20,15 +20,13 @@ from claude_auto_review.config.io.cleanup import remove_plugin_hooks as _remove_
 from claude_auto_review.config.io.cleanup import remove_plugin_settings as _remove_plugin_settings  # noqa: F811, E501
 from claude_auto_review.config.io.settings_file import _load_settings_document, _settings_path
 from claude_auto_review.install.installer import ensure_gitignore_entries
-from claude_auto_review.paths.path_utils import ProjectContext
+from claude_auto_review.paths.path_utils import GITIGNORE_ENTRY, RUNTIME_DIR, RUNTIME_DIR_STR, ProjectContext
 from claude_auto_review.runtime.events import log_event
-
-GITIGNORE_ENTRY = ".claude/claude-auto-review/"
 
 
 def main():
     project_root = ProjectContext.from_environment().project_root
-    runtime_dir = project_root / ".claude" / "claude-auto-review"
+    runtime_dir = project_root / RUNTIME_DIR
     removed = []
 
     if runtime_dir.exists():
@@ -41,11 +39,11 @@ def main():
             ignore_entries=[],
             remove_entries=[
                 GITIGNORE_ENTRY,
-                ".claude/claude-auto-review/state.jsonl",
-                ".claude/claude-auto-review/clients/*/run/",
-                ".claude/claude-auto-review/clients/*/reviews/",
-                ".claude/claude-auto-review/scripts/",
-                ".claude/claude-auto-review/agents/",
+                f"{RUNTIME_DIR_STR}/state.jsonl",
+                f"{RUNTIME_DIR_STR}/clients/*/run/",
+                f"{RUNTIME_DIR_STR}/clients/*/reviews/",
+                f"{RUNTIME_DIR_STR}/scripts/",
+                f"{RUNTIME_DIR_STR}/agents/",
             ],
         )
 

@@ -22,7 +22,7 @@ if __name__ == "__main__":
         sys.path.insert(0, str(_plugin_root))
 
 from claude_auto_review.config.io.settings_file import load_settings
-from claude_auto_review.paths.path_utils import ProjectContext
+from claude_auto_review.paths.path_utils import RUNTIME_DIR, ProjectContext
 from claude_auto_review.paths.shims import write_project_script_shim
 from claude_auto_review.review.prompting.flow import create_review_prompt_files
 from claude_auto_review.runtime.client_dirs import get_client_id
@@ -36,52 +36,15 @@ from claude_auto_review.stop.orchestration.types.context import RuntimeContext
 
 
 @dataclass(frozen=True)
-class _ModuleAttributeDeps:
-    """Lazy-binding dependency container.
-
-    Each callable name is resolved against this module at call time, so
-    tests that ``patch("claude_auto_review.review.prompt.<name>")`` after
-    import still affect the dependency resolution.
-    """
-
-    def _resolve(self, name: str) -> Any:
-        return globals()[name]
-
-    @property
-    def ensure_runtime(self):
-        return self._resolve("ensure_client_runtime")
-
-    @property
-    def write_shim(self):
-        return self._resolve("write_project_script_shim")
-
-    @property
-    def load_settings_fn(self):
-        return self._resolve("load_settings")
-
-    @property
-    def snapshot_loader(self):
-        return self._resolve("load_state_snapshot")
-
-    @property
-    def unreviewed_query(self):
-        return self._resolve("get_unreviewed_files")
-
-    @property
-    def create_artifacts(self):
-        return self._resolve("create_review_prompt_files")
-
-    @property
-    def append_started(self):
-        return self._resolve("append_review_started")
-
-    @property
-    def log_event_fn(self):
-        return self._resolve("log_event")
-
-
-def _default_dependencies() -> _ModuleAttributeDeps:
-    return _ModuleAttributeDeps()
+class ReviewPromptDependencies:
+    ensure_runtime: Callable
+    write_shim: Callable
+    load_settings_fn: Callable
+    snapshot_loader: Callable
+    unreviewed_query: Callable
+    create_artifacts: Callable
+    append_started: Callable
+    log_event_fn: Callable
 
 
 def _log_failure(project_root, client_id, error):
@@ -95,19 +58,19 @@ def _log_failure(project_root, client_id, error):
     return True
 
 
-def _ensure_review_environment(project_root, client_id, deps: _ModuleAttributeDeps) -> None:
+def _ensure_review_environment(project_root, client_id, deps: ReviewPromptDependencies) -> None:
     deps.ensure_runtime(project_root, client_id)
     deps.write_shim(
-        Path(project_root) / ".claude" / "claude-auto-review" / "scripts" / "review_prompt.py",
+        Path(project_root) / RUNTIME_DIR / "scripts" / "review_prompt.py",
         Path(__file__).resolve(),
     )
 
 
-def _resolve_settings(project_root, deps: _ModuleAttributeDeps):
+def _resolve_settings(project_root, deps: ReviewPromptDependencies):
     return deps.load_settings_fn(project_root)
 
 
-def _query_unreviewed(project_root, client_id, deps: _ModuleAttributeDeps):
+def _query_unreviewed(project_root, client_id, deps: ReviewPromptDependencies):
     snapshot = deps.snapshot_loader(project_root, client_id)
     return deps.unreviewed_query(snapshot)
 
@@ -124,7 +87,7 @@ def _handle_noop(project_root, client_id) -> int:
     return 0
 
 
-def _create_and_record_review(project_root, client_id, unreviewed, settings, deps: _ModuleAttributeDeps) -> int:
+def _create_and_record_review(project_root, client_id, unreviewed, settings, deps: ReviewPromptDependencies) -> int:
     ctx = RuntimeContext(project_root=project_root, client_id=client_id, settings=settings)
     artifacts = deps.create_artifacts(ctx, unreviewed, settings=settings)
     deps.append_started(unreviewed, artifacts.review_id, artifacts.review_path, project_root, client_id=client_id)
@@ -143,8 +106,27 @@ def _create_and_record_review(project_root, client_id, unreviewed, settings, dep
     return 0
 
 
-def _run_review_prompt(project_root, client_id, deps: _ModuleAttributeDeps | None = None):
-    deps = deps or _default_dependencies()
+def _current_module_deps() -> ReviewPromptDependencies:
+    """Resolve dependencies from the current module namespace.
+
+    This is patch-friendly: ``patch("claude_auto_review.review.prompt.<name>")``
+    replaces the module attribute, and this factory reads it at call time.
+    """
+    import claude_auto_review.review.prompt as _mod
+    return ReviewPromptDependencies(
+        ensure_runtime=_mod.ensure_client_runtime,
+        write_shim=_mod.write_project_script_shim,
+        load_settings_fn=_mod.load_settings,
+        snapshot_loader=_mod.load_state_snapshot,
+        unreviewed_query=_mod.get_unreviewed_files,
+        create_artifacts=_mod.create_review_prompt_files,
+        append_started=_mod.append_review_started,
+        log_event_fn=_mod.log_event,
+    )
+
+
+def _run_review_prompt(project_root, client_id, deps: ReviewPromptDependencies | None = None):
+    deps = deps or _current_module_deps()
     _ensure_review_environment(project_root, client_id, deps)
 
     settings = _resolve_settings(project_root, deps)
