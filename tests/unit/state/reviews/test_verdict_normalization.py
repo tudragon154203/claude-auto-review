@@ -121,6 +121,27 @@ class TestNormalizeReviewVerdictContent(unittest.TestCase):
         self.assertIn("Findings present", call_kwargs["original_verdict"])
         self.assertIn("Clean - no issues found", call_kwargs["normalized_verdict"])
 
+    def test_clean_verdict_with_none_prose_stays_clean(self):
+        """A clean verdict with 'None.' + explanatory prose must not flip to findings."""
+        content = (
+            "## Findings\n"
+            "None. The new test is well-structured and the assertions cover the intended behavior.\n\n"
+            "## Verdict\nClean - no issues found. Claude may stop.\n"
+        )
+        normalized = normalize_review_verdict_content(content, client_id="c1")
+        self.assertEqual(normalized, content)
+
+    def test_clean_verdict_with_summary_prose_stays_clean(self):
+        """A clean verdict with a no-findings summary line must not flip to findings."""
+        content = (
+            "## Findings\n"
+            "No semantic bugs, security issues, or maintainability concerns identified.\n"
+            "All code follows project conventions.\n\n"
+            "## Verdict\nClean - no issues found. Claude may stop.\n"
+        )
+        normalized = normalize_review_verdict_content(content, client_id="c1")
+        self.assertEqual(normalized, content)
+
 
 if __name__ == "__main__":
     unittest.main()

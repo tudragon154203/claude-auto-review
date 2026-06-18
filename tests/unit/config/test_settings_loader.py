@@ -3,7 +3,7 @@ import unittest
 
 from claude_auto_review.config.resolvers.files import should_skip_file
 from claude_auto_review.config.io.settings_file import load_settings
-from claude_auto_review.config.constants.defaults import DEFAULT_CLASSIFIER_TIMEOUT_SECONDS
+from claude_auto_review.config.constants.defaults import DEFAULT_CLASSIFIER_TIMEOUT_SECONDS, DEFAULT_RULES_FILE
 from claude_auto_review.config.settings.models import FilterSettings, PluginSettings
 from claude_auto_review.config.resolvers.rules import resolve_rules_file_path
 from tests.unit.state.support import StateTestCase
@@ -136,6 +136,20 @@ class TestSettingsLoader(StateTestCase, unittest.TestCase):
 
         self.assertEqual(result["reviewerModel"], "claude-sonnet-4-6")
         self.assertEqual(result["minimumBlockingSeverity"], "medium")
+
+    def test_rules_file_normalizes_backslashes_to_posix(self):
+        """Backslash paths must be normalized to forward slashes for cross-platform use."""
+        settings = PluginSettings.from_mapping(
+            {"rulesFile": ".claude\\claude-auto-review\\review-rules.md"}
+        )
+        self.assertEqual(
+            settings.filters.rules_file,
+            ".claude/claude-auto-review/review-rules.md",
+        )
+
+    def test_rules_file_empty_string_uses_default(self):
+        settings = PluginSettings.from_mapping({"rulesFile": ""})
+        self.assertEqual(settings.filters.rules_file, DEFAULT_RULES_FILE)
 
 
 if __name__ == "__main__":

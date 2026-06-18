@@ -10,7 +10,7 @@ from claude_auto_review.config.constants.defaults import (
 )
 from claude_auto_review.config.constants.severity import coerce_minimum_blocking_severity
 from claude_auto_review.config.reviewer.backends import DEFAULT_REVIEWER_BACKEND
-from claude_auto_review.config.utils.coercion import coerce_bool, coerce_extensions, coerce_float, coerce_int
+from claude_auto_review.config.utils.coercion import coerce_bool, coerce_extensions, coerce_float, coerce_int, coerce_rules_file
 
 
 SETTING_ENABLED = "enabled"
@@ -59,7 +59,7 @@ SETTING_SPECS: tuple[SettingSpec, ...] = (
     SettingSpec(SETTING_CLASSIFIER_TIMEOUT, "last_assistant_message_classifier_timeout_seconds", group="classifier", coerce_fn=lambda v: coerce_float(v, DEFAULT_CLASSIFIER_TIMEOUT_SECONDS)),
     SettingSpec(SETTING_CLASSIFIER_MODEL, "classifier_model", group="classifier", coerce_fn=lambda v: str(v or DEFAULT_CLASSIFIER_MODEL)),
     # Filters
-    SettingSpec(SETTING_RULES_FILE, "rules_file", group="filters", default=DEFAULT_RULES_FILE),
+    SettingSpec(SETTING_RULES_FILE, "rules_file", group="filters", default=DEFAULT_RULES_FILE, coerce_fn=coerce_rules_file),
     SettingSpec(SETTING_INCLUDE_EXTS, "include_extensions", group="filters", coerce_fn=coerce_extensions, to_mapping_transform=list),
     SettingSpec(SETTING_SKIP_EXTS, "skip_extensions", group="filters", coerce_fn=coerce_extensions, to_mapping_transform=list),
     # Flow

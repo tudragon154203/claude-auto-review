@@ -2,7 +2,10 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from claude_auto_review.stop.orchestration.finalize.review_artifact_evaluator import classify_review_artifact
+from claude_auto_review.stop.orchestration.finalize.review_artifact_evaluator import (
+    _project_root_from_review_path,
+    classify_review_artifact,
+)
 
 
 class TestReviewArtifactState(unittest.TestCase):
@@ -51,6 +54,54 @@ class TestReviewArtifactState(unittest.TestCase):
             self.assertNotIn(
                 "Findings present",
                 review_path.read_text(encoding="utf-8"),
+            )
+
+
+class TestProjectRootFromReviewPath(unittest.TestCase):
+    def test_finds_project_root_containing_claude_dir(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            project_root = Path(tmpdir) / "my-project"
+            clients_dir = (
+                project_root
+                / ".claude"
+                / "claude-auto-review"
+                / "clients"
+                / "client-123"
+            )
+            reviews_dir = clients_dir / "reviews"
+            reviews_dir.mkdir(parents=True)
+            (project_root / ".claude").mkdir(parents=True, exist_ok=True)
+            review_path = reviews_dir / "review-abc.md"
+            review_path.write_text("## Verdict\nClean\n", encoding="utf-8")
+
+            result = _project_root_from_review_path(review_path)
+
+            self.assertEqual(result, project_root.resolve())
+
+    def test_skips_intermediate_claude_auto_review_subdir(self):
+        """Must return the project root, not the .claude/claude-auto-review subdir."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            project_root = Path(tmpdir) / "my-project"
+            clients_dir = (
+                project_root
+                / ".claude"
+                / "claude-auto-review"
+                / "clients"
+                / "client-456"
+            )
+            reviews_dir = clients_dir / "reviews"
+            reviews_dir.mkdir(parents=True)
+            (project_root / ".claude").mkdir(parents=True, exist_ok=True)
+            review_path = reviews_dir / "review-def.md"
+            review_path.write_text("## Verdict\nClean\n", encoding="utf-8")
+
+            result = _project_root_from_review_path(review_path)
+
+            self.assertEqual(result, project_root.resolve())
+            self.assertNotEqual(result, (project_root / ".claude").resolve())
+            self.assertNotEqual(
+                result,
+                (project_root / ".claude" / "claude-auto-review").resolve(),
             )
 
 

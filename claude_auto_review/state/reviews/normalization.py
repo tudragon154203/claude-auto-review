@@ -9,7 +9,7 @@ from claude_auto_review.state.reviews.completion import (
     is_review_clean_verdict,
     is_review_complete_verdict,
 )
-from claude_auto_review.state.reviews.parsing import parse_review_findings
+from claude_auto_review.state.reviews.detection import has_review_findings
 from claude_auto_review.state.reviews.review_text import extract_review_verdict_text
 
 
@@ -51,8 +51,13 @@ def _rewrite_verdict(content: str, original_verdict: str, normalized_verdict: st
 
 
 def _normalize_clean_verdict(content: str, verdict: str, client_id: str | None, minimum_blocking_severity: str, project_root: Path | None) -> str:
-    parsed = parse_review_findings(content)
-    if parsed and has_blocking_review_findings(content, minimum_blocking_severity):
+    # Only rewrite a clean verdict when both the structured parser
+    # (has_blocking_review_findings) AND the semantic checker
+    # (has_review_findings) agree that real findings exist.  Using
+    # has_blocking_review_findings alone can produce false positives
+    # from prose that looks like bullet patterns, triggering the
+    # clean → findings → clean flip-flop cycle.
+    if has_review_findings(content) and has_blocking_review_findings(content, minimum_blocking_severity):
         return _rewrite_verdict(content, verdict, _FINDINGS_VERDICT, project_root, client_id)
     return content
 

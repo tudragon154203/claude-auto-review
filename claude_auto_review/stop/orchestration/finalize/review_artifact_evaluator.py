@@ -37,10 +37,11 @@ class ReviewArtifactState:
 
 
 def _project_root_from_review_path(review_path: Path) -> Path | None:
-    parents = review_path.resolve().parents
-    if len(parents) < 4:
-        return None
-    return parents[3]
+    """Walk up from review_path to find the directory containing .claude/."""
+    for parent in review_path.resolve().parents:
+        if (parent / ".claude").is_dir():
+            return parent
+    return None
 
 
 def load_and_ensure_normalized_review(
