@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from pathlib import Path
 from typing import Any
 
 from claude_auto_review.config.constants.defaults import DEFAULT_RULES_FILE
@@ -46,4 +45,4 @@ def coerce_rules_file(value: Any) -> str:
     text = str(value).strip()
     if not text:
         return DEFAULT_RULES_FILE
-    return Path(text).as_posix()
+    return text.replace("\\", "/")

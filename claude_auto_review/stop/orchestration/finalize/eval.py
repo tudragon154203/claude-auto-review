@@ -11,17 +11,20 @@ Single-Responsibility split:
 from __future__ import annotations
 
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
-from claude_auto_review.stop.orchestration.types.context import RuntimeContext
-from claude_auto_review.stop.orchestration.finalize.outcomes import FinalizeEffect
+from claude_auto_review.stop.orchestration.types.context import ResponsePayload, RuntimeContext
+from claude_auto_review.stop.orchestration.finalize.outcomes import FinalizePlan
+from claude_auto_review.stop.orchestration.finalize.review_artifact_evaluator import ReviewArtifactState
+from claude_auto_review.stop.orchestration.types.resolution import FinalizeResult
 from claude_auto_review.stop.reviews.types.enums import AutocompleteStatus
+from claude_auto_review.stop.reviews.types.result import AutocompleteResult
 
 if TYPE_CHECKING:
     from claude_auto_review.stop.orchestration.deps import ReviewEvalDeps
 
 
-def _classify_artifact(ctx: RuntimeContext, review_path: Path, deps: ReviewEvalDeps):
+def _classify_artifact(ctx: RuntimeContext, review_path: Path, deps: ReviewEvalDeps) -> ReviewArtifactState:
     return deps.classifier.classify_fn(
         review_path,
         minimum_blocking_severity=ctx.settings.flow.minimum_blocking_severity,
@@ -29,19 +32,19 @@ def _classify_artifact(ctx: RuntimeContext, review_path: Path, deps: ReviewEvalD
     )
 
 
-def _plan_for_classified_artifact(deps: ReviewEvalDeps, artifact_state):
+def _plan_for_classified_artifact(deps: ReviewEvalDeps, artifact_state: ReviewArtifactState) -> FinalizePlan | None:
     return deps.planner.plan_for_artifact_state_fn(artifact_state)
 
 
 def _apply_plan(
     ctx: RuntimeContext,
-    plan,
+    plan: FinalizePlan,
     review_id: str,
     review_path: Path,
-    covered_entries: list,
-    unreviewed: list,
+    covered_entries: list[Any],
+    unreviewed: list[Any],
     deps: ReviewEvalDeps,
-):
+) -> tuple[FinalizeResult, ResponsePayload | None]:
     writer = deps.executor.state_event_writer_factory(ctx.project_root, ctx.client_id)
     return deps.executor.apply_plan_fn(
         ctx,
@@ -61,7 +64,7 @@ def _attempt_autocomplete_if_needed(
     review_path: Path,
     prompt_file: Path,
     deps: ReviewEvalDeps,
-):
+) -> AutocompleteResult | None:
     return deps.autocomplete.attempt_autocomplete_fn(
         ctx,
         review_id,
@@ -85,11 +88,11 @@ def orchestrate_review_eval(
     review_id: str,
     review_path: Path,
     prompt_file: Path,
-    covered_entries: list,
-    unreviewed: list,
+    covered_entries: list[Any],
+    unreviewed: list[Any],
     *,
     deps: ReviewEvalDeps,
-):
+) -> tuple[tuple[FinalizeResult, ResponsePayload | None] | None, AutocompleteResult | None]:
     """Classify the review artifact, apply any plan immediately,
     otherwise attempt autocomplete and then re-classify.
 

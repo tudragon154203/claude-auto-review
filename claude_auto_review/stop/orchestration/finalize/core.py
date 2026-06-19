@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from claude_auto_review.config.resolvers.reviewer import resolved_reviewer_backend
 from claude_auto_review.state.snapshots.snapshot import StateSnapshot
@@ -37,8 +37,17 @@ def _validate_reviewer_backend(ctx: RuntimeContext, *, log_event_fn) -> tuple[Fi
         return plan_for_invalid_settings().result, _invalid_backend_payload(error)
 
 
-def _run_eval_orchestration(ctx, review_id, review_path, prompt_file, covered_entries, unreviewed, *, deps):
-    return orchestrate_review_eval(  # type: ignore[no-any-return]
+def _run_eval_orchestration(
+    ctx: RuntimeContext,
+    review_id: str,
+    review_path: Path,
+    prompt_file: Path,
+    covered_entries: list[Any],
+    unreviewed: list[Any],
+    *,
+    deps: ReviewEvalDeps,
+) -> tuple[tuple[FinalizeResult, ResponsePayload | None] | None, Any]:
+    return orchestrate_review_eval(
         ctx, review_id, review_path, prompt_file, covered_entries, unreviewed, deps=deps
     )
 

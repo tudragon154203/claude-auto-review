@@ -16,6 +16,7 @@ from claude_auto_review.stop.orchestration.types.resolution import FinalizeResul
 from claude_auto_review.stop.orchestration.finalize.retry import RetryPolicy
 from claude_auto_review.stop.orchestration.finalize.review_artifact_evaluator import ReviewArtifactState
 from claude_auto_review.stop.response import ResponseEmitter
+from claude_auto_review.stop.reviews.types.result import AutocompleteResult
 
 
 @runtime_checkable
@@ -138,7 +139,7 @@ class AttemptReviewAutocomplete(Protocol):
         *,
         log_event_fn: Callable[..., Any] | None = None,
         retry_policy: RetryPolicy | None = None,
-    ) -> Any: ...
+    ) -> AutocompleteResult | None: ...
 
 
 @dataclass(frozen=True)
