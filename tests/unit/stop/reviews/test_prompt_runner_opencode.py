@@ -25,7 +25,15 @@ class TestBuildOpencodeReviewArgs(unittest.TestCase):
     def test_returns_run_with_file_flag(self):
         prompt_file = Path("/tmp/prompt.md")
         args = _build_opencode_review_args("model", prompt_file)
-        self.assertEqual(args[:3], ["run", "--pure", "Review the attached prompt file and respond with your findings."])
+        self.assertEqual(
+            args[:4],
+            [
+                "run",
+                "--pure",
+                "--dangerously-skip-permissions",
+                "Review the attached prompt file and respond with your findings.",
+            ],
+        )
         self.assertIn("--file", args)
         file_idx = args.index("--file")
         self.assertEqual(args[file_idx + 1], str(prompt_file))
@@ -55,6 +63,15 @@ class TestBuildOpencodeReviewArgs(unittest.TestCase):
         args = _build_opencode_review_args("model", Path("/tmp/prompt.md"))
         self.assertNotIn("--allowedTools", args)
         self.assertNotIn("--sandbox", args)
+
+    def test_includes_skip_permissions_flag(self):
+        args = _build_opencode_review_args("model", Path("/tmp/prompt.md"))
+        self.assertIn("--dangerously-skip-permissions", args)
+
+    def test_skip_permissions_precedes_message(self):
+        args = _build_opencode_review_args("model", Path("/tmp/prompt.md"))
+        flag_idx = args.index("--dangerously-skip-permissions")
+        self.assertEqual(args[flag_idx + 1], "Review the attached prompt file and respond with your findings.")
 
     def test_prompt_not_in_cli_args(self):
         args = _build_opencode_review_args("model", Path("/tmp/prompt.md"))
@@ -407,6 +424,100 @@ class TestMergedFileCleanup(unittest.TestCase):
         run_dir = prompt_file.parent
         stale = list(run_dir.glob("opencode-*-merged-prompt.md"))
         self.assertEqual(len(stale), 0, "No stale merged files should remain after timeout")
+
+
+class TestExternalDirectoryRegression(unittest.TestCase):
+    """Reproduces the opencode ``external_directory`` permission rejection.
+
+    Without ``--dangerously-skip-permissions``, opencode's CLI treats the merged
+    prompt path under ``.claude/`` as external, auto-rejects the read in
+    non-interactive mode, and emits no stdout. The runner then reports
+    ``EMPTY_STDOUT``. The fake below mirrors that exact subprocess contract.
+    """
+
+    @staticmethod
+    def _fake_opencode_run(*args, **kwargs):
+        """Mimic the real opencode CLI's permission behaviour."""
+        cmd_list = args[0]
+        has_skip_permissions = "--dangerously-skip-permissions" in cmd_list
+        has_file = "--file" in cmd_list
+        if has_file and not has_skip_permissions:
+            # Real opencode behaviour: permission auto-rejects, read fails,
+            # subprocess exits 0 with empty stdout.
+            return MagicMock(stdout="", stderr="", returncode=0)
+        return MagicMock(
+            stdout="Clean - no issues found.",
+            stderr="",
+            returncode=0,
+        )
+
+    def test_fake_mirrors_opencode_permission_contract(self):
+        """Sanity check on the fake: the absence-of-flag branch yields empty stdout."""
+        bug_args = ["/usr/bin/opencode", "run", "--pure", "--file", "/fake/.claude/prompt.md"]
+        fix_args = [
+            "/usr/bin/opencode", "run", "--pure",
+            "--dangerously-skip-permissions", "--file", "/fake/.claude/prompt.md",
+        ]
+        bug_result = self._fake_opencode_run(bug_args)
+        fix_result = self._fake_opencode_run(fix_args)
+        self.assertEqual(bug_result.stdout, "")
+        self.assertEqual(bug_result.returncode, 0)
+        self.assertIn("Clean", fix_result.stdout)
+
+    @patch(
+        "claude_auto_review.stop.reviews.types.result.normalize_review_verdict_content",
+        side_effect=lambda s, client_id=None, minimum_blocking_severity="medium": s,
+    )
+    @patch("claude_auto_review.stop.reviews.runners.cli.run_captured")
+    @patch(
+        "claude_auto_review.stop.reviews.runners.preamble.shutil.which",
+        return_value="/usr/bin/opencode",
+    )
+    def test_skip_permissions_flag_unblocks_external_directory_read(
+        self, mock_which, mock_run, _mock_norm,
+    ):
+        """The real regression: with the flag in the runner's CLI invocation,
+        the bug-simulating subprocess returns a valid review even though the
+        merged prompt lives under ``.claude/claude-auto-review/clients/.../run/``.
+
+        If the flag is removed from ``_build_opencode_review_args``, this test
+        fails with ``EMPTY_STDOUT`` because the fake CLI refuses to produce
+        output for an ``--file`` path it considers external.
+        """
+        mock_run.side_effect = self._fake_opencode_run
+
+        # Mimic the real layout: prompt file under .claude/.../run/, so the
+        # merged prompt written by the runner also lives there.
+        run_dir = FAKE_ROOT / ".claude" / "claude-auto-review" / "clients" / "client-1" / "run"
+        run_dir.mkdir(parents=True, exist_ok=True)
+        prompt_file = run_dir / "prompt-opencode-unblock.md"
+        prompt_file.write_text("system", encoding="utf-8")
+        review_path = run_dir / "review-opencode-unblock.md"
+
+        try:
+            result = attempt_stop_autocomplete(
+                _ctx(), "rev-unblock", review_path, prompt_file,
+                "user", 60, "model",
+                backend="opencode",
+                log_event_fn=MagicMock(),
+            )
+
+            self.assertEqual(result.status, AutocompleteStatus.OUTPUT_WRITTEN)
+            sent_args = mock_run.call_args.args[0]
+            self.assertIn("--dangerously-skip-permissions", sent_args)
+            self.assertIn("--file", sent_args)
+            file_idx = sent_args.index("--file")
+            merged_path = Path(sent_args[file_idx + 1])
+            # The merged file must live under .claude/... — that's the
+            # external_directory that opencode's permission system flags.
+            self.assertIn(".claude", str(merged_path))
+            self.assertTrue(review_path.read_text(encoding="utf-8").startswith("Clean"))
+        finally:
+            for f in (prompt_file, review_path):
+                f.unlink(missing_ok=True)
+            for parent in (run_dir, run_dir.parent, run_dir.parent.parent, run_dir.parent.parent.parent):
+                if parent.exists() and not any(parent.iterdir()):
+                    parent.rmdir()
 
 
 if __name__ == "__main__":

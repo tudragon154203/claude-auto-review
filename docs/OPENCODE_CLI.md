@@ -9,11 +9,12 @@ The `opencode` reviewer backend runs [OpenCode](https://opencode.ai) as a non-in
 3. OpenCode is invoked as:
 
 ```
-opencode run --file <merged-prompt-file>
+opencode run --pure --dangerously-skip-permissions --file <merged-prompt-file>
 ```
 
 4. The `--file` flag attaches the merged prompt so the full review context (rules, diffs, instructions) is available to the model without hitting OS command-line length limits.
-5. OpenCode uses its own configuration (`~/.config/opencode/opencode.json` or `.opencode.json`) for model and provider selection. The `reviewerModel` setting in claude-auto-review is informational for display but does not override the opencode config.
+5. `--dangerously-skip-permissions` is required because the merged prompt file lives under `.claude/claude-auto-review/clients/<client-id>/run/`, which OpenCode treats as an `external_directory`. Without the flag the read permission prompt auto-rejects in non-interactive mode and the review produces no output.
+6. OpenCode uses its own configuration (`~/.config/opencode/opencode.json` or `.opencode.json`) for model and provider selection. The `reviewerModel` setting in claude-auto-review is informational for display but does not override the opencode config.
 
 ## Configuration
 
@@ -61,8 +62,8 @@ See the [OpenCode documentation](https://opencode.ai) for supported providers an
 
 | Aspect | Claude | Codex | OpenCode |
 |--------|--------|-------|----------|
-| CLI invocation | `claude --print --bare --append-system-prompt-file` | `codex exec --json --sandbox read-only` | `opencode run --file` |
+| CLI invocation | `claude --print --bare --append-system-prompt-file` | `codex exec --json --sandbox read-only` | `opencode run --pure --dangerously-skip-permissions --file` |
 | Prompt delivery | System prompt file + CLI arg | Stdin | Merged prompt file via `--file` |
 | Model selection | `--model` flag | `--model` flag | opencode config |
-| Permissions | `--allowedTools` whitelist | `--sandbox read-only` | `--pure` (no plugins) |
+| Permissions | `--allowedTools` whitelist | `--sandbox read-only` | `--pure` (no plugins) + `--dangerously-skip-permissions` |
 | Default model | `claude-sonnet-4-6` | `gpt-5.4-mini` | `opencode/big-pickle` |

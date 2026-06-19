@@ -157,6 +157,7 @@ class TestBuildOpencodeReviewArgs(unittest.TestCase):
         args = _build_opencode_review_args("claude-sonnet-4-6", prompt_file)
         self.assertEqual(args[0], "run")
         self.assertEqual(args[1], "--pure")
+        self.assertIn("--dangerously-skip-permissions", args)
         self.assertIn("--model", args)
         model_idx = args.index("--model")
         self.assertEqual(args[model_idx + 1], "claude-sonnet-4-6")

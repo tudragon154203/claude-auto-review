@@ -33,6 +33,7 @@ def _build_opencode_review_args(model, prompt_file):
     args = [
         "run",
         "--pure",
+        "--dangerously-skip-permissions",
         "Review the attached prompt file and respond with your findings.",
     ]
     if model not in ("", "default", "none"):

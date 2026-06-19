@@ -94,6 +94,8 @@ class StopHookAutocompleteTestCase(EndToEndTestCase):
         run_dir = client_dir(project_root) / "run"
         cli_args = json.loads((run_dir / "opencode-cli-args.json").read_text(encoding="utf-8"))
         self.assertEqual(cli_args[0], "run")
+        self.assertIn("--pure", cli_args)
+        self.assertIn("--dangerously-skip-permissions", cli_args)
         self.assertIn("--file", cli_args)
         file_idx = cli_args.index("--file")
         merged_path = Path(cli_args[file_idx + 1])
