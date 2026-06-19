@@ -37,7 +37,7 @@ def _validate_reviewer_backend(ctx: RuntimeContext, *, log_event_fn) -> tuple[Fi
         return plan_for_invalid_settings().result, _invalid_backend_payload(error)
 
 
-def _run_eval_orchestration(ctx, review_id, review_path, prompt_file, covered_entries, unreviewed, *, deps) -> tuple[FinalizeResult, ResponsePayload] | None:
+def _run_eval_orchestration(ctx, review_id, review_path, prompt_file, covered_entries, unreviewed, *, deps):
     return orchestrate_review_eval(  # type: ignore[no-any-return]
         ctx, review_id, review_path, prompt_file, covered_entries, unreviewed, deps=deps
     )
@@ -55,11 +55,12 @@ def _prepare_review_data(ctx: RuntimeContext, resolution: ReviewResolution):
     return review_id, review_path, prompt_file, covered_entries, unreviewed
 
 
-def _block_and_return_pending(ctx, review_id, review_path, prompt_file, unreviewed, *, deps: ReviewEvalDeps) -> tuple[FinalizeResult, None]:
+def _block_and_return_pending(ctx, review_id, review_path, prompt_file, unreviewed, *, deps: ReviewEvalDeps, failure_info=None) -> tuple[FinalizeResult, None]:
     writer = deps.executor.state_event_writer_factory(ctx.project_root, ctx.client_id)
     block_pending_review(
         ctx, review_id, review_path, prompt_file, unreviewed,
         emitter=deps.executor.emitter, state_event_writer=writer,
+        failure_info=failure_info,
     )
     return plan_for_pending_review().result, None
 
@@ -73,13 +74,16 @@ def finalize_review_stop_result(
     if invalid is not None:
         return invalid
 
-    eval_result = _run_eval_orchestration(
+    eval_result, autocomplete_result = _run_eval_orchestration(
         ctx, review_id, review_path, prompt_file, covered_entries, unreviewed, deps=deps
     )
     if eval_result is not None:
         return eval_result
 
-    return _block_and_return_pending(ctx, review_id, review_path, prompt_file, unreviewed, deps=deps)
+    return _block_and_return_pending(
+        ctx, review_id, review_path, prompt_file, unreviewed,
+        deps=deps, failure_info=autocomplete_result,
+    )
 
 
 def finalize_review_stop(ctx: RuntimeContext, resolution: ReviewResolution, *, deps: ReviewEvalDeps) -> int:

@@ -65,7 +65,7 @@ class TestEvaluateArtifactAndPlan(unittest.TestCase):
             _ctx(), "r1", Path("/review.md"), Path("/prompt.md"), [], [],
             deps=deps,
         )
-        self.assertEqual(result, ("result", None))
+        self.assertEqual(result, (("result", None), None))
         apply_fn.assert_called_once()
         self.assertEqual(classify_fn.call_count, 1)
 
@@ -86,7 +86,7 @@ class TestEvaluateArtifactAndPlan(unittest.TestCase):
             _ctx(), "r1", Path("/review.md"), Path("/prompt.md"), [], [],
             deps=deps,
         )
-        self.assertEqual(result, ("result", None))
+        self.assertEqual(result, (("result", None), None))
         self.assertEqual(classify_fn.call_count, 2)
         autocomplete_fn.assert_called_once()
 
@@ -94,16 +94,18 @@ class TestEvaluateArtifactAndPlan(unittest.TestCase):
         pending_state = self._make_artifact_state("pending")
         classify_fn = MagicMock(return_value=pending_state)
         plan_fn = MagicMock(return_value=None)
-        autocomplete_fn = MagicMock(return_value=SimpleNamespace(status="completed"))
+        autocomplete_result = SimpleNamespace(status="completed")
+        autocomplete_fn = MagicMock(return_value=autocomplete_result)
 
         deps = _mock_eval_deps(
             classify_fn=classify_fn, plan_fn=plan_fn, autocomplete_fn=autocomplete_fn,
         )
-        result = orchestrate_review_eval(
+        plan_result, last_autocomplete = orchestrate_review_eval(
             _ctx(), "r1", Path("/review.md"), Path("/prompt.md"), [], [],
             deps=deps,
         )
-        self.assertIsNone(result)
+        self.assertIsNone(plan_result)
+        self.assertIs(last_autocomplete, autocomplete_result)
 
     def test_empty_stdout_autocomplete_logs_event(self):
         pending_state = self._make_artifact_state("pending")
@@ -116,11 +118,11 @@ class TestEvaluateArtifactAndPlan(unittest.TestCase):
             classify_fn=classify_fn, plan_fn=plan_fn,
             autocomplete_fn=autocomplete_fn, log_event_fn=log_fn,
         )
-        result = orchestrate_review_eval(
+        plan_result, _ = orchestrate_review_eval(
             _ctx(), "r1", Path("/review.md"), Path("/prompt.md"), [], [],
             deps=deps,
         )
-        self.assertIsNone(result)
+        self.assertIsNone(plan_result)
         log_fn.assert_called_once()
         self.assertEqual(log_fn.call_args[0][1], "stop_hook_reviewer_empty_blocked")
 
@@ -135,11 +137,11 @@ class TestEvaluateArtifactAndPlan(unittest.TestCase):
             classify_fn=classify_fn, plan_fn=plan_fn,
             autocomplete_fn=autocomplete_fn, log_event_fn=log_fn,
         )
-        result = orchestrate_review_eval(
+        plan_result, _ = orchestrate_review_eval(
             _ctx(), "r1", Path("/review.md"), Path("/prompt.md"), [], [],
             deps=deps,
         )
-        self.assertIsNone(result)
+        self.assertIsNone(plan_result)
         log_fn.assert_not_called()
 
     def test_empty_stdout_followed_by_plan_does_not_log(self):
@@ -162,7 +164,7 @@ class TestEvaluateArtifactAndPlan(unittest.TestCase):
             _ctx(), "r1", Path("/review.md"), Path("/prompt.md"), [], [],
             deps=deps,
         )
-        self.assertEqual(result, ("result", None))
+        self.assertEqual(result, (("result", None), None))
         log_fn.assert_not_called()
 
 

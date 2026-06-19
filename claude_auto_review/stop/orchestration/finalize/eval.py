@@ -93,23 +93,27 @@ def orchestrate_review_eval(
     """Classify the review artifact, apply any plan immediately,
     otherwise attempt autocomplete and then re-classify.
 
-    Returns:
-      - (result, payload) from plan execution if a plan was found
-      - None if the review is still pending after all stages
+    Returns a tuple ``(plan_result, autocomplete_result)``:
+      - ``plan_result`` is the ``(FinalizeResult, ResponsePayload)`` from plan
+        execution if a plan was found, otherwise ``None``.
+      - ``autocomplete_result`` is the ``AutocompleteResult`` from the
+        autocomplete attempt (``None`` when no attempt was made). It is
+        populated only when the review is still pending after all stages, so
+        callers can surface the backend failure reason in the block message.
     """
     artifact_state = _classify_artifact(ctx, review_path, deps)
     plan = _plan_for_classified_artifact(deps, artifact_state)
     if plan is not None:
-        return _apply_plan(ctx, plan, review_id, review_path, covered_entries, unreviewed, deps=deps)
+        return _apply_plan(ctx, plan, review_id, review_path, covered_entries, unreviewed, deps=deps), None
 
     result = _attempt_autocomplete_if_needed(ctx, review_id, review_path, prompt_file, deps=deps)
 
     artifact_state = _classify_artifact(ctx, review_path, deps)
     plan = _plan_for_classified_artifact(deps, artifact_state)
     if plan is not None:
-        return _apply_plan(ctx, plan, review_id, review_path, covered_entries, unreviewed, deps=deps)
+        return _apply_plan(ctx, plan, review_id, review_path, covered_entries, unreviewed, deps=deps), None
 
     if result is not None and result.status == AutocompleteStatus.EMPTY_STDOUT:
         _log_empty_autocomplete_block(ctx, review_id, deps)
 
-    return None
+    return None, result

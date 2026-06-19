@@ -144,6 +144,30 @@ class TestFinalizePendingReview(unittest.TestCase):
         self.assertEqual(result, EXIT_REVIEW_FAILED)
         mock_block_pending.assert_called_once()
 
+    @patch("claude_auto_review.stop.orchestration.finalize.core.get_entries_covered_by_review", return_value=[])
+    @patch("claude_auto_review.stop.orchestration.finalize.autocomplete.build_review_completion_prompt")
+    @patch("claude_auto_review.stop.orchestration.finalize.autocomplete.attempt_stop_autocomplete")
+    @patch("claude_auto_review.stop.orchestration.finalize.review_artifact_evaluator.classify_review_artifact")
+    def test_pending_block_includes_failure_hint_when_autocomplete_fails(
+        self, mock_classify, mock_auto, mock_prompt, mock_covered
+    ):
+        from claude_auto_review.stop.reviews.types.enums import AutocompleteStatus
+        from claude_auto_review.stop.reviews.types.result import AutocompleteResult
+
+        mock_classify.side_effect = [MagicMock(status="pending"), MagicMock(status="pending")]
+        mock_auto.return_value = AutocompleteResult(
+            status=AutocompleteStatus.NONZERO,
+            stderr="Error: Missing optional dependency @openai/codex-win32-x64",
+            returncode=1,
+        )
+        result = finalize_review_stop(_ctx(), self.resolution, deps=build_default_eval_deps(DependencyOverrides(state_event_writer_factory=MagicMock()), emitter=self.emitter))
+        self.assertEqual(result, EXIT_REVIEW_FAILED)
+        block_call = self.emitter.block.call_args
+        self.assertIsNotNone(block_call)
+        feedback = block_call.args[1]
+        self.assertIn("could not complete the review", feedback)
+        self.assertIn("Missing optional dependency", feedback)
+
 
 if __name__ == "__main__":
     unittest.main()
