@@ -15,6 +15,7 @@ After each file edit (Write/Edit/MultiEdit/Delete), the plugin tracks the file h
 - Enforces a stop circuit breaker with `maxStopPasses`.
 - Live-reloads `.claude/settings.json` without a restart.
 - Dependency-free Python (standard library only).
+- Works inside git worktrees — resolves to the main repo's `.claude/claude-auto-review/` state via `git rev-parse --show-toplevel`.
 
 ## Installation
 

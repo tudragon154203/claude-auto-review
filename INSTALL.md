@@ -55,6 +55,8 @@ claude-auto-review install
 
 This creates the local runtime tree and configures hooks. Run it from the project root where you want reviews to run.
 
+> **Git worktrees:** install once in the main checkout — sessions opened in a linked worktree automatically resolve back to that same root via `git rev-parse --show-toplevel`, so no per-worktree install is needed.
+
 ## Option B: Install from GitHub directly
 
 ```bash
