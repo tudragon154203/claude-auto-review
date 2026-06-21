@@ -111,36 +111,66 @@ flowchart TD
 When Claude attempts to stop, the Stop hook runs the stop-flow service through staged checks. Each stage decides whether to allow the stop, continue without review, or block for review:
 
 ```mermaid
-flowchart TD
-    STOP["Claude attempts stop"] --> CTX["Build RuntimeContext<br/>(project, client, settings)"]
-    CTX --> ENABLED{"Plugin enabled?"}
-    ENABLED -- "No" --> ALLOW_DISABLED["Allow stop (disabled)"]
-    ENABLED -- "Yes" --> STATE["Load state snapshot"]
-    STATE --> UNREVIEWED{"Unreviewed files?"}
-    UNREVIEWED -- "No" --> ALLOW_CLEAN["Allow stop (clean)"]
-    UNREVIEWED -- "Yes" --> BREAKER{"Circuit breaker hit?"}
-    BREAKER -- "Yes (≥ maxStopPasses)" --> ALLOW_BREAKER["Allow stop (circuit breaker)"]
-    BREAKER -- "No" --> CLASSIFIER{"Classifier status?"}
-    CLASSIFIER -- "incomplete" --> ALLOW_INCOMPLETE["Allow stop —<br/>Claude still working"]
-    CLASSIFIER -- "complete / unknown / error / skipped" --> PENDING{"Pending review reuse?"}
-    PENDING -- "Yes (unexpired)" --> FINALIZE_OLD["Finalize with cached review"]
-    PENDING -- "No" --> PROMPT["Generate review prompt"]
-    PROMPT --> SUCCESS{"Review generated?"}
-    SUCCESS -- "No" --> BLOCK["Block stop"]
-    SUCCESS -- "Yes" --> BLOCK2{"Would stop be blocked?"}
-    FINALIZE_OLD --> BLOCK2
-    BLOCK2 -- "No" --> ALLOW_REVIEWED["Allow stop (reviewed)"]
-    BLOCK2 -- "Yes" --> BLOCK
-    BLOCK --> RETURN_BLOCKED["Return blocked stop response"]
+flowchart TB
+    subgraph s1["① Start"]
+        STOP["Stop attempt"] --> CTX["Build context"]
+    end
 
-    style STOP fill:#fff3e0,stroke:#e65100
+    subgraph s2["② Pre-checks"]
+        ENABLED{"Enabled?"}
+        STATE["Load state"]
+        UNREVIEWED{"Unreviewed?"}
+        ALLOW_DISABLED["Allow (disabled)"]
+        ALLOW_CLEAN["Allow (clean)"]
+    end
+
+    subgraph s3["③ Guards"]
+        BREAKER{"Breaker?"}
+        CLASSIFIER{"Classifier?"}
+        ALLOW_BREAKER["Allow (breaker)"]
+        ALLOW_INCOMPLETE["Allow (working)"]
+    end
+
+    subgraph s4["④ Review"]
+        PENDING{"Pending?"}
+        PROMPT["Generate prompt"]
+        SUCCESS{"Generated?"}
+        FINALIZE_OLD["Use cached"]
+    end
+
+    subgraph s5["⑤ Verdict"]
+        BLOCK2{"Block?"}
+        BLOCK["Block stop"]
+        ALLOW_REVIEWED["Allow (reviewed)"]
+    end
+
+    CTX --> ENABLED
+    ENABLED -- "Yes" --> STATE --> UNREVIEWED
+    ENABLED -- "No" --> ALLOW_DISABLED
+    UNREVIEWED -- "Yes" --> BREAKER
+    UNREVIEWED -- "No" --> ALLOW_CLEAN
+    BREAKER -- "Yes" --> ALLOW_BREAKER
+    BREAKER -- "No" --> CLASSIFIER
+    CLASSIFIER -- "incomplete" --> ALLOW_INCOMPLETE
+    CLASSIFIER -- "complete / unknown / error / skipped" --> PENDING
+    PENDING -- "Yes" --> FINALIZE_OLD --> BLOCK2
+    PENDING -- "No" --> PROMPT --> SUCCESS
+    SUCCESS -- "Yes" --> BLOCK2
+    SUCCESS -- "No" --> BLOCK
+    BLOCK2 -- "No" --> ALLOW_REVIEWED
+    BLOCK2 -- "Yes" --> BLOCK
+
+    style s1 fill:#fff3e0,stroke:#e65100
+    style s2 fill:#e3f2fd,stroke:#1565c0
+    style s3 fill:#f3e5f5,stroke:#7b1fa2
+    style s4 fill:#e8f5e9,stroke:#2e7d32
+    style s5 fill:#ffebee,stroke:#c62828
+    style BLOCK fill:#ffebee,stroke:#c62828
     style ALLOW_DISABLED fill:#e8f5e9,stroke:#2e7d32
     style ALLOW_CLEAN fill:#e8f5e9,stroke:#2e7d32
     style ALLOW_BREAKER fill:#e8f5e9,stroke:#2e7d32
     style ALLOW_INCOMPLETE fill:#e8f5e9,stroke:#2e7d32
     style ALLOW_REVIEWED fill:#e8f5e9,stroke:#2e7d32
-    style BLOCK fill:#ffebee,stroke:#c62828
-    style RETURN_BLOCKED fill:#ffebee,stroke:#c62828
 ```
 
 ---
@@ -150,16 +180,14 @@ flowchart TD
 When a new review is needed, the plugin assembles context from rules and session-scoped diffs into a prompt for the reviewer backend:
 
 ```mermaid
-flowchart LR
+flowchart TB
     subgraph inputs["① Review Inputs"]
-        direction TB
         RULES["Review rules"]
         SNAPSHOTS["Session-scoped diff<br/>(captured before first edit)"]
         FILES["Unreviewed files"]
     end
 
     subgraph assembly["② Prompt Assembly"]
-        direction TB
         TIMESTAMP("Gen ID + timestamp")
         BUILD["Build prompt"]
         WRITE_PROMPT["Write prompt file"]
@@ -167,14 +195,13 @@ flowchart LR
     end
 
     subgraph backend["③ Reviewer Backend"]
-        direction TB
         CLAUDE["Claude Code"]
         CODEX["Codex CLI"]
     end
 
-    FILES --> TIMESTAMP
     RULES --> BUILD
     SNAPSHOTS --> BUILD
+    FILES --> TIMESTAMP
     TIMESTAMP --> BUILD
     BUILD --> WRITE_PROMPT
     BUILD --> WRITE_REVIEW
