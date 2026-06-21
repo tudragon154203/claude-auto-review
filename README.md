@@ -221,22 +221,19 @@ flowchart TB
 All session events are recorded as JSONL entries. A snapshot is computed on each stop attempt for consistent queries:
 
 ```mermaid
-flowchart LR
+flowchart TB
     subgraph writers["① Event Writers"]
-        direction TB
         PTU_W["PostToolUse writes<br/>EditRecord"]
         STOP_W["Stop hook writes<br/>ReviewMetadata / StopBlocked"]
         SEND_W["SessionEnd writes<br/>cleanup events"]
     end
 
     subgraph storage["② State Storage"]
-        direction TB
         CLI_STATE["Per-client state.jsonl"]
         GLOBAL_LOG["Project lifecycle log"]
     end
 
     subgraph reader["③ State Reader"]
-        direction TB
         SNAPSHOT["StateSnapshot<br/>from events"]
         UNREVIEWED["Unreviewed files"]
         BLOCKS["Stop blocks count"]
