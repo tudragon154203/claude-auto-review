@@ -38,6 +38,16 @@ Prompts for the key settings — after that, Claude Code sessions **use the plug
 
 See [INSTALL.md](INSTALL.md) for full details.
 
+## Uninstallation
+
+```bash
+claude-auto-review uninstall            # Remove the plugin from the current project
+# or: car uninstall
+pip uninstall claude-auto-review        # Optional: remove the package itself
+```
+
+`uninstall` deletes the `.claude/claude-auto-review/` runtime directory, removes the plugin's hooks and `claude-auto-review` settings block from `.claude/settings.json`, and cleans up its `.gitignore` entries. Run it from the project root.
+
 ## Architecture
 
 The implementation is split into small modules instead of one monolith. Below are focused diagrams covering each subsystem.
